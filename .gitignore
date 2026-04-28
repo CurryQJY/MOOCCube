@@ -1,0 +1,87 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test, lint, and coverage caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Editors and OS noise
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs and temporary backups
+*.log
+*.tmp
+*.bak
+*.encoding_backup
+.$*.bkp
+.codex_tmp/
+
+# Model checkpoints
+*.pth
+*.ckpt
+
+# Generated data directories
+ablation_logs/
+processed_data/
+processed_data_domain/
+processed_data_hin/
+processed_data_x/
+processed_data_x_course/
+processed_data_x_course_smoke/
+
+# Large raw datasets and pretrained artifacts
+MOOCCube/
+MOOCCubeX/
+Pam/processed_data_video/
+USIM-main/data/
+lightgcn/dataset/
+lightgcn/log_tensorboard/
+*.pt
+*.npy
+*.pkl
+*.tfevents.*
+
+# Experiment outputs
+checkpoints/
+outputs/
+comparison_*.csv
+comparison_*.png
+*_comparison.png
+concat_k_pam_metrics.csv
+final_*.csv
+final_*.png
+final_*.txt
+k_pam_*.csv
+k_pam_*.png
+*_metrics.csv
+metrics_*.csv
+metrics_*.png
+mooc_metrics*.csv
+mooc_result*.png
+pam_metrics.csv
+pam_result.png
+real_baselines_chart.png
+result_*.png
+*_result.json
+
+# Local-only helpers and handoff files
+external/
+external/HHCOR_official/
+skills/
+tmp_*
+交付物/

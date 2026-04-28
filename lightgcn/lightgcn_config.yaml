@@ -1,0 +1,83 @@
+## 数据集路径配置
+#data_path: ../
+#dataset: MOOCCubeX
+#field_separator: "\t"
+#USER_ID_FIELD: user_id
+#ITEM_ID_FIELD: item_id
+## 我们没有提取时间戳，因为 LightGCN 是图模型，不强依赖时序，这里使用随机划分
+#load_col:
+#  inter: [ user_id, item_id ]
+#
+## 训练集划分设置 (80%训练, 10%验证, 10%测试)
+#eval_args:
+#  split: { 'RS': [ 0.8, 0.1, 0.1 ] }
+#  group_by: user
+#  order: RO
+#  mode: full
+#
+## 数据过滤 (重要：解决冷启动导致的NaN问题)
+## 过滤掉交互少于 2 次的用户或课程（根据您的数据量可适当调整）
+##min_user_inter_num: 10
+##min_item_inter_num: 2
+#
+## === 添加这两行 (强制过滤) ===
+## 含义：只保留交互数在 [10, 正无穷) 之间的用户
+#user_inter_num_interval: "[10,inf)"
+## 含义：只保留交互数在 [5, 正无穷) 之间的课程
+#item_inter_num_interval: "[5,inf)"
+#
+## LightGCN 模型参数
+#embedding_size: 128
+#n_layers: 3
+#reg_weight: 1e-04
+#learning_rate: 0.001
+#train_batch_size: 2048
+#epochs: 50
+#stop_step: 10 # 早停机制
+
+# ================= 数据路径 =================
+data_path: ./dataset/
+dataset: MOOCCubeX_Paper   # ⚠️ 必须对应您预处理生成的文件夹名
+field_separator: "\t"
+USER_ID_FIELD: user_id
+ITEM_ID_FIELD: item_id
+# LightGCN 是图模型，不需要时间戳
+
+# ================= 数据加载 =================
+load_col:
+  inter: [ user_id, item_id ]
+
+# ================= 过滤设置 =================
+# ⚠️ 关键：数据已预处理，设为 0 防止二次过滤
+user_inter_num_interval: "[0,inf)"
+item_inter_num_interval: "[0,inf)"
+
+# ================= LightGCN 模型参数 =================
+embedding_size: 128        # 保持 128 维，与 SASRec/SGL 对齐
+n_layers: 3                # 标准配置，3 层图卷积效果通常最好
+reg_weight: 1e-04          # 正则化权重，防止过拟合
+
+# ================= 训练参数 =================
+# LightGCN 计算极快，显存占用小
+# 针对 10万条数据，2048 是个很舒服的速度
+train_batch_size: 512
+learner: adam
+learning_rate: 0.001
+epochs: 50
+eval_step: 1
+stopping_step: 10
+
+# ⚠️ Windows 必须设为 0
+worker: 0
+
+# ================= 评估设置 =================
+# ⚠️ 采用【随机划分 (Random Split)】
+# 这样可以和 BPR、SGL 的结果直接横向对比
+eval_args:
+  split: { 'RS': [ 0.8, 0.1, 0.1 ] } # 80%训练, 10%验证, 10%测试
+  group_by: user
+  order: RO   # Random Ordering
+  mode: full  # 全量排序
+
+metrics: [ 'Recall', 'MRR', 'NDCG', 'Hit' ]
+topk: [ 10 ]
