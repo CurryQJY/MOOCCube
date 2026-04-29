@@ -1,0 +1,49 @@
+# === 数据路径 ===
+data_path: ./dataset/
+dataset: MOOCCubeX_Paper
+field_separator: "\t"
+USER_ID_FIELD: user_id
+ITEM_ID_FIELD: item_id
+TIME_FIELD: timestamp  # 必须指定时间列
+MAX_ITEM_LIST_LENGTH: 20 # 序列长度：只看学生最近选的50门课
+
+# === 数据加载配置 (必须包含 timestamp) ===
+load_col:
+  inter: [ user_id, item_id, timestamp ]
+
+# === 数据过滤 (复用您之前的成功经验) ===
+# 过滤掉交互少于 10 次的用户 (序列太短没法预测)
+user_inter_num_interval: "[0,inf)"
+item_inter_num_interval: "[0,inf)"
+
+# === SASRec 模型参数 ===
+# Embedding 维度 (显存够可以用 128)
+hidden_size: 128
+# 自注意力头数
+num_attention_heads: 2
+# Transformer 层数 (2层通常就够了，太多容易过拟合)
+num_hidden_layers: 2
+# Dropout 概率 (防止过拟合)
+dropout_prob: 0.1
+# 损失函数类型
+loss_type: 'CE' # Cross Entropy，序列推荐通常用这个效果好
+weight_decay: 0.0001
+
+# === 训练参数 ===
+epochs: 50
+train_batch_size: 512
+learner: adam
+learning_rate: 0.001
+eval_step: 1
+stopping_step: 10
+train_neg_sample_args: null
+
+# === 评估设置 (序列推荐的黄金标准) ===
+eval_args:
+  split: { 'LS': 'valid_and_test' } # Leave-One-Out 划分: 最后一次交互做测试，倒数第二次做验证
+  group_by: user
+  order: TO  # Temporal Ordering (按时间排序，非常重要！)
+  mode: full # 全量排序
+
+metrics: [ 'Recall', 'MRR', 'NDCG', 'Hit' ]
+topk: [ 10 ]

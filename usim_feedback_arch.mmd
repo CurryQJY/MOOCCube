@@ -1,0 +1,143 @@
+﻿flowchart TD
+    A1[Student u]
+    A2[Student Embedding]
+    A3[z_s = user_proj user_emb]
+
+    B1[Course i]
+    B2[ID Embedding]
+    B3[Content Embedding]
+    B4[Content MLP and LN]
+    B5[content_e]
+
+    C1[User history]
+    C2[Course text]
+    C3[LLM Inference Qwen-7B]
+    C4[LLM Score]
+    C5[Mask and Clamp]
+    C6[LLM MLP]
+    C7[llm_e]
+
+    D1[Concat ID and content side]
+    D2[Gate Net Sigmoid]
+    D3[h_0]
+
+    E1[Candidate Students retrieve_sample]
+    E2[Time step t]
+    E3[Concat state and time]
+    E4[PPO Agent Actor-Critic]
+    E5[Score = h_t dot S_sim]
+    E6[h_t+1 = h_t + eta grad Score]
+    E7[h_T]
+
+    F1[target_emb]
+    F2[Distance Comparator]
+    F3[Candidate Stats dup_rate and topm_coverage]
+    F4[Feedback Reward]
+    F5[Trajectory Buffer]
+    F6[PPO Loss]
+
+    G1[Prediction MLP]
+    G2[z_c]
+    G3[Final Score z_s dot z_c]
+    G4[Ranking Loss]
+    G5[Aux Loss]
+    G6[Total Loss]
+
+    H1[Evaluation build_all_item_vecs]
+    H2[Seen-history mask]
+    H3[Sampled or Full Ranking]
+    H4[Recall and NDCG on cold and hot]
+
+    A1 --> A2 --> A3
+
+    B1 --> B2
+    B1 --> B3 --> B4 --> B5
+    C1 --> C3
+    C2 --> C3 --> C4 --> C5 --> C6 --> C7
+
+    B2 --> D1
+    B5 --> D1
+    C7 --> D1
+    D1 --> D2 --> D3
+
+    D3 --> E3
+    E2 --> E3
+    E1 --> E4
+    E3 --> E4 --> E5 --> E6 --> E7
+
+    E1 -. candidate statistics .-> F3
+    E6 --> F2
+    F1 --> F2
+    F2 --> F4
+    F3 --> F4
+    E4 -. log_prob value entropy .-> F5
+    F4 --> F5 --> F6
+
+    A3 --> G1
+    E7 --> G1
+    E7 --> G2
+    A3 --> G3
+    G2 --> G3
+    G1 --> G3 --> G4
+    D1 -. representation auxiliary branch .-> G5
+
+    F6 --> G6
+    G4 --> G6
+    G5 --> G6
+
+    A3 --> H3
+    H1 --> H3
+    H2 --> H3 --> H4
+
+    subgraph Encoder
+        A1
+        A2
+        A3
+        B1
+        B2
+        B3
+        B4
+        B5
+        C1
+        C2
+        C3
+        C4
+        C5
+        C6
+        C7
+        D1
+        D2
+        D3
+    end
+
+    subgraph Feedback_Loop
+        E1
+        E2
+        E3
+        E4
+        E5
+        E6
+        E7
+        F1
+        F2
+        F3
+        F4
+        F5
+        F6
+    end
+
+    subgraph Training_and_Ranking
+        G1
+        G2
+        G3
+        G4
+        G5
+        G6
+    end
+
+    subgraph Evaluation
+        H1
+        H2
+        H3
+        H4
+    end
