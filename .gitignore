@@ -84,4 +84,8 @@ external/
 external/HHCOR_official/
 skills/
 tmp_*
+.runtime_tmp/
+.codex_backups/
+model/
+processed_data_*/
 交付物/
