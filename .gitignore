@@ -1,0 +1,32 @@
+# Local IDE and runtime files
+.idea/
+.vscode/
+.runtime_tmp/
+.codex_backups/
+__pycache__/
+*.py[cod]
+
+# Large raw datasets and generated feature stores
+MOOCCube/
+MOOCCubeX/
+processed_data/
+processed_data_*/
+model/
+checkpoints/
+ablation_logs/
+
+# Model weights, checkpoints, binary features, and logs
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.log
+*.err.log
+*.out.log
+
+# Temporary notebooks / scratch exports
+.ipynb_checkpoints/
+*.tmp
+*.bak
+*.encoding_backup
+
