@@ -1,0 +1,261 @@
+\documentclass[sigconf,review,anonymous]{acmart}
+
+\setcopyright{none}
+\copyrightyear{2027}
+\acmYear{2027}
+\acmDOI{}
+\acmConference[WSDM '27]{Proceedings of the Eighteenth ACM International Conference on Web Search and Data Mining}{February 15--19, 2027}{Hong Kong}
+\acmISBN{}
+\settopmatter{printacmref=false, printfolios=true}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+
+\AtBeginDocument{%
+  \providecommand\BibTeX{{Bib\TeX}}}
+
+\begin{document}
+
+\title{Course-Knowledge Guided Reinforcement Learning for Cold-Start MOOC Recommendation}
+
+\begin{abstract}
+Massive open online courses provide learners with flexible access to educational resources, yet personalized course recommendation remains challenging due to sparse user feedback, cold-start learners, and structured dependencies among courses. Existing collaborative filtering and sequential recommendation methods mainly exploit interaction signals, while often overlooking educational knowledge such as prerequisite relations, concept coverage, course difficulty, and content redundancy. In this paper, we study cold-start MOOC recommendation from a course-knowledge guided reinforcement learning perspective. We build upon a reinforcement learning based user simulation framework and introduce course-side knowledge signals into representation learning, candidate selection, and reward design. Specifically, we encode course content and heterogeneous educational relations, simulate sequential recommendation with a PPO-style policy, and design multiple course-aware objectives for concept matching, prerequisite compliance, difficulty adaptation, and redundancy control. Experiments on MOOCCube/MOOCCubeX show that different educational signals benefit different user groups: concept reward improves cold-start recommendation, while prerequisite and difficulty rewards significantly improve full-ranking performance for hot users. The results demonstrate the importance of modeling educational structure explicitly for robust MOOC recommendation.
+\end{abstract}
+
+\keywords{MOOC recommendation, cold-start recommendation, reinforcement learning, educational data mining, course knowledge graph}
+
+\maketitle
+
+\section{Introduction}
+Online learning platforms host a large number of courses covering diverse knowledge areas. Recommender systems are therefore essential for helping learners discover suitable courses. Compared with general item recommendation, MOOC course recommendation has two distinctive characteristics. First, many learners have very limited historical interactions, making cold-start recommendation difficult. Second, courses are not independent items: they are connected by concepts, prerequisite relations, difficulty levels, teachers, schools, and potential learning paths.
+
+Most existing recommendation models rely heavily on collaborative signals, such as pairwise ranking objectives~\cite{rendle2009bpr} and graph-based collaborative filtering~\cite{wang2019neuralgraphcollaborativefiltering,ying2018graphconvolutional}. This design is effective for warm users and popular items, but becomes less reliable when user histories are sparse. Content-aware and knowledge-aware recommenders alleviate this issue by incorporating side information, yet they often treat course knowledge as static features rather than actionable educational constraints. In MOOC scenarios, however, a good recommendation should not only be relevant to the learner's interests, but also match the learner's current knowledge state, avoid excessive redundancy, and respect prerequisite structures.
+
+To address these challenges, we propose a course-knowledge guided reinforcement learning framework for MOOC recommendation. The key idea is to convert educational knowledge into training-time and inference-time signals that guide sequential recommendation. The framework combines content-enhanced item representation, reinforcement learning based user-state simulation, and course-aware reward components. These components capture concept coverage, prerequisite satisfaction, difficulty adaptation, and redundancy penalty.
+
+Our experiments show a clear cold/hot user difference. Concept-level reward is the most effective single component for cold-start users, improving sampled cold-start Recall@5 by 5.51\% and full-ranking cold-start Recall@20 by 5.98\%. Prerequisite reward is particularly beneficial for hot users, improving full-ranking hot Recall@5 by 22.93\% and NDCG@5 by 23.57\%. These findings suggest that educational knowledge should be introduced selectively rather than uniformly across user groups.
+
+The main contributions are summarized as follows:
+\begin{itemize}
+    \item We formulate MOOC course recommendation as a course-knowledge guided sequential decision problem that explicitly distinguishes cold-start and hot users.
+    \item We design multiple educational reward signals, including concept coverage, prerequisite compliance, difficulty adaptation, and redundancy control.
+    \item We conduct extensive cold/hot user evaluation and ablation studies on MOOCCube/MOOCCubeX, revealing how different course-side signals affect different user groups.
+\end{itemize}
+
+\section{Related Work}
+\subsection{MOOC and Educational Recommendation}
+MOOC recommendation aims to match learners with suitable educational resources. Unlike general recommendation, educational recommendation often needs to consider pedagogical constraints, knowledge concepts, learning paths, and course difficulty. MOOCCube provides large-scale educational data and knowledge relations for studying these problems~\cite{yu2020mooccube}.
+
+\subsection{Cold-Start Recommendation}
+Cold-start recommendation addresses the lack of sufficient historical interactions for new users or items. Common solutions include content-aware modeling, meta-learning, graph-based transfer, and side-information enhanced representation learning. In MOOC platforms, cold-start recommendation is especially important because many learners interact with only a few courses.
+
+\subsection{Reinforcement Learning for Recommendation}
+Reinforcement learning based recommenders model recommendation as a sequential decision-making process~\cite{shani2005mdp,zhao2018deepreinforcement,chen2023rlrecsurvey}. They can optimize long-term rewards and adapt user states through simulated interaction trajectories. Our work follows this direction but focuses on injecting educational knowledge into the reward and candidate selection process.
+
+\section{Problem Formulation}
+Let \(\mathcal{U}\) be the set of learners and \(\mathcal{I}\) be the set of courses. Each interaction is represented as \((u, i, t)\), where learner \(u \in \mathcal{U}\) interacts with course \(i \in \mathcal{I}\) at timestamp \(t\). Given historical interactions before time \(t\), the goal is to rank candidate courses for each learner.
+
+We define cold-start users according to the number of observed interactions. A learner is considered cold-start if the number of historical interactions is smaller than a threshold \(\tau\). Evaluation is conducted separately for cold-start and hot users under both sampled ranking and full-ranking settings.
+
+\section{Method}
+\subsection{Overview}
+The proposed framework contains four components: content-adaptive course representation, retrieval-based user simulation, course-knowledge reward modeling, and PPO-based policy optimization. For each learner--course pair \((u,i)\), the model first builds a user representation \(\mathbf{z}_u\) and a course representation \(\mathbf{q}_i\). Starting from \(\mathbf{q}_i\), the simulator performs several imagined interaction steps and produces a refined course state \(\mathbf{h}_T\). The final ranking score is computed by matching \(\mathbf{h}_T\) with the learner representation.
+
+\subsection{Content-Adaptive Course Representation}
+Each learner \(u\) has a trainable ID embedding \(\mathbf{e}_u\), which is projected into the recommendation space:
+\begin{equation}
+\mathbf{z}_u=f_u(\mathbf{e}_u).
+\end{equation}
+Each course \(i\) has an ID embedding \(\mathbf{v}_i\) and a 768-dimensional content embedding \(\mathbf{x}_i\). The content encoder maps \(\mathbf{x}_i\) into the same latent space:
+\begin{equation}
+\mathbf{c}_i=f_c(\mathbf{x}_i).
+\end{equation}
+To adapt frozen content representations to recommendation feedback while avoiding excessive drift, we introduce a bounded content delta vector \(\boldsymbol{\Delta}_i\):
+\begin{equation}
+\tilde{\mathbf{c}}_i=
+\operatorname{norm}\left(
+\operatorname{norm}(\mathbf{c}_i)+m_i \eta_{\Delta}
+\operatorname{clip}_{\rho}(\boldsymbol{\Delta}_i)
+\right),
+\end{equation}
+where \(m_i\) controls whether the delta is activated, \(\eta_{\Delta}\) is a scale factor, and \(\operatorname{clip}_{\rho}\) limits the delta norm by \(\rho\). During training, we apply ID dropout and forced-cold masking to reduce over-reliance on course IDs. The final course representation is obtained through gated fusion:
+\begin{equation}
+\mathbf{g}_i=\sigma\left(\mathbf{W}_g[\bar{\mathbf{v}}_i;\tilde{\mathbf{c}}_i]\right),
+\quad
+\mathbf{q}_i=\mathbf{g}_i\odot \bar{\mathbf{v}}_i+(1-\mathbf{g}_i)\odot \tilde{\mathbf{c}}_i,
+\end{equation}
+where \(\bar{\mathbf{v}}_i\) is the possibly masked ID embedding.
+
+\subsection{Retrieval-Based User Simulation}
+The simulator starts from \(\mathbf{h}_0=\mathbf{q}_i\). At step \(t\), it retrieves a candidate learner set from the normalized user bank according to cosine similarity with \(\mathbf{h}_t\). Let \(\mathcal{N}_M(\mathbf{h}_t)\) be the top-\(M\) retrieved learners. We sample \(N\) candidates using
+\begin{equation}
+p(u'\mid \mathbf{h}_t)=
+(1-\epsilon)\operatorname{softmax}
+\left(\frac{\mathbf{h}_t^\top\mathbf{z}_{u'}}{\tau_s}\right)
++\frac{\epsilon}{M}.
+\end{equation}
+The sampled candidates are further adjusted by a course-fit score:
+\begin{equation}
+b(u',i)=w_c C(u',i)-w_p P(u',i)-w_d D(u',i)-w_r R(u',i),
+\end{equation}
+where \(C\), \(P\), \(D\), and \(R\) denote concept bonus, prerequisite gap, difficulty gap, and redundancy penalty, respectively. For stable sampling, only the top-\(L\) retrieved candidates are reordered by
+\begin{equation}
+s_{sample}(u',i)=
+\cos(\mathbf{h}_t,\mathbf{z}_{u'})+\beta\operatorname{norm}(b(u',i)).
+\end{equation}
+
+The actor--critic policy takes the current state and the time-step embedding as input, and selects one candidate learner \(a_t\). Given the selected learner representation \(\mathbf{z}_{a_t}\), the simulator updates the course state by a gradient step:
+\begin{equation}
+\mathbf{h}_{t+1}=\mathbf{h}_t+\eta
+\nabla_{\mathbf{h}_t}
+\left[
+(1-\alpha_t)\mathbf{h}_t^\top\mathbf{z}_{a_t}
++\alpha_t\mathbf{h}_t^\top\mathbf{q}_i
+\right].
+\end{equation}
+The mixing coefficient \(\alpha_t\) is adaptive:
+\begin{equation}
+\alpha_t=\operatorname{clip}\left(
+\alpha_{cold}m_{cold}+\alpha_{hot}(1-m_{cold})
++\alpha_{step}\frac{t}{T-1}
+-\alpha_{ent}\frac{\mathcal{H}(\pi_t)}{\log N}
+\right).
+\end{equation}
+This design lets cold-start examples rely more on target/content guidance, while high-entropy policy decisions are regularized toward candidate-driven updates.
+
+\subsection{Course-Knowledge Reward Design}
+We convert educational structure into differentiable reward terms. Let \(\mathbf{s}_u\in\{0,1\}^{|\mathcal{I}|}\) be the courses already seen by learner \(u\), and \(n_u=\sum_j s_{u,j}\). Let \(\mathbf{A}^{pre}\) be the item-prerequisite matrix and \(\mathbf{A}^{con}\) be the item-concept overlap matrix.
+
+\textbf{Prerequisite gap.} The prerequisite violation of recommending course \(i\) to learner \(u\) is
+\begin{equation}
+P(u,i)=
+\left[
+1-\frac{\mathbf{s}_u^\top \mathbf{A}^{pre}_{i}}
+{\max(1,\|\mathbf{A}^{pre}_{i}\|_1)}
+\right]_0^1.
+\end{equation}
+Lower values indicate that more prerequisites have been covered.
+
+\textbf{Concept bonus.} We measure the match between the learner's history and course concepts as
+\begin{equation}
+M(u,i)=
+\left[
+\frac{\mathbf{s}_u^\top \mathbf{A}^{con}_{i}}{\max(1,n_u)}
+\right]_0^1.
+\end{equation}
+The concept bonus is a band-normalized score:
+\begin{equation}
+C(u,i)=
+\left[
+\frac{M(u,i)-\mu_c}{\mu_r-\mu_c}
+\right]_0^1
+\cdot S_{pre}(u,i)\cdot (1-\gamma_r R(u,i)),
+\end{equation}
+where \(S_{pre}\) is a prerequisite-safety gate and \(R(u,i)\) is the redundancy score.
+
+\textbf{Difficulty gap.} We estimate course difficulty from popularity:
+\begin{equation}
+d_i=1-\frac{\log(1+\operatorname{pop}_i)}
+{\max_j \log(1+\operatorname{pop}_j)}.
+\end{equation}
+The learner readiness is \(r_u=[n_u/n_{warm}]_0^1\), and the difficulty gap is
+\begin{equation}
+D(u,i)=\max(0,d_i-r_u).
+\end{equation}
+
+\textbf{Redundancy penalty.} We penalize courses that are too similar to the learner's seen courses:
+\begin{equation}
+R(u,i)=
+\left[
+\frac{M(u,i)-\mu_r}{1-\mu_r}
+\right]_0^1.
+\end{equation}
+In the structural variant, this term can also be computed from video containment and same-family course relations.
+
+The step reward combines simulation progress and course knowledge:
+\begin{align}
+r_t=&-w_T\|\mathbf{h}_{t+1}-\mathbf{q}_i\|_2^2
++w_G\left[\|\mathbf{h}_t-\mathbf{q}_i\|_2^2-\|\mathbf{h}_{t+1}-\mathbf{q}_i\|_2^2\right] \nonumber\\
+&-w_{dup}\operatorname{Dup}_t+w_{cov}\operatorname{Cov}_t
++w_c C(a_t,i)-w_p P(a_t,i)-w_d D(a_t,i)-w_r R(a_t,i).
+\end{align}
+
+\subsection{Policy Optimization and Training Objective}
+The policy is optimized with PPO and generalized advantage estimation:
+\begin{equation}
+\delta_t=r_t+\gamma V(\mathbf{s}_{t+1})-V(\mathbf{s}_t),
+\quad
+\hat{A}_t=\sum_{l\geq 0}(\gamma\lambda)^l\delta_{t+l}.
+\end{equation}
+With probability ratio \(\rho_t(\theta)\), the clipped actor objective is
+\begin{equation}
+\mathcal{L}_{actor}=
+-\mathbb{E}_t\left[
+\min(\rho_t\hat{A}_t,
+\operatorname{clip}(\rho_t,1-\epsilon_p,1+\epsilon_p)\hat{A}_t)
+\right].
+\end{equation}
+We combine actor loss, clipped value loss, and entropy regularization to obtain \(\mathcal{L}_{ppo}\).
+
+After \(T\) simulation steps, the ranking logit between learner \(u\) and course \(i\) is
+\begin{equation}
+\ell(u,i)=\frac{\operatorname{norm}(\mathbf{z}_u)^\top
+\operatorname{norm}(\mathbf{h}_T)}{\tau}.
+\end{equation}
+We train the recommender with an additive-margin contrastive loss using mixed hard and random negatives. We also use a symmetric ID--content alignment loss and a prerequisite auxiliary loss that pushes unmet-prerequisite negatives below positives:
+\begin{equation}
+\mathcal{L}_{pre}=
+\max(0,m_{pre}-\ell(u,i^+)+\max_{j\in\mathcal{V}_u}\ell(u,j)),
+\end{equation}
+where \(\mathcal{V}_u\) contains courses whose prerequisite violation is above a threshold.
+
+The final objective is
+\begin{equation}
+\mathcal{L}=
+\mathcal{L}_{rank}
++\lambda_{aux}\mathcal{L}_{aux}
++\mathcal{L}_{ppo}
++\lambda_{pre}\mathcal{L}_{pre}
++\mathcal{L}_{\Delta},
+\end{equation}
+where \(\mathcal{L}_{\Delta}\) regularizes the magnitude of content delta vectors.
+
+\section{Experiments}
+\subsection{Dataset}
+We evaluate on MOOCCube/MOOCCubeX. The processed data contains approximately 199K users and 698 courses. Course content embeddings are 768-dimensional. In the course-side ablation setting, there are 3,418 cold-start users and 673,638 hot-user samples.
+
+\subsection{Evaluation Protocol}
+We report Recall@\(K\) and NDCG@\(K\) for \(K \in \{5,10,20\}\). We evaluate cold-start and hot users separately. Both sampled ranking and full-ranking evaluation are considered.
+
+\subsection{Baselines}
+We compare with representative recommendation baselines, including BPR, LightGCN, DropoutNet, GAR, LightGCL, PAM, USIM, and USIM-Feedback variants. The final baseline for course-side ablation is FAST3 with all course signals disabled.
+
+\subsection{Course-Side Ablation Results}
+Table~\ref{tab:ablation-main} summarizes the most important course-side ablation results. Concept reward is most effective for cold-start users, while prerequisite and difficulty rewards are more beneficial for hot users.
+
+\begin{table*}[t]
+\centering
+\caption{Course-side ablation results. SC and SH denote sampled cold-start and sampled hot evaluation. FC and FH denote full-ranking cold-start and full-ranking hot evaluation.}
+\label{tab:ablation-main}
+\begin{tabular}{lcccccc}
+\toprule
+Method & SC R@5 & SC N@5 & FC R@20 & FH R@5 & FH N@5 & Key Observation \\
+\midrule
+FAST3 baseline & 0.1539 & 0.1189 & 0.1665 & 0.1271 & 0.0861 & Reference \\
++ Concept Reward & \textbf{0.1624} & \textbf{0.1242} & \textbf{0.1764} & 0.1311 & 0.0887 & Best for cold-start \\
++ Prereq Reward & 0.1565 & 0.1181 & 0.1638 & \textbf{0.1562} & \textbf{0.1064} & Best for hot users \\
++ Difficulty Reward & 0.1536 & 0.1203 & 0.1668 & 0.1465 & 0.0988 & Strong hot-user gain \\
++ Redundant Penalty & 0.1609 & 0.1239 & 0.1688 & 0.1374 & 0.0927 & Improves redundancy control \\
++ All Course (no rerank) & 0.1589 & 0.1227 & 0.1738 & 0.1321 & 0.0884 & Cold-hot trade-off \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Discussion}
+The ablation study suggests that course knowledge is not uniformly beneficial. Concept information helps cold-start users because it provides semantic matching signals when behavior histories are sparse. Prerequisite and difficulty signals benefit hot users more because they require sufficient historical evidence to infer the learner's current knowledge state. Combining all signals may improve cold-start metrics but can hurt hot-user performance, indicating a need for user-adaptive reward weighting.
+
+\section{Conclusion}
+This paper studies MOOC recommendation with explicit course-knowledge guidance. By introducing educational signals into a reinforcement learning based recommendation framework, we show that concept, prerequisite, difficulty, and redundancy information affect cold-start and hot users differently. The results highlight the importance of user-group aware knowledge integration for educational recommendation.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

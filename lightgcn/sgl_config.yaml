@@ -1,0 +1,141 @@
+## 数据集路径配置 (保持不变)
+#data_path: ../
+#dataset: MOOCCubeX
+#field_separator: "\t"
+#USER_ID_FIELD: user_id
+#ITEM_ID_FIELD: item_id
+#load_col:
+#  inter: [ user_id, item_id ]
+#
+## === 核心过滤配置 (保持您上次成功的设置) ===
+#user_inter_num_interval: "[10,inf)"
+#item_inter_num_interval: "[5,inf)"
+#
+## === 训练参数 ===
+## SGL 显存占用比 LightGCN 大，如果 OOM，请调小 batch_size
+#train_batch_size: 2048
+#epochs: 50
+#learning_rate: 0.001
+#learner: adam
+#stop_step: 10
+#eval_step: 1
+#
+## === SGL 模型特定参数 (关键) ===
+#embedding_size: 128
+#n_layers: 3
+#reg_weight: 1e-4
+#
+## SGL 的核心：自监督学习配置
+## type: 'ED' (Edge Drop, 随机丢边), 'ND' (Node Drop), 'RW' (Random Walk)
+#ssl_tau: 0.5      # 温度系数，控制对比学习的难度
+#ssl_weight: 0.1   # 自监督损失的权重
+#drop_ratio: 0.1   # 数据增强时丢弃边/点的比例
+#
+## === 评估设置 ===
+#eval_args:
+#  split: { 'RS': [ 0.8, 0.1, 0.1 ] }
+#  group_by: user
+#  order: RO
+#  mode: full
+#metrics: [ 'Recall', 'MRR', 'NDCG', 'Hit', 'Precision' ]
+#topk: [ 10 ]
+
+# ================= 数据路径 =================
+data_path: ./dataset/
+dataset: MOOCCubeX_Paper   # ⚠️ 必须对应您预处理生成的文件夹名
+field_separator: "\t"
+USER_ID_FIELD: user_id
+ITEM_ID_FIELD: item_id
+# SGL 是图模型，不使用时间戳，所以不需要设置 TIME_FIELD
+
+# ================= 数据加载 =================
+load_col:
+    inter: [user_id, item_id] # SGL 只需要 ID，不需要 timestamp
+
+# ================= 过滤设置 =================
+# ⚠️ 关键：数据已经预处理过了，不要再过滤
+user_inter_num_interval: "[0,inf)"
+item_inter_num_interval: "[0,inf)"
+
+# ================= SGL 模型参数 =================
+embedding_size: 128        # 保持 128 维，为了和 SASRec 公平对比
+n_layers: 3                # 图卷积层数，通常 3 层效果最好
+type: ED                   # Edge Dropout (SGL 的默认增强方式)
+drop_ratio: 0.1            # 丢边比例
+ssl_tau: 0.5               # 对比学习温度系数
+ssl_weight: 0.1            # 对比学习损失的权重
+
+# ================= 训练参数 =================
+# SGL 计算量比 SASRec 大，且需要在 CPU 做图增强
+# 针对 10万条数据，512 或 1024 是比较合适的
+train_batch_size: 512
+learner: adam
+learning_rate: 0.001
+epochs: 50
+eval_step: 1
+stopping_step: 10
+
+# Windows 必须设为 0，否则报错。
+# 虽然慢点，但因为数据只有 10 万条，完全能接受。
+worker: 0
+
+# ================= 评估设置 =================
+# ⚠️ 注意：图模型通常使用【随机划分 (Random Split)】
+# 这也是您之前跑 BPR/LightGCN 用的设置，方便直接对比 BPR
+eval_args:
+    split: {'RS': [0.8, 0.1, 0.1]} # 80%训练, 10%验证, 10%测试
+    group_by: user
+    order: RO   # Random Ordering (随机顺序)
+    mode: full  # 全量排序
+
+metrics: ['Recall', 'MRR', 'NDCG', 'Hit']
+topk: [10]# ================= 数据路径 =================
+data_path: ./dataset/
+dataset: MOOCCubeX_Paper   # ⚠️ 必须对应您预处理生成的文件夹名
+field_separator: "\t"
+USER_ID_FIELD: user_id
+ITEM_ID_FIELD: item_id
+# SGL 是图模型，不使用时间戳，所以不需要设置 TIME_FIELD
+
+# ================= 数据加载 =================
+load_col:
+    inter: [user_id, item_id] # SGL 只需要 ID，不需要 timestamp
+
+# ================= 过滤设置 =================
+# ⚠️ 关键：数据已经预处理过了，不要再过滤
+user_inter_num_interval: "[0,inf)"
+item_inter_num_interval: "[0,inf)"
+
+# ================= SGL 模型参数 =================
+embedding_size: 128        # 保持 128 维，为了和 SASRec 公平对比
+n_layers: 3                # 图卷积层数，通常 3 层效果最好
+type: ED                   # Edge Dropout (SGL 的默认增强方式)
+drop_ratio: 0.1            # 丢边比例
+ssl_tau: 0.5               # 对比学习温度系数
+ssl_weight: 0.1            # 对比学习损失的权重
+
+# ================= 训练参数 =================
+# SGL 计算量比 SASRec 大，且需要在 CPU 做图增强
+# 针对 10万条数据，512 或 1024 是比较合适的
+train_batch_size: 512
+learner: adam
+learning_rate: 0.001
+epochs: 50
+eval_step: 1
+stopping_step: 10
+
+# Windows 必须设为 0，否则报错。
+# 虽然慢点，但因为数据只有 10 万条，完全能接受。
+worker: 0
+
+# ================= 评估设置 =================
+# ⚠️ 注意：图模型通常使用【随机划分 (Random Split)】
+# 这也是您之前跑 BPR/LightGCN 用的设置，方便直接对比 BPR
+eval_args:
+    split: {'RS': [0.8, 0.1, 0.1]} # 80%训练, 10%验证, 10%测试
+    group_by: user
+    order: RO   # Random Ordering (随机顺序)
+    mode: full  # 全量排序
+
+metrics: ['Recall', 'MRR', 'NDCG', 'Hit']
+topk: [10]

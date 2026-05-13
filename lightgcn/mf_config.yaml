@@ -1,0 +1,91 @@
+## === 数据路径 ===
+#data_path: ../
+#dataset: MOOCCubeX
+#field_separator: "\t"
+#USER_ID_FIELD: user_id
+#ITEM_ID_FIELD: item_id
+## MF 是无时序的，所以不需要 timestamp，但如果你的 .inter 里有，它会自动忽略或兼容
+#load_col:
+#  inter: [ user_id, item_id ]
+#
+## === 数据过滤 (复用之前的成功配置) ===
+## 只保留交互大于等于 10 次的用户
+#user_inter_num_interval: "[10,inf)"
+#item_inter_num_interval: "[5,inf)"
+#
+## === 模型参数 (MF 只有 Embedding) ===
+#embedding_size: 128    # 经典的维度
+## 也可以尝试 128，看效果是否提升
+#
+## === 训练参数 ===
+#epochs: 50
+#train_batch_size: 4096  # MF 模型非常小，Batch Size 可以拉大，跑得飞快
+#learner: adam
+#learning_rate: 0.001
+#eval_step: 1
+#stopping_step: 10
+#
+## === 负采样设置 (关键) ===
+## MF/BPR 需要负采样来训练 (让正样本得分 > 负样本得分)
+## 这里设置每个正样本配 1 个负样本
+#train_neg_sample_args:
+#  distribution: 'uniform'
+#  sample_num: 1
+#  dynamic: False
+#  candidate_num: 0
+#
+## === 评估设置 ===
+#eval_args:
+#  split: { 'RS': [ 0.8, 0.1, 0.1 ] } # 随机划分：80%训练, 10%验证, 10%测试
+#  group_by: user
+#  order: RO      # Random Ordering (MF 不看时间，随机排序即可)
+#  mode: full     # 全量排序
+#
+#metrics: [ 'Recall', 'MRR', 'NDCG', 'Hit', 'Precision' ]
+#topk: [ 10 ]
+
+
+# ================= 数据路径 =================
+data_path: ./dataset/
+dataset: MOOCCubeX_Paper   # ⚠️ 必须对应您预处理生成的文件夹名
+field_separator: "\t"
+USER_ID_FIELD: user_id
+ITEM_ID_FIELD: item_id
+# MF 不需要时间戳
+
+# ================= 数据加载 =================
+load_col:
+    inter: [user_id, item_id]
+
+# ================= 过滤设置 =================
+# ⚠️ 关键：数据已预处理，设为 0 防止二次过滤
+user_inter_num_interval: "[0,inf)"
+item_inter_num_interval: "[0,inf)"
+
+# ================= MF (BPR) 模型参数 =================
+embedding_size: 128        # 保持 128 维，为了与 LightGCN/SASRec 公平对比
+# MF 模型结构很简单，只有 Embedding，没有 layer 配置
+
+# ================= 训练参数 =================
+# MF 计算非常快，显存占用极小
+train_batch_size: 512
+learner: adam
+learning_rate: 0.001
+epochs: 50
+eval_step: 1
+stopping_step: 10
+
+# ⚠️ Windows 必须设为 0
+worker: 0
+
+# ================= 评估设置 =================
+# ⚠️ 采用【随机划分 (Random Split)】
+# 这样可以和 LightGCN/SGL 直接横向对比
+eval_args:
+    split: {'RS': [0.8, 0.1, 0.1]} # 80%训练, 10%验证, 10%测试
+    group_by: user
+    order: RO   # Random Ordering
+    mode: full  # 全量排序
+
+metrics: ['Recall', 'MRR', 'NDCG', 'Hit']
+topk: [10]

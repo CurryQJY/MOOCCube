@@ -30,3 +30,55 @@ ablation_logs/
 *.bak
 *.encoding_backup
 
+# Experiment outputs (CSV/PNG/JSON results and intermediate artifacts)
+*.csv
+*.png
+*.jpg
+*.svg
+*.pdf
+!docs/**/*.svg
+!docs/**/*.png
+!docs/**/*.pdf
+!paper_wsdm/**/*.pdf
+results_mooccubex/
+outputs/
+output/
+tmp/
+
+# Large archives and scratch dumps
+*.zip
+*.rar
+*.tar
+*.tar.gz
+_tail.txt
+*_log.txt
+*_log_*.txt
+*midresult*.txt
+final_summary*.txt
+*_result.json
+*_results.json
+*_response.json
+
+# Camoufox / playwright / other binary deps
+install_camoufox.py
+engine.rar.zip
+
+# Data files (numpy arrays, RecBole interaction files, etc.)
+*.npy
+*.inter
+*.user
+*.item
+*.kg
+*.npz
+*.h5
+*.parquet
+
+# Generated PDFs from latex compilation
+paper_wsdm/*.pdf
+paper_wsdm/*.aux
+paper_wsdm/*.bbl
+paper_wsdm/*.blg
+paper_wsdm/*.out
+!paper_wsdm/sampleteaser.pdf
+!paper_wsdm/acmguide.pdf
+
