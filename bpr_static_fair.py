@@ -57,6 +57,15 @@ class Config:
         self.train_ratio = float(os.environ.get("BPR_STATIC_TRAIN_RATIO", "0.8"))
         self.val_ratio = float(os.environ.get("BPR_STATIC_VAL_RATIO", "0.1"))
 
+        # Best-epoch selection strategy: cold | hot | combined | weighted | last
+        # cold (default) -> back-compat: pick epoch with max val_full_cold_N@10
+        # combined        -> pick epoch with max (cold_N@10 + hot_N@10)
+        # weighted        -> pick epoch with max (alpha*cold + (1-alpha)*hot)
+        # hot             -> pick epoch with max val_full_hot_N@10
+        # last            -> always pick the last epoch (no early stop)
+        self.best_metric = os.environ.get("BASELINE_BEST_METRIC", "cold").strip().lower()
+        self.best_alpha = float(os.environ.get("BASELINE_BEST_ALPHA", "0.5"))
+
 
 class BPRMFModel(nn.Module):
     def __init__(self, cfg: Config):
@@ -120,7 +129,13 @@ def main():
     best_val = -1.0
     best_epoch = -1
     best_state = None
+    best_cold_at_best = float("nan")
+    best_hot_at_best = float("nan")
     k_list = [5, 10, 20]
+    print(
+        f"Best-epoch strategy: {cfg.best_metric}"
+        + (f" (alpha={cfg.best_alpha})" if cfg.best_metric == "weighted" else "")
+    )
 
     n_train = train_users_t.numel()
     for epoch in range(cfg.n_epochs):
@@ -156,6 +171,8 @@ def main():
 
         do_eval = ((epoch + 1) % cfg.eval_interval == 0) or (epoch + 1 == cfg.n_epochs)
         val_key = float("nan")
+        val_cold_n10 = float("nan")
+        val_hot_n10 = float("nan")
         if do_eval:
             model.eval()
             with torch.no_grad():
@@ -176,21 +193,63 @@ def main():
                     full_ranking=True,
                     user_seen_items=train_seen,
                 )
-                val_key = val_full_cold.get("N@10", 0.0) if val_full_cold else 0.0
+                val_cold_n10 = val_full_cold.get("N@10", 0.0) if val_full_cold else 0.0
+                # Also evaluate hot when best metric needs it (otherwise skip for speed)
+                if cfg.best_metric in {"hot", "combined", "weighted"}:
+                    val_full_hot, _ = evaluate_embedding_ranker(
+                        val_loader,
+                        device=device,
+                        n_items=cfg.n_items,
+                        cold_threshold=cfg.cold_threshold,
+                        get_user_vectors_fn=get_user_fn,
+                        all_item_vectors=all_i,
+                        k_list=k_list,
+                        n_neg=cfg.eval_n_neg,
+                        eval_type="hot",
+                        full_ranking=True,
+                        user_seen_items=train_seen,
+                    )
+                    val_hot_n10 = val_full_hot.get("N@10", 0.0) if val_full_hot else 0.0
+                # Compute val_key according to strategy
+                if cfg.best_metric == "cold":
+                    val_key = val_cold_n10
+                elif cfg.best_metric == "hot":
+                    val_key = val_hot_n10
+                elif cfg.best_metric == "combined":
+                    val_key = val_cold_n10 + val_hot_n10
+                elif cfg.best_metric == "weighted":
+                    val_key = cfg.best_alpha * val_cold_n10 + (1.0 - cfg.best_alpha) * val_hot_n10
+                elif cfg.best_metric == "last":
+                    # Strictly increasing key -> always picks the latest evaluated epoch
+                    val_key = float(epoch + 1)
+                else:
+                    val_key = val_cold_n10  # fallback
                 if val_key > best_val:
                     best_val = val_key
                     best_epoch = epoch + 1
                     best_state = copy.deepcopy(model.state_dict())
-            print(
-                f"Epoch [{epoch + 1}/{cfg.n_epochs}] loss={avg_loss:.4f} | "
-                f"val_full_cold_N@10={val_key:.4f}"
-            )
+                    best_cold_at_best = val_cold_n10
+                    best_hot_at_best = val_hot_n10
+            if cfg.best_metric in {"hot", "combined", "weighted"}:
+                print(
+                    f"Epoch [{epoch + 1}/{cfg.n_epochs}] loss={avg_loss:.4f} | "
+                    f"val_cold_N@10={val_cold_n10:.4f} | val_hot_N@10={val_hot_n10:.4f} | "
+                    f"val_key={val_key:.4f}"
+                )
+            else:
+                print(
+                    f"Epoch [{epoch + 1}/{cfg.n_epochs}] loss={avg_loss:.4f} | "
+                    f"val_full_cold_N@10={val_cold_n10:.4f}"
+                )
         else:
             print(f"Epoch [{epoch + 1}/{cfg.n_epochs}] loss={avg_loss:.4f}")
 
     if best_state is not None:
         model.load_state_dict(best_state)
-        print(f"Restore best epoch={best_epoch}, val_full_cold_N@10={best_val:.4f}")
+        print(
+            f"Restore best epoch={best_epoch} (metric={cfg.best_metric}, score={best_val:.4f}, "
+            f"cold@best={best_cold_at_best:.4f}, hot@best={best_hot_at_best:.4f})"
+        )
 
     model.eval()
     with torch.no_grad():
@@ -219,11 +278,23 @@ def main():
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
             user_seen_items=test_seen,
         )
+        full_cold_item_macro, n_fc_item_macro = evaluate_embedding_ranker(
+            test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
+            k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
+            user_seen_items=test_seen, average_mode="item_macro",
+        )
+        full_hot_item_macro, n_fh_item_macro = evaluate_embedding_ranker(
+            test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
+            k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
+            user_seen_items=test_seen, average_mode="item_macro",
+        )
 
     sample_cold = sample_cold or {}
     sample_hot = sample_hot or {}
     full_cold = full_cold or {}
     full_hot = full_hot or {}
+    full_cold_item_macro = full_cold_item_macro or {}
+    full_hot_item_macro = full_hot_item_macro or {}
     metrics_keys = [f"{m}@{k}" for m in ["R", "N"] for k in k_list]
 
     print_final_report(
@@ -241,16 +312,29 @@ def main():
     )
 
     out = {
+        "model": "BPR",
+        "protocol": "static_item_cold",
         "sample_cold": sample_cold,
         "sample_hot": sample_hot,
         "full_cold": full_cold,
         "full_hot": full_hot,
+        "full_cold_item_macro": full_cold_item_macro,
+        "full_hot_item_macro": full_hot_item_macro,
         "count_sample_cold": n_sc,
         "count_sample_hot": n_sh,
         "count_full_cold": n_fc,
         "count_full_hot": n_fh,
+        "count_full_cold_item_macro": n_fc_item_macro,
+        "count_full_hot_item_macro": n_fh_item_macro,
         "best_epoch": best_epoch,
-        "best_val_full_cold_n10": best_val,
+        "best_val_full_cold_n10": best_cold_at_best if cfg.best_metric != "cold" else best_val,
+        "best_metric": cfg.best_metric,
+        "best_alpha": cfg.best_alpha if cfg.best_metric == "weighted" else None,
+        "best_score": best_val,
+        "best_cold_n10_at_best_epoch": best_cold_at_best,
+        "best_hot_n10_at_best_epoch": best_hot_at_best,
+        "eval_n_neg": cfg.eval_n_neg,
+        "static_seed": cfg.static_seed,
     }
     result_path = static_result_path("bpr_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)

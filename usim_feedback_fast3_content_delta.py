@@ -210,12 +210,33 @@ class BaseConfig:
         self.hidden_dim = 256
         self.content_dim = content_dim
         self.use_content_delta = os.environ.get("USIM_USE_CONTENT_DELTA", "1") == "1"
+        self.content_delta_paper_style = os.environ.get("USIM_CONTENT_DELTA_PAPER_STYLE", "0") == "1"
+        self.content_delta_replace_item = os.environ.get(
+            "USIM_CONTENT_DELTA_REPLACE_ITEM",
+            "1" if self.content_delta_paper_style else "0",
+        ) == "1"
         self.content_delta_max_norm = float(
             os.environ.get("USIM_CONTENT_DELTA_MAX_NORM", os.environ.get("USIM_CONTENT_DELTA_MAX", "0.5"))
         )
         self.content_delta_cold_only = os.environ.get("USIM_CONTENT_DELTA_COLD_ONLY", "0") == "1"
         self.content_delta_normalize_base = os.environ.get("USIM_CONTENT_DELTA_NORMALIZE_BASE", "1") == "1"
         self.content_delta_normalize_output = os.environ.get("USIM_CONTENT_DELTA_NORMALIZE_OUTPUT", "1") == "1"
+        self.content_delta_mode = os.environ.get("USIM_CONTENT_DELTA_MODE", "embedding").strip().lower()
+        if self.content_delta_mode in {"mlp", "content", "content_projector"}:
+            self.content_delta_mode = "projector"
+        if self.content_delta_mode not in {"embedding", "projector", "hybrid"}:
+            raise ValueError(
+                "USIM_CONTENT_DELTA_MODE must be one of: embedding, projector, hybrid"
+            )
+        self.content_delta_projector_hidden = int(
+            os.environ.get("USIM_CONTENT_DELTA_PROJECTOR_HIDDEN", str(self.hidden_dim))
+        )
+        self.content_delta_train_on_id_dropout = (
+            os.environ.get("USIM_CONTENT_DELTA_TRAIN_ON_ID_DROPOUT", "1") == "1"
+        )
+        self.content_delta_only_after_epoch = int(
+            os.environ.get("USIM_CONTENT_DELTA_ONLY_AFTER_EPOCH", "0")
+        )
         self.content_delta_scale = float(os.environ.get("USIM_CONTENT_DELTA_SCALE", "0.25"))
         self.content_delta_aux_mode = os.environ.get("USIM_CONTENT_DELTA_AUX_MODE", "base").strip().lower()
         self.content_delta_l2_weight = float(os.environ.get("USIM_CONTENT_DELTA_L2_W", "0.02"))
@@ -231,8 +252,23 @@ class BaseConfig:
         self.temp = 0.07
         self.margin = 0.15
         self.dropout_prob = 0.35
-        self.aux_weight = 0.3
+        self.aux_weight = float(os.environ.get("USIM_AUX_WEIGHT", "0.3"))
+        # ROLLBACK FLAG (USIM_AUX_HOT_ONLY): when "1", restrict the id<->content
+        # auxiliary InfoNCE to hot rows only. Cold rows have under-trained
+        # `id_e_true` and inject noise into content_e gradient. Default "0"
+        # preserves legacy behavior; set "1" together with the cold-start patch
+        # rollout. See _compute_aux_loss for the actual branching.
+        self.aux_hot_only = os.environ.get("USIM_AUX_HOT_ONLY", "0") == "1"
         self.train_force_cold = os.environ.get("USIM_TRAIN_FORCE_COLD", "1") == "1"
+        self.use_pseudo_cold_train = os.environ.get("USIM_USE_PSEUDO_COLD_TRAIN", "0") == "1"
+        self.pseudo_cold_ratio = float(os.environ.get("USIM_PSEUDO_COLD_RATIO", "0.30"))
+        self.pseudo_cold_ratio = min(1.0, max(0.0, self.pseudo_cold_ratio))
+        self.pseudo_cold_min_pop = int(os.environ.get("USIM_PSEUDO_COLD_MIN_POP", "5"))
+        self.pseudo_cold_mode = os.environ.get("USIM_PSEUDO_COLD_MODE", "batch_random").strip().lower()
+        if self.pseudo_cold_mode not in {"batch_random", "batch_tail", "all_eligible", "none", "off"}:
+            raise ValueError(
+                "USIM_PSEUDO_COLD_MODE must be one of: batch_random, batch_tail, all_eligible, none, off"
+            )
         self.disable_llm_score = os.environ.get("USIM_DISABLE_LLM_SCORE", "0") == "1"
         self.llm_safe_mode = os.environ.get("USIM_LLM_SAFE_MODE", "0") == "1"
         self.llm_weight = float(
@@ -265,7 +301,10 @@ class BaseConfig:
         self.batch_size = int(os.environ.get("USIM_BATCH_SIZE", "2048"))
         self.accum_steps = 1
         self.eval_n_neg = int(os.environ.get("USIM_EVAL_N_NEG", "200"))
-        self.run_sampled_eval = os.environ.get("USIM_RUN_SAMPLED_EVAL", "1") == "1"
+        # Sampled (1+N_neg) eval is no longer the headline metric; final tables
+        # report full ranking (item-macro). Default flipped to "0" to save eval
+        # time. Set USIM_RUN_SAMPLED_EVAL=1 to restore legacy 1+200 sampled eval.
+        self.run_sampled_eval = os.environ.get("USIM_RUN_SAMPLED_EVAL", "0") == "1"
         self.use_mixed_hard_neg = True
         self.train_num_negs = 32
         self.hard_neg_ratio = 0.25
@@ -306,6 +345,21 @@ class BaseConfig:
         self.early_stop_k = 10
         self.early_stop_patience = int(os.environ.get("USIM_EARLY_STOP_PATIENCE", "1"))
         self.early_stop_min_delta = float(os.environ.get("USIM_EARLY_STOP_MIN_DELTA", "1e-4"))
+        self.early_stop_average_mode = os.environ.get("USIM_EARLY_STOP_AVG_MODE", "interaction").strip().lower()
+        if self.early_stop_average_mode not in {"interaction", "item_macro"}:
+            raise ValueError("USIM_EARLY_STOP_AVG_MODE must be 'interaction' or 'item_macro'")
+        # ROLLBACK FLAG (USIM_EARLY_STOP_SCORE_MODE): how cold/hot N@k are
+        # combined into the early-stop score. "cold_only" (default) is the
+        # legacy behavior. "geometric" / "harmonic" / "sum" let hot pull the
+        # selector back when cold gains stop translating into hot improvement.
+        # See _compute_early_stop_score for the formulas.
+        self.early_stop_score_mode = os.environ.get(
+            "USIM_EARLY_STOP_SCORE_MODE", "cold_only"
+        ).strip().lower()
+        if self.early_stop_score_mode not in {"cold_only", "geometric", "harmonic", "sum"}:
+            raise ValueError(
+                "USIM_EARLY_STOP_SCORE_MODE must be one of: cold_only, geometric, harmonic, sum"
+            )
         self.early_stop_hot_r10_drop_tol = 0.03
         self.legacy_train_protocol = os.environ.get("USIM_LEGACY_TRAIN_PROTOCOL", "0") == "1"
 
@@ -340,6 +394,30 @@ class SimpleAC(nn.Module):
 
 
 class PAM_RL_Pure_USIM(nn.Module):
+    @staticmethod
+    def _build_paper_content_base(content_emb, emb_dim):
+        """Frozen standardized-PCA content base used by the paper-style delta path."""
+        with torch.no_grad():
+            x = content_emb.detach().float().cpu()
+            x = torch.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
+            mean = x.mean(dim=0, keepdim=True)
+            std = x.std(dim=0, unbiased=False, keepdim=True).clamp_min(1e-6)
+            x = (x - mean) / std
+            x = x - x.mean(dim=0, keepdim=True)
+            try:
+                _, _, vh = torch.linalg.svd(x, full_matrices=False)
+            except RuntimeError:
+                # SVD is deterministic and preferred here, but low-rank PCA is
+                # a robust fallback on older BLAS/CUDA stacks.
+                _, _, vh = torch.pca_lowrank(x, q=min(emb_dim, min(x.shape) - 1), center=False)
+                vh = vh.t()
+            rank = min(int(emb_dim), int(vh.size(0)))
+            z = torch.matmul(x, vh[:rank].t())
+            if rank < int(emb_dim):
+                pad = torch.zeros((z.size(0), int(emb_dim) - rank), dtype=z.dtype)
+                z = torch.cat([z, pad], dim=1)
+            return F.normalize(z, dim=1)
+
     def __init__(self, config, content_emb):
         super().__init__()
         self.cfg = config
@@ -359,9 +437,32 @@ class PAM_RL_Pure_USIM(nn.Module):
             nn.Linear(config.hidden_dim, config.emb_dim),
             nn.LayerNorm(config.emb_dim),
         )
+        self.paper_item_con_emb = None
+        if getattr(config, "content_delta_paper_style", False):
+            paper_content = self._build_paper_content_base(content_emb, config.emb_dim)
+            self.paper_item_con_emb = nn.Embedding.from_pretrained(paper_content, freeze=True)
         self.content_delta = nn.Embedding(config.n_items, config.emb_dim)
         nn.init.zeros_(self.content_delta.weight)
-        self.content_delta.weight.requires_grad = bool(getattr(config, "use_content_delta", False))
+        delta_mode = str(getattr(config, "content_delta_mode", "embedding")).strip().lower()
+        use_delta = bool(getattr(config, "use_content_delta", False))
+        self.content_delta.weight.requires_grad = use_delta and delta_mode in {"embedding", "hybrid"}
+        delta_hidden = int(getattr(config, "content_delta_projector_hidden", config.hidden_dim))
+        self.content_delta_projector = nn.Sequential(
+            nn.LayerNorm(config.emb_dim),
+            nn.Linear(config.emb_dim, delta_hidden),
+            nn.GELU(),
+            nn.Linear(delta_hidden, config.emb_dim),
+        )
+        for module in self.content_delta_projector:
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_normal_(module.weight)
+                nn.init.zeros_(module.bias)
+        last_delta_layer = self.content_delta_projector[-1]
+        if isinstance(last_delta_layer, nn.Linear):
+            nn.init.zeros_(last_delta_layer.weight)
+            nn.init.zeros_(last_delta_layer.bias)
+        for param in self.content_delta_projector.parameters():
+            param.requires_grad = use_delta and delta_mode in {"projector", "hybrid"}
         self.user_proj = nn.Sequential(
             nn.Linear(config.emb_dim, config.hidden_dim),
             nn.GELU(),
@@ -380,6 +481,47 @@ class PAM_RL_Pure_USIM(nn.Module):
         self.item_concept_overlap = None
         self.item_video_contain = None
         self.item_same_family = None
+        self.user_seen_index = None
+
+    @torch.no_grad()
+    def set_user_seen_index(self, user_seen_items):
+        """Pre-build a dense (n_users, n_items) bool tensor on device.
+
+        This eliminates per-batch Python loops in `_build_seen_mat`,
+        `_build_known_positive_batch_mask`, `apply_course_rerank`, and the
+        `evaluate_usim` full-ranking seen-mask, providing a major speedup.
+        Memory: n_users * n_items bytes (e.g., 199199 * 698 ≈ 139 MB).
+        Pass `None` to clear (falls back to legacy per-batch construction).
+        """
+        if user_seen_items is None:
+            self.user_seen_index = None
+            return
+        n_users = self.cfg.n_users
+        n_items = self.cfg.n_items
+        rows = []
+        cols = []
+        for uid, items in user_seen_items.items():
+            u = int(uid)
+            if u < 0 or u >= n_users:
+                continue
+            for it in items:
+                i = int(it)
+                if 0 <= i < n_items:
+                    rows.append(u)
+                    cols.append(i)
+        mat = torch.zeros((n_users, n_items), dtype=torch.bool, device=self.device)
+        if rows:
+            rows_t = torch.tensor(rows, dtype=torch.long, device=self.device)
+            cols_t = torch.tensor(cols, dtype=torch.long, device=self.device)
+            mat[rows_t, cols_t] = True
+        self.user_seen_index = mat
+
+    def _resolve_user_id_tensor(self, user_ids):
+        if isinstance(user_ids, torch.Tensor):
+            return user_ids.to(self.device).long().view(-1)
+        return torch.as_tensor(
+            [int(x) for x in user_ids], dtype=torch.long, device=self.device
+        )
 
     def set_course_artifacts(self, artifacts):
         if not artifacts:
@@ -454,11 +596,16 @@ class PAM_RL_Pure_USIM(nn.Module):
         batch_size = scores.size(0)
         if batch_size < 1:
             return scores
-        seen_mat = torch.zeros((batch_size, self.cfg.n_items), dtype=torch.float, device=self.device)
-        for row, uid in enumerate(user_ids):
-            seen_idx = seen_tensor_cache.get(int(uid))
-            if seen_idx is not None and seen_idx.numel() > 0:
-                seen_mat[row, seen_idx] = 1.0
+        seen_index = getattr(self, "user_seen_index", None)
+        if seen_index is not None:
+            uid_t = self._resolve_user_id_tensor(user_ids)
+            seen_mat = seen_index.index_select(0, uid_t).float()
+        else:
+            seen_mat = torch.zeros((batch_size, self.cfg.n_items), dtype=torch.float, device=self.device)
+            for row, uid in enumerate(user_ids):
+                seen_idx = seen_tensor_cache.get(int(uid))
+                if seen_idx is not None and seen_idx.numel() > 0:
+                    seen_mat[row, seen_idx] = 1.0
         prereq_seen = torch.matmul(seen_mat, self.item_prereq_item_mat.t())
         prereq_cnt = self.item_prereq_item_cnt.unsqueeze(0)
         has_prereq = prereq_cnt > 0
@@ -475,7 +622,7 @@ class PAM_RL_Pure_USIM(nn.Module):
             user_mask = (seen_cnt_raw >= float(self.cfg.rerank_min_seen)).float()
         row_mask = torch.ones_like(seen_cnt_raw)
         if target_pop is not None and getattr(self.cfg, "rerank_only_cold", False):
-            row_mask = (target_pop.view(-1, 1) < float(self.cfg.cold_threshold)).float()
+            row_mask = self._cold_mask_from_pop(target_pop).float().view(-1, 1)
         active_mask = user_mask * row_mask
         if active_mask.sum().item() < 1:
             return scores
@@ -497,6 +644,51 @@ class PAM_RL_Pure_USIM(nn.Module):
             cand_adjust = cand_adjust.masked_fill(~top_mask, 0.0)
         return scores + cand_adjust
 
+    def _cold_mask_from_pop(self, pop):
+        if pop is None:
+            return None
+        return pop.to(device=self.device).float().view(-1) < float(self.cfg.cold_threshold)
+
+    def _effective_train_cold_mask(self, pop):
+        true_cold = self._cold_mask_from_pop(pop)
+        if true_cold is None:
+            return None
+        if (
+            not self.training
+            or not getattr(self.cfg, "use_pseudo_cold_train", False)
+            or float(getattr(self.cfg, "pseudo_cold_ratio", 0.0)) <= 0.0
+        ):
+            return true_cold
+
+        mode = str(getattr(self.cfg, "pseudo_cold_mode", "batch_random")).strip().lower()
+        if mode in {"none", "off"}:
+            return true_cold
+
+        pop_f = pop.to(device=self.device).float().view(-1)
+        min_pop = float(max(1, int(getattr(self.cfg, "pseudo_cold_min_pop", 1))))
+        eligible = (~true_cold) & (pop_f >= min_pop)
+        n_eligible = int(eligible.sum().detach().item())
+        if n_eligible < 1:
+            return true_cold
+
+        ratio = float(getattr(self.cfg, "pseudo_cold_ratio", 0.0))
+        target_n = n_eligible if mode == "all_eligible" else int(math.ceil(n_eligible * ratio))
+        target_n = max(1, min(n_eligible, target_n))
+
+        pseudo_cold = torch.zeros_like(true_cold)
+        if mode == "batch_tail":
+            scores = (-pop_f).masked_fill(~eligible, -float("inf"))
+        else:
+            scores = torch.rand_like(pop_f).masked_fill(~eligible, -1.0)
+        _, chosen = torch.topk(scores, k=target_n, dim=0)
+        pseudo_cold[chosen] = True
+        return true_cold | pseudo_cold
+
+    def _target_pop_with_effective_cold(self, pop, effective_cold):
+        if pop is None or effective_cold is None:
+            return pop
+        return torch.where(effective_cold.to(device=pop.device).view(-1), torch.zeros_like(pop), pop)
+
     def _content_delta_active_mask(self, i_idx, force_cold):
         batch_size = int(i_idx.size(0))
         active = torch.ones((batch_size, 1), dtype=torch.float32, device=i_idx.device)
@@ -511,6 +703,36 @@ class PAM_RL_Pure_USIM(nn.Module):
             return active
         return torch.zeros_like(active)
 
+    def _raw_content_delta(self, base_e, i_idx):
+        mode = str(getattr(self.cfg, "content_delta_mode", "embedding")).strip().lower()
+        pieces = []
+        if mode in {"embedding", "hybrid"}:
+            pieces.append(self.content_delta(i_idx))
+        if mode in {"projector", "hybrid"}:
+            pieces.append(self.content_delta_projector(base_e))
+        if not pieces:
+            return torch.zeros_like(base_e)
+        delta = pieces[0]
+        for piece in pieces[1:]:
+            delta = delta + piece
+        return delta
+
+    def _content_base_embedding(self, i_idx):
+        if getattr(self.cfg, "content_delta_paper_style", False):
+            if self.paper_item_con_emb is None:
+                raise RuntimeError("Paper-style ContentDelta requested but frozen content base is missing.")
+            return self.paper_item_con_emb(i_idx)
+        return self.content_proj(self.item_con_emb(i_idx))
+
+    def _all_content_delta_vectors(self, detach_base=False):
+        item_idx = torch.arange(self.cfg.n_items, device=self.item_id_emb.weight.device)
+        base_e = self._content_base_embedding(item_idx)
+        if getattr(self.cfg, "content_delta_normalize_base", True):
+            base_e = F.normalize(base_e, dim=1)
+        if detach_base:
+            base_e = base_e.detach()
+        return self._raw_content_delta(base_e, item_idx)
+
     def _apply_content_delta(self, content_e, i_idx, force_cold=False):
         base_e = content_e
         if getattr(self.cfg, "content_delta_normalize_base", True):
@@ -519,7 +741,7 @@ class PAM_RL_Pure_USIM(nn.Module):
             if getattr(self.cfg, "content_delta_normalize_output", True):
                 return F.normalize(base_e, dim=1)
             return base_e
-        delta = self.content_delta(i_idx)
+        delta = self._raw_content_delta(base_e, i_idx)
         max_norm = float(getattr(self.cfg, "content_delta_max_norm", 0.5))
         if max_norm >= 0.0:
             delta_norm = delta.norm(dim=1, keepdim=True).clamp_min(1e-12)
@@ -535,6 +757,9 @@ class PAM_RL_Pure_USIM(nn.Module):
     def clip_content_delta_(self):
         if not getattr(self.cfg, "use_content_delta", False):
             return
+        mode = str(getattr(self.cfg, "content_delta_mode", "embedding")).strip().lower()
+        if mode not in {"embedding", "hybrid"}:
+            return
         max_norm = float(getattr(self.cfg, "content_delta_max_norm", 0.5))
         if max_norm < 0.0:
             return
@@ -546,7 +771,13 @@ class PAM_RL_Pure_USIM(nn.Module):
     def content_delta_stats(self):
         if not getattr(self.cfg, "use_content_delta", False):
             return None
-        norms = self.content_delta.weight.detach().norm(dim=1)
+        was_training = self.training
+        self.eval()
+        try:
+            delta = self._all_content_delta_vectors(detach_base=True).detach()
+        finally:
+            self.train(was_training)
+        norms = delta.norm(dim=1)
         max_norm = float(getattr(self.cfg, "content_delta_max_norm", 0.5))
         if max_norm > 0.0:
             clipped_ratio = (norms >= max_norm * 0.999).float().mean().item()
@@ -563,14 +794,14 @@ class PAM_RL_Pure_USIM(nn.Module):
         }
 
     def content_delta_regularization(self):
-        zero = self.content_delta.weight.new_zeros(())
+        zero = self.item_id_emb.weight.new_zeros(())
         if not getattr(self.cfg, "use_content_delta", False):
             return zero
-        if not self.content_delta.weight.requires_grad:
+        if not any(p.requires_grad for p in self.content_delta_trainable_parameters()):
             return zero
         max_norm = float(getattr(self.cfg, "content_delta_max_norm", 0.5))
         denom = max(max_norm, 1e-6) if max_norm > 0.0 else 1.0
-        norm_ratio = self.content_delta.weight.norm(dim=1) / denom
+        norm_ratio = self._all_content_delta_vectors(detach_base=True).norm(dim=1) / denom
         reg = zero
         l2_weight = float(getattr(self.cfg, "content_delta_l2_weight", 0.0))
         if l2_weight > 0.0:
@@ -581,6 +812,22 @@ class PAM_RL_Pure_USIM(nn.Module):
             cap_margin = min(0.99, max(0.0, cap_margin))
             reg = reg + cap_weight * F.relu(norm_ratio - cap_margin).pow(2).mean()
         return reg
+
+    def content_delta_trainable_parameters(self):
+        params = []
+        if getattr(self.content_delta.weight, "requires_grad", False):
+            params.append(self.content_delta.weight)
+        params.extend([p for p in self.content_delta_projector.parameters() if p.requires_grad])
+        return params
+
+    def enable_delta_only_training_(self):
+        delta_params = self.content_delta_trainable_parameters()
+        if not delta_params:
+            raise RuntimeError("Content delta-only training requested, but no delta parameters are trainable.")
+        delta_param_ids = {id(p) for p in delta_params}
+        for param in self.parameters():
+            param.requires_grad = id(param) in delta_param_ids
+        return delta_params
 
     def get_item_vector(self, i_idx, llm_s, force_cold=False, disable_id_dropout=False):
         id_e_true = self.item_id_emb(i_idx)
@@ -599,8 +846,11 @@ class PAM_RL_Pure_USIM(nn.Module):
             mask_id = mask_id | dropout_mask
         if mask_id.any():
             id_e = torch.where(mask_id, torch.zeros_like(id_e), id_e)
-        content_base_e = self.content_proj(self.item_con_emb(i_idx))
-        content_e = self._apply_content_delta(content_base_e, i_idx, force_cold=force_cold)
+        content_base_e = self._content_base_embedding(i_idx)
+        delta_force_cold = force_cold
+        if self.training and getattr(self.cfg, "content_delta_train_on_id_dropout", False):
+            delta_force_cold = mask_id.view(-1)
+        content_e = self._apply_content_delta(content_base_e, i_idx, force_cold=delta_force_cold)
         llm_weight = float(getattr(self.cfg, "llm_weight", 0.0))
         if not getattr(self.cfg, "disable_llm_score", False) and llm_weight > 0.0:
             mask_llm = (llm_s > -0.5).float().unsqueeze(1)
@@ -626,8 +876,11 @@ class PAM_RL_Pure_USIM(nn.Module):
                 llm_e = self.llm_proj(val_llm)
             llm_e = llm_e * mask_llm
             content_e = content_e + llm_weight * llm_e
-        alpha = self.gate_net(torch.cat([id_e, content_e], dim=-1))
-        item_fused = alpha * id_e + (1 - alpha) * content_e
+        if getattr(self.cfg, "content_delta_replace_item", False):
+            item_fused = content_e
+        else:
+            alpha = self.gate_net(torch.cat([id_e, content_e], dim=-1))
+            item_fused = alpha * id_e + (1 - alpha) * content_e
         aux_mode = str(getattr(self.cfg, "content_delta_aux_mode", "base")).strip().lower()
         aux_content_e = content_base_e if aux_mode in {"base", "raw", "no_delta"} else content_e
         return item_fused, id_e_true, aux_content_e
@@ -642,6 +895,7 @@ class FeedbackConfig(BaseConfig):
         self.reward_gain_clip = float(os.environ.get("USIM_FB_REWARD_GAIN_CLIP", "0.05"))
         self.reward_dup_penalty_weight = float(os.environ.get("USIM_FB_REWARD_DUP_W", "0.50"))
         self.reward_cov_bonus_weight = float(os.environ.get("USIM_FB_REWARD_COV_W", "0.00"))
+        self.use_course_reward = os.environ.get("USIM_USE_COURSE_REWARD", "1") == "1"
         self.feedback_course_only_cold = os.environ.get("USIM_FB_COURSE_ONLY_COLD", "1") == "1"
         self.feedback_course_warm_seen = int(os.environ.get("USIM_FB_COURSE_WARM_SEEN", "5"))
         self.feedback_course_concept_min = float(os.environ.get("USIM_FB_COURSE_CONCEPT_MIN", "0.12"))
@@ -912,6 +1166,10 @@ def _save_final_report_exports(
     full_cold_count,
     full_hot_count,
     model_name="USIM-Feedback-FAST3-ContentDelta",
+    full_cold_item_macro=None,
+    full_hot_item_macro=None,
+    full_cold_item_macro_count=0,
+    full_hot_item_macro_count=0,
 ):
     suffix = "" if protocol == "stream" else f"_{protocol}"
     detail_path = _feedback_output_path(f"final_report_usim_feedback_fast3_content_delta{suffix}.csv")
@@ -926,6 +1184,14 @@ def _save_final_report_exports(
                 "sampled_hot": float(sampled_hot.get(key, 0.0)) if sampled_hot_count > 0 else None,
                 "full_cold": float(full_cold.get(key, 0.0)),
                 "full_hot": float(full_hot.get(key, 0.0)),
+                "full_cold_item_macro": (
+                    float((full_cold_item_macro or {}).get(key, 0.0))
+                    if full_cold_item_macro_count > 0 else None
+                ),
+                "full_hot_item_macro": (
+                    float((full_hot_item_macro or {}).get(key, 0.0))
+                    if full_hot_item_macro_count > 0 else None
+                ),
             }
         )
     pd.DataFrame(detail_rows).to_csv(detail_path, index=False)
@@ -945,10 +1211,24 @@ def _save_final_report_exports(
         "full_hot_n5": float(full_hot.get("N@5", 0.0)),
         "full_hot_n10": float(full_hot.get("N@10", 0.0)),
         "full_hot_n20": float(full_hot.get("N@20", 0.0)),
+        "full_cold_item_macro_r5": float((full_cold_item_macro or {}).get("R@5", 0.0)),
+        "full_cold_item_macro_r10": float((full_cold_item_macro or {}).get("R@10", 0.0)),
+        "full_cold_item_macro_r20": float((full_cold_item_macro or {}).get("R@20", 0.0)),
+        "full_cold_item_macro_n5": float((full_cold_item_macro or {}).get("N@5", 0.0)),
+        "full_cold_item_macro_n10": float((full_cold_item_macro or {}).get("N@10", 0.0)),
+        "full_cold_item_macro_n20": float((full_cold_item_macro or {}).get("N@20", 0.0)),
+        "full_hot_item_macro_r5": float((full_hot_item_macro or {}).get("R@5", 0.0)),
+        "full_hot_item_macro_r10": float((full_hot_item_macro or {}).get("R@10", 0.0)),
+        "full_hot_item_macro_r20": float((full_hot_item_macro or {}).get("R@20", 0.0)),
+        "full_hot_item_macro_n5": float((full_hot_item_macro or {}).get("N@5", 0.0)),
+        "full_hot_item_macro_n10": float((full_hot_item_macro or {}).get("N@10", 0.0)),
+        "full_hot_item_macro_n20": float((full_hot_item_macro or {}).get("N@20", 0.0)),
         "sampled_cold_count": int(sampled_cold_count),
         "sampled_hot_count": int(sampled_hot_count),
         "full_cold_count": int(full_cold_count),
         "full_hot_count": int(full_hot_count),
+        "full_cold_item_macro_count": int(full_cold_item_macro_count),
+        "full_hot_item_macro_count": int(full_hot_item_macro_count),
         "notes": f"auto-exported from {model_name} ({protocol})",
     }
     pd.DataFrame([fullrank_row]).to_csv(fullrank_path, index=False)
@@ -1022,7 +1302,55 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         self.item_popularity_cpu = pop.detach().cpu()
         self.item_difficulty = difficulty.clamp(0.0, 1.0)
 
+    def _compute_aux_loss(self, id_e_true, content_e, effective_cold):
+        """Auxiliary InfoNCE between ID and content towers (id_e_true <-> content_e).
+
+        Two paths controlled by `cfg.aux_hot_only` (env: `USIM_AUX_HOT_ONLY`):
+
+        - aux_hot_only=False (default, legacy): InfoNCE over the full batch.
+          Identical to the pre-refactor implementation.
+        - aux_hot_only=True: restrict the InfoNCE to hot rows only. For cold
+          items, `id_e_true` is rarely observed during training, so the diagonal
+          alignment signal is mostly noise; this branch removes that gradient
+          channel without affecting hot rows.
+
+        Returns a scalar tensor on the same device as `id_e_true`. When the
+        hot-only branch finds <2 hot rows in the batch, returns a 0 scalar
+        (need at least 2 rows for cross-entropy).
+        """
+        aux_hot_only = bool(getattr(self.cfg, "aux_hot_only", False))
+        if not aux_hot_only or effective_cold is None:
+            # Legacy path: bit-identical to the original block in forward().
+            z_id = F.normalize(id_e_true, dim=1)
+            z_con = F.normalize(content_e, dim=1)
+            labels = torch.arange(z_id.size(0), device=z_id.device)
+            sim = torch.matmul(z_id, z_con.t()) / self.cfg.temp
+            return (F.cross_entropy(sim, labels) + F.cross_entropy(sim.t(), labels)) / 2
+
+        hot_mask = ~effective_cold.to(device=id_e_true.device).view(-1)
+        n_hot = int(hot_mask.sum().item())
+        if n_hot < 2:
+            # Connect the zero scalar to id_e_true so the returned tensor
+            # carries a grad_fn even when this branch contributes nothing.
+            # This prevents `loss.backward()` from raising when the aux term
+            # is the only loss path (matters for unit tests; harmless in the
+            # full forward where main_loss already drives the graph).
+            return (id_e_true.sum() * 0.0) + (content_e.sum() * 0.0)
+        hot_idx = hot_mask.nonzero(as_tuple=False).view(-1)
+        z_id = F.normalize(id_e_true.index_select(0, hot_idx), dim=1)
+        z_con = F.normalize(content_e.index_select(0, hot_idx), dim=1)
+        labels = torch.arange(n_hot, device=z_id.device)
+        sim = torch.matmul(z_id, z_con.t()) / self.cfg.temp
+        return (F.cross_entropy(sim, labels) + F.cross_entropy(sim.t(), labels)) / 2
+
     def _build_seen_mat(self, user_ids, user_seen_items):
+        # Fast path: use precomputed (n_users, n_items) bool index if available.
+        seen_index = getattr(self, "user_seen_index", None)
+        if seen_index is not None:
+            uid_t = self._resolve_user_id_tensor(user_ids)
+            seen_mat = seen_index.index_select(0, uid_t).float()
+            return seen_mat, seen_mat.sum(dim=1, keepdim=True)
+        # Fallback: legacy per-batch construction (kept for safety / online updates).
         if isinstance(user_ids, torch.Tensor):
             user_ids = user_ids.detach().cpu().tolist()
         else:
@@ -1046,6 +1374,10 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         return seen_mat, seen_mat.sum(dim=1, keepdim=True)
 
     def _build_known_positive_batch_mask(self, user_ids, item_idx, user_seen_items):
+        seen_index = getattr(self, "user_seen_index", None)
+        if seen_index is not None:
+            uid_t = self._resolve_user_id_tensor(user_ids)
+            return seen_index.index_select(0, uid_t)[:, item_idx]
         if user_seen_items is None:
             return None
         seen_mat, _ = self._build_seen_mat(user_ids, user_seen_items)
@@ -1116,7 +1448,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
 
         active = torch.ones((batch_size, 1), dtype=torch.float32, device=self.device)
         if self.cfg.feedback_course_only_cold and target_pop is not None:
-            active = (target_pop.view(-1, 1) < float(self.cfg.cold_threshold)).float()
+            active = self._cold_mask_from_pop(target_pop).float().view(-1, 1)
 
         batch_idx = torch.arange(batch_size, device=self.device)
         seen_active = (seen_cnt_raw >= 1.0).float()
@@ -1162,7 +1494,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             return zero
 
         if self.cfg.feedback_course_sample_only_cold and target_pop is not None:
-            active = (target_pop.view(-1, 1) < float(self.cfg.cold_threshold)).float()
+            active = self._cold_mask_from_pop(target_pop).float().view(-1, 1)
         else:
             active = torch.ones((batch_size, 1), dtype=torch.float32, device=self.device)
 
@@ -1437,9 +1769,11 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
 
     def forward(self, batch, pop, llm_s, user_bank_raw=None, user_seen_items=None):
         u, i = batch["u"], batch["i"]
-        is_cold = pop < self.cfg.cold_threshold
+        is_cold = self._cold_mask_from_pop(pop)
+        effective_cold = self._effective_train_cold_mask(pop)
+        episode_pop = self._target_pop_with_effective_cold(pop, effective_cold)
         z_u_base = self.user_proj(self.user_emb(u))
-        force_cold_mask = is_cold if self.cfg.train_force_cold else False
+        force_cold_mask = effective_cold if self.cfg.train_force_cold else False
         z_i_base, id_e_true, content_e = self.get_item_vector(i, llm_s, force_cold=force_cold_mask)
         target_emb = z_i_base.detach().clone()
         final_h, trajectory, candidate_stats = self.run_usim_episode(
@@ -1447,8 +1781,16 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             target_emb,
             user_bank_raw=user_bank_raw,
             item_idx=i,
-            target_pop=pop,
+            target_pop=episode_pop,
             user_seen_items=user_seen_items,
+        )
+        pseudo_cold_mask = effective_cold & (~is_cold)
+        candidate_stats["pseudo_cold_count"] = int(pseudo_cold_mask.sum().detach().item())
+        candidate_stats["pseudo_cold_ratio"] = (
+            float(pseudo_cold_mask.float().mean().detach().item()) if pseudo_cold_mask.numel() > 0 else 0.0
+        )
+        candidate_stats["effective_cold_ratio"] = (
+            float(effective_cold.float().mean().detach().item()) if effective_cold.numel() > 0 else 0.0
         )
         ppo_loss = self.compute_ppo_loss(trajectory)
         z_u = F.normalize(z_u_base, dim=1)
@@ -1545,10 +1887,11 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
                 i,
                 user_seen_items,
             )
-        z_id = F.normalize(id_e_true, dim=1)
-        z_con = F.normalize(content_e, dim=1)
-        sim = torch.matmul(z_id, z_con.t()) / self.cfg.temp
-        aux_loss = (F.cross_entropy(sim, labels) + F.cross_entropy(sim.t(), labels)) / 2
+        # Auxiliary InfoNCE between id_e_true and content_e. Routed through
+        # `_compute_aux_loss` so the hot-only rollout (USIM_AUX_HOT_ONLY=1) can
+        # be flipped without touching the rest of the forward pass. Default
+        # behavior is bit-identical to the original full-batch InfoNCE.
+        aux_loss = self._compute_aux_loss(id_e_true, content_e, effective_cold)
         prereq_aux_loss = torch.tensor(0.0, device=self.device)
         if (
             self.training and self.cfg.use_prereq_aux_loss and user_seen_items is not None and
@@ -1568,7 +1911,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             ).clamp(0.0, 1.0)
             valid_rows = seen_cnt >= float(self.cfg.prereq_aux_min_seen)
             if self.cfg.prereq_aux_only_cold:
-                valid_rows = valid_rows & is_cold
+                valid_rows = valid_rows & effective_cold
             unmet_mask = violation_batch > float(self.cfg.prereq_aux_violation_thr)
             unmet_mask = unmet_mask & (~pos_mask)
             candidate_mask = unmet_mask & valid_rows.unsqueeze(1)
@@ -1590,6 +1933,12 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             self.cfg.prereq_aux_weight * prereq_aux_loss +
             delta_reg_loss
         )
+        candidate_stats["main_loss"] = float(main_loss.detach().item())
+        candidate_stats["aux_loss"] = float(aux_loss.detach().item())
+        candidate_stats["ppo_loss"] = float(ppo_loss.detach().item())
+        candidate_stats["prereq_aux_loss"] = float(prereq_aux_loss.detach().item())
+        candidate_stats["delta_reg_loss"] = float(delta_reg_loss.detach().item())
+        candidate_stats["total_loss"] = float(total_loss.detach().item())
         candidate_stats["paac_contrast_loss"] = float(paac_contrast_loss.detach().item())
         candidate_stats["paac_align_loss"] = float(paac_align_loss.detach().item())
         candidate_stats["paac_align_pairs"] = int(paac_align_pairs)
@@ -1631,7 +1980,7 @@ def _feedback_ckpt_dir():
 class Fast3FeedbackUSIM(FastFeedbackUSIM):
     def _compute_target_alpha(self, target_pop, step_idx, entropy, num_candidates, batch_size):
         if target_pop is not None:
-            cold_mask = (target_pop.view(-1, 1) < float(self.cfg.cold_threshold)).float()
+            cold_mask = self._cold_mask_from_pop(target_pop).float().view(-1, 1)
         else:
             cold_mask = torch.ones((batch_size, 1), dtype=torch.float32, device=self.device)
 
@@ -1834,13 +2183,14 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 target_pop=target_pop,
                 user_seen_items=user_seen_items,
             )
-            reward = (
-                reward
-                + float(self.cfg.feedback_course_concept_weight) * course_terms["concept_bonus"]
-                - float(self.cfg.feedback_course_prereq_weight) * course_terms["prereq_gap"]
-                - float(self.cfg.feedback_course_difficulty_weight) * course_terms["difficulty_gap"]
-                - float(self.cfg.feedback_course_redundant_weight) * course_terms["redundant"]
-            )
+            if getattr(self.cfg, "use_course_reward", True):
+                reward = (
+                    reward
+                    + float(self.cfg.feedback_course_concept_weight) * course_terms["concept_bonus"]
+                    - float(self.cfg.feedback_course_prereq_weight) * course_terms["prereq_gap"]
+                    - float(self.cfg.feedback_course_difficulty_weight) * course_terms["difficulty_gap"]
+                    - float(self.cfg.feedback_course_redundant_weight) * course_terms["redundant"]
+                )
 
             candidate_stats["step_gain"] += step_gain_mean
             candidate_stats["collapse_penalty"] += collapse_penalty
@@ -1945,6 +2295,11 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
 
 
 def compute_ranking_metrics(scores, target_indices, k_list=[5, 10, 20]):
+    values = compute_ranking_metric_values(scores, target_indices, k_list=k_list)
+    return {key: float(val.mean().item()) for key, val in values.items()}
+
+
+def compute_ranking_metric_values(scores, target_indices, k_list=[5, 10, 20]):
     batch_size = scores.size(0)
     num_candidates = scores.size(1)
     targets = target_indices.view(-1, 1)
@@ -1954,16 +2309,13 @@ def compute_ranking_metrics(scores, target_indices, k_list=[5, 10, 20]):
     for k in k_list:
         preds = topk_indices[:, :k]
         hits = (preds == targets).any(dim=1).float()
-        recall = hits.mean().item()
         hit_ranks = torch.where(preds == targets)
+        ndcg_vals = torch.zeros(batch_size, device=scores.device)
         if hit_ranks[1].numel() > 0:
             ranks = hit_ranks[1].float()
-            dcg = 1.0 / torch.log2(ranks + 2.0)
-            ndcg = dcg.sum() / batch_size
-        else:
-            ndcg = 0.0
-        results[f"R@{k}"] = recall
-        results[f"N@{k}"] = ndcg.item() if isinstance(ndcg, torch.Tensor) else ndcg
+            ndcg_vals[hit_ranks[0]] = 1.0 / torch.log2(ranks + 2.0)
+        results[f"R@{k}"] = hits
+        results[f"N@{k}"] = ndcg_vals
     return results
 
 
@@ -2669,11 +3021,19 @@ def _build_eval_pos_item_vecs(model, item_idx, llm_s, pop_sel, eval_type):
 
 
 def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=200,
-                  eval_type="cold", full_ranking=False, user_seen_items=None, all_item_vecs=None):
+                  eval_type="cold", full_ranking=False, user_seen_items=None, all_item_vecs=None,
+                  average_mode="interaction"):
+    average_mode = average_mode.strip().lower()
+    if average_mode not in {"interaction", "item_macro"}:
+        raise ValueError("average_mode must be 'interaction' or 'item_macro'")
     model.eval()
     accum_metrics = {}
     total_samples = 0
+    item_accum = {f"{m}@{k}": {} for m in ["R", "N"] for k in k_list}
+    item_counts = {}
     seen_tensor_cache = {}
+    seen_index = getattr(model, "user_seen_index", None)
+    use_seen_index = seen_index is not None and user_seen_items is not None
     with torch.no_grad():
         n_items = model.cfg.n_items
         all_item_idx = torch.arange(n_items, device=device)
@@ -2695,15 +3055,21 @@ def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=2
             pop_sel = pop[mask].to(device)
             user_ids = [int(x) for x in u.detach().cpu().tolist()]
             item_ids = [int(x) for x in i.detach().cpu().tolist()]
-            for uid in user_ids:
-                if uid in seen_tensor_cache:
-                    continue
-                seen_items = user_seen_items.get(uid) if user_seen_items else None
-                if seen_items:
-                    seen_list = [it for it in seen_items if 0 <= it < n_items]
-                    seen_tensor_cache[uid] = torch.tensor(seen_list, dtype=torch.long, device=device) if seen_list else None
-                else:
-                    seen_tensor_cache[uid] = None
+            # Only populate the per-uid Python cache when the fast index isn't available
+            # (legacy path used by sampled-eval forbidden-mask construction & course rerank).
+            need_legacy_cache = (not use_seen_index) and (
+                (not full_ranking) or model.cfg.use_course_rerank
+            )
+            if need_legacy_cache:
+                for uid in user_ids:
+                    if uid in seen_tensor_cache:
+                        continue
+                    seen_items = user_seen_items.get(uid) if user_seen_items else None
+                    if seen_items:
+                        seen_list = [it for it in seen_items if 0 <= it < n_items]
+                        seen_tensor_cache[uid] = torch.tensor(seen_list, dtype=torch.long, device=device) if seen_list else None
+                    else:
+                        seen_tensor_cache[uid] = None
             z_u = F.normalize(model.user_proj(model.user_emb(u)), dim=1)
             pos_llm = _build_llm_score_tensor(llm_scores, user_ids, item_ids, device=device)
             pos_vec = _build_eval_pos_item_vecs(model, i, pos_llm, pop_sel, eval_type)
@@ -2712,7 +3078,12 @@ def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=2
                 scores = torch.mm(z_u, item_bank.t())
                 row_idx = torch.arange(n_sel, device=device)
                 target_scores = pos_scores.clone()
-                if user_seen_items:
+                if use_seen_index:
+                    # Vectorized seen-mask in one GPU op (replaces per-user Python loop)
+                    seen_mask_full = seen_index.index_select(0, u)  # (n_sel, n_items) bool
+                    scores = scores.masked_fill(seen_mask_full, -1e9)
+                    scores[row_idx, i] = target_scores
+                elif user_seen_items:
                     for row, uid in enumerate(user_ids):
                         seen_idx = seen_tensor_cache[uid]
                         if seen_idx is None:
@@ -2725,22 +3096,33 @@ def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=2
                 target_indices = i
             else:
                 n_neg_eff = min(n_neg, max(1, n_items - 1))
-                avail_counts = []
-                for row, uid in enumerate(user_ids):
-                    seen_idx = seen_tensor_cache[uid]
-                    if seen_idx is None:
-                        avail = n_items - 1
-                    else:
-                        avail = n_items - 1 - int((seen_idx != i[row]).sum().item())
-                    avail_counts.append(max(1, avail))
+                if use_seen_index:
+                    # Build the (n_sel, n_items) forbidden mask in one GPU op
+                    forbidden_full = seen_index.index_select(0, u).clone()  # bool, copy to allow mutation
+                    row_idx_eval = torch.arange(n_sel, device=device)
+                    forbidden_full[row_idx_eval, i] = True
+                    avail_per_row = (~forbidden_full).sum(dim=1)
+                    avail_counts = avail_per_row.clamp_min(1).tolist()
+                else:
+                    avail_counts = []
+                    for row, uid in enumerate(user_ids):
+                        seen_idx = seen_tensor_cache[uid]
+                        if seen_idx is None:
+                            avail = n_items - 1
+                        else:
+                            avail = n_items - 1 - int((seen_idx != i[row]).sum().item())
+                        avail_counts.append(max(1, avail))
                 n_neg_batch = min(n_neg_eff, min(avail_counts))
                 neg_items = torch.empty((n_sel, n_neg_batch), dtype=torch.long, device=device)
-                for row, user_id in enumerate(user_ids):
-                    forbidden = torch.zeros(n_items, dtype=torch.bool, device=device)
-                    forbidden[i[row]] = True
-                    seen_idx = seen_tensor_cache[int(user_id)]
-                    if seen_idx is not None:
-                        forbidden[seen_idx] = True
+                for row in range(n_sel):
+                    if use_seen_index:
+                        forbidden = forbidden_full[row]
+                    else:
+                        forbidden = torch.zeros(n_items, dtype=torch.bool, device=device)
+                        forbidden[i[row]] = True
+                        seen_idx = seen_tensor_cache[int(user_ids[row])]
+                        if seen_idx is not None:
+                            forbidden[seen_idx] = True
                     candidates = all_item_idx[~forbidden]
                     if candidates.numel() == 0:
                         candidates = all_item_idx[all_item_idx != i[row]]
@@ -2752,12 +3134,31 @@ def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=2
                 scores = torch.bmm(cand_vecs, z_u.unsqueeze(2)).squeeze(2)
                 scores = model.apply_course_rerank(scores, user_ids, seen_tensor_cache, cand_idx=cand_idx, target_pop=pop_sel)
                 target_indices = torch.zeros(n_sel, dtype=torch.long, device=device)
-            batch_res = compute_ranking_metrics(scores, target_indices=target_indices, k_list=k_list)
-            for k, v in batch_res.items():
-                accum_metrics[k] = accum_metrics.get(k, 0.0) + v * n_sel
+            batch_values = compute_ranking_metric_values(scores, target_indices=target_indices, k_list=k_list)
+            if average_mode == "item_macro":
+                for row, item_id in enumerate(item_ids):
+                    item_counts[item_id] = item_counts.get(item_id, 0) + 1
+                    for key, values in batch_values.items():
+                        per_item = item_accum[key]
+                        per_item[item_id] = per_item.get(item_id, 0.0) + float(values[row].detach().cpu().item())
+            else:
+                for k, values in batch_values.items():
+                    accum_metrics[k] = accum_metrics.get(k, 0.0) + float(values.sum().detach().cpu().item())
             total_samples += n_sel
     if total_samples == 0:
         return None, 0
+    if average_mode == "item_macro":
+        if not item_counts:
+            return None, 0
+        macro = {}
+        for key, per_item in item_accum.items():
+            item_values = [
+                per_item.get(item_id, 0.0) / count
+                for item_id, count in item_counts.items()
+                if count > 0
+            ]
+            macro[key] = sum(item_values) / max(1, len(item_values))
+        return macro, len(item_counts)
     return {k: v / total_samples for k, v in accum_metrics.items()}, total_samples
 
 
@@ -2909,6 +3310,96 @@ def _ensure_train_item_coverage(train_df, val_df, test_df, required_items):
     )
 
 
+def _make_balanced_item_folds(item_counts, eligible_items, n_folds):
+    eligible_items = [int(x) for x in eligible_items]
+    n_folds = int(n_folds)
+    if n_folds < 3:
+        raise ValueError(f"USIM_STATIC_COLD_ITEM_FOLDS must be >= 3, got {n_folds}")
+    if len(eligible_items) < n_folds:
+        raise ValueError(
+            f"Not enough eligible items ({len(eligible_items)}) for {n_folds} balanced folds"
+        )
+
+    sorted_items = (
+        item_counts.loc[eligible_items]
+        .sort_values(ascending=False, kind="mergesort")
+        .index.astype(int)
+        .tolist()
+    )
+    base_size = len(sorted_items) // n_folds
+    extra = len(sorted_items) % n_folds
+    capacities = [base_size + (1 if fold_id < extra else 0) for fold_id in range(n_folds)]
+    folds = [[] for _ in range(n_folds)]
+    fold_sums = [0 for _ in range(n_folds)]
+
+    for item_id in sorted_items:
+        candidates = [idx for idx in range(n_folds) if len(folds[idx]) < capacities[idx]]
+        fold_id = min(candidates, key=lambda idx: (fold_sums[idx], len(folds[idx]), idx))
+        folds[fold_id].append(int(item_id))
+        fold_sums[fold_id] += int(item_counts.loc[item_id])
+
+    return folds, fold_sums
+
+
+def _sample_strict_item_cold_items(item_counts, eligible_items, seed, split_mode):
+    val_item_ratio = float(os.environ.get("USIM_STATIC_VAL_COLD_ITEM_RATIO", "0.05"))
+    test_item_ratio = float(os.environ.get("USIM_STATIC_COLD_ITEM_RATIO", "0.10"))
+    n_val_items = max(1, int(round(eligible_items.size * val_item_ratio)))
+    n_test_items = max(1, int(round(eligible_items.size * test_item_ratio)))
+    if n_val_items + n_test_items >= eligible_items.size:
+        n_val_items = max(1, min(n_val_items, eligible_items.size // 4))
+        n_test_items = max(1, min(n_test_items, eligible_items.size // 4))
+
+    if split_mode in {"strict_item_cold_balanced", "item_cold_balanced", "balanced_item_cold"}:
+        n_folds = int(os.environ.get("USIM_STATIC_COLD_ITEM_FOLDS", "20"))
+        n_folds = min(n_folds, int(eligible_items.size))
+        folds, fold_sums = _make_balanced_item_folds(item_counts, eligible_items, n_folds)
+        n_val_folds = max(1, int(round(n_folds * val_item_ratio)))
+        n_test_folds = max(1, int(round(n_folds * test_item_ratio)))
+        if n_val_folds + n_test_folds >= n_folds:
+            n_val_folds = max(1, min(n_val_folds, n_folds // 4))
+            n_test_folds = max(1, min(n_test_folds, n_folds // 4))
+        if n_val_folds + n_test_folds >= n_folds:
+            raise ValueError(
+                "Invalid balanced item-cold fold allocation: "
+                f"folds={n_folds}, val_folds={n_val_folds}, test_folds={n_test_folds}"
+            )
+
+        rng_items = np.random.default_rng(seed)
+        fold_order = np.arange(n_folds)
+        rng_items.shuffle(fold_order)
+        val_fold_ids = [int(x) for x in fold_order[:n_val_folds]]
+        test_fold_ids = [int(x) for x in fold_order[n_val_folds:n_val_folds + n_test_folds]]
+        val_cold_items = {int(item_id) for fold_id in val_fold_ids for item_id in folds[fold_id]}
+        test_cold_items = {int(item_id) for fold_id in test_fold_ids for item_id in folds[fold_id]}
+        fold_sums_arr = np.asarray(fold_sums, dtype=np.float64)
+        return val_cold_items, test_cold_items, {
+            "strict_item_cold_sampling": "balanced_item_folds",
+            "strict_item_cold_folds": int(n_folds),
+            "strict_item_cold_val_folds": int(n_val_folds),
+            "strict_item_cold_test_folds": int(n_test_folds),
+            "strict_item_cold_val_fold_ids": val_fold_ids,
+            "strict_item_cold_test_fold_ids": test_fold_ids,
+            "strict_item_cold_fold_item_count_min": int(min(len(fold) for fold in folds)),
+            "strict_item_cold_fold_item_count_max": int(max(len(fold) for fold in folds)),
+            "strict_item_cold_fold_pop_sum_min": int(fold_sums_arr.min()),
+            "strict_item_cold_fold_pop_sum_mean": float(fold_sums_arr.mean()),
+            "strict_item_cold_fold_pop_sum_max": int(fold_sums_arr.max()),
+            "strict_item_cold_fold_pop_sum_std": float(fold_sums_arr.std(ddof=1)) if n_folds > 1 else 0.0,
+        }
+
+    rng_items = np.random.default_rng(seed)
+    shuffled_items = eligible_items.copy()
+    rng_items.shuffle(shuffled_items)
+    val_cold_items = {int(x) for x in shuffled_items[:n_val_items]}
+    test_cold_items = {int(x) for x in shuffled_items[n_val_items:n_val_items + n_test_items]}
+    return val_cold_items, test_cold_items, {
+        "strict_item_cold_sampling": "random_items",
+        "strict_item_cold_target_val_items": int(n_val_items),
+        "strict_item_cold_target_test_items": int(n_test_items),
+    }
+
+
 def _static_split_df(df):
     seed = _static_seed()
     train_ratio = float(os.environ.get("USIM_STATIC_TRAIN_RATIO", "0.8"))
@@ -2919,7 +3410,14 @@ def _static_split_df(df):
     work_df = df.copy().reset_index(drop=True)
     work_df["_row_id"] = np.arange(len(work_df), dtype=np.int64)
 
-    strict_item_cold = split_mode in {"item_cold", "cold_item", "strict_item_cold"}
+    strict_item_cold = split_mode in {
+        "item_cold",
+        "cold_item",
+        "strict_item_cold",
+        "strict_item_cold_balanced",
+        "item_cold_balanced",
+        "balanced_item_cold",
+    }
     coverage_moves = 0
     if strict_item_cold:
         item_counts = work_df["i_idx"].astype(int).value_counts()
@@ -2927,17 +3425,12 @@ def _static_split_df(df):
         eligible_items = item_counts[item_counts >= min_inter].index.to_numpy(copy=True)
         if eligible_items.size < 3:
             raise ValueError(f"Not enough items for strict item-cold split: eligible_items={eligible_items.size}")
-        rng_items = np.random.default_rng(seed)
-        rng_items.shuffle(eligible_items)
-        val_item_ratio = float(os.environ.get("USIM_STATIC_VAL_COLD_ITEM_RATIO", "0.05"))
-        test_item_ratio = float(os.environ.get("USIM_STATIC_COLD_ITEM_RATIO", "0.10"))
-        n_val_items = max(1, int(round(eligible_items.size * val_item_ratio)))
-        n_test_items = max(1, int(round(eligible_items.size * test_item_ratio)))
-        if n_val_items + n_test_items >= eligible_items.size:
-            n_val_items = max(1, min(n_val_items, eligible_items.size // 4))
-            n_test_items = max(1, min(n_test_items, eligible_items.size // 4))
-        val_cold_items = set(int(x) for x in eligible_items[:n_val_items])
-        test_cold_items = set(int(x) for x in eligible_items[n_val_items:n_val_items + n_test_items])
+        val_cold_items, test_cold_items, cold_sampling_info = _sample_strict_item_cold_items(
+            item_counts,
+            eligible_items,
+            seed,
+            split_mode,
+        )
         heldout_items = val_cold_items | test_cold_items
         source_df = work_df[~work_df["i_idx"].astype(int).isin(heldout_items)].copy()
         train_idx, val_idx, test_idx = _split_exact_warm_user(source_df, seed, train_ratio, val_ratio)
@@ -3016,13 +3509,21 @@ def _static_split_df(df):
         "train_item_coverage_moves": int(coverage_moves),
     }
     if strict_item_cold:
+        val_item_pop = item_counts.loc[list(val_cold_items)].astype(int) if val_cold_items else pd.Series(dtype=int)
+        test_item_pop = item_counts.loc[list(test_cold_items)].astype(int) if test_cold_items else pd.Series(dtype=int)
         split_info.update(
             {
                 "val_cold_items": int(len(val_cold_items)),
                 "test_cold_items": int(len(test_cold_items)),
                 "strict_item_cold_min_inter": int(os.environ.get("USIM_STATIC_COLD_ITEM_MIN_INTER", "5")),
+                "strict_item_cold_eligible_items": int(len(eligible_items)),
+                "strict_item_cold_val_item_pop_sum": int(val_item_pop.sum()) if len(val_item_pop) else 0,
+                "strict_item_cold_test_item_pop_sum": int(test_item_pop.sum()) if len(test_item_pop) else 0,
+                "strict_item_cold_val_item_pop_mean": float(val_item_pop.mean()) if len(val_item_pop) else 0.0,
+                "strict_item_cold_test_item_pop_mean": float(test_item_pop.mean()) if len(test_item_pop) else 0.0,
             }
         )
+        split_info.update(cold_sampling_info)
     return train_df, val_df, test_df, split_info
 
 
@@ -3142,8 +3643,38 @@ def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df)
             "eval_n_neg": int(cfg.eval_n_neg),
             "run_sampled_eval": bool(cfg.run_sampled_eval),
             "use_content_delta": bool(cfg.use_content_delta),
+            "content_delta_mode": str(cfg.content_delta_mode),
+            "content_delta_paper_style": bool(cfg.content_delta_paper_style),
+            "content_delta_replace_item": bool(cfg.content_delta_replace_item),
+            "content_delta_cold_only": bool(cfg.content_delta_cold_only),
+            "content_delta_train_on_id_dropout": bool(cfg.content_delta_train_on_id_dropout),
+            "content_delta_max_norm": float(cfg.content_delta_max_norm),
+            "content_delta_scale": float(cfg.content_delta_scale),
+            "content_delta_lr_mult": float(cfg.content_delta_lr_mult),
+            "content_delta_only_after_epoch": int(cfg.content_delta_only_after_epoch),
+            "aux_weight": float(cfg.aux_weight),
+            "aux_hot_only": bool(cfg.aux_hot_only),
+            "early_stop_score_mode": str(cfg.early_stop_score_mode),
+            "early_stop_average_mode": str(cfg.early_stop_average_mode),
+            "early_stop_k": int(cfg.early_stop_k),
+            "early_stop_patience": int(cfg.early_stop_patience),
+            "use_pseudo_cold_train": bool(cfg.use_pseudo_cold_train),
+            "pseudo_cold_ratio": float(cfg.pseudo_cold_ratio),
+            "pseudo_cold_min_pop": int(cfg.pseudo_cold_min_pop),
+            "pseudo_cold_mode": str(cfg.pseudo_cold_mode),
             "use_paac": bool(cfg.use_paac),
             "use_course_rerank": bool(cfg.use_course_rerank),
+            "use_course_reward": bool(cfg.use_course_reward),
+            "feedback_course_only_cold": bool(cfg.feedback_course_only_cold),
+            "feedback_course_prereq_weight": float(cfg.feedback_course_prereq_weight),
+            "feedback_course_concept_weight": float(cfg.feedback_course_concept_weight),
+            "feedback_course_difficulty_weight": float(cfg.feedback_course_difficulty_weight),
+            "feedback_course_redundant_weight": float(cfg.feedback_course_redundant_weight),
+            "feedback_course_sample_beta": float(cfg.feedback_course_sample_beta),
+            "feedback_course_sample_only_cold": bool(cfg.feedback_course_sample_only_cold),
+            "use_prereq_aux_loss": bool(cfg.use_prereq_aux_loss),
+            "prereq_aux_weight": float(cfg.prereq_aux_weight),
+            "prereq_aux_only_cold": bool(cfg.prereq_aux_only_cold),
             "prereq_graph_source": str(cfg.prereq_graph_source),
             "disable_llm_score": bool(cfg.disable_llm_score),
         },
@@ -3166,12 +3697,12 @@ def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df)
 
 
 def _make_fast3_optimizer(model, cfg):
-    delta_param_id = id(model.content_delta.weight)
+    delta_params = model.content_delta_trainable_parameters()
+    delta_param_ids = {id(p) for p in delta_params}
     base_params = [
         p for p in model.parameters()
-        if p.requires_grad and id(p) != delta_param_id
+        if p.requires_grad and id(p) not in delta_param_ids
     ]
-    delta_params = [model.content_delta.weight] if model.content_delta.weight.requires_grad else []
     if delta_params:
         return torch.optim.Adam(
             [
@@ -3184,6 +3715,38 @@ def _make_fast3_optimizer(model, cfg):
 
 def _metric_or_zero(metrics, key):
     return float(metrics.get(key, 0.0)) if metrics else 0.0
+
+
+def _compute_early_stop_score(cold_metrics, hot_metrics, k, mode="cold_only"):
+    """Combine cold/hot validation metrics into a single early-stop score.
+
+    Modes (selected via ``cfg.early_stop_score_mode`` / ``USIM_EARLY_STOP_SCORE_MODE``):
+
+    - ``cold_only`` (legacy default): use Cold N@k only. Behavior unchanged
+      from the pre-refactor code.
+    - ``geometric``: ``sqrt(cold_n * hot_n)``. Either side collapsing to 0
+      drives the score to 0; balanced gains compound.
+    - ``harmonic``: ``2 * cold_n * hot_n / (cold_n + hot_n)``; stronger pull
+      toward balance than geometric. Returns 0 if either side is non-positive.
+    - ``sum``: ``cold_n + hot_n``; simplest joint signal but lets a much
+      larger side dominate.
+
+    Both inputs may be ``None`` (e.g., when the matching eval split is empty);
+    missing keys are treated as 0 via ``_metric_or_zero``.
+    """
+    cold = _metric_or_zero(cold_metrics, f"N@{k}")
+    hot = _metric_or_zero(hot_metrics, f"N@{k}")
+    mode = (mode or "cold_only").strip().lower()
+    if mode == "geometric":
+        return float((max(0.0, cold) * max(0.0, hot)) ** 0.5)
+    if mode == "harmonic":
+        if cold <= 0.0 or hot <= 0.0:
+            return 0.0
+        return float(2.0 * cold * hot / (cold + hot))
+    if mode == "sum":
+        return float(cold + hot)
+    # Default / cold_only: legacy behavior.
+    return float(cold)
 
 
 def run_static_experiment(df, cfg, device, content_emb, llm_scores):
@@ -3249,8 +3812,25 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         f"test_history={test_history_policy}"
     )
     print(
-        f">> EarlyStop: enabled={cfg.use_epoch_early_stop} | monitor=Full Cold N@{cfg.early_stop_k} | "
+        f">> EarlyStop: enabled={cfg.use_epoch_early_stop} | "
+        f"score_mode={cfg.early_stop_score_mode} | "
+        f"avg_mode={cfg.early_stop_average_mode} | k={cfg.early_stop_k} | "
         f"patience={cfg.early_stop_patience} | min_delta={cfg.early_stop_min_delta:.1e}"
+    )
+    print(
+        f">> Content Delta: enabled={cfg.use_content_delta} | mode={cfg.content_delta_mode} | "
+        f"train_on_id_dropout={cfg.content_delta_train_on_id_dropout} | "
+        f"paper_style={cfg.content_delta_paper_style} | replace_item={cfg.content_delta_replace_item} | "
+        f"cold_only={cfg.content_delta_cold_only} | max_norm={cfg.content_delta_max_norm:.3f} | "
+        f"scale={cfg.content_delta_scale:.3f} | aux_w={cfg.aux_weight:.3f} | "
+        f"aux_hot_only={cfg.aux_hot_only} | "
+        f"lr_mult={cfg.content_delta_lr_mult:.3f} | "
+        f"delta_only_after_epoch={cfg.content_delta_only_after_epoch}"
+    )
+    print(
+        f">> Pseudo-Cold Train: enabled={cfg.use_pseudo_cold_train} | "
+        f"mode={cfg.pseudo_cold_mode} | ratio={cfg.pseudo_cold_ratio:.2f} | "
+        f"min_pop={cfg.pseudo_cold_min_pop}"
     )
     print(
         f">> Eval: sampled={'enabled' if cfg.run_sampled_eval else 'disabled'} "
@@ -3268,8 +3848,42 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         "Val_full_cold_N@10": [],
         "Val_full_hot_N@10": [],
     }
+    static_diag_keys = [
+        "MainLoss",
+        "AuxLoss",
+        "PPOLoss",
+        "PrereqAuxLoss",
+        "DeltaRegLoss",
+        "CourseSampleFit",
+        "CoursePrereqGap",
+        "CourseConceptBonus",
+        "CourseDifficultyGap",
+        "CourseRedundant",
+        "PAACContrastLoss",
+        "PAACAlignLoss",
+        "PAACAlignPairs",
+        "FNMaskRatio",
+        "PseudoColdRatio",
+        "EffectiveColdRatio",
+        "PseudoColdCount",
+    ]
+    for key in static_diag_keys:
+        history[key] = []
+
+    def _append_static_history(epoch_num, avg_loss, val_cold_metrics, val_hot_metrics, diag):
+        history["Epoch"].append(epoch_num)
+        history["Loss"].append(avg_loss)
+        history["Val_full_cold_R@10"].append(_metric_or_zero(val_cold_metrics, "R@10"))
+        history["Val_full_hot_R@10"].append(_metric_or_zero(val_hot_metrics, "R@10"))
+        history["Val_full_cold_N@10"].append(_metric_or_zero(val_cold_metrics, "N@10"))
+        history["Val_full_hot_N@10"].append(_metric_or_zero(val_hot_metrics, "N@10"))
+        for key in static_diag_keys:
+            history[key].append(diag.get(key, 0.0))
 
     train_seen = _add_user_seen_from_df({}, train_df)
+    # Build the (n_users, n_items) bool index ONCE on device for fast batch lookup.
+    # Replaces per-batch Python loops in _build_seen_mat / evaluate full-ranking seen-mask.
+    model.set_user_seen_index(train_seen)
     train_loader = DataLoader(StreamDataset(train_df, llm_scores), batch_size=cfg.batch_size, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(StreamDataset(val_df, llm_scores), batch_size=2048, shuffle=False, collate_fn=collate_fn)
     test_loader = DataLoader(StreamDataset(test_df, llm_scores), batch_size=2048, shuffle=False, collate_fn=collate_fn)
@@ -3280,6 +3894,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
     best_score = -1e9
     no_improve = 0
     do_early_stop = cfg.use_epoch_early_stop and cfg.n_epochs > 1 and len(val_df) > 0
+    delta_only_applied = False
 
     print(
         f"\n>>> Start STATIC train/eval | target_split={split_info['train_ratio']:.2f}/"
@@ -3290,10 +3905,45 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
     )
 
     for epoch in range(cfg.n_epochs):
+        delta_only_epoch = int(getattr(cfg, "content_delta_only_after_epoch", 0))
+        if (
+            delta_only_epoch > 0
+            and not delta_only_applied
+            and (epoch + 1) >= delta_only_epoch
+        ):
+            delta_params = model.enable_delta_only_training_()
+            optimizer = torch.optim.Adam(
+                delta_params,
+                lr=cfg.lr * float(getattr(cfg, "content_delta_lr_mult", 1.0)),
+            )
+            best_opt_state = None
+            delta_only_applied = True
+            print(
+                f"  [STATIC-DELTA-ONLY] Freeze base parameters at epoch {epoch + 1}; "
+                f"trainable_delta_params={sum(p.numel() for p in delta_params)}"
+            )
         model.train()
         epoch_start = time.time()
         total_loss = 0.0
         steps = 0
+        main_loss_sum = 0.0
+        aux_loss_sum = 0.0
+        ppo_loss_sum = 0.0
+        prereq_aux_loss_sum = 0.0
+        delta_reg_loss_sum = 0.0
+        course_sample_fit_sum = 0.0
+        course_prereq_sum = 0.0
+        course_concept_sum = 0.0
+        course_diff_sum = 0.0
+        course_redundant_sum = 0.0
+        paac_contrast_sum = 0.0
+        paac_align_sum = 0.0
+        paac_align_pairs_sum = 0
+        fn_mask_ratio_sum = 0.0
+        pseudo_cold_ratio_sum = 0.0
+        effective_cold_ratio_sum = 0.0
+        pseudo_cold_count_sum = 0
+        pseudo_info_batches = 0
         num_batches = len(train_loader)
         cached_user_bank = model._build_user_bank_raw() if cfg.candidate_strategy == "retrieve_sample" else None
         print(f"  [STATIC-TRAIN-START] Epoch {epoch + 1}/{cfg.n_epochs} | samples={len(train_df)} | batches={num_batches}")
@@ -3309,7 +3959,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             ):
                 cached_user_bank = model._build_user_bank_raw()
             batch = {k: v.to(device) for k, v in batch.items()}
-            loss, _ = model(
+            loss, cand_info = model(
                 batch,
                 pop.to(device),
                 llm.to(device),
@@ -3323,6 +3973,25 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             optimizer.zero_grad()
             total_loss += float(loss.item())
             steps += 1
+            if cand_info:
+                main_loss_sum += float(cand_info.get("main_loss", 0.0))
+                aux_loss_sum += float(cand_info.get("aux_loss", 0.0))
+                ppo_loss_sum += float(cand_info.get("ppo_loss", 0.0))
+                prereq_aux_loss_sum += float(cand_info.get("prereq_aux_loss", 0.0))
+                delta_reg_loss_sum += float(cand_info.get("delta_reg_loss", 0.0))
+                course_sample_fit_sum += float(cand_info.get("course_sample_fit", 0.0))
+                course_prereq_sum += float(cand_info.get("course_prereq_gap", 0.0))
+                course_concept_sum += float(cand_info.get("course_concept_bonus", 0.0))
+                course_diff_sum += float(cand_info.get("course_difficulty_gap", 0.0))
+                course_redundant_sum += float(cand_info.get("course_redundant", 0.0))
+                paac_contrast_sum += float(cand_info.get("paac_contrast_loss", 0.0))
+                paac_align_sum += float(cand_info.get("paac_align_loss", 0.0))
+                paac_align_pairs_sum += int(cand_info.get("paac_align_pairs", 0))
+                fn_mask_ratio_sum += float(cand_info.get("fn_mask_ratio", 0.0))
+                pseudo_cold_ratio_sum += float(cand_info.get("pseudo_cold_ratio", 0.0))
+                effective_cold_ratio_sum += float(cand_info.get("effective_cold_ratio", 0.0))
+                pseudo_cold_count_sum += int(cand_info.get("pseudo_cold_count", 0))
+                pseudo_info_batches += 1
 
             now_ts = time.time()
             if _should_log_train_progress(batch_idx, num_batches, cfg, last_progress_log, now_ts):
@@ -3346,9 +4015,45 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 f"eff_mean={delta_stats['effective_mean_norm']:.4f}, eff_max={delta_stats['effective_max_norm']:.4f}, "
                 f"clip={delta_stats['clipped_ratio']:.2%}]"
             )
+        pseudo_suffix = ""
+        epoch_diag = {key: 0.0 for key in static_diag_keys}
+        if pseudo_info_batches > 0:
+            epoch_diag.update({
+                "MainLoss": main_loss_sum / pseudo_info_batches,
+                "AuxLoss": aux_loss_sum / pseudo_info_batches,
+                "PPOLoss": ppo_loss_sum / pseudo_info_batches,
+                "PrereqAuxLoss": prereq_aux_loss_sum / pseudo_info_batches,
+                "DeltaRegLoss": delta_reg_loss_sum / pseudo_info_batches,
+                "CourseSampleFit": course_sample_fit_sum / pseudo_info_batches,
+                "CoursePrereqGap": course_prereq_sum / pseudo_info_batches,
+                "CourseConceptBonus": course_concept_sum / pseudo_info_batches,
+                "CourseDifficultyGap": course_diff_sum / pseudo_info_batches,
+                "CourseRedundant": course_redundant_sum / pseudo_info_batches,
+                "PAACContrastLoss": paac_contrast_sum / pseudo_info_batches,
+                "PAACAlignLoss": paac_align_sum / pseudo_info_batches,
+                "PAACAlignPairs": paac_align_pairs_sum / pseudo_info_batches,
+                "FNMaskRatio": fn_mask_ratio_sum / pseudo_info_batches,
+                "PseudoColdRatio": pseudo_cold_ratio_sum / pseudo_info_batches,
+                "EffectiveColdRatio": effective_cold_ratio_sum / pseudo_info_batches,
+                "PseudoColdCount": pseudo_cold_count_sum,
+            })
+            pseudo_suffix = (
+                f" | PseudoCold[count={pseudo_cold_count_sum}, "
+                f"ratio={epoch_diag['PseudoColdRatio']:.2%}, "
+                f"effective={epoch_diag['EffectiveColdRatio']:.2%}]"
+                f" | LossParts[main={epoch_diag['MainLoss']:.4f}, "
+                f"aux={epoch_diag['AuxLoss']:.4f}, ppo={epoch_diag['PPOLoss']:.4f}, "
+                f"prereq={epoch_diag['PrereqAuxLoss']:.4f}, "
+                f"delta={epoch_diag['DeltaRegLoss']:.4f}]"
+                f" | Course[fit={epoch_diag['CourseSampleFit']:.4f}, "
+                f"p={epoch_diag['CoursePrereqGap']:.4f}, "
+                f"c={epoch_diag['CourseConceptBonus']:.4f}, "
+                f"d={epoch_diag['CourseDifficultyGap']:.4f}, "
+                f"r={epoch_diag['CourseRedundant']:.4f}]"
+            )
         print(
             f"  [STATIC-TRAIN] Epoch {epoch + 1}/{cfg.n_epochs} | Loss: {avg_loss:.4f} | "
-            f"Time: {time.time() - epoch_start:.1f}s{delta_suffix}"
+            f"Time: {time.time() - epoch_start:.1f}s{pseudo_suffix}{delta_suffix}"
         )
 
         val_cold_metrics, val_cold_count = None, 0
@@ -3360,17 +4065,31 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 model, val_loader, device, llm_scores, k_list=k_list,
                 n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
                 user_seen_items=train_seen, all_item_vecs=val_item_vecs,
+                average_mode=cfg.early_stop_average_mode,
             )
             val_hot_metrics, val_hot_count = evaluate_usim(
                 model, val_loader, device, llm_scores, k_list=k_list,
                 n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
                 user_seen_items=train_seen, all_item_vecs=val_item_vecs,
+                average_mode=cfg.early_stop_average_mode,
             )
-            cur_score = _metric_or_zero(val_cold_metrics, f"N@{cfg.early_stop_k}")
+            cur_score = _compute_early_stop_score(
+                val_cold_metrics,
+                val_hot_metrics,
+                cfg.early_stop_k,
+                mode=cfg.early_stop_score_mode,
+            )
+            cold_n_now = _metric_or_zero(val_cold_metrics, f"N@{cfg.early_stop_k}")
+            hot_n_now = _metric_or_zero(val_hot_metrics, f"N@{cfg.early_stop_k}")
+            cold_r_now = _metric_or_zero(val_cold_metrics, f"R@{cfg.early_stop_k}")
+            hot_r_now = _metric_or_zero(val_hot_metrics, f"R@{cfg.early_stop_k}")
             print(
-                f"  [STATIC-EARLYSTOP] Epoch {epoch + 1}: Full Cold N@{cfg.early_stop_k}={cur_score:.4f}, "
-                f"Full Cold R@{cfg.early_stop_k}={_metric_or_zero(val_cold_metrics, f'R@{cfg.early_stop_k}'):.4f}, "
-                f"Full Hot R@{cfg.early_stop_k}={_metric_or_zero(val_hot_metrics, f'R@{cfg.early_stop_k}'):.4f}"
+                f"  [STATIC-EARLYSTOP] Epoch {epoch + 1}: "
+                f"Cold N@{cfg.early_stop_k}={cold_n_now:.4f}, "
+                f"Hot N@{cfg.early_stop_k}={hot_n_now:.4f}, "
+                f"Cold R@{cfg.early_stop_k}={cold_r_now:.4f}, "
+                f"Hot R@{cfg.early_stop_k}={hot_r_now:.4f} | "
+                f"score[{cfg.early_stop_score_mode}]={cur_score:.4f}"
             )
             if cur_score > best_score + cfg.early_stop_min_delta:
                 best_score = cur_score
@@ -3384,25 +4103,14 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 print(f"  [STATIC-EARLYSTOP] no_improve={no_improve}/{cfg.early_stop_patience}")
                 if no_improve >= cfg.early_stop_patience:
                     print(f"  [STATIC-EARLYSTOP] Triggered at epoch {epoch + 1}.")
-                    history["Epoch"].append(epoch + 1)
-                    history["Loss"].append(avg_loss)
-                    history["Val_full_cold_R@10"].append(_metric_or_zero(val_cold_metrics, "R@10"))
-                    history["Val_full_hot_R@10"].append(_metric_or_zero(val_hot_metrics, "R@10"))
-                    history["Val_full_cold_N@10"].append(_metric_or_zero(val_cold_metrics, "N@10"))
-                    history["Val_full_hot_N@10"].append(_metric_or_zero(val_hot_metrics, "N@10"))
+                    _append_static_history(epoch + 1, avg_loss, val_cold_metrics, val_hot_metrics, epoch_diag)
                     break
         else:
-            if best_state is None:
-                best_state = copy.deepcopy(model.state_dict())
-                best_opt_state = copy.deepcopy(optimizer.state_dict())
-                best_epoch = epoch + 1
+            best_state = copy.deepcopy(model.state_dict())
+            best_opt_state = copy.deepcopy(optimizer.state_dict())
+            best_epoch = epoch + 1
 
-        history["Epoch"].append(epoch + 1)
-        history["Loss"].append(avg_loss)
-        history["Val_full_cold_R@10"].append(_metric_or_zero(val_cold_metrics, "R@10"))
-        history["Val_full_hot_R@10"].append(_metric_or_zero(val_hot_metrics, "R@10"))
-        history["Val_full_cold_N@10"].append(_metric_or_zero(val_cold_metrics, "N@10"))
-        history["Val_full_hot_N@10"].append(_metric_or_zero(val_hot_metrics, "N@10"))
+        _append_static_history(epoch + 1, avg_loss, val_cold_metrics, val_hot_metrics, epoch_diag)
 
     if best_state is not None:
         model.load_state_dict(best_state)
@@ -3413,14 +4121,19 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             except ValueError as exc:
                 print(f"  [STATIC-EARLYSTOP] Skip optimizer restore due to parameter-group mismatch: {exc}")
         if best_score <= -1e8:
-            print(f"  [STATIC-EARLYSTOP] Restore best epoch={best_epoch} (validation not run)")
+            print(f"  [STATIC-FINAL] Use final epoch={best_epoch} (validation not run)")
         else:
-            print(f"  [STATIC-EARLYSTOP] Restore best epoch={best_epoch} (Full Cold N@{cfg.early_stop_k}={best_score:.4f})")
+            print(
+                f"  [STATIC-EARLYSTOP] Restore best epoch={best_epoch} "
+                f"(score[{cfg.early_stop_score_mode}]={best_score:.4f})"
+            )
 
     print("  [STATIC-TEST] Build eval item bank and run test ranking...")
     test_seen = _clone_user_seen(train_seen)
     if test_history_policy == "train_val":
         _add_user_seen_from_df(test_seen, val_df)
+    # Refresh the seen-index with the test history (train_only or train+val) before final eval.
+    model.set_user_seen_index(test_seen)
     test_item_vecs = build_eval_item_vecs(model, device, llm_scores, item_batch=1024)
 
     if cfg.run_sampled_eval:
@@ -3448,13 +4161,42 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
         user_seen_items=test_seen, all_item_vecs=test_item_vecs,
     )
+    full_cold_item_macro, full_cold_item_macro_count = evaluate_usim(
+        model, test_loader, device, llm_scores, k_list=k_list,
+        n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
+        user_seen_items=test_seen, all_item_vecs=test_item_vecs,
+        average_mode="item_macro",
+    )
+    full_hot_item_macro, full_hot_item_macro_count = evaluate_usim(
+        model, test_loader, device, llm_scores, k_list=k_list,
+        n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
+        user_seen_items=test_seen, all_item_vecs=test_item_vecs,
+        average_mode="item_macro",
+    )
     sampled_cold = sampled_cold or {key: 0.0 for key in metrics_keys}
     sampled_hot = sampled_hot or {key: 0.0 for key in metrics_keys}
     full_cold = full_cold or {key: 0.0 for key in metrics_keys}
     full_hot = full_hot or {key: 0.0 for key in metrics_keys}
+    full_cold_item_macro = full_cold_item_macro or {key: 0.0 for key in metrics_keys}
+    full_hot_item_macro = full_hot_item_macro or {key: 0.0 for key in metrics_keys}
 
     print("\n" + "=" * 90)
-    print("         FINAL REPORT (STATIC): sampled vs full ranking (RL-USIM FAST3 ContentDelta)")
+    print("         FINAL REPORT (STATIC MAIN): item-macro full ranking (RL-USIM FAST3 ContentDelta)")
+    print("=" * 90)
+    print(f"{'Metric':<10} | {'Cold ItemMacro':<14} | {'Hot ItemMacro':<14}")
+    print("-" * 90)
+    for key in metrics_keys:
+        print(
+            f"{key:<10} | "
+            f"{full_cold_item_macro.get(key, 0.0):<14.4f} | "
+            f"{full_hot_item_macro.get(key, 0.0):<14.4f}"
+        )
+    print("-" * 90)
+    print(f"Item-Macro Counts: ColdItems={full_cold_item_macro_count}, HotItems={full_hot_item_macro_count}")
+    print("=" * 90)
+
+    print("\n" + "=" * 90)
+    print("         FINAL REPORT (STATIC SUPP): interaction-weighted ranking")
     print("=" * 90)
     print(f"{'Metric':<10} | {'Sampled Cold':<12} | {'Sampled Hot':<12} | {'Full Cold':<12} | {'Full Hot':<12}")
     print("-" * 90)
@@ -3467,7 +4209,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         )
     print("-" * 90)
     print(f"Sampled Samples: Cold={sampled_cold_count}, Hot={sampled_hot_count}")
-    print(f"Full Samples: Cold={full_cold_count}, Hot={full_hot_count}")
+    print(f"Full Interaction Samples: Cold={full_cold_count}, Hot={full_hot_count}")
     print("=" * 90)
 
     detail_path, fullrank_path = _save_final_report_exports(
@@ -3482,6 +4224,10 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         full_cold_count=full_cold_count,
         full_hot_count=full_hot_count,
         model_name="USIM-Feedback-FAST3-ContentDelta",
+        full_cold_item_macro=full_cold_item_macro,
+        full_hot_item_macro=full_hot_item_macro,
+        full_cold_item_macro_count=full_cold_item_macro_count,
+        full_hot_item_macro_count=full_hot_item_macro_count,
     )
 
     metrics_path = _feedback_output_path("mooc_metrics_usim_feedback_fast3_content_delta_static.csv")
@@ -3503,6 +4249,21 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             row[f"Cold_{key}"] = float(cold_metrics.get(key, 0.0)) if cold_count > 0 else None
             row[f"Hot_{key}"] = float(hot_metrics.get(key, 0.0)) if hot_count > 0 else None
         summary_rows.append(row)
+    macro_row = {
+        "Model": "USIM-Feedback-FAST3-ContentDelta",
+        "Eval": "full_rank_item_macro",
+        "Protocol": "static",
+        "ColdSamples": int(full_cold_item_macro_count),
+        "HotSamples": int(full_hot_item_macro_count),
+    }
+    for key in metrics_keys:
+        macro_row[f"Cold_{key}"] = (
+            float(full_cold_item_macro.get(key, 0.0)) if full_cold_item_macro_count > 0 else None
+        )
+        macro_row[f"Hot_{key}"] = (
+            float(full_hot_item_macro.get(key, 0.0)) if full_hot_item_macro_count > 0 else None
+        )
+    summary_rows.append(macro_row)
     pd.DataFrame(summary_rows).to_csv(summary_path, index=False)
     exports.update(
         {
@@ -3582,14 +4343,12 @@ def main():
     if course_artifacts is not None:
         model.set_course_artifacts(course_artifacts)
     model.set_feedback_item_stats(item_final_pop)
-    delta_param_id = id(model.content_delta.weight)
+    delta_params = model.content_delta_trainable_parameters()
+    delta_param_ids = {id(p) for p in delta_params}
     base_params = [
         p for p in model.parameters()
-        if p.requires_grad and id(p) != delta_param_id
+        if p.requires_grad and id(p) not in delta_param_ids
     ]
-    delta_params = [
-        model.content_delta.weight
-    ] if model.content_delta.weight.requires_grad else []
     if delta_params:
         optimizer = torch.optim.Adam(
             [
@@ -3625,12 +4384,19 @@ def main():
     )
     print(
         f">> Content Delta: enabled={cfg.use_content_delta} | "
+        f"mode={cfg.content_delta_mode} | train_on_id_dropout={cfg.content_delta_train_on_id_dropout} | "
+        f"paper_style={cfg.content_delta_paper_style} | replace_item={cfg.content_delta_replace_item} | "
         f"max_norm={cfg.content_delta_max_norm:.3f} | cold_only={cfg.content_delta_cold_only} | "
-        f"scale={cfg.content_delta_scale:.3f} | aux={cfg.content_delta_aux_mode} | "
+        f"scale={cfg.content_delta_scale:.3f} | aux={cfg.content_delta_aux_mode} | aux_w={cfg.aux_weight:.3f} | "
         f"lr_mult={cfg.content_delta_lr_mult:.3f} | "
         f"reg(l2={cfg.content_delta_l2_weight:.3f}, cap={cfg.content_delta_cap_weight:.3f}) | "
         f"eval_bank={cfg.content_delta_eval_bank_mode} | "
         f"norm_base={cfg.content_delta_normalize_base} | norm_output={cfg.content_delta_normalize_output}"
+    )
+    print(
+        f">> Pseudo-Cold Train: enabled={cfg.use_pseudo_cold_train} | "
+        f"mode={cfg.pseudo_cold_mode} | ratio={cfg.pseudo_cold_ratio:.2f} | "
+        f"min_pop={cfg.pseudo_cold_min_pop}"
     )
     print(
         f">> PAAC: enabled={cfg.use_paac} | "
@@ -3653,6 +4419,7 @@ def main():
     )
     print(
         f">> Course Artifacts: enabled={cfg.feedback_load_course_artifacts} | "
+        f"course_reward={cfg.use_course_reward} | "
         f"prereq_aux={cfg.use_prereq_aux_loss} | "
         f"rerank={cfg.use_course_rerank} | "
         f"struct_hard_neg={cfg.use_structured_hard_neg}"
@@ -3964,6 +4731,9 @@ def main():
             paac_align_sum = 0.0
             paac_align_pairs_sum = 0
             fn_mask_ratio_sum = 0.0
+            pseudo_cold_ratio_sum = 0.0
+            effective_cold_ratio_sum = 0.0
+            pseudo_cold_count_sum = 0
             cand_batches = 0
             optimizer.zero_grad()
 
@@ -4018,6 +4788,9 @@ def main():
                     paac_align_sum += cand_info.get("paac_align_loss", 0.0)
                     paac_align_pairs_sum += int(cand_info.get("paac_align_pairs", 0))
                     fn_mask_ratio_sum += cand_info.get("fn_mask_ratio", 0.0)
+                    pseudo_cold_ratio_sum += cand_info.get("pseudo_cold_ratio", 0.0)
+                    effective_cold_ratio_sum += cand_info.get("effective_cold_ratio", 0.0)
+                    pseudo_cold_count_sum += int(cand_info.get("pseudo_cold_count", 0))
                     cand_batches += 1
 
                 now_ts = time.time()
@@ -4061,6 +4834,8 @@ def main():
                 avg_paac_align = paac_align_sum / cand_batches
                 avg_paac_pairs = paac_align_pairs_sum / cand_batches
                 avg_fn_mask = fn_mask_ratio_sum / cand_batches
+                avg_pseudo = pseudo_cold_ratio_sum / cand_batches
+                avg_eff_cold = effective_cold_ratio_sum / cand_batches
                 print(
                     f"  [TRAIN] Epoch {epoch + 1}/{cfg.n_epochs} | train={len(combined_df)} | "
                     f"Loss: {avg_loss:.4f} | Time: {epoch_sec:.1f}s | "
@@ -4070,6 +4845,7 @@ def main():
                     f"Course[p={avg_cp:.4f}, c={avg_cc:.4f}, d={avg_cd:.4f}, r={avg_cr:.4f}]"
                     f" | PAAC[cl={avg_paac_cl:.4f}, align={avg_paac_align:.4f}, pairs={avg_paac_pairs:.1f}]"
                     f" | FNMask={avg_fn_mask:.2%}"
+                    f" | PseudoCold[count={pseudo_cold_count_sum}, ratio={avg_pseudo:.2%}, effective={avg_eff_cold:.2%}]"
                     f"{delta_suffix}"
                 )
             else:

@@ -1,11 +1,13 @@
 """
-ColdRec-derived CGRC baseline for static item cold-start.
+Paper-faithful CGRC reimplementation for static item cold-start.
 
-This is a local adaptation of the CGRC implementation in YuanchenBei/ColdRec
-for the paper "Content-based Graph Reconstruction for Cold-start Item
-Recommendation" (SIGIR 2024). It keeps this repository's strict static split
-and full-ranking evaluator, while following CGRC's main training and inference
-path:
+No public official CGRC source was available when this adapter was written, so
+this file implements the mechanism described in "Content-based Graph
+Reconstruction for Cold-start Item Recommendation" (SIGIR 2024) while keeping
+this repository's strict static split and full-ranking evaluator.  Compared with
+the older local CGRC adapter, the training losses here use proper softmax
+denominators that include the positive edge/item, matching the paper-style
+contrastive formulation and preventing negative unbounded losses.
 
 1. mask warm items as pseudo-cold, reconstruct their user-item edges from item
    content and propagated user states;
@@ -47,40 +49,78 @@ class Config:
         self.n_items = n_items
         self.content_dim = content_dim
 
-        self.emb_dim = int(os.environ.get("CGRC_EMB_DIM", "64"))
-        self.mlp_hidden = int(os.environ.get("CGRC_MLP_HIDDEN", "64"))
-        self.layers_gprime = int(os.environ.get("CGRC_LAYERS_GPRIME", "2"))
-        self.layers_full = int(os.environ.get("CGRC_LAYERS_FULL", "2"))
-        self.layers_ghat = int(os.environ.get("CGRC_LAYERS_GHAT", "2"))
+        self.emb_dim = int(_env("EMB_DIM", "64"))
+        self.mlp_hidden = int(_env("MLP_HIDDEN", "64"))
+        self.layers_gprime = int(_env("LAYERS_GPRIME", "2"))
+        self.layers_full = int(_env("LAYERS_FULL", "2"))
+        self.layers_ghat = int(_env("LAYERS_GHAT", "2"))
 
-        self.mask_rho = float(
-            os.environ.get("CGRC_MASK_RHO", os.environ.get("CGRC_MASK_ITEM_RATIO", "0.3"))
-        )
-        self.recon_topk = int(os.environ.get("CGRC_RECON_TOPK", "20"))
-        self.lambda_e = float(os.environ.get("CGRC_LAMBDA_E", "1.0"))
-        self.tau = float(os.environ.get("CGRC_TAU", "0.5"))
-        self.le_max_edges = int(os.environ.get("CGRC_LE_MAX_EDGES", "4096"))
-        self.ranking_neg_per_user = int(os.environ.get("CGRC_RANKING_NEG_PER_USER", "32"))
-        self.recon_user_chunk = int(os.environ.get("CGRC_RECON_USER_CHUNK", "4096"))
+        self.mask_rho = float(_env("MASK_RHO", _env("MASK_ITEM_RATIO", "0.3")))
+        self.recon_topk = int(_env("RECON_TOPK", "20"))
+        self.lambda_e = float(_env("LAMBDA_E", "1.0"))
+        self.tau = float(_env("TAU", "0.5"))
+        self.le_max_edges = int(_env("LE_MAX_EDGES", "4096"))
+        self.ranking_neg_per_user = int(_env("RANKING_NEG_PER_USER", "32"))
+        self.recon_user_chunk = int(_env("RECON_USER_CHUNK", "4096"))
 
-        self.lr = float(os.environ.get("CGRC_LR", "1e-3"))
-        self.reg_weight = float(os.environ.get("CGRC_REG", "1e-4"))
-        self.grad_clip = float(os.environ.get("CGRC_GRAD_CLIP", "0.0"))
-        self.n_epochs = int(os.environ.get("CGRC_STATIC_EPOCHS", "50"))
-        self.batch_size = int(os.environ.get("CGRC_BATCH_SIZE", "4096"))
+        self.lr = float(_env("LR", "1e-3"))
+        self.reg_weight = float(_env("REG", "1e-4"))
+        self.grad_clip = float(_env("GRAD_CLIP", "0.0"))
+        self.n_epochs = int(_env("STATIC_EPOCHS", "50"))
+        self.batch_size = int(_env("BATCH_SIZE", "4096"))
 
         self.cold_threshold = int(
-            os.environ.get("CGRC_COLD_THRESHOLD", os.environ.get("USIM_COLD_THRESHOLD", "5"))
+            _env("COLD_THRESHOLD", os.environ.get("USIM_COLD_THRESHOLD", "5"))
         )
         self.eval_n_neg = int(
-            os.environ.get("CGRC_EVAL_N_NEG", os.environ.get("USIM_EVAL_N_NEG", "200"))
+            _env("EVAL_N_NEG", os.environ.get("USIM_EVAL_N_NEG", "200"))
         )
         self.static_seed = int(
-            os.environ.get("CGRC_STATIC_SEED", os.environ.get("USIM_STATIC_SEED", "2025"))
+            _env("STATIC_SEED", os.environ.get("USIM_STATIC_SEED", "2025"))
         )
-        self.seed = int(os.environ.get("CGRC_SEED", str(self.static_seed)))
-        self.train_ratio = float(os.environ.get("CGRC_STATIC_TRAIN_RATIO", "0.8"))
-        self.val_ratio = float(os.environ.get("CGRC_STATIC_VAL_RATIO", "0.1"))
+        self.seed = int(_env("SEED", str(self.static_seed)))
+        self.train_ratio = float(_env("STATIC_TRAIN_RATIO", "0.8"))
+        self.val_ratio = float(_env("STATIC_VAL_RATIO", "0.1"))
+        self.best_average_mode = os.environ.get(
+            "CGRC_PAPER_BEST_AVERAGE_MODE",
+            os.environ.get("BASELINE_EARLY_STOP_AVERAGE_MODE", "item_macro"),
+        ).strip().lower()
+        if self.best_average_mode not in {"interaction", "item_macro"}:
+            raise ValueError("CGRC_PAPER_BEST_AVERAGE_MODE must be interaction or item_macro")
+        self.run_sampled_eval = _bool_env("RUN_SAMPLED_EVAL", os.environ.get("USIM_RUN_SAMPLED_EVAL", "0"))
+
+
+def _env(name: str, default: str) -> str:
+    return os.environ.get(f"CGRC_PAPER_{name}", os.environ.get(f"CGRC_{name}", default))
+
+
+def _bool_env(name: str, default: str) -> bool:
+    value = _env(name, default).strip().lower()
+    return value not in {"0", "false", "no", "off", ""}
+
+
+def _print_full_only_report(
+    metrics_keys,
+    full_cold: Dict[str, float],
+    full_hot: Dict[str, float],
+    count_full_cold: int,
+    count_full_hot: int,
+    title: str,
+) -> None:
+    print("\n" + "=" * 90)
+    print(f"         FINAL REPORT: full-ranking only ({title})")
+    print("=" * 90)
+    print(f"{'Metric':<10} | {'Full Cold':<12} | {'Full Hot':<12}")
+    print("-" * 90)
+    for metric in metrics_keys:
+        print(
+            f"{metric:<10} | "
+            f"{full_cold.get(metric, 0.0):<12.4f} | "
+            f"{full_hot.get(metric, 0.0):<12.4f}"
+        )
+    print("-" * 90)
+    print(f"Full Interaction Samples: Cold={count_full_cold}, Hot={count_full_hot}")
+    print("=" * 90)
 
 
 class CGRCNet(nn.Module):
@@ -273,6 +313,7 @@ def _reconstruction_loss(
     u_indices: torch.Tensor,
     user_rated: Sequence[set],
 ) -> torch.Tensor:
+    del user_rated
     if not masked_edges:
         return torch.zeros((), device=logits.device, dtype=logits.dtype)
 
@@ -283,23 +324,11 @@ def _reconstruction_loss(
     for uid, iid in masked_edges:
         by_user[int(uid)].append(int(iid))
 
-    valid_rows = []
-    for row in range(u_indices.numel()):
-        uid = int(u_indices[row].item())
-        rated = user_rated[uid]
-        valid_rows.append([cid not in rated for cid in cold_list])
-    valid_mask = torch.tensor(valid_rows, device=logits.device, dtype=torch.bool)
-    if not valid_mask.any():
-        return torch.zeros((), device=logits.device, dtype=logits.dtype)
-
-    neg_inf = torch.finfo(logits.dtype).min
-    log_denom = torch.logsumexp(logits.masked_fill(~valid_mask, neg_inf), dim=1)
-
     row_inds = []
     col_inds = []
     for uid, items in by_user.items():
         row = row_map.get(uid)
-        if row is None or not bool(valid_mask[row].any().item()):
+        if row is None:
             continue
         for iid in items:
             col = col_of.get(iid)
@@ -312,6 +341,10 @@ def _reconstruction_loss(
 
     row_t = torch.tensor(row_inds, device=logits.device, dtype=torch.long)
     col_t = torch.tensor(col_inds, device=logits.device, dtype=torch.long)
+    # Paper-style edge reconstruction: the true masked edge is part of the
+    # softmax candidate set.  The older adapter accidentally removed positives
+    # from the denominator because it reused the full train rated set.
+    log_denom = torch.logsumexp(logits, dim=1)
     return -(logits[row_t, col_t] - log_denom[row_t]).mean()
 
 
@@ -334,18 +367,20 @@ def _ranking_loss(
     B_map = {int(item): pos for pos, item in enumerate(B_list)}
     pos_cols = torch.tensor([B_map.get(int(iid), -1) for iid in i_pos], dtype=torch.long, device=z_u.device)
 
-    neg_rows = []
-    for uid in u_idx:
+    cand_rows = []
+    for uid, pos_i in zip(u_idx, i_pos):
         rated = user_rated[int(uid)]
-        neg_rows.append([int(item) not in rated for item in B_list])
-    neg_mask = torch.tensor(neg_rows, dtype=torch.bool, device=z_u.device)
+        cand_rows.append([(int(item) not in rated) or (int(item) == int(pos_i)) for item in B_list])
+    cand_mask = torch.tensor(cand_rows, dtype=torch.bool, device=z_u.device)
 
-    valid = (pos_cols >= 0) & neg_mask.any(dim=1)
+    valid = (pos_cols >= 0) & cand_mask.any(dim=1)
     if not valid.any():
         return torch.zeros((), device=z_u.device, dtype=z_u.dtype)
 
     neg_inf = torch.finfo(sim.dtype).min
-    log_denom = torch.logsumexp(sim.masked_fill(~neg_mask, neg_inf), dim=1)
+    # Paper-style recommendation loss: the positive item is included in the
+    # softmax denominator together with sampled unrated candidates.
+    log_denom = torch.logsumexp(sim.masked_fill(~cand_mask, neg_inf), dim=1)
     row_idx = torch.arange(len(u_idx), dtype=torch.long, device=z_u.device)
     return -(sim[row_idx[valid], pos_cols[valid]] - log_denom[valid]).mean()
 
@@ -532,9 +567,11 @@ def main():
     test_cold_items = _cold_items_in(test_df, cfg.cold_threshold)
 
     print(
-        "Model: CGRC static (ColdRec-derived) | "
+        "Model: CGRC static (paper-faithful reimplementation) | "
         f"device={device} | epochs={cfg.n_epochs} | batch={cfg.batch_size} | "
         f"rho={cfg.mask_rho} | topk={cfg.recon_topk} | "
+        f"best_average_mode={cfg.best_average_mode} | "
+        f"sampled_eval={cfg.run_sampled_eval} | "
         f"val_cold_items={val_cold_items.size} | test_cold_items={test_cold_items.size}"
     )
 
@@ -638,6 +675,7 @@ def main():
                 eval_type="cold",
                 full_ranking=True,
                 user_seen_items=train_seen,
+                average_mode=cfg.best_average_mode,
             )
             val_key = val_full_cold.get("N@10", 0.0) if val_full_cold else 0.0
             if val_key > best_val:
@@ -650,14 +688,16 @@ def main():
         print(
             f"Epoch [{epoch + 1}/{cfg.n_epochs}] "
             f"loss={loss_sum / denom:.4f} | L_E={loss_e_sum / denom:.4f} | "
-            f"L_R={loss_r_sum / denom:.4f} | val_full_cold_N@10={val_key:.4f} | "
+            f"L_R={loss_r_sum / denom:.4f} | "
+            f"val_full_cold_N@10({cfg.best_average_mode})={val_key:.4f} | "
             f"val_recon_edges={recon_edges}"
         )
 
     if best_state is not None:
         model.load_state_dict({k: v.to(device) for k, v in best_state.items()})
         print(
-            f"Restore best epoch={best_epoch}, val_full_cold_N@10={best_val:.4f}, "
+            f"Restore best epoch={best_epoch}, "
+            f"val_full_cold_N@10({cfg.best_average_mode})={best_val:.4f}, "
             f"val_recon_edges={best_recon_edges}"
         )
 
@@ -673,16 +713,20 @@ def main():
         )
         get_user_fn = lambda batch: all_u[batch["u"]]
 
-        sample_cold, n_sc = evaluate_embedding_ranker(
-            test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
-            k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=False,
-            user_seen_items=test_seen,
-        )
-        sample_hot, n_sh = evaluate_embedding_ranker(
-            test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
-            k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=False,
-            user_seen_items=test_seen,
-        )
+        if cfg.run_sampled_eval:
+            sample_cold, n_sc = evaluate_embedding_ranker(
+                test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
+                k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=False,
+                user_seen_items=test_seen,
+            )
+            sample_hot, n_sh = evaluate_embedding_ranker(
+                test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
+                k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=False,
+                user_seen_items=test_seen,
+            )
+        else:
+            sample_cold, n_sc = {}, 0
+            sample_hot, n_sh = {}, 0
         full_cold, n_fc = evaluate_embedding_ranker(
             test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
@@ -712,25 +756,41 @@ def main():
     full_hot_item_macro = full_hot_item_macro or {}
     metrics_keys = [f"{metric}@{k}" for metric in ["R", "N"] for k in k_list]
 
-    print_final_report(
-        eval_n_neg=cfg.eval_n_neg,
-        metrics_keys=metrics_keys,
-        sample_cold=sample_cold,
-        sample_hot=sample_hot,
-        full_cold=full_cold,
-        full_hot=full_hot,
-        count_sample_cold=n_sc,
-        count_sample_hot=n_sh,
-        count_full_cold=n_fc,
-        count_full_hot=n_fh,
-        title="CGRC Static HIN (ColdRec-derived)",
-    )
+    if cfg.run_sampled_eval:
+        print_final_report(
+            eval_n_neg=cfg.eval_n_neg,
+            metrics_keys=metrics_keys,
+            sample_cold=sample_cold,
+            sample_hot=sample_hot,
+            full_cold=full_cold,
+            full_hot=full_hot,
+            count_sample_cold=n_sc,
+            count_sample_hot=n_sh,
+            count_full_cold=n_fc,
+            count_full_hot=n_fh,
+            title="CGRC Static HIN (paper-faithful)",
+        )
+    else:
+        _print_full_only_report(
+            metrics_keys=metrics_keys,
+            full_cold=full_cold,
+            full_hot=full_hot,
+            count_full_cold=n_fc,
+            count_full_hot=n_fh,
+            title="CGRC Static HIN (paper-faithful)",
+        )
 
     out = {
-        "model": "CGRC",
-        "source": "ColdRec-derived third-party adaptation",
+        "model": "CGRC-paper",
+        "model_display": "CGRC-paper",
+        "source": "paper-faithful reimplementation",
+        "official_code": "unavailable",
+        "paper": "Content-based Graph Reconstruction for Cold-start Item Recommendation",
+        "paper_venue": "SIGIR 2024",
+        "paper_url": "https://www.joonseok.net/papers/cgrc.pdf",
         "protocol": "static_item_cold",
-        "best_metric": "cold",
+        "best_metric": f"full_cold_N@10_{cfg.best_average_mode}",
+        "loss_form": "softmax_with_positive_in_denominator",
         "sample_cold": sample_cold,
         "sample_hot": sample_hot,
         "full_cold": full_cold,
@@ -759,9 +819,11 @@ def main():
         "le_max_edges": cfg.le_max_edges,
         "ranking_neg_per_user": cfg.ranking_neg_per_user,
         "eval_n_neg": cfg.eval_n_neg,
+        "best_average_mode": cfg.best_average_mode,
+        "run_sampled_eval": cfg.run_sampled_eval,
         "static_seed": cfg.static_seed,
     }
-    result_path = static_result_path("cgrc_static_result.json")
+    result_path = static_result_path("cgrc_paper_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)
     print(f"Saved: {result_path}")
 

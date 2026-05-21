@@ -41,6 +41,16 @@ class Config:
         self.val_ratio = float(os.environ.get("DROPOUT_STATIC_VAL_RATIO", "0.1"))
         self.batch_size = int(os.environ.get("DROPOUT_BATCH_SIZE", "512"))
         self.n_epochs = int(os.environ.get("DROPOUT_STATIC_EPOCHS", "40"))
+        self.eval_interval = int(os.environ.get("DROPOUT_EVAL_INTERVAL", "5"))
+        self.early_stop_average_mode = os.environ.get(
+            "DROPOUT_EARLY_STOP_AVG_MODE",
+            os.environ.get("USIM_EARLY_STOP_AVG_MODE", "interaction"),
+        ).strip().lower()
+        if self.early_stop_average_mode not in {"interaction", "item_macro"}:
+            raise ValueError(
+                "DROPOUT_EARLY_STOP_AVG_MODE/USIM_EARLY_STOP_AVG_MODE must be "
+                "'interaction' or 'item_macro'"
+            )
         self.lr = 1e-3
         # DropoutNet 鐗规湁鍙傛暟
         self.dropout_prob = 0.5  # 璁粌鏃?Drop ID 鐨勬鐜?
@@ -275,13 +285,20 @@ def evaluate_full_dropoutnet(model, loader, all_item_z, device, k_list=[5, 10, 2
     if total_samples == 0: return None, 0
     return {k: v / total_samples for k, v in metrics_sum.items()}, total_samples
 
-def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_seen_items=None):
+def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_seen_items=None, average_mode="interaction"):
     """Compute cold/hot full-ranking metrics with optional seen-item masking."""
+    average_mode = average_mode.strip().lower()
+    if average_mode not in {"interaction", "item_macro"}:
+        raise ValueError("average_mode must be 'interaction' or 'item_macro'")
     model.eval()
     c_sum = {f'{m}@{k}': 0.0 for m in ['R', 'N'] for k in k_list}
     h_sum = {f'{m}@{k}': 0.0 for m in ['R', 'N'] for k in k_list}
     c_total = 0
     h_total = 0
+    c_item_sum = {f'{m}@{k}': {} for m in ['R', 'N'] for k in k_list}
+    h_item_sum = {f'{m}@{k}': {} for m in ['R', 'N'] for k in k_list}
+    c_item_count = {}
+    h_item_count = {}
     seen_tensor_cache = {}
 
     try:
@@ -335,6 +352,7 @@ def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_see
 
             is_c = pop_mask.cpu() if cpu_m else pop_mask
             is_h = ~is_c
+            item_ids = [int(x) for x in i_tgt.detach().cpu().tolist()]
 
             for k in k_list:
                 preds = topk[:, :k]
@@ -344,13 +362,44 @@ def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_see
                 if rks[0].numel() > 0:
                     dcgs[rks[0]] = 1.0 / torch.log2(rks[1].float() + 2.0)
 
-                c_sum[f'R@{k}'] += hits[is_c].sum().item()
-                c_sum[f'N@{k}'] += dcgs[is_c].sum().item()
-                h_sum[f'R@{k}'] += hits[is_h].sum().item()
-                h_sum[f'N@{k}'] += dcgs[is_h].sum().item()
+                if average_mode == "item_macro":
+                    hits_cpu = hits.detach().cpu()
+                    dcgs_cpu = dcgs.detach().cpu()
+                    is_c_cpu = is_c.detach().cpu()
+                    for row, item_id in enumerate(item_ids):
+                        if bool(is_c_cpu[row].item()):
+                            c_item_count[item_id] = c_item_count.get(item_id, 0) + (1 if k == k_list[0] else 0)
+                            c_item_sum[f'R@{k}'][item_id] = c_item_sum[f'R@{k}'].get(item_id, 0.0) + float(hits_cpu[row].item())
+                            c_item_sum[f'N@{k}'][item_id] = c_item_sum[f'N@{k}'].get(item_id, 0.0) + float(dcgs_cpu[row].item())
+                        else:
+                            h_item_count[item_id] = h_item_count.get(item_id, 0) + (1 if k == k_list[0] else 0)
+                            h_item_sum[f'R@{k}'][item_id] = h_item_sum[f'R@{k}'].get(item_id, 0.0) + float(hits_cpu[row].item())
+                            h_item_sum[f'N@{k}'][item_id] = h_item_sum[f'N@{k}'].get(item_id, 0.0) + float(dcgs_cpu[row].item())
+                else:
+                    c_sum[f'R@{k}'] += hits[is_c].sum().item()
+                    c_sum[f'N@{k}'] += dcgs[is_c].sum().item()
+                    h_sum[f'R@{k}'] += hits[is_h].sum().item()
+                    h_sum[f'N@{k}'] += dcgs[is_h].sum().item()
 
             c_total += is_c.sum().item()
             h_total += is_h.sum().item()
+
+    if average_mode == "item_macro":
+        def _macro(item_sum, item_count):
+            if not item_count:
+                return None, 0
+            out = {}
+            for key, values in item_sum.items():
+                item_values = [
+                    values.get(item_id, 0.0) / count
+                    for item_id, count in item_count.items()
+                    if count > 0
+                ]
+                out[key] = sum(item_values) / max(1, len(item_values))
+            return out, len(item_count)
+        c_res, c_n = _macro(c_item_sum, c_item_count)
+        h_res, h_n = _macro(h_item_sum, h_item_count)
+        return c_res, c_n, h_res, h_n
 
     c_res = {k: v / c_total for k, v in c_sum.items()} if c_total > 0 else None
     h_res = {k: v / h_total for k, v in h_sum.items()} if h_total > 0 else None
@@ -524,7 +573,10 @@ def main():
         idx = int(item_id)
         if 0 <= idx < cfg.n_items:
             item_popularity[idx] = int(count)
-    print(f">> Model: DropoutNet (Concat) | STATIC | eval_n_neg={cfg.eval_n_neg}")
+    print(
+        f">> Model: DropoutNet (Concat) | STATIC | eval_n_neg={cfg.eval_n_neg} "
+        f"| best_avg={cfg.early_stop_average_mode}"
+    )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = DropoutNet(cfg, content_emb).to(device)
@@ -567,10 +619,11 @@ def main():
             steps += 1
         print(f"Epoch [{epoch}/{epochs}] Train Loss: {total_loss / max(1, steps):.4f}")
 
-        if epoch % 5 == 0 or epoch == epochs:
+        if epoch % cfg.eval_interval == 0 or epoch == epochs:
             all_z = precompute_full_pool(model, cfg.n_items, device=device, item_popularity=item_popularity)
             c_m_f, n_c_f, h_m_f, n_h_f = evaluate_dual_dropoutnet(
-                model, val_loader, all_z, device, k_list, user_seen_items=train_seen_items
+                model, val_loader, all_z, device, k_list, user_seen_items=train_seen_items,
+                average_mode=cfg.early_stop_average_mode,
             )
             val_key = c_m_f.get("N@10", 0.0) if c_m_f else 0.0
             if val_key > best_val:
@@ -579,11 +632,17 @@ def main():
                 best_state = copy.deepcopy(model.state_dict())
             c_f_str = " | ".join([f"{k}={c_m_f[k]:.4f}" for k in metrics_keys[:3]]) if c_m_f else "N/A"
             h_f_str = " | ".join([f"{k}={h_m_f[k]:.4f}" for k in metrics_keys[:3]]) if h_m_f else "N/A"
-            print(f"  --> Valid Cold Full: {c_f_str} | Hot Full: {h_f_str}")
+            print(
+                f"  --> Valid Cold Full ({cfg.early_stop_average_mode}): "
+                f"{c_f_str} | Hot Full: {h_f_str}"
+            )
 
     if best_state is not None:
         model.load_state_dict(best_state)
-        print(f"Restore best epoch={best_epoch}, val_full_cold_N@10={best_val:.4f}")
+        print(
+            f"Restore best epoch={best_epoch}, "
+            f"val_full_cold_N@10({cfg.early_stop_average_mode})={best_val:.4f}"
+        )
 
     print("\n" + "=" * 90)
     print(f"         FINAL TEST REPORT: Sampled (1+{cfg.eval_n_neg}) vs Full Ranking (STATIC)")
@@ -591,6 +650,10 @@ def main():
     all_z = precompute_full_pool(model, cfg.n_items, device=device, item_popularity=item_popularity)
     c_m_f, n_c_f, h_m_f, n_h_f = evaluate_dual_dropoutnet(
         model, test_loader, all_z, device, k_list, user_seen_items=test_seen_items
+    )
+    c_m_f_item_macro, n_c_f_item_macro, h_m_f_item_macro, n_h_f_item_macro = evaluate_dual_dropoutnet(
+        model, test_loader, all_z, device, k_list, user_seen_items=test_seen_items,
+        average_mode="item_macro",
     )
     c_m_s, n_c_s, h_m_s, n_h_s = evaluate_sampled_dropoutnet(
         model, test_loader, all_z, device, k_list, n_neg=cfg.eval_n_neg, user_seen_items=test_seen_items
@@ -609,7 +672,16 @@ def main():
     print(f"全库 Samples: Cold={n_c_f}, Hot={n_h_f}")
     print("=" * 90)
 
-    out = {"model": "DropoutNet", "protocol": "static"}
+    out = {
+        "model": "DropoutNet",
+        "protocol": "static_item_cold",
+        "sample_cold": c_m_s or {},
+        "sample_hot": h_m_s or {},
+        "full_cold": c_m_f or {},
+        "full_hot": h_m_f or {},
+        "full_cold_item_macro": c_m_f_item_macro or {},
+        "full_hot_item_macro": h_m_f_item_macro or {},
+    }
     for k in metrics_keys:
         out[f"samp_cold_{k}"] = c_m_s.get(k, 0.0) if c_m_s else 0.0
         out[f"samp_hot_{k}"] = h_m_s.get(k, 0.0) if h_m_s else 0.0
@@ -620,8 +692,13 @@ def main():
         "count_sample_hot": n_h_s,
         "count_full_cold": n_c_f,
         "count_full_hot": n_h_f,
+        "count_full_cold_item_macro": n_c_f_item_macro,
+        "count_full_hot_item_macro": n_h_f_item_macro,
         "best_epoch": best_epoch,
         "best_val_full_cold_n10": best_val,
+        "best_average_mode": cfg.early_stop_average_mode,
+        "best_metric": f"cold_{cfg.early_stop_average_mode}_N@10",
+        "eval_interval": cfg.eval_interval,
         "eval_n_neg": cfg.eval_n_neg,
     })
     result_path = static_result_path("drop_static_result.json")

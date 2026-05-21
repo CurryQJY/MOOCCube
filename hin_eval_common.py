@@ -8,6 +8,15 @@ def compute_ranking_metrics(
     target_indices: torch.Tensor,
     k_list=(5, 10, 20)
 ) -> Dict[str, float]:
+    values = compute_ranking_metric_values(scores, target_indices, k_list=k_list)
+    return {key: float(val.mean().item()) for key, val in values.items()}
+
+
+def compute_ranking_metric_values(
+    scores: torch.Tensor,
+    target_indices: torch.Tensor,
+    k_list=(5, 10, 20)
+) -> Dict[str, torch.Tensor]:
     batch_size = scores.size(0)
     n_candidates = scores.size(1)
     max_k = min(max(k_list), n_candidates)
@@ -18,13 +27,13 @@ def compute_ranking_metrics(
     for k in k_list:
         preds = topk_idx[:, :k]
         hits = (preds == targets).any(dim=1).float()
-        results[f"R@{k}"] = hits.mean().item()
+        results[f"R@{k}"] = hits
 
         rk = (preds == targets).nonzero(as_tuple=True)
         ndcg_vals = torch.zeros(batch_size, device=scores.device)
         if rk[0].numel() > 0:
             ndcg_vals[rk[0]] = 1.0 / torch.log2(rk[1].float() + 2.0)
-        results[f"N@{k}"] = ndcg_vals.mean().item()
+        results[f"N@{k}"] = ndcg_vals
     return results
 
 
@@ -63,9 +72,15 @@ def evaluate_embedding_ranker(
         ]
     ] = None,
     normalize_user: bool = True,
+    average_mode: str = "interaction",
 ) -> Tuple[Optional[Dict[str, float]], int]:
+    average_mode = average_mode.strip().lower()
+    if average_mode not in {"interaction", "item_macro"}:
+        raise ValueError("average_mode must be 'interaction' or 'item_macro'")
     accum = {f"{m}@{k}": 0.0 for m in ["R", "N"] for k in k_list}
     total_samples = 0
+    item_accum = {f"{m}@{k}": {} for m in ["R", "N"] for k in k_list}
+    item_counts: Dict[int, int] = {}
     seen_tensor_cache: Dict[int, Optional[torch.Tensor]] = {}
 
     with torch.no_grad():
@@ -161,13 +176,33 @@ def evaluate_embedding_ranker(
                 uid_t = torch.tensor(user_ids, dtype=torch.long, device=device)
                 scores = score_adjust_fn(scores, uid_t, i, pop_sel, cand_idx)
 
-            batch_res = compute_ranking_metrics(scores, target_indices, k_list=k_list)
-            for k, v in batch_res.items():
-                accum[k] += v * n_sel
+            batch_values = compute_ranking_metric_values(scores, target_indices, k_list=k_list)
+            if average_mode == "item_macro":
+                item_ids = [int(x) for x in i.detach().cpu().tolist()]
+                for row, item_id in enumerate(item_ids):
+                    item_counts[item_id] = item_counts.get(item_id, 0) + 1
+                    for key, values in batch_values.items():
+                        per_item = item_accum[key]
+                        per_item[item_id] = per_item.get(item_id, 0.0) + float(values[row].detach().cpu().item())
+            else:
+                for k, values in batch_values.items():
+                    accum[k] += float(values.sum().detach().cpu().item())
             total_samples += n_sel
 
     if total_samples < 1:
         return None, 0
+    if average_mode == "item_macro":
+        if not item_counts:
+            return None, 0
+        macro = {}
+        for key, per_item in item_accum.items():
+            item_values = [
+                per_item.get(item_id, 0.0) / count
+                for item_id, count in item_counts.items()
+                if count > 0
+            ]
+            macro[key] = sum(item_values) / max(1, len(item_values))
+        return macro, len(item_counts)
     return {k: v / total_samples for k, v in accum.items()}, total_samples
 
 

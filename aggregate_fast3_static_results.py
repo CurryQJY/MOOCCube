@@ -18,8 +18,22 @@ METRIC_COLS = [
     "full_hot_n5",
     "full_hot_n10",
     "full_hot_n20",
+    "full_cold_item_macro_r5",
+    "full_cold_item_macro_r10",
+    "full_cold_item_macro_r20",
+    "full_cold_item_macro_n5",
+    "full_cold_item_macro_n10",
+    "full_cold_item_macro_n20",
+    "full_hot_item_macro_r5",
+    "full_hot_item_macro_r10",
+    "full_hot_item_macro_r20",
+    "full_hot_item_macro_n5",
+    "full_hot_item_macro_n10",
+    "full_hot_item_macro_n20",
     "full_cold_count",
     "full_hot_count",
+    "full_cold_item_macro_count",
+    "full_hot_item_macro_count",
 ]
 
 

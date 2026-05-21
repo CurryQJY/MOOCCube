@@ -28,7 +28,7 @@ from hin_data_common import (
     setup_seed,
     split_dataframe_by_periods,
 )
-from hin_eval_common import compute_ranking_metrics, print_final_report
+from hin_eval_common import compute_ranking_metric_values, compute_ranking_metrics, print_final_report
 
 
 class Config:
@@ -67,9 +67,15 @@ def evaluate_popularity_ranker(
     full_ranking: bool = False,
     user_seen_items: Dict[int, set] = None,
     tie_break_noise: float = 1e-6,
+    average_mode: str = "interaction",
 ):
+    average_mode = average_mode.strip().lower()
+    if average_mode not in {"interaction", "item_macro"}:
+        raise ValueError("average_mode must be 'interaction' or 'item_macro'")
     accum = {f"{m}@{k}": 0.0 for m in ["R", "N"] for k in k_list}
     total_samples = 0
+    item_accum = {f"{m}@{k}": {} for m in ["R", "N"] for k in k_list}
+    item_counts: Dict[int, int] = {}
     seen_tensor_cache: Dict[int, torch.Tensor] = {}
     all_item_idx = torch.arange(n_items, device=device, dtype=torch.long)
 
@@ -154,13 +160,33 @@ def evaluate_popularity_ranker(
                 scores = scores + torch.randn_like(scores) * tie_break_noise
                 target_indices = (cand_idx == i.unsqueeze(1)).nonzero(as_tuple=True)[1].view(-1)
 
-            batch_res = compute_ranking_metrics(scores, target_indices, k_list=k_list)
-            for k, v in batch_res.items():
-                accum[k] += v * n_sel
+            batch_values = compute_ranking_metric_values(scores, target_indices, k_list=k_list)
+            if average_mode == "item_macro":
+                item_ids = [int(x) for x in i.detach().cpu().tolist()]
+                for row, item_id in enumerate(item_ids):
+                    item_counts[item_id] = item_counts.get(item_id, 0) + 1
+                    for key, values in batch_values.items():
+                        per_item = item_accum[key]
+                        per_item[item_id] = per_item.get(item_id, 0.0) + float(values[row].detach().cpu().item())
+            else:
+                for k, values in batch_values.items():
+                    accum[k] += float(values.sum().detach().cpu().item())
             total_samples += n_sel
 
     if total_samples < 1:
         return None, 0
+    if average_mode == "item_macro":
+        if not item_counts:
+            return None, 0
+        macro = {}
+        for key, per_item in item_accum.items():
+            item_values = [
+                per_item.get(item_id, 0.0) / count
+                for item_id, count in item_counts.items()
+                if count > 0
+            ]
+            macro[key] = sum(item_values) / max(1, len(item_values))
+        return macro, len(item_counts)
     return {k: v / total_samples for k, v in accum.items()}, total_samples
 
 

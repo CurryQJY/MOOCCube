@@ -240,13 +240,20 @@ def precompute_full_pool(model, num_items, batch_size=2048, device='cuda', item_
     return torch.cat(all_z_i, dim=0)
 
 
-def evaluate_dual_gafc(model, loader, all_item_z, device, k_list, user_seen_items=None):
+def evaluate_dual_gafc(model, loader, all_item_z, device, k_list, user_seen_items=None, average_mode="interaction"):
     """鍚屾椂璁＄畻 Cold 鍜?Hot 鍏ㄥ簱鎸囨爣"""
+    average_mode = average_mode.strip().lower()
+    if average_mode not in {"interaction", "item_macro"}:
+        raise ValueError("average_mode must be 'interaction' or 'item_macro'")
     model.eval()
     c_sum = {f'{m}@{k}': 0.0 for m in ['R', 'N'] for k in k_list}
     h_sum = {f'{m}@{k}': 0.0 for m in ['R', 'N'] for k in k_list}
     c_total = 0
     h_total = 0
+    c_item_sum = {f'{m}@{k}': {} for m in ['R', 'N'] for k in k_list}
+    h_item_sum = {f'{m}@{k}': {} for m in ['R', 'N'] for k in k_list}
+    c_item_count = {}
+    h_item_count = {}
     seen_tensor_cache = {}
     
     try:
@@ -306,8 +313,14 @@ def evaluate_dual_gafc(model, loader, all_item_z, device, k_list, user_seen_item
             topk = perm[topk_pos]
             t_cols = t_cols.view(-1, 1)
             
-            is_c = pop_mask.cpu() if cpu_m else pop_mask
+            is_c = pop_mask.to(scores.device)
             is_h = ~is_c
+            if average_mode == "item_macro":
+                item_ids = [int(x) for x in i_tgt.detach().cpu().tolist()]
+                cold_flags = [bool(x) for x in is_c.detach().cpu().tolist()]
+                for item_id, is_cold_item in zip(item_ids, cold_flags):
+                    counts = c_item_count if is_cold_item else h_item_count
+                    counts[item_id] = counts.get(item_id, 0) + 1
             
             for k in k_list:
                 preds = topk[:, :k]
@@ -318,14 +331,41 @@ def evaluate_dual_gafc(model, loader, all_item_z, device, k_list, user_seen_item
                 if rks[0].numel() > 0:
                     dcgs[rks[0]] = 1.0 / torch.log2(rks[1].float() + 2.0)
                 
-                c_sum[f'R@{k}'] += hits[is_c].sum().item()
-                c_sum[f'N@{k}'] += dcgs[is_c].sum().item()
-                h_sum[f'R@{k}'] += hits[is_h].sum().item()
-                h_sum[f'N@{k}'] += dcgs[is_h].sum().item()
-                
-            c_total += is_c.sum().item()
-            h_total += is_h.sum().item()
+                if average_mode == "item_macro":
+                    hit_vals = [float(x) for x in hits.detach().cpu().tolist()]
+                    ndcg_vals = [float(x) for x in dcgs.detach().cpu().tolist()]
+                    for row, item_id in enumerate(item_ids):
+                        sums = c_item_sum if cold_flags[row] else h_item_sum
+                        sums[f'R@{k}'][item_id] = sums[f'R@{k}'].get(item_id, 0.0) + hit_vals[row]
+                        sums[f'N@{k}'][item_id] = sums[f'N@{k}'].get(item_id, 0.0) + ndcg_vals[row]
+                else:
+                    c_sum[f'R@{k}'] += hits[is_c].sum().item()
+                    c_sum[f'N@{k}'] += dcgs[is_c].sum().item()
+                    h_sum[f'R@{k}'] += hits[is_h].sum().item()
+                    h_sum[f'N@{k}'] += dcgs[is_h].sum().item()
+
+            if average_mode == "interaction":
+                c_total += is_c.sum().item()
+                h_total += is_h.sum().item()
             
+    if average_mode == "item_macro":
+        def macro_result(item_sum, item_count):
+            if not item_count:
+                return None, 0
+            res = {}
+            for key, per_item in item_sum.items():
+                vals = [
+                    per_item.get(item_id, 0.0) / count
+                    for item_id, count in item_count.items()
+                    if count > 0
+                ]
+                res[key] = sum(vals) / max(1, len(vals))
+            return res, len(item_count)
+
+        c_res, c_count = macro_result(c_item_sum, c_item_count)
+        h_res, h_count = macro_result(h_item_sum, h_item_count)
+        return c_res, c_count, h_res, h_count
+
     c_res = {k: v/c_total for k,v in c_sum.items()} if c_total > 0 else None
     h_res = {k: v/h_total for k,v in h_sum.items()} if h_total > 0 else None
     return c_res, c_total, h_res, h_total
@@ -443,7 +483,7 @@ def evaluate_sampled_gafc(model, loader, all_item_z, device, k_list, n_neg=999, 
             max_k = min(max(k_list), scores.size(1))
             _, topk = torch.topk(scores, k=max_k, dim=1)
             
-            is_c = pop_mask.cpu() if cpu_m else pop_mask
+            is_c = pop_mask.to(scores.device)
             is_h = ~is_c
             
             for k in k_list:
@@ -632,6 +672,15 @@ def main():
     c_m_f, n_c_f, h_m_f, n_h_f = evaluate_dual_gafc(
         model, test_loader, all_z, device, k_list, user_seen_items=test_seen_items
     )
+    c_m_f_item_macro, n_c_f_item_macro, h_m_f_item_macro, n_h_f_item_macro = evaluate_dual_gafc(
+        model,
+        test_loader,
+        all_z,
+        device,
+        k_list,
+        user_seen_items=test_seen_items,
+        average_mode="item_macro",
+    )
     c_m_s, n_c_s, h_m_s, n_h_s = evaluate_sampled_gafc(
         model, test_loader, all_z, device, k_list, n_neg=cfg.eval_n_neg, user_seen_items=test_seen_items
     )
@@ -649,7 +698,16 @@ def main():
     print(f"全库 Samples: Cold={n_c_f}, Hot={n_h_f}")
     print("=" * 90)
 
-    out = {"model": "GAR", "protocol": "static"}
+    out = {
+        "model": "GAR",
+        "protocol": "static_item_cold",
+        "sample_cold": c_m_s or {},
+        "sample_hot": h_m_s or {},
+        "full_cold": c_m_f or {},
+        "full_hot": h_m_f or {},
+        "full_cold_item_macro": c_m_f_item_macro or {},
+        "full_hot_item_macro": h_m_f_item_macro or {},
+    }
     for k in metrics_keys:
         out[f"samp_cold_{k}"] = c_m_s.get(k, 0.0) if c_m_s else 0.0
         out[f"samp_hot_{k}"] = h_m_s.get(k, 0.0) if h_m_s else 0.0
@@ -660,8 +718,11 @@ def main():
         "count_sample_hot": n_h_s,
         "count_full_cold": n_c_f,
         "count_full_hot": n_h_f,
+        "count_full_cold_item_macro": n_c_f_item_macro,
+        "count_full_hot_item_macro": n_h_f_item_macro,
         "best_epoch": best_epoch,
         "best_val_full_cold_n10": best_val,
+        "best_metric": "cold",
         "eval_n_neg": cfg.eval_n_neg,
         "eval_item_mode": cfg.eval_item_mode,
         "rec_mode": cfg.rec_mode,
