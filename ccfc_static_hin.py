@@ -38,6 +38,7 @@ from hin_data_common import (
 )
 from hin_eval_common import evaluate_embedding_ranker, print_final_report
 from lightgcn_static_hin import prepare_train_cache, sample_negatives
+from baseline_checkpoint import checkpoint_config, maybe_resume_checkpoint, save_checkpoint
 
 
 class Config:
@@ -72,6 +73,7 @@ class Config:
         self.eval_item_mode = os.environ.get("CCFCREC_EVAL_ITEM_MODE", "mixed").strip().lower()
         if self.eval_item_mode not in {"mixed", "content", "id"}:
             raise ValueError("CCFCREC_EVAL_ITEM_MODE must be one of: mixed, content, id")
+        self.ckpt = checkpoint_config("CCFCREC")
 
 
 class CCFCRecStaticModel(nn.Module):
@@ -354,8 +356,12 @@ def main():
     best_epoch = -1
     best_state = None
     metrics_keys = [f"{m}@{k}" for m in ["R", "N"] for k in [5, 10, 20]]
+    start_epoch, ckpt_state = maybe_resume_checkpoint(cfg.ckpt, model, optimizer, device)
+    best_val = float(ckpt_state.get("best_val", best_val))
+    best_epoch = int(ckpt_state.get("best_epoch", best_epoch))
+    best_state = ckpt_state.get("best_state", best_state)
 
-    for epoch in range(1, cfg.n_epochs + 1):
+    for epoch in range(start_epoch + 1, cfg.n_epochs + 1):
         model.train()
         rank_neg_np = sample_negatives(train_pos_np, user_rows, rank_neg_pool, cfg.n_items)
         rank_neg_t = torch.tensor(rank_neg_np, dtype=torch.long, device=device)
@@ -401,6 +407,7 @@ def main():
         part_msg = " ".join([f"{k}={v / max(1, n_batches):.4f}" for k, v in loss_parts.items()])
         do_eval = (epoch % cfg.eval_interval == 0) or (epoch == cfg.n_epochs)
         if do_eval:
+            improved = False
             item_bank = precompute_ccfc_item_bank(cfg, model, item_counts, device)
             val_cold, n_vc, _, _ = evaluate_split(
                 cfg,
@@ -416,12 +423,33 @@ def main():
                 best_val = val_key
                 best_epoch = epoch
                 best_state = state_dict_to_cpu(model)
+                improved = True
+            if cfg.ckpt.save and improved:
+                save_checkpoint(
+                    cfg.ckpt,
+                    "best.pt",
+                    epoch,
+                    model,
+                    optimizer,
+                    best_state=best_state,
+                    extra={"best_val": best_val, "best_epoch": best_epoch},
+                )
             print(
                 f"CCFCRec Epoch [{epoch}/{cfg.n_epochs}] loss={avg_loss:.4f} | {part_msg} | "
                 f"val_full_cold_N@10={val_key:.4f} | val_cold_count={n_vc}"
             )
         else:
             print(f"CCFCRec Epoch [{epoch}/{cfg.n_epochs}] loss={avg_loss:.4f} | {part_msg}")
+        if cfg.ckpt.save:
+            save_checkpoint(
+                cfg.ckpt,
+                "latest.pt",
+                epoch,
+                model,
+                optimizer,
+                best_state=best_state,
+                extra={"best_val": best_val, "best_epoch": best_epoch},
+            )
 
     if best_state is not None:
         model.load_state_dict(best_state)
@@ -499,6 +527,8 @@ def main():
         "negative_number": cfg.negative_number,
         "self_negative_number": cfg.self_negative_number,
         "eval_item_mode": cfg.eval_item_mode,
+        "checkpoint_dir": cfg.ckpt.dir or None,
+        "resumed_from_epoch": start_epoch,
         "note": (
             "Core CCFCRec contrastive content-to-CF idea is adapted to the shared "
             "user-to-item static item-cold protocol; checkpoint selected by validation full cold N@10."

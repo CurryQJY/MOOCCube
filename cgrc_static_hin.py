@@ -39,6 +39,7 @@ from hin_data_common import (
 )
 from hin_eval_common import evaluate_embedding_ranker, print_final_report
 from lightgcn_static_hin import prepare_train_cache
+from baseline_checkpoint import checkpoint_config, maybe_resume_checkpoint, save_checkpoint
 
 
 class Config:
@@ -81,6 +82,7 @@ class Config:
         self.seed = int(os.environ.get("CGRC_SEED", str(self.static_seed)))
         self.train_ratio = float(os.environ.get("CGRC_STATIC_TRAIN_RATIO", "0.8"))
         self.val_ratio = float(os.environ.get("CGRC_STATIC_VAL_RATIO", "0.1"))
+        self.ckpt = checkpoint_config("CGRC")
 
 
 class CGRCNet(nn.Module):
@@ -543,8 +545,13 @@ def main():
     best_state = None
     best_recon_edges = 0
     k_list = [5, 10, 20]
+    start_epoch, ckpt_state = maybe_resume_checkpoint(cfg.ckpt, model, optimizer, device)
+    best_val = float(ckpt_state.get("best_val", best_val))
+    best_epoch = int(ckpt_state.get("best_epoch", best_epoch))
+    best_state = ckpt_state.get("best_state", best_state)
+    best_recon_edges = int(ckpt_state.get("best_recon_edges", best_recon_edges))
 
-    for epoch in range(cfg.n_epochs):
+    for epoch in range(start_epoch, cfg.n_epochs):
         model.train()
         loss_sum = 0.0
         loss_e_sum = 0.0
@@ -616,6 +623,7 @@ def main():
             n_batches += 1
 
         model.eval()
+        improved = False
         with torch.no_grad():
             all_u_val, all_i_val, recon_edges = _build_ghat_embeddings(
                 model,
@@ -645,6 +653,21 @@ def main():
                 best_epoch = epoch + 1
                 best_recon_edges = recon_edges
                 best_state = copy.deepcopy({k: v.detach().cpu() for k, v in model.state_dict().items()})
+                improved = True
+        if cfg.ckpt.save and improved:
+            save_checkpoint(
+                cfg.ckpt,
+                "best.pt",
+                epoch + 1,
+                model,
+                optimizer,
+                best_state=best_state,
+                extra={
+                    "best_val": best_val,
+                    "best_epoch": best_epoch,
+                    "best_recon_edges": best_recon_edges,
+                },
+            )
 
         denom = max(1, n_batches)
         print(
@@ -653,6 +676,20 @@ def main():
             f"L_R={loss_r_sum / denom:.4f} | val_full_cold_N@10={val_key:.4f} | "
             f"val_recon_edges={recon_edges}"
         )
+        if cfg.ckpt.save:
+            save_checkpoint(
+                cfg.ckpt,
+                "latest.pt",
+                epoch + 1,
+                model,
+                optimizer,
+                best_state=best_state,
+                extra={
+                    "best_val": best_val,
+                    "best_epoch": best_epoch,
+                    "best_recon_edges": best_recon_edges,
+                },
+            )
 
     if best_state is not None:
         model.load_state_dict({k: v.to(device) for k, v in best_state.items()})
@@ -760,6 +797,8 @@ def main():
         "ranking_neg_per_user": cfg.ranking_neg_per_user,
         "eval_n_neg": cfg.eval_n_neg,
         "static_seed": cfg.static_seed,
+        "checkpoint_dir": cfg.ckpt.dir or None,
+        "resumed_from_epoch": start_epoch,
     }
     result_path = static_result_path("cgrc_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)

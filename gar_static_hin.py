@@ -14,6 +14,7 @@ import matplotlib
 
 matplotlib.use('Agg')
 from hin_data_common import static_result_path, static_split_df
+from baseline_checkpoint import checkpoint_config, maybe_resume_checkpoint, save_checkpoint
 from torch.utils.data import Dataset, DataLoader
 
 
@@ -49,9 +50,11 @@ class Config:
         self.val_ratio = float(os.environ.get("GAR_STATIC_VAL_RATIO", "0.1"))
         self.batch_size = int(os.environ.get("GAR_BATCH_SIZE", "512"))
         self.n_epochs = int(os.environ.get("GAR_STATIC_EPOCHS", "40"))
+        self.eval_interval = int(os.environ.get("GAR_EVAL_INTERVAL", "5"))
         self.eval_item_mode = os.environ.get("GAR_EVAL_ITEM_MODE", "mixed").strip().lower()
         self.rec_mode = os.environ.get("GAR_REC_MODE", "real_fake").strip().lower()
         self.lr = 1e-3
+        self.ckpt = checkpoint_config("GAR")
 
         # --- GAFC (GAN) 鐗规湁鍙傛暟 ---
         self.alpha = 1.0  # Recommender Loss 鏉冮噸
@@ -584,8 +587,17 @@ def main():
     best_val = -1.0
     best_epoch = -1
     best_state = None
+    start_epoch, ckpt_state = maybe_resume_checkpoint(
+        cfg.ckpt,
+        model,
+        {"opt_g": opt_g, "opt_d": opt_d},
+        device,
+    )
+    best_val = float(ckpt_state.get("best_val", best_val))
+    best_epoch = int(ckpt_state.get("best_epoch", best_epoch))
+    best_state = ckpt_state.get("best_state", best_state)
 
-    for epoch in range(1, epochs + 1):
+    for epoch in range(start_epoch + 1, epochs + 1):
         model.train()
         total_g_loss = 0.0
         total_d_loss = 0.0
@@ -646,7 +658,8 @@ def main():
 
         print(f"Epoch [{epoch}/{epochs}] Train G_Loss: {total_g_loss / max(1, steps):.4f} | D_Loss: {total_d_loss / max(1, steps):.4f}")
 
-        if epoch % 5 == 0 or epoch == epochs:
+        if epoch % cfg.eval_interval == 0 or epoch == epochs:
+            improved = False
             all_z = precompute_full_pool(model, cfg.n_items, device=device, item_popularity=item_popularity)
             c_m_f, n_c_f, h_m_f, n_h_f = evaluate_dual_gafc(
                 model, val_loader, all_z, device, k_list, user_seen_items=train_seen_items
@@ -656,9 +669,30 @@ def main():
                 best_val = val_key
                 best_epoch = epoch
                 best_state = copy.deepcopy(model.state_dict())
+                improved = True
+            if cfg.ckpt.save and improved:
+                save_checkpoint(
+                    cfg.ckpt,
+                    "best.pt",
+                    epoch,
+                    model,
+                    {"opt_g": opt_g, "opt_d": opt_d},
+                    best_state=best_state,
+                    extra={"best_val": best_val, "best_epoch": best_epoch},
+                )
             c_f_str = " | ".join([f"{k}={c_m_f[k]:.4f}" for k in metrics_keys[:3]]) if c_m_f else "N/A"
             h_f_str = " | ".join([f"{k}={h_m_f[k]:.4f}" for k in metrics_keys[:3]]) if h_m_f else "N/A"
             print(f"  --> Valid Cold Full: {c_f_str} | Hot Full: {h_f_str}")
+        if cfg.ckpt.save:
+            save_checkpoint(
+                cfg.ckpt,
+                "latest.pt",
+                epoch,
+                model,
+                {"opt_g": opt_g, "opt_d": opt_d},
+                best_state=best_state,
+                extra={"best_val": best_val, "best_epoch": best_epoch},
+            )
 
     if best_state is not None:
         model.load_state_dict(best_state)
@@ -726,6 +760,8 @@ def main():
         "eval_n_neg": cfg.eval_n_neg,
         "eval_item_mode": cfg.eval_item_mode,
         "rec_mode": cfg.rec_mode,
+        "checkpoint_dir": cfg.ckpt.dir or None,
+        "resumed_from_epoch": start_epoch,
     })
     result_path = static_result_path("gar_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)

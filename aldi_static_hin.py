@@ -39,6 +39,7 @@ from hin_data_common import (
 )
 from hin_eval_common import compute_ranking_metric_values, compute_ranking_metrics, print_final_report
 from lightgcn_static_hin import compute_bpr_loss, prepare_train_cache, sample_negatives
+from baseline_checkpoint import CheckpointConfig, checkpoint_config, maybe_resume_checkpoint, save_checkpoint
 
 
 class Config:
@@ -75,6 +76,17 @@ class Config:
         self.seed = int(os.environ.get("ALDI_SEED", str(self.static_seed)))
         self.train_ratio = float(os.environ.get("ALDI_STATIC_TRAIN_RATIO", "0.8"))
         self.val_ratio = float(os.environ.get("ALDI_STATIC_VAL_RATIO", "0.1"))
+        self.ckpt = checkpoint_config("ALDI")
+        teacher_ckpt_dir = os.environ.get("ALDI_TEACHER_CKPT_DIR", "").strip()
+        if not teacher_ckpt_dir and self.ckpt.dir:
+            teacher_ckpt_dir = os.path.join(self.ckpt.dir, "teacher")
+        self.teacher_ckpt = CheckpointConfig(
+            dir=teacher_ckpt_dir,
+            save=self.ckpt.save,
+            resume=self.ckpt.resume,
+            force_fresh=self.ckpt.force_fresh,
+            save_opt=self.ckpt.save_opt,
+        )
 
 
 class BPRTeacher(nn.Module):
@@ -220,8 +232,12 @@ def train_teacher(
         f"Teacher BPR: epochs={cfg.teacher_epochs}, emb_dim={cfg.emb_dim}, "
         f"eval_interval={cfg.teacher_eval_interval}"
     )
+    start_epoch, ckpt_state = maybe_resume_checkpoint(cfg.teacher_ckpt, teacher, optimizer, device)
+    best_hot = float(ckpt_state.get("best_val", best_hot))
+    best_epoch = int(ckpt_state.get("best_epoch", best_epoch))
+    best_state = ckpt_state.get("best_state", best_state)
 
-    for epoch in range(1, cfg.teacher_epochs + 1):
+    for epoch in range(start_epoch + 1, cfg.teacher_epochs + 1):
         teacher.train()
         neg_np = sample_negatives(train_pos_np, user_rows, user_neg_pool, cfg.n_items)
         neg_t = torch.tensor(neg_np, dtype=torch.long, device=device)
@@ -247,6 +263,7 @@ def train_teacher(
 
         do_eval = (epoch % cfg.teacher_eval_interval == 0) or (epoch == cfg.teacher_epochs)
         if do_eval:
+            improved = False
             teacher.eval()
             with torch.no_grad():
                 user_bank = F.normalize(teacher.user_emb.weight, dim=1)
@@ -266,6 +283,17 @@ def train_teacher(
                 best_hot = hot_n10
                 best_epoch = epoch
                 best_state = copy.deepcopy(teacher.state_dict())
+                improved = True
+            if cfg.teacher_ckpt.save and improved:
+                save_checkpoint(
+                    cfg.teacher_ckpt,
+                    "best.pt",
+                    epoch,
+                    teacher,
+                    optimizer,
+                    best_state=best_state,
+                    extra={"best_val": best_hot, "best_epoch": best_epoch},
+                )
             print(
                 f"Teacher Epoch [{epoch}/{cfg.teacher_epochs}] "
                 f"loss={epoch_loss / max(1, n_batches):.4f} | val_full_hot_N@10={hot_n10:.4f} "
@@ -273,6 +301,16 @@ def train_teacher(
             )
         else:
             print(f"Teacher Epoch [{epoch}/{cfg.teacher_epochs}] loss={epoch_loss / max(1, n_batches):.4f}")
+        if cfg.teacher_ckpt.save:
+            save_checkpoint(
+                cfg.teacher_ckpt,
+                "latest.pt",
+                epoch,
+                teacher,
+                optimizer,
+                best_state=best_state,
+                extra={"best_val": best_hot, "best_epoch": best_epoch},
+            )
 
     if best_state is not None:
         teacher.load_state_dict(best_state)
@@ -631,8 +669,12 @@ def main():
     best_state = None
     k_list = [5, 10, 20]
     metrics_keys = [f"{m}@{k}" for m in ["R", "N"] for k in k_list]
+    start_epoch, ckpt_state = maybe_resume_checkpoint(cfg.ckpt, student, optimizer, device)
+    best_val = float(ckpt_state.get("best_val", best_val))
+    best_epoch = int(ckpt_state.get("best_epoch", best_epoch))
+    best_state = ckpt_state.get("best_state", best_state)
 
-    for epoch in range(1, cfg.n_epochs + 1):
+    for epoch in range(start_epoch + 1, cfg.n_epochs + 1):
         student.train()
         neg_np = sample_negatives(train_pos_np, user_rows, user_neg_pool, cfg.n_items)
         neg_t = torch.tensor(neg_np, dtype=torch.long, device=device)
@@ -672,6 +714,7 @@ def main():
         part_msg = " ".join([f"{k}={v / max(1, n_batches):.4f}" for k, v in loss_parts.items()])
         do_eval = (epoch % cfg.eval_interval == 0) or (epoch == cfg.n_epochs)
         if do_eval:
+            improved = False
             teacher_user, mapped_user, item_bank, item_is_cold = precompute_aldi_banks(
                 cfg, teacher, student, content_emb, item_counts, device
             )
@@ -691,12 +734,33 @@ def main():
                 best_val = val_key
                 best_epoch = epoch
                 best_state = copy.deepcopy(student.state_dict())
+                improved = True
+            if cfg.ckpt.save and improved:
+                save_checkpoint(
+                    cfg.ckpt,
+                    "best.pt",
+                    epoch,
+                    student,
+                    optimizer,
+                    best_state=best_state,
+                    extra={"best_val": best_val, "best_epoch": best_epoch},
+                )
             print(
                 f"ALDI Epoch [{epoch}/{cfg.n_epochs}] loss={avg_loss:.4f} | {part_msg} | "
                 f"val_full_cold_N@10={val_key:.4f} | val_cold_count={n_vc}"
             )
         else:
             print(f"ALDI Epoch [{epoch}/{cfg.n_epochs}] loss={avg_loss:.4f} | {part_msg}")
+        if cfg.ckpt.save:
+            save_checkpoint(
+                cfg.ckpt,
+                "latest.pt",
+                epoch,
+                student,
+                optimizer,
+                best_state=best_state,
+                extra={"best_val": best_val, "best_epoch": best_epoch},
+            )
 
     if best_state is not None:
         student.load_state_dict(best_state)
@@ -788,6 +852,9 @@ def main():
         "beta": cfg.beta,
         "gamma": cfg.gamma,
         "tws": int(cfg.tws),
+        "checkpoint_dir": cfg.ckpt.dir or None,
+        "teacher_checkpoint_dir": cfg.teacher_ckpt.dir or None,
+        "resumed_from_epoch": start_epoch,
         "note": "Warm BPR teacher is trained on the shared static train split; student checkpoint selected by validation full cold N@10.",
     }
     result_path = static_result_path("aldi_static_result.json")

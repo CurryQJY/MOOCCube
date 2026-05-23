@@ -33,6 +33,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
 from hin_data_common import load_hin_processed, static_result_path, static_split_df
+from baseline_checkpoint import CheckpointConfig, checkpoint_config, maybe_resume_checkpoint, save_checkpoint
 
 
 METRICS = ("R@5", "R@10", "R@20", "N@5", "N@10", "N@20")
@@ -86,6 +87,17 @@ class Config:
         ).strip().lower()
         if self.early_stop_average_mode not in {"interaction", "item_macro"}:
             raise ValueError("early stop average mode must be 'interaction' or 'item_macro'")
+        self.ckpt = checkpoint_config("DROPOUT_OFFICIAL")
+        teacher_ckpt_dir = os.environ.get("DROPOUT_OFFICIAL_TEACHER_CKPT_DIR", "").strip()
+        if not teacher_ckpt_dir and self.ckpt.dir:
+            teacher_ckpt_dir = os.path.join(self.ckpt.dir, "teacher")
+        self.teacher_ckpt = CheckpointConfig(
+            dir=teacher_ckpt_dir,
+            save=self.ckpt.save,
+            resume=self.ckpt.resume,
+            force_fresh=self.ckpt.force_fresh,
+            save_opt=self.ckpt.save_opt,
+        )
 
 
 class InteractionDataset(Dataset):
@@ -194,7 +206,8 @@ def train_teacher(
 ) -> TeacherMF:
     teacher = TeacherMF(cfg).to(device)
     opt = torch.optim.Adam(teacher.parameters(), lr=cfg.teacher_lr, weight_decay=cfg.weight_decay)
-    for epoch in range(1, cfg.teacher_epochs + 1):
+    start_epoch, _ = maybe_resume_checkpoint(cfg.teacher_ckpt, teacher, opt, device)
+    for epoch in range(start_epoch + 1, cfg.teacher_epochs + 1):
         teacher.train()
         total = 0.0
         steps = 0
@@ -212,6 +225,15 @@ def train_teacher(
             steps += 1
         if epoch == 1 or epoch == cfg.teacher_epochs or epoch % max(1, cfg.eval_interval) == 0:
             print(f"[Teacher] Epoch {epoch}/{cfg.teacher_epochs} loss={total / max(1, steps):.4f}")
+        if cfg.teacher_ckpt.save:
+            save_checkpoint(
+                cfg.teacher_ckpt,
+                "latest.pt",
+                epoch,
+                teacher,
+                opt,
+                extra={"best_val": -1.0, "best_epoch": epoch},
+            )
     return teacher
 
 
@@ -484,7 +506,11 @@ def main() -> None:
     best_val = -math.inf
     best_epoch = -1
     best_state = None
-    for epoch in range(1, cfg.student_epochs + 1):
+    start_epoch, ckpt_state = maybe_resume_checkpoint(cfg.ckpt, model, opt, device)
+    best_val = float(ckpt_state.get("best_val", best_val))
+    best_epoch = int(ckpt_state.get("best_epoch", best_epoch))
+    best_state = ckpt_state.get("best_state", best_state)
+    for epoch in range(start_epoch + 1, cfg.student_epochs + 1):
         model.train()
         total = 0.0
         steps = 0
@@ -507,6 +533,7 @@ def main() -> None:
         print(f"[DropoutNet] Epoch {epoch}/{cfg.student_epochs} loss={total / max(1, steps):.4f}")
 
         if epoch % cfg.eval_interval == 0 or epoch == cfg.student_epochs:
+            improved = False
             all_z = precompute_item_bank(cfg, model, item_counts, device)
             val_cold, _, val_hot, _ = evaluate_full(
                 cfg,
@@ -524,10 +551,31 @@ def main() -> None:
                 best_epoch = epoch
                 best_state = copy.deepcopy(model.state_dict())
                 tag = "best"
+                improved = True
             else:
                 tag = "keep"
+            if cfg.ckpt.save and improved:
+                save_checkpoint(
+                    cfg.ckpt,
+                    "best.pt",
+                    epoch,
+                    model,
+                    opt,
+                    best_state=best_state,
+                    extra={"best_val": best_val, "best_epoch": best_epoch},
+                )
             hot_key = val_hot.get("N@10", 0.0) if val_hot else 0.0
             print(f"  [VAL] cold_N@10={val_key:.4f} hot_N@10={hot_key:.4f} | {tag}")
+        if cfg.ckpt.save:
+            save_checkpoint(
+                cfg.ckpt,
+                "latest.pt",
+                epoch,
+                model,
+                opt,
+                best_state=best_state,
+                extra={"best_val": best_val, "best_epoch": best_epoch},
+            )
 
     if best_state is not None:
         model.load_state_dict(best_state)
@@ -592,6 +640,9 @@ def main() -> None:
         "user_pref_dropout": cfg.user_pref_dropout,
         "negative_sampling": "train_warm_items_only",
         "negative_item_pool_size": int(negative_item_pool.numel()),
+        "checkpoint_dir": cfg.ckpt.dir or None,
+        "teacher_checkpoint_dir": cfg.teacher_ckpt.dir or None,
+        "resumed_from_epoch": start_epoch,
         "official_repo": "https://github.com/layer6ai-labs/DropoutNet",
         "official_source_dir": str(official_dir),
         "official_source_present": official_dir.exists(),

@@ -38,6 +38,13 @@ from lightgcn_static_hin import (
 )
 
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 class Config:
     def __init__(self, n_users: int, n_items: int):
         self.n_users = n_users
@@ -65,6 +72,92 @@ class Config:
         # last            -> always pick the last epoch (no early stop)
         self.best_metric = os.environ.get("BASELINE_BEST_METRIC", "cold").strip().lower()
         self.best_alpha = float(os.environ.get("BASELINE_BEST_ALPHA", "0.5"))
+        self.early_stop_average_mode = os.environ.get(
+            "BASELINE_EARLY_STOP_AVG_MODE",
+            os.environ.get("USIM_EARLY_STOP_AVG_MODE", "interaction"),
+        ).strip().lower()
+        if self.early_stop_average_mode not in {"interaction", "item_macro"}:
+            raise ValueError("BASELINE_EARLY_STOP_AVG_MODE/USIM_EARLY_STOP_AVG_MODE must be interaction or item_macro")
+
+        default_ckpt_dir = os.environ.get("BASELINE_CKPT_DIR", "").strip()
+        self.ckpt_dir = os.environ.get("BPR_CKPT_DIR", default_ckpt_dir).strip()
+        self.save_ckpt = _env_flag("BPR_SAVE_CKPT", _env_flag("BASELINE_SAVE_CKPT", bool(self.ckpt_dir)))
+        self.auto_resume = _env_flag("BPR_AUTO_RESUME", _env_flag("BASELINE_AUTO_RESUME", bool(self.ckpt_dir)))
+        self.force_fresh = _env_flag("BPR_FORCE_FRESH", _env_flag("BASELINE_FORCE_FRESH", False))
+        self.save_opt_state = _env_flag("BPR_SAVE_OPT_STATE", _env_flag("BASELINE_SAVE_OPT_STATE", True))
+
+
+def _save_checkpoint(
+    cfg: Config,
+    filename: str,
+    epoch: int,
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    best_val: float,
+    best_epoch: int,
+    best_state: dict,
+    best_cold_at_best: float,
+    best_hot_at_best: float,
+) -> None:
+    if not cfg.ckpt_dir:
+        return
+    os.makedirs(cfg.ckpt_dir, exist_ok=True)
+    payload = {
+        "epoch": int(epoch),
+        "n_epochs": int(cfg.n_epochs),
+        "model_state": model.state_dict(),
+        "optimizer_state": optimizer.state_dict() if cfg.save_opt_state else None,
+        "best_val": float(best_val),
+        "best_epoch": int(best_epoch),
+        "best_state": best_state,
+        "best_cold_at_best": float(best_cold_at_best),
+        "best_hot_at_best": float(best_hot_at_best),
+        "best_metric": cfg.best_metric,
+        "best_average_mode": cfg.early_stop_average_mode,
+        "static_seed": cfg.static_seed,
+        "seed": cfg.seed,
+    }
+    torch.save(payload, os.path.join(cfg.ckpt_dir, filename))
+
+
+def _try_resume_checkpoint(
+    cfg: Config,
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    device: torch.device,
+):
+    if not cfg.ckpt_dir:
+        return 0, -1.0, -1, None, float("nan"), float("nan")
+    print(
+        f"Checkpoint: save={cfg.save_ckpt} resume={cfg.auto_resume} "
+        f"force_fresh={cfg.force_fresh} save_opt={cfg.save_opt_state} dir={cfg.ckpt_dir}"
+    )
+    if cfg.force_fresh or not cfg.auto_resume:
+        return 0, -1.0, -1, None, float("nan"), float("nan")
+
+    latest_path = os.path.join(cfg.ckpt_dir, "latest.pt")
+    if not os.path.exists(latest_path):
+        return 0, -1.0, -1, None, float("nan"), float("nan")
+
+    try:
+        ckpt = torch.load(latest_path, map_location=device, weights_only=False)
+    except TypeError:
+        ckpt = torch.load(latest_path, map_location=device)
+    model.load_state_dict(ckpt["model_state"])
+    opt_state = ckpt.get("optimizer_state")
+    if opt_state is not None:
+        optimizer.load_state_dict(opt_state)
+    start_epoch = int(ckpt.get("epoch", 0))
+    best_val = float(ckpt.get("best_val", -1.0))
+    best_epoch = int(ckpt.get("best_epoch", -1))
+    best_state = ckpt.get("best_state")
+    best_cold_at_best = float(ckpt.get("best_cold_at_best", float("nan")))
+    best_hot_at_best = float(ckpt.get("best_hot_at_best", float("nan")))
+    print(
+        f"Resume checkpoint: latest_epoch={start_epoch} | best_epoch={best_epoch} | "
+        f"best_score={best_val:.6f}"
+    )
+    return start_epoch, best_val, best_epoch, best_state, best_cold_at_best, best_hot_at_best
 
 
 class BPRMFModel(nn.Module):
@@ -135,10 +228,17 @@ def main():
     print(
         f"Best-epoch strategy: {cfg.best_metric}"
         + (f" (alpha={cfg.best_alpha})" if cfg.best_metric == "weighted" else "")
+        + f" | avg_mode={cfg.early_stop_average_mode}"
+    )
+    start_epoch, best_val, best_epoch, best_state, best_cold_at_best, best_hot_at_best = _try_resume_checkpoint(
+        cfg,
+        model,
+        optimizer,
+        device,
     )
 
     n_train = train_users_t.numel()
-    for epoch in range(cfg.n_epochs):
+    for epoch in range(start_epoch, cfg.n_epochs):
         model.train()
         train_neg_np = sample_negatives(train_pos_np, user_rows, user_neg_pool, cfg.n_items)
         train_neg_t = torch.tensor(train_neg_np, dtype=torch.long, device=device)
@@ -175,6 +275,7 @@ def main():
         val_hot_n10 = float("nan")
         if do_eval:
             model.eval()
+            improved = False
             with torch.no_grad():
                 z_u, z_i = model.all_embeddings()
                 all_u = F.normalize(z_u, dim=1)
@@ -192,6 +293,7 @@ def main():
                     eval_type="cold",
                     full_ranking=True,
                     user_seen_items=train_seen,
+                    average_mode=cfg.early_stop_average_mode,
                 )
                 val_cold_n10 = val_full_cold.get("N@10", 0.0) if val_full_cold else 0.0
                 # Also evaluate hot when best metric needs it (otherwise skip for speed)
@@ -208,6 +310,7 @@ def main():
                         eval_type="hot",
                         full_ranking=True,
                         user_seen_items=train_seen,
+                        average_mode=cfg.early_stop_average_mode,
                     )
                     val_hot_n10 = val_full_hot.get("N@10", 0.0) if val_full_hot else 0.0
                 # Compute val_key according to strategy
@@ -230,6 +333,20 @@ def main():
                     best_state = copy.deepcopy(model.state_dict())
                     best_cold_at_best = val_cold_n10
                     best_hot_at_best = val_hot_n10
+                    improved = True
+            if cfg.save_ckpt and improved:
+                _save_checkpoint(
+                    cfg,
+                    "best.pt",
+                    epoch + 1,
+                    model,
+                    optimizer,
+                    best_val,
+                    best_epoch,
+                    best_state,
+                    best_cold_at_best,
+                    best_hot_at_best,
+                )
             if cfg.best_metric in {"hot", "combined", "weighted"}:
                 print(
                     f"Epoch [{epoch + 1}/{cfg.n_epochs}] loss={avg_loss:.4f} | "
@@ -243,6 +360,19 @@ def main():
                 )
         else:
             print(f"Epoch [{epoch + 1}/{cfg.n_epochs}] loss={avg_loss:.4f}")
+        if cfg.save_ckpt:
+            _save_checkpoint(
+                cfg,
+                "latest.pt",
+                epoch + 1,
+                model,
+                optimizer,
+                best_val,
+                best_epoch,
+                best_state,
+                best_cold_at_best,
+                best_hot_at_best,
+            )
 
     if best_state is not None:
         model.load_state_dict(best_state)
@@ -329,12 +459,15 @@ def main():
         "best_epoch": best_epoch,
         "best_val_full_cold_n10": best_cold_at_best if cfg.best_metric != "cold" else best_val,
         "best_metric": cfg.best_metric,
+        "best_average_mode": cfg.early_stop_average_mode,
         "best_alpha": cfg.best_alpha if cfg.best_metric == "weighted" else None,
         "best_score": best_val,
         "best_cold_n10_at_best_epoch": best_cold_at_best,
         "best_hot_n10_at_best_epoch": best_hot_at_best,
         "eval_n_neg": cfg.eval_n_neg,
         "static_seed": cfg.static_seed,
+        "checkpoint_dir": cfg.ckpt_dir or None,
+        "resumed_from_epoch": start_epoch,
     }
     result_path = static_result_path("bpr_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)

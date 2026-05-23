@@ -282,6 +282,9 @@ def parse_args():
     parser.add_argument("--result_json", type=str, required=True)
     parser.add_argument("--history_policy", type=str, default="train_only")
     parser.add_argument("--eval_batch_rows", type=int, default=4096)
+    parser.add_argument("--ckpt_dir", type=str, default="")
+    parser.add_argument("--auto_resume", type=int, default=0, choices=[0, 1])
+    parser.add_argument("--force_fresh", type=int, default=0, choices=[0, 1])
     args = parser.parse_args()
     args.Ks = [5, 10, 20]
     return args
@@ -431,17 +434,33 @@ def main():
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
     model = getattr(cold_start, args.model)(sess, args, emb.shape[-1], content_data.shape[-1])
-    save_dir = os.path.join(".", "cold_start", "model_save")
+    save_dir = args.ckpt_dir if args.ckpt_dir else os.path.join(".", "cold_start", "model_save")
     os.makedirs(save_dir, exist_ok=True)
-    save_file = os.path.join(save_dir, f"{args.dataset}-{args.model}-official-static")
+    save_file = os.path.join(save_dir, f"{args.dataset}-{args.model}-official-static-best")
+    latest_file = os.path.join(save_dir, f"{args.dataset}-{args.model}-official-static-latest")
+    state_file = os.path.join(save_dir, f"{args.dataset}-{args.model}-official-static-state.json")
     saver = tf.train.Saver()
 
     best_val = -1.0
     best_epoch = -1
     patient = 0
     best_loss = None
+    start_epoch = 0
+    if args.ckpt_dir:
+        print(f"Checkpoint: save=True resume={bool(args.auto_resume)} force_fresh={bool(args.force_fresh)} dir={args.ckpt_dir}")
+    if args.ckpt_dir and args.auto_resume and not args.force_fresh and os.path.exists(latest_file + ".index"):
+        saver.restore(sess, latest_file)
+        if os.path.exists(state_file):
+            with open(state_file, "r", encoding="utf-8") as f:
+                saved_state = json.load(f)
+            start_epoch = int(saved_state.get("epoch", 0))
+            best_val = float(saved_state.get("best_val", best_val))
+            best_epoch = int(saved_state.get("best_epoch", best_epoch))
+            best_loss = saved_state.get("best_loss", best_loss)
+            patient = int(saved_state.get("patient", patient))
+        print(f"Resume checkpoint: latest_epoch={start_epoch} | best_epoch={best_epoch} | best_score={best_val:.6f}")
     print(f"Official-source ALDI training: epochs={args.max_epoch}, batch={args.batch_size}")
-    for epoch in range(1, args.max_epoch + 1):
+    for epoch in range(start_epoch + 1, args.max_epoch + 1):
         train_input = utils.bpr_neg_samp(para_dict["warm_user"], len(train_data), para_dict["emb_user_nb"], para_dict["warm_item"])
         epoch_loss = 0.0
         n_batch = 0
@@ -481,6 +500,21 @@ def main():
                 break
         else:
             print(f"Epoch [{epoch}/{args.max_epoch}] loss={avg_loss:.4f}")
+        if args.ckpt_dir:
+            saver.save(sess, latest_file)
+            with open(state_file, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "epoch": epoch,
+                        "best_val": best_val,
+                        "best_epoch": best_epoch,
+                        "best_loss": best_loss,
+                        "patient": patient,
+                    },
+                    f,
+                    ensure_ascii=False,
+                    indent=2,
+                )
 
     saver.restore(sess, save_file)
     gen_user_emb = model.get_user_emb(user_emb)
@@ -523,6 +557,8 @@ def main():
         "best_loss": best_loss,
         "eval_n_neg": args.eval_n_neg,
         "static_seed": args.seed,
+        "checkpoint_dir": args.ckpt_dir or None,
+        "resumed_from_epoch": start_epoch,
         "alpha": args.alpha,
         "beta": args.beta,
         "gamma": args.gamma,
@@ -679,6 +715,14 @@ def _env_float(*names: str, default: float) -> float:
     return float(default)
 
 
+def _env_bool_arg(*names: str, default: str = "0") -> str:
+    for name in names:
+        val = os.environ.get(name)
+        if val is not None and str(val).strip() != "":
+            return "1" if str(val).strip().lower() in {"1", "true", "yes", "y", "on"} else "0"
+    return "1" if str(default).strip().lower() in {"1", "true", "yes", "y", "on"} else "0"
+
+
 def run_checked(cmd: Iterable[str], cwd: Path) -> None:
     print("Running:", " ".join([str(x) for x in cmd]))
     subprocess.run(list(cmd), cwd=str(cwd), check=True)
@@ -809,6 +853,12 @@ def run_official(args, src_dir: Path, dataset_dir: Path) -> None:
             os.environ.get("USIM_STATIC_TEST_HISTORY", "train_only"),
             "--eval_batch_rows",
             os.environ.get("ALDI_OFFICIAL_EVAL_BATCH_SIZE", os.environ.get("ALDI_EVAL_BATCH_SIZE", "4096")),
+            "--ckpt_dir",
+            os.environ.get("ALDI_OFFICIAL_CKPT_DIR", os.environ.get("BASELINE_CKPT_DIR", "")),
+            "--auto_resume",
+            _env_bool_arg("ALDI_OFFICIAL_AUTO_RESUME", "BASELINE_AUTO_RESUME", default="0"),
+            "--force_fresh",
+            _env_bool_arg("ALDI_OFFICIAL_FORCE_FRESH", "BASELINE_FORCE_FRESH", default="0"),
             "--result_json",
             str(Path(result_path).resolve()),
         ],

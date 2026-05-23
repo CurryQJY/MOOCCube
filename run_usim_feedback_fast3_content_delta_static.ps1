@@ -1,6 +1,8 @@
 param(
     [string]$PythonRunner = ".\py.bat",
     [string]$ScriptPath = "usim_feedback_fast3_content_delta.py",
+    [string]$DataDir = "processed_data_hin_clean_pop5",
+    [string]$RelationDir = "MOOCCube/relations",
     [string]$OutputRoot = "outputs\content_delta_pop5\static_item_cold",
     [string]$CheckpointRoot = "checkpoints\content_delta_pop5\static_item_cold",
     [ValidateSet("threshold", "strict_item_cold", "strict_item_cold_balanced")]
@@ -11,7 +13,7 @@ param(
     [int]$Epochs = 15,
     [int]$Patience = 3,
     [ValidateSet("interaction", "item_macro")]
-    [string]$EarlyStopAverageMode = "interaction",
+    [string]$EarlyStopAverageMode = "item_macro",
     [ValidateSet("embedding", "projector", "hybrid")]
     [string]$ContentDeltaMode = "embedding",
     [double]$ContentDeltaMaxNorm = 0.05,
@@ -19,6 +21,12 @@ param(
     [double]$ContentDeltaLrMult = 0.10,
     [double]$ContentDeltaL2W = 0.02,
     [double]$ContentDeltaCapW = 0.02,
+    [double]$ContentDeltaCapMargin = 0.70,
+    [int]$ContentDeltaProjectorHidden = 256,
+    [ValidateSet("base", "raw", "no_delta", "delta", "content")]
+    [string]$ContentDeltaAuxMode = "base",
+    [ValidateSet("auto", "item", "item_pop", "cold", "all", "hot", "none", "off")]
+    [string]$ContentDeltaEvalBankMode = "auto",
     [bool]$UseContentDelta = $true,
     [bool]$ContentDeltaPaperStyle = $false,
     [bool]$ContentDeltaReplaceItem = $false,
@@ -42,6 +50,9 @@ param(
     [double]$CourseConceptW = 0.04,
     [double]$CourseDiffW = 0.03,
     [double]$CourseRedundantW = 0.02,
+    [ValidateSet("concept", "video_family")]
+    [string]$CourseRedundantMode = "concept",
+    [int]$CourseStructChunk = 8192,
     [bool]$CourseFeedbackOnlyCold = $true,
     [bool]$UseCourseSample = $true,
     [bool]$CourseSampleOnlyCold = $true,
@@ -58,6 +69,10 @@ param(
     [ValidateSet("cold_only", "geometric", "harmonic", "sum")]
     [string]$EarlyStopScoreMode = "cold_only",
     [bool]$RunSampledEval = $false,
+    [bool]$SaveCkpt = $false,
+    [bool]$AutoResume = $false,
+    [bool]$ForceFresh = $true,
+    [bool]$SaveOptState = $true,
     [switch]$SkipAggregate
 )
 
@@ -65,6 +80,7 @@ $ErrorActionPreference = "Stop"
 
 $trackedEnv = @(
     "USIM_DATA_DIR",
+    "USIM_RELATION_DIR",
     "USIM_STATIC",
     "USIM_STATIC_SPLIT_MODE",
     "USIM_STATIC_SEED",
@@ -121,6 +137,10 @@ $trackedEnv = @(
     "USIM_CONTENT_DELTA_LR_MULT",
     "USIM_CONTENT_DELTA_L2_W",
     "USIM_CONTENT_DELTA_CAP_W",
+    "USIM_CONTENT_DELTA_CAP_MARGIN",
+    "USIM_CONTENT_DELTA_PROJECTOR_HIDDEN",
+    "USIM_CONTENT_DELTA_AUX_MODE",
+    "USIM_CONTENT_DELTA_EVAL_BANK_MODE",
     "USIM_CONTENT_DELTA_TRAIN_ON_ID_DROPOUT",
     "USIM_CONTENT_DELTA_ONLY_AFTER_EPOCH",
     "USIM_AUX_WEIGHT",
@@ -142,7 +162,9 @@ $trackedEnv = @(
     "USIM_FB_COURSE_PREREQ_W",
     "USIM_FB_COURSE_CONCEPT_W",
     "USIM_FB_COURSE_DIFF_W",
+    "USIM_FB_COURSE_REDUNDANT_MODE",
     "USIM_FB_COURSE_REDUNDANT_W",
+    "USIM_FB_COURSE_STRUCT_CHUNK",
     "USIM_FB_COURSE_SAMPLE_SOFT",
     "USIM_FB_COURSE_SAMPLE_BETA",
     "USIM_FB_COURSE_SAMPLE_ONLY_COLD",
@@ -162,7 +184,7 @@ foreach ($name in $trackedEnv) {
 }
 
 $scriptText = Get-Content -Raw -Encoding UTF8 -LiteralPath $ScriptPath
-if ($scriptText -notmatch "def run_static_experiment" -or $scriptText -notmatch "def _static_split_df") {
+if ($scriptText -notmatch "def run_static_experiment" -or $scriptText -notmatch "_static_split_df") {
     throw "Static runner guard failed: '$ScriptPath' does not contain the static experiment implementation."
 }
 
@@ -182,7 +204,8 @@ $splitMode = switch ($Protocol) {
 }
 
 $base = @{
-    "USIM_DATA_DIR" = "processed_data_hin_clean_pop5"
+    "USIM_DATA_DIR" = $DataDir
+    "USIM_RELATION_DIR" = $RelationDir
     "USIM_STATIC" = "1"
     "USIM_STATIC_SPLIT_MODE" = $splitMode
     "USIM_STATIC_TRAIN_RATIO" = "0.8"
@@ -195,10 +218,10 @@ $base = @{
     "USIM_STATIC_EXPORT_SPLIT" = "1"
     "USIM_STATIC_TEST_HISTORY" = "train_only"
 
-    "USIM_FB_FORCE_FRESH" = "1"
-    "USIM_FB_AUTO_RESUME" = "0"
-    "USIM_FB_SAVE_CKPT" = "0"
-    "USIM_FB_SAVE_OPT_STATE" = "0"
+    "USIM_FB_FORCE_FRESH" = if ($ForceFresh) { "1" } else { "0" }
+    "USIM_FB_AUTO_RESUME" = if ($AutoResume) { "1" } else { "0" }
+    "USIM_FB_SAVE_CKPT" = if ($SaveCkpt) { "1" } else { "0" }
+    "USIM_FB_SAVE_OPT_STATE" = if ($SaveOptState) { "1" } else { "0" }
 
     "USIM_N_EPOCHS" = [string]$Epochs
     "USIM_EARLY_STOP_PATIENCE" = [string]$Patience
@@ -238,6 +261,10 @@ $base = @{
     "USIM_CONTENT_DELTA_LR_MULT" = [string]$ContentDeltaLrMult
     "USIM_CONTENT_DELTA_L2_W" = [string]$ContentDeltaL2W
     "USIM_CONTENT_DELTA_CAP_W" = [string]$ContentDeltaCapW
+    "USIM_CONTENT_DELTA_CAP_MARGIN" = [string]$ContentDeltaCapMargin
+    "USIM_CONTENT_DELTA_PROJECTOR_HIDDEN" = [string]$ContentDeltaProjectorHidden
+    "USIM_CONTENT_DELTA_AUX_MODE" = $ContentDeltaAuxMode
+    "USIM_CONTENT_DELTA_EVAL_BANK_MODE" = $ContentDeltaEvalBankMode
     "USIM_CONTENT_DELTA_TRAIN_ON_ID_DROPOUT" = if ($ContentDeltaTrainOnIdDropout) { "1" } else { "0" }
     "USIM_CONTENT_DELTA_ONLY_AFTER_EPOCH" = [string]$ContentDeltaOnlyAfterEpoch
     "USIM_AUX_WEIGHT" = [string]$AuxWeight
@@ -261,7 +288,9 @@ $base = @{
     "USIM_FB_COURSE_PREREQ_W" = if ($UseCourseFeedback) { [string]$CoursePrereqW } else { "0" }
     "USIM_FB_COURSE_CONCEPT_W" = if ($UseCourseFeedback) { [string]$CourseConceptW } else { "0" }
     "USIM_FB_COURSE_DIFF_W" = if ($UseCourseFeedback) { [string]$CourseDiffW } else { "0" }
+    "USIM_FB_COURSE_REDUNDANT_MODE" = $CourseRedundantMode
     "USIM_FB_COURSE_REDUNDANT_W" = if ($UseCourseFeedback) { [string]$CourseRedundantW } else { "0" }
+    "USIM_FB_COURSE_STRUCT_CHUNK" = [string]$CourseStructChunk
 
     "USIM_FB_COURSE_SAMPLE_SOFT" = if ($UseCourseSample) { "1" } else { "0" }
     "USIM_FB_COURSE_SAMPLE_BETA" = if ($UseCourseSample) { [string]$CourseSampleBeta } else { "0" }
@@ -303,10 +332,16 @@ try {
             Write-Host ""
             Write-Host "===== Running FAST3 ContentDelta static threshold=$coldThreshold seed=$seed epochs=$Epochs =====" -ForegroundColor Cyan
             Write-Host "Output: $out"
-            Write-Host ("Tune: es_avg={0} es_score={29} aux_hot_only={30} run_sampled_eval={31} delta={1} delta_mode={2} paper={3} replace_item={4} cold_only={5} train_on_id_dropout={6} delta_only_after_epoch={7} delta_max={8} scale={9} lr_mult={10} l2={11} cap={12} aux_w={13} pseudo={14} pseudo_mode={15} pseudo_ratio={16} pseudo_min_pop={17} paac={18} paac_align={19} paac_contrast={20} course_feedback={21} course_reward={32} course_only_cold={22} prereq_aux={23} prereq_only_cold={24} course_sample={25} sample_only_cold={26} rerank={27} structured_hard_neg={28}" -f $EarlyStopAverageMode, $UseContentDelta, $ContentDeltaMode, $ContentDeltaPaperStyle, $ContentDeltaReplaceItem, $ContentDeltaColdOnly, $ContentDeltaTrainOnIdDropout, $ContentDeltaOnlyAfterEpoch, $ContentDeltaMaxNorm, $ContentDeltaScale, $ContentDeltaLrMult, $ContentDeltaL2W, $ContentDeltaCapW, $AuxWeight, $UsePseudoColdTrain, $PseudoColdMode, $PseudoColdRatio, $PseudoColdMinPop, $UsePaac, $PaacAlignW, $PaacContrastW, $UseCourseFeedback, $CourseFeedbackOnlyCold, $UsePrereqAux, $PrereqAuxOnlyCold, $UseCourseSample, $CourseSampleOnlyCold, $UseCourseRerank, $UseStructuredHardNeg, $EarlyStopScoreMode, $AuxHotOnly, $RunSampledEval, $UseCourseReward)
+            Write-Host ("Tune: es_avg={0} es_score={29} aux_hot_only={30} run_sampled_eval={31} delta={1} delta_mode={2} paper={3} replace_item={4} cold_only={5} train_on_id_dropout={6} delta_only_after_epoch={7} delta_max={8} scale={9} lr_mult={10} l2={11} cap={12} cap_margin={33} proj_hidden={34} aux_mode={35} eval_bank={36} aux_w={13} pseudo={14} pseudo_mode={15} pseudo_ratio={16} pseudo_min_pop={17} paac={18} paac_align={19} paac_contrast={20} course_feedback={21} course_reward={32} course_only_cold={22} prereq_aux={23} prereq_only_cold={24} course_sample={25} sample_only_cold={26} rerank={27} structured_hard_neg={28}" -f $EarlyStopAverageMode, $UseContentDelta, $ContentDeltaMode, $ContentDeltaPaperStyle, $ContentDeltaReplaceItem, $ContentDeltaColdOnly, $ContentDeltaTrainOnIdDropout, $ContentDeltaOnlyAfterEpoch, $ContentDeltaMaxNorm, $ContentDeltaScale, $ContentDeltaLrMult, $ContentDeltaL2W, $ContentDeltaCapW, $AuxWeight, $UsePseudoColdTrain, $PseudoColdMode, $PseudoColdRatio, $PseudoColdMinPop, $UsePaac, $PaacAlignW, $PaacContrastW, $UseCourseFeedback, $CourseFeedbackOnlyCold, $UsePrereqAux, $PrereqAuxOnlyCold, $UseCourseSample, $CourseSampleOnlyCold, $UseCourseRerank, $UseStructuredHardNeg, $EarlyStopScoreMode, $AuxHotOnly, $RunSampledEval, $UseCourseReward, $ContentDeltaCapMargin, $ContentDeltaProjectorHidden, $ContentDeltaAuxMode, $ContentDeltaEvalBankMode)
+            Write-Host ("Course redundancy: mode={0} struct_chunk={1}" -f $CourseRedundantMode, $CourseStructChunk)
+            Write-Host ("Checkpoint: save={0} resume={1} force_fresh={2} save_opt={3} dir={4}" -f $SaveCkpt, $AutoResume, $ForceFresh, $SaveOptState, $ckpt)
 
             $commandLine = ('"{0}" -u -X faulthandler "{1}" 2>&1' -f $PythonRunner, $ScriptPath)
-            & cmd.exe /d /c $commandLine | Tee-Object -FilePath $log
+            $teeArgs = @{ FilePath = $log }
+            if ($AutoResume -and -not $ForceFresh) {
+                $teeArgs["Append"] = $true
+            }
+            & cmd.exe /d /c $commandLine | Tee-Object @teeArgs
 
             if ($LASTEXITCODE -ne 0) {
                 throw "Static experiment failed: threshold=$coldThreshold seed=$seed"

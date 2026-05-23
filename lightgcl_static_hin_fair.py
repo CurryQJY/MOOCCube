@@ -37,6 +37,7 @@ from hin_data_common import (
 )
 from hin_eval_common import evaluate_embedding_ranker, print_final_report
 from lightgcn_static_hin import prepare_train_cache, sample_negatives
+from baseline_checkpoint import checkpoint_config, maybe_resume_checkpoint, save_checkpoint
 
 
 class Config:
@@ -69,6 +70,7 @@ class Config:
         self.seed = int(os.environ.get("LIGHTGCL_SEED", str(self.static_seed)))
         self.train_ratio = float(os.environ.get("LIGHTGCL_STATIC_TRAIN_RATIO", "0.8"))
         self.val_ratio = float(os.environ.get("LIGHTGCL_STATIC_VAL_RATIO", "0.1"))
+        self.ckpt = checkpoint_config("LIGHTGCL")
 
 
 def sparse_dropout(mat: torch.Tensor, dropout: float) -> torch.Tensor:
@@ -345,8 +347,12 @@ def main():
     best_epoch = -1
     best_state = None
     metrics_keys = [f"{m}@{k}" for m in ["R", "N"] for k in [5, 10, 20]]
+    start_epoch, ckpt_state = maybe_resume_checkpoint(cfg.ckpt, model, optimizer, device)
+    best_val = float(ckpt_state.get("best_val", best_val))
+    best_epoch = int(ckpt_state.get("best_epoch", best_epoch))
+    best_state = ckpt_state.get("best_state", best_state)
 
-    for epoch in range(1, cfg.n_epochs + 1):
+    for epoch in range(start_epoch + 1, cfg.n_epochs + 1):
         model.train()
         neg_np = sample_negatives(train_pos_np, user_rows, user_neg_pool, cfg.n_items)
         neg_t = torch.tensor(neg_np, dtype=torch.long, device=device)
@@ -382,6 +388,7 @@ def main():
         part_msg = " ".join([f"{k}={v / max(1, n_batches):.4f}" for k, v in loss_parts.items()])
         do_eval = (epoch % cfg.eval_interval == 0) or (epoch == cfg.n_epochs)
         if do_eval:
+            improved = False
             user_bank, item_bank = precompute_banks(cfg, model, adj_norm, u_mul_s, v_mul_s, ut, vt)
             val_cold, n_vc, _, _ = evaluate_split(
                 cfg,
@@ -398,12 +405,33 @@ def main():
                 best_val = val_key
                 best_epoch = epoch
                 best_state = state_dict_to_cpu(model)
+                improved = True
+            if cfg.ckpt.save and improved:
+                save_checkpoint(
+                    cfg.ckpt,
+                    "best.pt",
+                    epoch,
+                    model,
+                    optimizer,
+                    best_state=best_state,
+                    extra={"best_val": best_val, "best_epoch": best_epoch},
+                )
             print(
                 f"LightGCL Epoch [{epoch}/{cfg.n_epochs}] loss={avg_loss:.4f} | {part_msg} | "
                 f"val_full_cold_N@10={val_key:.4f} | val_cold_count={n_vc}"
             )
         else:
             print(f"LightGCL Epoch [{epoch}/{cfg.n_epochs}] loss={avg_loss:.4f} | {part_msg}")
+        if cfg.ckpt.save:
+            save_checkpoint(
+                cfg.ckpt,
+                "latest.pt",
+                epoch,
+                model,
+                optimizer,
+                best_state=best_state,
+                extra={"best_val": best_val, "best_epoch": best_epoch},
+            )
 
     if best_state is not None:
         model.load_state_dict(best_state)
@@ -483,6 +511,8 @@ def main():
         "temp": cfg.temp,
         "svd_rank": cfg.svd_rank,
         "content_weight": cfg.content_weight,
+        "checkpoint_dir": cfg.ckpt.dir or None,
+        "resumed_from_epoch": start_epoch,
         "note": (
             "Official LightGCL BPR + SVD contrastive objective is adapted to "
             "the shared static item-cold protocol with a content projection for cold items."
