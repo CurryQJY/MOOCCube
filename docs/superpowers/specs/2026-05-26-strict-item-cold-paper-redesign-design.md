@@ -92,6 +92,26 @@ The main table should report full cold item-macro R@5/R@10/R@20 and N@5/N@10/N@2
 
 The paper should avoid presenting sampled metrics as the main result. Sampled metrics can appear only as supporting or historical analysis if needed.
 
+## WSDM 2026 Best-Paper Style Calibration
+
+Style reference: WSDM 2026 Best Full Research Paper, `Diversification as Risk Minimization`.
+
+Useful narrative pattern:
+
+- Start from a familiar evaluation practice that looks reasonable on average.
+- Show the hidden failure mode: average-oriented evaluation can leave a minority target group poorly served.
+- Reframe the problem as risk/robustness, not only aggregate accuracy.
+- Introduce the proposed metric or objective as a direct way to optimize the real user/platform need.
+- Keep the empirical claim sober: report the main gain, then state the trade-off instead of hiding it.
+
+How to adapt this paper:
+
+- Treat new courses as the under-served target group, analogous to minority intents in diversified search.
+- Present interaction-weighted and sampled metrics as useful but insufficient because they can hide poor service to individual cold courses.
+- Explain item-macro full-ranking as a risk-sensitive diagnostic: each cold course receives equal weight, so a method must serve the cold-course tail rather than only high-volume courses.
+- Emphasize that FAST3-ContentDelta reduces new-course exposure risk under strict item-cold evaluation, rather than claiming universal superiority on all warm/hot metrics.
+- Use explicit trade-off language in results and discussion: cold-course robustness improves, while hot-item performance remains an auxiliary stability concern.
+
 ## Rewrite Boundaries
 
 Keep:

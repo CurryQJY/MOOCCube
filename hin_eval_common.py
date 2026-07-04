@@ -1,3 +1,5 @@
+import csv
+import os
 from typing import Callable, Dict, Optional, Tuple
 
 import torch
@@ -73,6 +75,7 @@ def evaluate_embedding_ranker(
     ] = None,
     normalize_user: bool = True,
     average_mode: str = "interaction",
+    export_item_metrics_path: Optional[str] = None,
 ) -> Tuple[Optional[Dict[str, float]], int]:
     average_mode = average_mode.strip().lower()
     if average_mode not in {"interaction", "item_macro"}:
@@ -195,6 +198,7 @@ def evaluate_embedding_ranker(
         if not item_counts:
             return None, 0
         macro = {}
+        item_rows = []
         for key, per_item in item_accum.items():
             item_values = [
                 per_item.get(item_id, 0.0) / count
@@ -202,6 +206,18 @@ def evaluate_embedding_ranker(
                 if count > 0
             ]
             macro[key] = sum(item_values) / max(1, len(item_values))
+        if export_item_metrics_path:
+            os.makedirs(os.path.dirname(export_item_metrics_path) or ".", exist_ok=True)
+            for item_id in sorted(item_counts):
+                row = {"item_id": int(item_id), "count": int(item_counts[item_id])}
+                for key, per_item in item_accum.items():
+                    row[key] = float(per_item.get(item_id, 0.0) / max(1, item_counts[item_id]))
+                item_rows.append(row)
+            fieldnames = ["item_id", "count"] + [f"{m}@{k}" for m in ["R", "N"] for k in k_list]
+            with open(export_item_metrics_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(item_rows)
         return macro, len(item_counts)
     return {k: v / total_samples for k, v in accum.items()}, total_samples
 

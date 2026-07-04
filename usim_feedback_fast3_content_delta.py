@@ -35,6 +35,7 @@ from fast3_delta.checkpoint import (
     _feedback_ckpt_enabled,
     _feedback_ckpt_force_fresh,
     _feedback_ckpt_save_optimizer_state,
+    _feedback_ckpt_snapshot_epochs,
     _latest_feedback_ckpt_path,
     _load_feedback_checkpoint,
     _maybe_clear_cuda_cache,
@@ -102,6 +103,138 @@ def setup_seed(seed=2025):
     torch.backends.cudnn.benchmark = False
     os.environ["PYTHONHASHSEED"] = str(seed)
     print(f"Seed fixed: {seed}")
+
+
+def _normalize_course_term_tensor(term, mode="none", clip=2.0, eps=1e-6, scale=None):
+    """Normalize a non-negative course-feedback term while preserving its sign role."""
+    norm_mode = str(mode or "none").strip().lower()
+    if norm_mode in {"none", "off", "0", "false"}:
+        return term
+    clip = float(max(eps, clip))
+    eps = float(max(1e-12, eps))
+
+    if scale is None:
+        with torch.no_grad():
+            detached = term.detach().abs()
+            active = detached > eps
+            if not bool(active.any().item()):
+                return term
+            scale_t = detached[active].mean().clamp_min(eps)
+    else:
+        scale_t = torch.as_tensor(scale, dtype=term.dtype, device=term.device).clamp_min(eps)
+
+    return (term / scale_t).clamp(0.0, clip)
+
+
+def _sage_tail_gate_from_pop(pop, max_pop, gate_min=0.1, gate_max=0.6, eps=1e-6):
+    """Popularity-aware gate: lower train popularity receives more course signal."""
+    pop_t = torch.as_tensor(pop, dtype=torch.float32)
+    lo = float(min(gate_min, gate_max))
+    hi = float(max(gate_min, gate_max))
+    max_pop_t = torch.as_tensor(max_pop, dtype=pop_t.dtype, device=pop_t.device).clamp_min(float(eps))
+    pop_norm = torch.log1p(pop_t.clamp_min(0.0)) / torch.log1p(max_pop_t)
+    pop_norm = pop_norm.clamp(0.0, 1.0)
+    return (lo + (hi - lo) * (1.0 - pop_norm)).clamp(lo, hi)
+
+
+def _sage_cold_or_tail_mask_from_pop(pop, max_pop, cold_threshold=1, tail_pop_ratio=0.10, eps=1e-6):
+    """Return rows where SAGE-lite should affect strict-cold or train-tail targets."""
+    pop_t = torch.as_tensor(pop, dtype=torch.float32)
+    max_pop_t = torch.as_tensor(max_pop, dtype=pop_t.dtype, device=pop_t.device).clamp_min(float(eps))
+    cold = pop_t.clamp_min(0.0) < float(cold_threshold)
+    tail_ratio = float(min(1.0, max(0.0, tail_pop_ratio)))
+    tail = pop_t.clamp_min(0.0) <= (max_pop_t * tail_ratio)
+    return cold | tail
+
+
+def _sampling_probs_from_scores(scores, temp=1.0, epsilon=0.0):
+    n_cols = int(scores.size(1))
+    safe_temp = max(float(temp), 1e-6)
+    probs = F.softmax(scores / safe_temp, dim=1)
+    bad_rows = (~torch.isfinite(probs)).any(dim=1) | (probs.sum(dim=1) <= 0)
+    if bad_rows.any():
+        probs[bad_rows] = 1.0 / max(1, n_cols)
+    eps = float(min(1.0, max(0.0, epsilon)))
+    probs = (1.0 - eps) * probs + eps / max(1, n_cols)
+    return probs / probs.sum(dim=1, keepdim=True).clamp_min(1e-12)
+
+
+def _course_probs_from_fit(course_fit, course_temp=0.20):
+    n_cols = int(course_fit.size(1))
+    temp = max(float(course_temp), 1e-6)
+    probs = F.softmax(course_fit / temp, dim=1)
+    bad_rows = (~torch.isfinite(probs)).any(dim=1) | (probs.sum(dim=1) <= 0)
+    if bad_rows.any():
+        probs[bad_rows] = 1.0 / max(1, n_cols)
+    return probs / probs.sum(dim=1, keepdim=True).clamp_min(1e-12)
+
+
+def _sage_only_cold_or_tail_candidate_probs(
+    top_scores,
+    course_fit_topk,
+    sage_gate_topk,
+    candidate_temp=1.0,
+    candidate_epsilon=0.0,
+    course_temp=0.20,
+):
+    """Build row-wise candidate probabilities: SAGE top-k for active rows, full retrieval for hot rows."""
+    full_probs = _sampling_probs_from_scores(top_scores, temp=candidate_temp, epsilon=candidate_epsilon)
+    pool_k = int(course_fit_topk.size(1))
+    retrieval_topk = _sampling_probs_from_scores(
+        top_scores[:, :pool_k],
+        temp=candidate_temp,
+        epsilon=candidate_epsilon,
+    )
+    course_probs = _course_probs_from_fit(course_fit_topk, course_temp=course_temp)
+    mixed_topk = (1.0 - sage_gate_topk) * retrieval_topk + sage_gate_topk * course_probs
+    mixed_topk = mixed_topk / mixed_topk.sum(dim=1, keepdim=True).clamp_min(1e-12)
+    active_rows = (sage_gate_topk > 0).any(dim=1, keepdim=True)
+
+    active_probs = torch.zeros_like(top_scores, dtype=top_scores.dtype, device=top_scores.device)
+    active_probs[:, :pool_k] = mixed_topk
+    probs = torch.where(active_rows, active_probs, full_probs)
+    return probs / probs.sum(dim=1, keepdim=True).clamp_min(1e-12)
+
+
+def _sage_two_expert_candidate_probs(
+    top_scores,
+    course_fit_topk,
+    sage_gate_topk,
+    candidate_temp=1.0,
+    candidate_epsilon=0.0,
+    course_temp=0.20,
+):
+    """Two-expert SAGE-lite probabilities: uniform pool expert + course-fit expert."""
+    full_probs = _sampling_probs_from_scores(top_scores, temp=candidate_temp, epsilon=candidate_epsilon)
+    pool_k = int(course_fit_topk.size(1))
+    uniform_expert = torch.full_like(course_fit_topk, 1.0 / max(1, pool_k))
+    course_expert = _course_probs_from_fit(course_fit_topk, course_temp=course_temp)
+    mixed_topk = (1.0 - sage_gate_topk) * uniform_expert + sage_gate_topk * course_expert
+    mixed_topk = mixed_topk / mixed_topk.sum(dim=1, keepdim=True).clamp_min(1e-12)
+    active_rows = (sage_gate_topk > 0).any(dim=1, keepdim=True)
+
+    active_probs = torch.zeros_like(top_scores, dtype=top_scores.dtype, device=top_scores.device)
+    active_probs[:, :pool_k] = mixed_topk
+    probs = torch.where(active_rows, active_probs, full_probs)
+    return probs / probs.sum(dim=1, keepdim=True).clamp_min(1e-12)
+
+
+def _sage_course_sampling_combined_score(
+    retrieval_score,
+    fit_norm,
+    sage_gate=None,
+    beta=0.20,
+    use_sage_lite=False,
+    sage_only_cold_or_tail=False,
+):
+    base_score = retrieval_score + float(beta) * fit_norm
+    if not use_sage_lite or sage_gate is None:
+        return base_score
+    sage_score = (1.0 - sage_gate) * retrieval_score + sage_gate * fit_norm
+    if not sage_only_cold_or_tail:
+        return sage_score
+    active_rows = (sage_gate > 0).any(dim=1, keepdim=True)
+    return torch.where(active_rows, sage_score, base_score)
 
 
 def _llm_score_path(candidate):
@@ -363,6 +496,49 @@ class PAM_RL_Pure_USIM(nn.Module):
             nn.init.zeros_(last_delta_layer.bias)
         for param in self.content_delta_projector.parameters():
             param.requires_grad = use_delta and delta_mode in {"projector", "hybrid"}
+        self.cgrc_recon_mlp = nn.Sequential(
+            nn.Linear(config.emb_dim * 2, config.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(config.hidden_dim, 1),
+        )
+        for module in self.cgrc_recon_mlp:
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_normal_(module.weight)
+                nn.init.zeros_(module.bias)
+        for param in self.cgrc_recon_mlp.parameters():
+            param.requires_grad = bool(getattr(config, "use_cgrc_recon", False))
+        sage_gate_bucket_count = max(2, int(getattr(config, "sage_gate_bucket_count", 20)))
+        sage_gate_hidden_dim = max(1, int(getattr(config, "sage_gate_hidden_dim", 32)))
+        self.sage_gate_bucket_emb = nn.Embedding(sage_gate_bucket_count, sage_gate_hidden_dim)
+        self.sage_gate_mlp = nn.Sequential(
+            nn.Linear(sage_gate_hidden_dim, sage_gate_hidden_dim),
+            nn.GELU(),
+            nn.Linear(sage_gate_hidden_dim, 1),
+        )
+        self.sage_score_gate_mlp = nn.Sequential(
+            nn.Linear(sage_gate_hidden_dim, sage_gate_hidden_dim),
+            nn.GELU(),
+            nn.Linear(sage_gate_hidden_dim, 2),
+        )
+        nn.init.normal_(self.sage_gate_bucket_emb.weight, mean=0.0, std=0.02)
+        for module in list(self.sage_gate_mlp) + list(self.sage_score_gate_mlp):
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_normal_(module.weight)
+                nn.init.zeros_(module.bias)
+        sage_gate_trainable = (
+            bool(getattr(config, "use_sage_lite", False))
+            and str(getattr(config, "sage_gate_mode", "heuristic")).strip().lower() == "bucket_mlp"
+        )
+        for param in self.sage_gate_bucket_emb.parameters():
+            param.requires_grad = sage_gate_trainable
+        for param in self.sage_gate_mlp.parameters():
+            param.requires_grad = sage_gate_trainable
+        sage_score_gate_trainable = (
+            bool(getattr(config, "use_sage_lite", False))
+            and bool(getattr(config, "sage_two_expert_score_fusion", False))
+        )
+        for param in self.sage_score_gate_mlp.parameters():
+            param.requires_grad = sage_score_gate_trainable
         self.user_proj = nn.Sequential(
             nn.Linear(config.emb_dim, config.hidden_dim),
             nn.GELU(),
@@ -887,12 +1063,15 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         self.agent = FixedSimpleAC(config.emb_dim, time_dim=config.usim_steps)
         self.item_popularity = None
         self.item_popularity_cpu = None
+        self.item_popularity_max = None
         self.item_difficulty = None
+        self.course_term_ema_scales = {}
 
     def set_feedback_item_stats(self, item_popularity):
         if item_popularity is None:
             self.item_popularity = None
             self.item_popularity_cpu = None
+            self.item_popularity_max = None
             self.item_difficulty = None
             return
         pop = torch.as_tensor(item_popularity, dtype=torch.float32, device=self.device)
@@ -902,7 +1081,377 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         difficulty = 1.0 - torch.log1p(pop) / max_log
         self.item_popularity = pop
         self.item_popularity_cpu = pop.detach().cpu()
+        self.item_popularity_max = pop.max().detach().clamp_min(1.0)
         self.item_difficulty = difficulty.clamp(0.0, 1.0)
+
+    def _sage_popularity_bucket_ids(self, pop):
+        bucket_count = max(2, int(getattr(self.cfg, "sage_gate_bucket_count", 20)))
+        gate_device = self.sage_gate_bucket_emb.weight.device
+        pop_t = torch.as_tensor(pop, dtype=torch.float32, device=gate_device).view(-1).clamp_min(0.0)
+        if self.item_popularity_max is not None:
+            max_pop = self.item_popularity_max.to(device=gate_device).float().clamp_min(1.0)
+        else:
+            max_pop = pop_t.max().clamp_min(1.0)
+        strategy = str(getattr(self.cfg, "sage_gate_bucket_strategy", "paper")).strip().lower()
+        if strategy == "log":
+            pop_norm = torch.log1p(pop_t) / torch.log1p(max_pop)
+            bucket = torch.floor(pop_norm.clamp(0.0, 1.0) * float(bucket_count - 1)).long()
+        else:
+            bucket = torch.floor(pop_t * float(bucket_count) / (max_pop + 1.0)).long()
+        return bucket.clamp(0, bucket_count - 1)
+
+    def _sage_bucket_mlp_gate_from_pop(self, pop, batch_size, n_cols=1):
+        gate_device = self.sage_gate_bucket_emb.weight.device
+        if pop is None:
+            pop = torch.zeros((batch_size,), dtype=torch.float32, device=gate_device)
+        pop_t = torch.as_tensor(pop, dtype=torch.float32, device=gate_device).view(-1)
+        if pop_t.numel() != int(batch_size):
+            pop_t = pop_t.reshape(int(batch_size), -1)[:, 0]
+        bucket = self._sage_popularity_bucket_ids(pop_t)
+        gate_unit = torch.sigmoid(self.sage_gate_mlp(self.sage_gate_bucket_emb(bucket))).view(batch_size, 1)
+        lo = float(min(getattr(self.cfg, "sage_gate_min", 0.10), getattr(self.cfg, "sage_gate_max", 0.60)))
+        hi = float(max(getattr(self.cfg, "sage_gate_min", 0.10), getattr(self.cfg, "sage_gate_max", 0.60)))
+        gate = lo + (hi - lo) * gate_unit
+        if n_cols != 1:
+            gate = gate.expand(-1, n_cols)
+        return gate
+
+    def _sage_two_expert_score_weights_from_pop(self, pop, score_shape):
+        gate_device = self.sage_gate_bucket_emb.weight.device
+        batch_size, n_cols = int(score_shape[0]), int(score_shape[1])
+        if pop is None:
+            pop_t = torch.zeros((batch_size, n_cols), dtype=torch.float32, device=gate_device)
+        else:
+            pop_t = torch.as_tensor(pop, dtype=torch.float32, device=gate_device)
+            if pop_t.dim() == 1:
+                if pop_t.numel() == n_cols:
+                    pop_t = pop_t.view(1, n_cols).expand(batch_size, -1)
+                elif pop_t.numel() == batch_size:
+                    pop_t = pop_t.view(batch_size, 1).expand(-1, n_cols)
+                else:
+                    pop_t = pop_t.view(batch_size, n_cols)
+            else:
+                pop_t = pop_t.view(batch_size, n_cols)
+        bucket = self._sage_popularity_bucket_ids(pop_t.reshape(-1))
+        logits = self.sage_score_gate_mlp(self.sage_gate_bucket_emb(bucket))
+        weights = torch.softmax(logits, dim=1).view(batch_size, n_cols, 2)
+        return weights
+
+    def _resolve_score_fusion_pop(self, scores, cand_idx=None, target_pop=None):
+        batch_size, n_cols = int(scores.size(0)), int(scores.size(1))
+        if cand_idx is not None and self.item_popularity is not None:
+            return self.item_popularity.to(device=scores.device).index_select(0, cand_idx.reshape(-1)).view(batch_size, n_cols)
+        if cand_idx is None and self.item_popularity is not None and n_cols == int(self.cfg.n_items):
+            return self.item_popularity.to(device=scores.device).view(1, n_cols).expand(batch_size, -1)
+        if target_pop is not None:
+            pop_t = target_pop.to(device=scores.device).float()
+            if pop_t.dim() == 1:
+                return pop_t.view(batch_size, 1).expand(-1, n_cols)
+            return pop_t.view(batch_size, n_cols)
+        return None
+
+    def _build_seen_mat_for_user_ids(self, user_ids, seen_tensor_cache=None):
+        if user_ids is None:
+            return None
+        seen_index = getattr(self, "user_seen_index", None)
+        if seen_index is not None:
+            uid_t = self._resolve_user_id_tensor(user_ids)
+            return seen_index.index_select(0, uid_t).float()
+        batch_size = len(user_ids)
+        seen_mat = torch.zeros((batch_size, self.cfg.n_items), dtype=torch.float32, device=self.device)
+        if seen_tensor_cache is None:
+            return seen_mat
+        for row, uid in enumerate(user_ids):
+            seen_idx = seen_tensor_cache.get(int(uid))
+            if seen_idx is not None and seen_idx.numel() > 0:
+                seen_mat[row, seen_idx] = 1.0
+        return seen_mat
+
+    def _compute_user_item_course_expert_scores(self, user_ids, seen_tensor_cache=None, cand_idx=None):
+        if (
+            user_ids is None
+            or self.item_prereq_item_mat is None
+            or self.item_prereq_item_cnt is None
+            or self.item_concept_overlap is None
+        ):
+            return None
+        seen_mat = self._build_seen_mat_for_user_ids(user_ids, seen_tensor_cache=seen_tensor_cache)
+        if seen_mat is None or seen_mat.numel() < 1:
+            return None
+        seen_cnt_raw = seen_mat.sum(dim=1, keepdim=True)
+        seen_cnt = seen_cnt_raw.clamp_min(1.0)
+        prereq_seen = torch.matmul(seen_mat, self.item_prereq_item_mat.t())
+        prereq_cnt = self.item_prereq_item_cnt.unsqueeze(0)
+        prereq_gap = torch.where(
+            prereq_cnt > 0,
+            1.0 - prereq_seen / prereq_cnt.clamp_min(1.0),
+            torch.zeros_like(prereq_seen),
+        ).clamp(0.0, 1.0)
+        concept_match = (torch.matmul(seen_mat, self.item_concept_overlap.t()) / seen_cnt).clamp(0.0, 1.0)
+        redundant_thr = float(min(0.99, max(0.0, self.cfg.feedback_course_redundant_thr)))
+        concept_min = float(min(redundant_thr - 1e-3, max(0.0, self.cfg.feedback_course_concept_min)))
+        concept_band = max(1e-6, redundant_thr - concept_min)
+        concept_bonus = ((concept_match - concept_min) / concept_band).clamp(0.0, 1.0)
+        redundant = ((concept_match - redundant_thr) / max(1e-6, 1.0 - redundant_thr)).clamp(0.0, 1.0)
+        redundant_gate = float(min(1.0, max(0.0, self.cfg.feedback_course_redundant_concept_gate)))
+        prereq_safe = (prereq_gap <= float(min(1.0, max(0.0, self.cfg.feedback_course_prereq_gate)))).float()
+        concept_bonus = concept_bonus * prereq_safe * (1.0 - redundant_gate * redundant)
+        difficulty_gap = torch.zeros_like(concept_match)
+        if self.item_difficulty is not None:
+            warm_seen = max(1.0, float(self.cfg.feedback_course_warm_seen))
+            user_readiness = (seen_cnt_raw / warm_seen).clamp(0.0, 1.0)
+            difficulty_gap = F.relu(self.item_difficulty.to(device=self.device).view(1, -1) - user_readiness)
+        course_score_full = (
+            float(self.cfg.feedback_course_concept_weight) * concept_bonus
+            - float(self.cfg.feedback_course_prereq_weight) * prereq_gap
+            - float(self.cfg.feedback_course_difficulty_weight) * difficulty_gap
+            - float(self.cfg.feedback_course_redundant_weight) * redundant
+        )
+        if cand_idx is not None:
+            return course_score_full.gather(1, cand_idx.to(device=self.device).long())
+        return course_score_full
+
+    def apply_sage_two_expert_score_fusion(
+        self,
+        scores,
+        course_fit=None,
+        target_pop=None,
+        user_ids=None,
+        seen_tensor_cache=None,
+        cand_idx=None,
+    ):
+        if not (
+            bool(getattr(self.cfg, "use_sage_lite", False))
+            and bool(getattr(self.cfg, "sage_two_expert_score_fusion", False))
+        ):
+            return scores
+        if course_fit is None:
+            course_fit = self._compute_user_item_course_expert_scores(
+                user_ids,
+                seen_tensor_cache=seen_tensor_cache,
+                cand_idx=cand_idx,
+            )
+        if course_fit is None:
+            return scores
+        course_fit = course_fit.to(device=scores.device, dtype=scores.dtype)
+        if not torch.isfinite(course_fit).all():
+            course_fit = torch.nan_to_num(course_fit, nan=0.0, posinf=0.0, neginf=0.0)
+        course_scale = course_fit.abs().amax(dim=1, keepdim=True).clamp_min(1e-6)
+        course_expert = course_fit / course_scale
+        pop_grid = self._resolve_score_fusion_pop(scores, cand_idx=cand_idx, target_pop=target_pop)
+        weights = self._sage_two_expert_score_weights_from_pop(pop_grid, scores.shape).to(device=scores.device, dtype=scores.dtype)
+        fused = weights[..., 0] * scores + weights[..., 1] * course_expert
+        if bool(getattr(self.cfg, "sage_only_cold_or_tail", False)):
+            if pop_grid is None:
+                return scores
+            max_pop = (
+                self.item_popularity_max.to(device=scores.device)
+                if self.item_popularity_max is not None
+                else pop_grid.max().clamp_min(1.0)
+            )
+            active = _sage_cold_or_tail_mask_from_pop(
+                pop_grid.reshape(-1),
+                max_pop,
+                cold_threshold=float(getattr(self.cfg, "cold_threshold", 1)),
+                tail_pop_ratio=float(getattr(self.cfg, "sage_tail_pop_ratio", 0.10)),
+            ).view_as(scores)
+            fused = torch.where(active, fused, scores)
+        return fused
+
+    def _sage_tail_gate(self, target_pop, batch_size, n_cols=1):
+        only_cold_or_tail = bool(getattr(self.cfg, "sage_only_cold_or_tail", False))
+        gate_mode = str(getattr(self.cfg, "sage_gate_mode", "heuristic")).strip().lower()
+        if gate_mode == "bucket_mlp":
+            gate = self._sage_bucket_mlp_gate_from_pop(target_pop, batch_size, n_cols=n_cols)
+            if only_cold_or_tail:
+                gate_device = gate.device
+                if target_pop is None:
+                    active = torch.zeros((batch_size, 1), dtype=torch.bool, device=gate_device)
+                else:
+                    target_pop_t = target_pop.to(device=gate_device).float().view(-1)
+                    max_pop = (
+                        self.item_popularity_max.to(device=gate_device)
+                        if self.item_popularity_max is not None
+                        else target_pop_t.max().clamp_min(1.0)
+                    )
+                    active = _sage_cold_or_tail_mask_from_pop(
+                        target_pop_t,
+                        max_pop,
+                        cold_threshold=float(getattr(self.cfg, "cold_threshold", 1)),
+                        tail_pop_ratio=float(getattr(self.cfg, "sage_tail_pop_ratio", 0.10)),
+                    ).view(batch_size, 1)
+                if n_cols != 1:
+                    active = active.expand(-1, n_cols)
+                gate = gate * active.float()
+            return gate
+        if target_pop is None or self.item_popularity_max is None:
+            if only_cold_or_tail:
+                gate = torch.zeros((batch_size, 1), dtype=torch.float32, device=self.device)
+                if n_cols != 1:
+                    gate = gate.expand(-1, n_cols)
+                return gate
+            gate_val = float(getattr(self.cfg, "sage_gate_max", 0.60))
+            gate = torch.full((batch_size, 1), gate_val, dtype=torch.float32, device=self.device)
+        else:
+            target_pop = target_pop.to(device=self.device).float().view(-1)
+            gate = _sage_tail_gate_from_pop(
+                target_pop,
+                self.item_popularity_max.to(device=self.device),
+                gate_min=float(getattr(self.cfg, "sage_gate_min", 0.10)),
+                gate_max=float(getattr(self.cfg, "sage_gate_max", 0.60)),
+            ).view(batch_size, 1)
+            if only_cold_or_tail:
+                active = _sage_cold_or_tail_mask_from_pop(
+                    target_pop,
+                    self.item_popularity_max.to(device=self.device),
+                    cold_threshold=float(getattr(self.cfg, "cold_threshold", 1)),
+                    tail_pop_ratio=float(getattr(self.cfg, "sage_tail_pop_ratio", 0.10)),
+                ).view(batch_size, 1)
+                gate = gate * active.float()
+        if n_cols != 1:
+            gate = gate.expand(-1, n_cols)
+        return gate
+
+    def _cgrc_recon_active_gate(self, target_pop, batch_size, n_cols=1):
+        if not bool(getattr(self.cfg, "use_cgrc_recon", False)):
+            return torch.zeros((batch_size, n_cols), dtype=torch.float32, device=self.device)
+        if not bool(getattr(self.cfg, "cgrc_recon_only_cold_or_tail", True)):
+            return torch.ones((batch_size, n_cols), dtype=torch.float32, device=self.device)
+        if target_pop is None or self.item_popularity_max is None:
+            return torch.zeros((batch_size, n_cols), dtype=torch.float32, device=self.device)
+        target_pop = target_pop.to(device=self.device).float().view(-1)
+        active = _sage_cold_or_tail_mask_from_pop(
+            target_pop,
+            self.item_popularity_max.to(device=self.device),
+            cold_threshold=float(getattr(self.cfg, "cold_threshold", 1)),
+            tail_pop_ratio=float(getattr(self.cfg, "cgrc_recon_tail_pop_ratio", 0.10)),
+        ).float().view(batch_size, 1)
+        if n_cols != 1:
+            active = active.expand(-1, n_cols)
+        return active
+
+    def _sample_cgrc_recon_pseudo_mask(self, pop):
+        pop = pop.to(device=self.device).float().view(-1)
+        eligible = pop >= float(getattr(self.cfg, "cold_threshold", 1))
+        n_eligible = int(eligible.sum().detach().item())
+        active = torch.zeros_like(eligible)
+        if n_eligible < 1:
+            return active
+        ratio = float(getattr(self.cfg, "cgrc_recon_pseudo_ratio", 0.30))
+        if ratio <= 0.0:
+            return active
+        if ratio >= 1.0:
+            return eligible
+        n_pick = max(1, min(n_eligible, int(math.ceil(n_eligible * ratio))))
+        draw = torch.rand_like(pop).masked_fill(~eligible, -1.0)
+        _, chosen = torch.topk(draw, k=n_pick, dim=0)
+        active[chosen] = True
+        return active & eligible
+
+    def _cgrc_recon_logits_from_vectors(self, item_vec, candidate_user_vec):
+        batch_size, n_cand, dim = candidate_user_vec.shape
+        item_part = item_vec.view(batch_size, 1, dim).expand(-1, n_cand, -1)
+        flat = torch.cat([candidate_user_vec, item_part], dim=2).reshape(batch_size * n_cand, dim * 2)
+        return self.cgrc_recon_mlp(flat).view(batch_size, n_cand)
+
+    def _cgrc_recon_candidate_logits(self, item_vec, cand_user_idx, user_bank_raw):
+        if user_bank_raw is None or cand_user_idx is None:
+            return None
+        cand_user_vec = user_bank_raw[cand_user_idx.long()]
+        return self._cgrc_recon_logits_from_vectors(item_vec, cand_user_vec)
+
+    def _compute_cgrc_recon_aux_loss(self, user_idx, item_vec, pop):
+        zero = self.user_emb.weight.new_zeros(())
+        info = {
+            "cgrc_recon_loss": 0.0,
+            "cgrc_recon_active_ratio": 0.0,
+            "cgrc_recon_pos_count": 0,
+        }
+        if (
+            not self.training
+            or not bool(getattr(self.cfg, "use_cgrc_recon", False))
+            or float(getattr(self.cfg, "cgrc_recon_aux_weight", 0.0)) <= 0.0
+            or user_idx is None
+            or item_vec is None
+            or pop is None
+        ):
+            return zero, info
+
+        batch_size = int(user_idx.numel())
+        if batch_size < 2:
+            return zero, info
+        active = self._sample_cgrc_recon_pseudo_mask(pop)
+        active_idx = active.nonzero(as_tuple=True)[0]
+        if active_idx.numel() < 1:
+            return zero, info
+
+        pool_user_ids = torch.unique(user_idx.to(device=self.device).long().view(-1), sorted=False)
+        if pool_user_ids.numel() < 2:
+            return zero, info
+
+        active_item_vec = item_vec.index_select(0, active_idx)
+        pos_user_ids = user_idx.to(device=self.device).long().view(-1).index_select(0, active_idx)
+        with torch.no_grad():
+            pool_user_vec_for_select = self.user_proj(self.user_emb(pool_user_ids)).detach()
+            select_scores = torch.matmul(active_item_vec.detach(), pool_user_vec_for_select.t())
+            k = min(max(2, int(getattr(self.cfg, "cgrc_recon_topk", 64))), int(pool_user_ids.numel()))
+            _, top_cols = torch.topk(select_scores, k=k, dim=1)
+            cand_user_ids = pool_user_ids[top_cols].clone()
+            cand_user_ids[:, 0] = pos_user_ids
+
+        flat_cand_ids = cand_user_ids.reshape(-1)
+        cand_user_vec = self.user_proj(self.user_emb(flat_cand_ids)).view(active_idx.numel(), -1, self.cfg.emb_dim)
+        if bool(getattr(self.cfg, "cgrc_recon_detach_user", False)):
+            cand_user_vec = cand_user_vec.detach()
+
+        logits = self._cgrc_recon_logits_from_vectors(active_item_vec, cand_user_vec)
+        dup_pos = cand_user_ids.eq(pos_user_ids.view(-1, 1))
+        if dup_pos.size(1) > 1:
+            dup_pos[:, 0] = False
+            logits = logits.masked_fill(dup_pos, -1e9)
+        logits = logits / float(getattr(self.cfg, "cgrc_recon_temperature", 0.50))
+        labels = torch.zeros(active_idx.numel(), dtype=torch.long, device=self.device)
+        loss = F.cross_entropy(logits, labels)
+        info["cgrc_recon_loss"] = float(loss.detach().item())
+        info["cgrc_recon_active_ratio"] = float(active.float().mean().detach().item())
+        info["cgrc_recon_pos_count"] = int(active_idx.numel())
+        return loss, info
+
+    def _normalize_course_term(self, name, term):
+        mode = str(getattr(self.cfg, "feedback_course_term_norm", "none")).strip().lower()
+        if mode in {"none", "off", "0", "false"}:
+            return term
+        clip = float(getattr(self.cfg, "feedback_course_term_norm_clip", 2.0))
+        eps = float(getattr(self.cfg, "feedback_course_term_norm_eps", 1e-6))
+        if mode == "batch":
+            return _normalize_course_term_tensor(term, mode="batch", clip=clip, eps=eps)
+        if mode != "ema":
+            return term
+
+        with torch.no_grad():
+            detached = term.detach().abs()
+            active = detached > eps
+            if not bool(active.any().item()):
+                return term
+            batch_scale = detached[active].mean().clamp_min(eps)
+            prev = self.course_term_ema_scales.get(name)
+            if prev is None:
+                scale = batch_scale
+            else:
+                decay = float(getattr(self.cfg, "feedback_course_term_norm_ema_decay", 0.95))
+                prev = prev.to(device=batch_scale.device, dtype=batch_scale.dtype)
+                scale = decay * prev + (1.0 - decay) * batch_scale
+            self.course_term_ema_scales[name] = scale.detach()
+        return _normalize_course_term_tensor(term, mode="ema", clip=clip, eps=eps, scale=scale)
+
+    def _normalize_course_terms(self, prefix, terms):
+        mode = str(getattr(self.cfg, "feedback_course_term_norm", "none")).strip().lower()
+        if mode in {"none", "off", "0", "false"}:
+            return terms
+        return {
+            name: self._normalize_course_term(f"{prefix}.{name}", value)
+            for name, value in terms.items()
+        }
 
     def _compute_aux_loss(self, id_e_true, content_e, effective_cold):
         """Auxiliary InfoNCE between ID and content towers (id_e_true <-> content_e).
@@ -987,6 +1536,37 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             return None
         return seen_mat[:, item_idx] > 0
 
+    def _build_batch_false_negative_mask(self, user_ids, item_idx, user_seen_items, pos_mask):
+        masks = []
+        if (
+            self.training and getattr(self.cfg, "mask_known_pos_neg", False) and
+            user_seen_items is not None and item_idx.numel() > 1
+        ):
+            known_pos = self._build_known_positive_batch_mask(user_ids, item_idx, user_seen_items)
+            if known_pos is not None:
+                masks.append(known_pos & (~pos_mask))
+
+        if getattr(self.cfg, "mask_same_item_neg", True) and item_idx.numel() > 1:
+            same_item = item_idx.view(-1, 1) == item_idx.view(1, -1)
+            masks.append(same_item & (~pos_mask))
+
+        if not masks:
+            return None
+
+        false_neg_mask = masks[0].bool()
+        for mask in masks[1:]:
+            false_neg_mask = false_neg_mask | mask.bool()
+        false_neg_mask = false_neg_mask & (~pos_mask)
+        return false_neg_mask
+
+    def _mask_false_negative_candidate_logits(self, cand_logits, cand_idx, false_neg_mask):
+        if false_neg_mask is None:
+            return cand_logits
+        invalid = false_neg_mask.gather(1, cand_idx)
+        if invalid.size(1) > 0:
+            invalid[:, 0] = False
+        return cand_logits.masked_fill(invalid, -1e9)
+
     def _compute_prereq_gap_and_safe(self, seen_mat, item_idx):
         batch_size = int(item_idx.size(0))
         zero = torch.zeros((batch_size, 1), dtype=torch.float32, device=self.device)
@@ -1015,6 +1595,39 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             prereq_safe = (prereq_gap_raw <= gate).float()
 
         return prereq_gap, prereq_safe
+
+    def _compute_course_concept_match(self, seen_mat, item_idx):
+        batch_size = int(item_idx.size(0))
+        zero = torch.zeros((batch_size, 1), dtype=torch.float32, device=self.device)
+        if self.item_concept_overlap is None or seen_mat is None:
+            return zero
+        if seen_mat.numel() < 1:
+            return zero
+
+        item_idx = item_idx.view(-1).long()
+        overlap_rows = self.item_concept_overlap.index_select(0, item_idx).to(device=self.device)
+        seen_scores = overlap_rows * seen_mat.float()
+        seen_cnt = seen_mat.sum(dim=1, keepdim=True).float()
+        effective_seen_cnt = seen_cnt
+        if bool(getattr(self.cfg, "feedback_course_match_exclude_target", False)):
+            target_col = item_idx.view(-1, 1)
+            target_seen = seen_mat.gather(1, target_col).float()
+            seen_scores = seen_scores.scatter(1, target_col, 0.0)
+            effective_seen_cnt = (seen_cnt - target_seen).clamp_min(0.0)
+        mode = str(getattr(self.cfg, "feedback_course_match_mode", "mean")).strip().lower()
+
+        if mode == "max":
+            concept_match = seen_scores.max(dim=1, keepdim=True).values
+        elif mode == "topk":
+            k = max(1, int(getattr(self.cfg, "feedback_course_match_topk", 5)))
+            k = min(k, seen_scores.size(1))
+            top_vals = torch.topk(seen_scores, k=k, dim=1).values
+            denom = torch.minimum(effective_seen_cnt, torch.full_like(effective_seen_cnt, float(k))).clamp_min(1.0)
+            concept_match = top_vals.sum(dim=1, keepdim=True) / denom
+        else:
+            concept_match = seen_scores.sum(dim=1, keepdim=True) / effective_seen_cnt.clamp_min(1.0)
+
+        return concept_match.clamp(0.0, 1.0)
 
     def _compute_course_reward_terms(self, selected_user_ids, item_idx, target_pop=None, user_seen_items=None, cached_seen=None):
         batch_size = int(item_idx.size(0))
@@ -1052,7 +1665,6 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         if self.cfg.feedback_course_only_cold and target_pop is not None:
             active = self._cold_mask_from_pop(target_pop).float().view(-1, 1)
 
-        batch_idx = torch.arange(batch_size, device=self.device)
         seen_active = (seen_cnt_raw >= 1.0).float()
         warm_seen = max(1.0, float(self.cfg.feedback_course_warm_seen))
         user_readiness = (seen_cnt_raw / warm_seen).clamp(0.0, 1.0)
@@ -1069,8 +1681,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             )
 
         if self.item_concept_overlap is not None:
-            concept_full = torch.matmul(seen_mat, self.item_concept_overlap.t()) / seen_cnt_raw.clamp_min(1.0)
-            concept_match = concept_full[batch_idx, item_idx].unsqueeze(1).clamp(0.0, 1.0)
+            concept_match = self._compute_course_concept_match(seen_mat, item_idx)
             redundant_thr = float(min(0.99, max(0.0, self.cfg.feedback_course_redundant_thr)))
             concept_min = float(min(redundant_thr - 1e-3, max(0.0, self.cfg.feedback_course_concept_min)))
             concept_band = max(1e-6, redundant_thr - concept_min)
@@ -1090,7 +1701,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             difficulty_gap = F.relu(item_difficulty - user_readiness)
             terms["difficulty_gap"] = difficulty_gap * active
 
-        return terms
+        return self._normalize_course_terms("reward", terms)
 
     def _compute_candidate_course_fit(self, candidate_user_idx, item_idx, target_pop=None, user_seen_items=None):
         batch_size, n_cand = candidate_user_idx.shape
@@ -1112,7 +1723,6 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         seen_cnt_raw = seen_cnt_u[inverse_map]
 
         flat_item_idx = item_idx.view(-1, 1).expand(-1, n_cand).reshape(-1)
-        batch_idx = torch.arange(flat_user_idx.size(0), device=self.device)
         fit = torch.zeros((flat_user_idx.size(0), 1), dtype=torch.float32, device=self.device)
 
         warm_seen = max(1.0, float(self.cfg.feedback_course_warm_seen))
@@ -1126,8 +1736,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         if redundant_mode == "video_family":
             redundant = self._compute_structural_redundancy_for_pairs(flat_item_idx, seen_mat).clamp(0.0, 1.0)
         if self.item_concept_overlap is not None:
-            concept_full = torch.matmul(seen_mat, self.item_concept_overlap.t()) / seen_cnt_raw.clamp_min(1.0)
-            concept_match = concept_full[batch_idx, flat_item_idx].unsqueeze(1).clamp(0.0, 1.0)
+            concept_match = self._compute_course_concept_match(seen_mat, flat_item_idx)
             redundant_thr = float(min(0.99, max(0.0, self.cfg.feedback_course_redundant_thr)))
             concept_min = float(min(redundant_thr - 1e-3, max(0.0, self.cfg.feedback_course_concept_min)))
             concept_band = max(1e-6, redundant_thr - concept_min)
@@ -1141,6 +1750,11 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         if self.item_difficulty is not None:
             item_difficulty = self.item_difficulty[flat_item_idx].unsqueeze(1)
             difficulty_gap = F.relu(item_difficulty - user_readiness)
+
+        concept_bonus = self._normalize_course_term("sample.concept_bonus", concept_bonus)
+        prereq_gap = self._normalize_course_term("sample.prereq_gap", prereq_gap)
+        difficulty_gap = self._normalize_course_term("sample.difficulty_gap", difficulty_gap)
+        redundant = self._normalize_course_term("sample.redundant", redundant)
 
         fit = (
             float(self.cfg.feedback_course_concept_weight) * concept_bonus
@@ -1337,7 +1951,101 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         align_loss = (pop_vec - unpop_vec).pow(2).sum(dim=1).mean()
         return align_loss, int(pop_t.numel())
 
-    def get_candidates(self, item_emb, user_bank_raw=None, user_bank_norm=None):
+    def _compute_sage_aux_loss(
+        self,
+        item_emb,
+        item_idx,
+        target_pop=None,
+        user_seen_items=None,
+        user_bank_raw=None,
+        user_bank_norm=None,
+    ):
+        zero = item_emb.new_zeros(())
+        info = {
+            "sage_aux_loss": 0.0,
+            "sage_aux_active_ratio": 0.0,
+            "sage_aux_pool_fit": 0.0,
+        }
+        if (
+            not self.training
+            or not bool(getattr(self.cfg, "use_sage_aux_loss", False))
+            or float(getattr(self.cfg, "sage_aux_weight", 0.0)) <= 0.0
+            or item_idx is None
+            or target_pop is None
+            or user_seen_items is None
+        ):
+            return zero, info
+        if user_bank_raw is None:
+            user_bank_raw, user_bank_norm = self._build_user_bank_raw()
+        elif isinstance(user_bank_raw, tuple):
+            user_bank_raw, user_bank_norm = user_bank_raw
+        elif user_bank_norm is None:
+            user_bank_norm = F.normalize(user_bank_raw.detach(), dim=1)
+
+        detach_user = bool(getattr(self.cfg, "sage_aux_detach_user", True))
+        bank_raw = user_bank_raw.detach() if detach_user else user_bank_raw
+        bank_norm = user_bank_norm.detach() if (detach_user and user_bank_norm is not None) else user_bank_norm
+        pool_k = int(getattr(self.cfg, "sage_aux_pool_topk", getattr(self.cfg, "sage_pool_topk", 64)))
+        pool_k = max(1, min(pool_k, self.cfg.n_users))
+        top_scores, top_idx = self._retrieve_topm_exact(
+            F.normalize(item_emb, dim=1),
+            bank_raw,
+            pool_k,
+            user_bank_norm=bank_norm,
+        )
+        course_fit = self._compute_candidate_course_fit(
+            top_idx,
+            item_idx=item_idx,
+            target_pop=target_pop,
+            user_seen_items=user_seen_items,
+        )
+        if not torch.isfinite(course_fit).all():
+            course_fit = torch.nan_to_num(course_fit, nan=0.0, posinf=0.0, neginf=0.0)
+
+        retrieval_temp = max(float(getattr(self.cfg, "sage_aux_retrieval_temp", 1.0)), 1e-6)
+        course_temp = max(
+            float(getattr(self.cfg, "sage_aux_course_temp", getattr(self.cfg, "sage_course_temp", 0.20))),
+            1e-6,
+        )
+        retrieval_log_probs = F.log_softmax(top_scores / retrieval_temp, dim=1)
+        course_probs = _course_probs_from_fit(course_fit, course_temp=course_temp).detach()
+        row_loss = F.kl_div(retrieval_log_probs, course_probs, reduction="none").sum(dim=1)
+
+        target_pop = target_pop.to(device=self.device).float().view(-1)
+        if bool(getattr(self.cfg, "sage_aux_only_strict_cold", True)):
+            active = target_pop < float(getattr(self.cfg, "cold_threshold", 1))
+        else:
+            max_pop = (
+                self.item_popularity_max.to(device=self.device)
+                if self.item_popularity_max is not None
+                else target_pop.max().clamp_min(1.0)
+            )
+            active = _sage_cold_or_tail_mask_from_pop(
+                target_pop,
+                max_pop,
+                cold_threshold=float(getattr(self.cfg, "cold_threshold", 1)),
+                tail_pop_ratio=float(getattr(self.cfg, "sage_tail_pop_ratio", 0.10)),
+            )
+        active = active.view(-1)
+        active_count = int(active.sum().detach().item())
+        if active_count < 1:
+            return zero, info
+
+        loss = row_loss[active].mean()
+        info["sage_aux_loss"] = float(loss.detach().item())
+        info["sage_aux_active_ratio"] = float(active.float().mean().detach().item())
+        info["sage_aux_pool_fit"] = float(course_fit[active].mean().detach().item())
+        return loss, info
+
+    def get_candidates(
+        self,
+        item_emb,
+        user_bank_raw=None,
+        user_bank_norm=None,
+        item_idx=None,
+        target_pop=None,
+        user_seen_items=None,
+    ):
         B = item_emb.size(0)
         N_cand = self.cfg.n_candidates
         strategy = self.cfg.candidate_strategy
@@ -1351,24 +2059,154 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         top_m = max(1, top_m)
         q_norm = F.normalize(item_emb, dim=1)
         top_scores, top_idx = self._retrieve_topm_exact(q_norm, user_bank_raw, top_m, user_bank_norm=user_bank_norm)
-        safe_temp = max(self.cfg.candidate_temp, 1e-6)
-        probs = F.softmax(top_scores / safe_temp, dim=1)
-        bad_rows = (~torch.isfinite(probs)).any(dim=1) | (probs.sum(dim=1) <= 0)
-        if bad_rows.any():
-            probs[bad_rows] = 1.0 / top_m
-        eps = float(min(1.0, max(0.0, self.cfg.candidate_epsilon)))
-        probs = (1.0 - eps) * probs + eps / top_m
+        pool_scores = top_scores
+        pool_idx = top_idx
+        probs_override = None
+        sage_active = (
+            bool(getattr(self.cfg, "use_sage_lite", False))
+            and item_idx is not None
+            and user_seen_items is not None
+            and top_m > 1
+        )
+        sage_gate_mean = 0.0
+        sage_tail_active_mean = 0.0
+        sage_pool_fit_mean = 0.0
+        sage_two_expert = bool(getattr(self.cfg, "sage_use_two_expert", False))
+        cgrc_recon_sample_active_mean = 0.0
+        cgrc_recon_sample_score_mean = 0.0
+        if sage_active:
+            sage_only_cold_or_tail = bool(getattr(self.cfg, "sage_only_cold_or_tail", False))
+            pool_k = int(getattr(self.cfg, "sage_pool_topk", 64))
+            pool_k = max(N_cand, min(top_m, max(1, pool_k)))
+            sage_pool_scores = top_scores[:, :pool_k]
+            sage_pool_idx = top_idx[:, :pool_k]
+            with torch.no_grad():
+                sage_gate = self._sage_tail_gate(target_pop, B, n_cols=pool_k)
+                sage_gate_mean = float(sage_gate.mean().item())
+                sage_tail_active_mean = float((sage_gate > 0).float().mean().item())
+                active_rows = (sage_gate > 0).any(dim=1)
+                if sage_only_cold_or_tail and not bool(active_rows.any().item()):
+                    course_fit = None
+                elif sage_only_cold_or_tail:
+                    active_idx = active_rows.nonzero(as_tuple=True)[0]
+                    course_fit = torch.zeros((B, pool_k), dtype=top_scores.dtype, device=self.device)
+                    active_target_pop = target_pop[active_idx] if target_pop is not None else None
+                    active_fit = self._compute_candidate_course_fit(
+                        sage_pool_idx[active_idx],
+                        item_idx=item_idx[active_idx],
+                        target_pop=active_target_pop,
+                        user_seen_items=user_seen_items,
+                    )
+                    course_fit[active_idx] = active_fit.to(dtype=course_fit.dtype, device=course_fit.device)
+                else:
+                    course_fit = self._compute_candidate_course_fit(
+                        sage_pool_idx,
+                        item_idx=item_idx,
+                        target_pop=target_pop,
+                        user_seen_items=user_seen_items,
+                    )
+                if course_fit is None:
+                    course_probs = None
+                    sage_pool_fit_mean = 0.0
+                    pool_k = top_m
+                    pool_scores = top_scores
+                    pool_idx = top_idx
+                    probs_override = None
+                else:
+                    if not torch.isfinite(course_fit).all():
+                        course_fit = torch.nan_to_num(course_fit, nan=0.0, posinf=0.0, neginf=0.0)
+                    course_temp = max(float(getattr(self.cfg, "sage_course_temp", 0.20)), 1e-6)
+                    course_probs = _course_probs_from_fit(course_fit, course_temp=course_temp)
+                    sage_pool_fit_mean = float(course_fit.mean().item())
+                    if sage_only_cold_or_tail:
+                        probs_fn = (
+                            _sage_two_expert_candidate_probs
+                            if sage_two_expert
+                            else _sage_only_cold_or_tail_candidate_probs
+                        )
+                        probs_override = probs_fn(
+                            top_scores,
+                            course_fit,
+                            sage_gate,
+                            candidate_temp=self.cfg.candidate_temp,
+                            candidate_epsilon=self.cfg.candidate_epsilon,
+                            course_temp=course_temp,
+                        )
+                        pool_scores = top_scores
+                        pool_idx = top_idx
+                        pool_k = top_m
+                    elif sage_two_expert:
+                        probs_override = _sage_two_expert_candidate_probs(
+                            sage_pool_scores,
+                            course_fit,
+                            sage_gate,
+                            candidate_temp=self.cfg.candidate_temp,
+                            candidate_epsilon=self.cfg.candidate_epsilon,
+                            course_temp=course_temp,
+                        )
+                        pool_scores = sage_pool_scores
+                        pool_idx = sage_pool_idx
+                    else:
+                        pool_scores = sage_pool_scores
+                        pool_idx = sage_pool_idx
+        else:
+            pool_k = top_m
+            course_probs = None
+            sage_gate = None
+
+        if probs_override is not None:
+            probs = probs_override
+        else:
+            probs = _sampling_probs_from_scores(
+                pool_scores,
+                temp=self.cfg.candidate_temp,
+                epsilon=self.cfg.candidate_epsilon,
+            )
+        if sage_active and course_probs is not None and sage_gate is not None and probs_override is None:
+            probs = (1.0 - sage_gate) * probs + sage_gate * course_probs
+        if (
+            bool(getattr(self.cfg, "use_cgrc_recon", False))
+            and float(getattr(self.cfg, "cgrc_recon_sample_weight", 0.0)) > 0.0
+            and pool_idx is not None
+            and user_bank_raw is not None
+        ):
+            with torch.no_grad():
+                recon_gate = self._cgrc_recon_active_gate(target_pop, B, n_cols=pool_idx.size(1))
+                if bool((recon_gate > 0).any().item()):
+                    recon_logits = self._cgrc_recon_candidate_logits(item_emb, pool_idx, user_bank_raw)
+                    if recon_logits is not None:
+                        if not torch.isfinite(recon_logits).all():
+                            recon_logits = torch.nan_to_num(recon_logits, nan=0.0, posinf=0.0, neginf=0.0)
+                        recon_probs = F.softmax(
+                            recon_logits / float(getattr(self.cfg, "cgrc_recon_temperature", 0.50)),
+                            dim=1,
+                        )
+                        mix_w = recon_gate * float(getattr(self.cfg, "cgrc_recon_sample_weight", 0.0))
+                        probs = (1.0 - mix_w) * probs + mix_w * recon_probs
+                        cgrc_recon_sample_active_mean = float((recon_gate > 0).float().mean().item())
+                        cgrc_recon_sample_score_mean = float((recon_logits * recon_gate).sum().item() / recon_gate.sum().clamp_min(1.0).item())
         probs = probs / probs.sum(dim=1, keepdim=True).clamp_min(1e-12)
-        replacement = top_m < N_cand
+        nonzero_per_row = (probs > 0).sum(dim=1)
+        replacement = int(nonzero_per_row.min().detach().item()) < N_cand
         sample_pos = torch.multinomial(probs, num_samples=N_cand, replacement=replacement)
-        cand_idx = top_idx.gather(1, sample_pos)
+        cand_idx = pool_idx.gather(1, sample_pos)
         cand_emb = user_bank_raw[cand_idx].detach()
-        topm_unique = max(1, int(top_idx.unique().numel()))
+        topm_unique = max(1, int(pool_idx.unique().numel()))
         selected_unique = int(cand_idx.unique().numel())
         selected_total = max(1, int(cand_idx.numel()))
         dup_rate = 1.0 - (selected_unique / selected_total)
         topm_cov = selected_unique / topm_unique
-        stats = {"dup_rate": float(dup_rate), "topm_coverage": float(topm_cov)}
+        stats = {
+            "dup_rate": float(dup_rate),
+            "topm_coverage": float(topm_cov),
+            "sage_active": float(1.0 if sage_active else 0.0),
+            "sage_gate": float(sage_gate_mean),
+            "sage_tail_active": float(sage_tail_active_mean),
+            "sage_pool_fit": float(sage_pool_fit_mean),
+            "sage_two_expert": float(1.0 if sage_active and sage_two_expert else 0.0),
+            "cgrc_recon_sample_active": float(cgrc_recon_sample_active_mean),
+            "cgrc_recon_sample_score": float(cgrc_recon_sample_score_mean),
+        }
         return cand_emb, cand_idx, stats
 
     def forward(self, batch, pop, llm_s, user_bank_raw=None, user_seen_items=None):
@@ -1396,24 +2234,27 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         candidate_stats["effective_cold_ratio"] = (
             float(effective_cold.float().mean().detach().item()) if effective_cold.numel() > 0 else 0.0
         )
-        ppo_loss = self.compute_ppo_loss(trajectory)
+        ppo_loss_raw = self.compute_ppo_loss(trajectory)
+        ppo_loss = float(getattr(self.cfg, "ppo_loss_weight", 1.0)) * ppo_loss_raw
         z_u = F.normalize(z_u_base, dim=1)
         z_i = F.normalize(final_h, dim=1)
         logits = torch.matmul(z_u, z_i.t()) / self.cfg.temp
         labels = torch.arange(logits.size(0), device=self.device)
         pos_mask = torch.eye(logits.size(0), device=self.device).bool()
+        if bool(getattr(self.cfg, "sage_two_expert_score_fusion", False)) and logits.size(0) > 1:
+            batch_cand_idx = i.view(1, -1).expand(logits.size(0), -1)
+            logits = self.apply_sage_two_expert_score_fusion(
+                logits,
+                user_ids=u,
+                cand_idx=batch_cand_idx,
+            )
         logits_margin = logits.clone()
         logits_margin[pos_mask] -= self.cfg.margin / self.cfg.temp
-        known_positive_mask = None
         false_neg_mask = None
         fn_mask_ratio = 0.0
-        if (
-            self.training and getattr(self.cfg, "mask_known_pos_neg", False) and
-            user_seen_items is not None and logits_margin.size(0) > 1
-        ):
-            known_positive_mask = self._build_known_positive_batch_mask(u, i, user_seen_items)
-            if known_positive_mask is not None:
-                false_neg_mask = known_positive_mask & (~pos_mask)
+        if self.training and logits_margin.size(0) > 1:
+            false_neg_mask = self._build_batch_false_negative_mask(u, i, user_seen_items, pos_mask)
+            if false_neg_mask is not None:
                 off_diag_count = max(1, logits_margin.numel() - logits_margin.size(0))
                 fn_mask_ratio = float(false_neg_mask.sum().detach().item()) / float(off_diag_count)
         if self.training and self.cfg.use_mixed_hard_neg and logits_margin.size(0) > 1:
@@ -1464,6 +2305,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
                     _, rand_idx = torch.topk(rand_scores, k=n_rand, dim=1)
                 cand_idx = torch.cat([labels.view(-1, 1), hard_idx, rand_idx], dim=1)
                 cand_logits = logits_margin.gather(1, cand_idx)
+                cand_logits = self._mask_false_negative_candidate_logits(cand_logits, cand_idx, false_neg_mask)
                 main_targets = torch.zeros(batch_size, dtype=torch.long, device=self.device)
                 main_loss = F.cross_entropy(cand_logits, main_targets)
             else:
@@ -1484,7 +2326,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
                 logits_margin,
                 labels,
                 pop,
-                known_positive_mask=known_positive_mask,
+                known_positive_mask=false_neg_mask,
             )
             paac_align_loss, paac_align_pairs = self._paac_supervised_alignment_loss(
                 u,
@@ -1496,6 +2338,18 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         # be flipped without touching the rest of the forward pass. Default
         # behavior is bit-identical to the original full-batch InfoNCE.
         aux_loss = self._compute_aux_loss(id_e_true, content_e, effective_cold)
+        sage_aux_loss, sage_aux_info = self._compute_sage_aux_loss(
+            z_i_base,
+            item_idx=i,
+            target_pop=pop,
+            user_seen_items=user_seen_items,
+            user_bank_raw=user_bank_raw,
+        )
+        cgrc_recon_loss, cgrc_recon_info = self._compute_cgrc_recon_aux_loss(
+            u,
+            content_e,
+            pop,
+        )
         prereq_aux_loss = torch.tensor(0.0, device=self.device)
         if (
             self.training and self.cfg.use_prereq_aux_loss and user_seen_items is not None and
@@ -1534,13 +2388,22 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             ppo_loss +
             float(getattr(self.cfg, "paac_contrast_weight", 0.0)) * paac_contrast_loss +
             float(getattr(self.cfg, "paac_align_weight", 0.0)) * paac_align_loss +
+            float(getattr(self.cfg, "sage_aux_weight", 0.0)) * sage_aux_loss +
+            float(getattr(self.cfg, "cgrc_recon_aux_weight", 0.0)) * cgrc_recon_loss +
             self.cfg.prereq_aux_weight * prereq_aux_loss +
             delta_reg_loss
         )
         candidate_stats["main_loss"] = float(main_loss.detach().item())
         candidate_stats["aux_loss"] = float(aux_loss.detach().item())
         candidate_stats["ppo_loss"] = float(ppo_loss.detach().item())
+        candidate_stats["ppo_loss_raw"] = float(ppo_loss_raw.detach().item())
         candidate_stats["prereq_aux_loss"] = float(prereq_aux_loss.detach().item())
+        candidate_stats["sage_aux_loss"] = float(sage_aux_loss.detach().item())
+        candidate_stats["sage_aux_active_ratio"] = float(sage_aux_info.get("sage_aux_active_ratio", 0.0))
+        candidate_stats["sage_aux_pool_fit"] = float(sage_aux_info.get("sage_aux_pool_fit", 0.0))
+        candidate_stats["cgrc_recon_loss"] = float(cgrc_recon_loss.detach().item())
+        candidate_stats["cgrc_recon_active_ratio"] = float(cgrc_recon_info.get("cgrc_recon_active_ratio", 0.0))
+        candidate_stats["cgrc_recon_pos_count"] = int(cgrc_recon_info.get("cgrc_recon_pos_count", 0))
         candidate_stats["delta_reg_loss"] = float(delta_reg_loss.detach().item())
         candidate_stats["total_loss"] = float(total_loss.detach().item())
         candidate_stats["paac_contrast_loss"] = float(paac_contrast_loss.detach().item())
@@ -1618,7 +2481,23 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
         retrieval_score = (F.normalize(state_emb, dim=1).unsqueeze(1) * F.normalize(candidates, dim=2)).sum(dim=2)
         fit_scale = fit_score.abs().amax(dim=1, keepdim=True).clamp_min(1e-6)
         fit_norm = fit_score / fit_scale
-        combined_score = retrieval_score + float(self.cfg.feedback_course_sample_beta) * fit_norm
+        if getattr(self.cfg, "use_sage_lite", False):
+            sage_gate = self._sage_tail_gate(target_pop, batch_size, n_cols=n_cand)
+            combined_score = _sage_course_sampling_combined_score(
+                retrieval_score,
+                fit_norm,
+                sage_gate=sage_gate,
+                beta=float(self.cfg.feedback_course_sample_beta),
+                use_sage_lite=True,
+                sage_only_cold_or_tail=bool(getattr(self.cfg, "sage_only_cold_or_tail", False)),
+            )
+        else:
+            combined_score = _sage_course_sampling_combined_score(
+                retrieval_score,
+                fit_norm,
+                beta=float(self.cfg.feedback_course_sample_beta),
+                use_sage_lite=False,
+            )
 
         base_order = torch.argsort(retrieval_score, dim=1, descending=True)
         top_idx = base_order[:, :top_l]
@@ -1632,6 +2511,42 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
         cand_user_idx = cand_user_idx.gather(1, final_order)
         fit_score = fit_score.gather(1, final_order)
         return candidates, cand_user_idx, fit_score
+
+    def _zero_action_stats(self, action_idx, candidates):
+        batch_size = int(action_idx.size(0))
+        zero_log_prob = candidates.new_zeros((batch_size,))
+        zero_value = candidates.new_zeros((batch_size, 1))
+        zero_entropy = candidates.new_zeros((batch_size,))
+        return zero_log_prob, zero_value, zero_entropy
+
+    def _select_rollout_action(self, current_h, time_step, candidates, fit_score=None):
+        policy = str(getattr(self.cfg, "rollout_policy", "ppo")).strip().lower()
+        if policy == "ppo":
+            return self.agent.get_action_value(current_h, time_step, candidates)
+
+        batch_size = candidates.size(0)
+        n_candidates = candidates.size(1)
+        if policy == "random":
+            action_idx = torch.randint(n_candidates, (batch_size,), device=candidates.device)
+        elif policy == "greedy_similarity":
+            scores = (
+                F.normalize(current_h, dim=1).unsqueeze(1)
+                * F.normalize(candidates, dim=2)
+            ).sum(dim=2)
+            action_idx = torch.argmax(scores, dim=1)
+        elif policy == "course_fit" and fit_score is not None:
+            action_idx = torch.argmax(fit_score, dim=1)
+        elif policy == "course_fit":
+            scores = (
+                F.normalize(current_h, dim=1).unsqueeze(1)
+                * F.normalize(candidates, dim=2)
+            ).sum(dim=2)
+            action_idx = torch.argmax(scores, dim=1)
+        else:
+            raise ValueError(f"Unsupported rollout_policy={policy!r}")
+
+        log_prob, value, entropy = self._zero_action_stats(action_idx, candidates)
+        return action_idx, log_prob, value, entropy
 
     def run_usim_episode(
         self,
@@ -1660,6 +2575,13 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
             "step_gain": 0.0,
             "collapse_penalty": 0.0,
             "course_sample_fit": 0.0,
+            "sage_active": 0.0,
+            "sage_gate": 0.0,
+            "sage_tail_active": 0.0,
+            "sage_pool_fit": 0.0,
+            "sage_two_expert": 0.0,
+            "cgrc_recon_sample_active": 0.0,
+            "cgrc_recon_sample_score": 0.0,
             "course_prereq_gap": 0.0,
             "course_concept_bonus": 0.0,
             "course_difficulty_gap": 0.0,
@@ -1681,6 +2603,9 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 current_h,
                 user_bank_raw=user_bank_raw,
                 user_bank_norm=user_bank_norm,
+                item_idx=item_idx,
+                target_pop=target_pop,
+                user_seen_items=user_seen_items,
             )
             candidates, cand_user_idx, fit_score = self._apply_course_sampling_bias(
                 current_h,
@@ -1690,11 +2615,23 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 target_pop=target_pop,
                 user_seen_items=user_seen_items,
             )
-            action_idx, log_prob, value, entropy = self.agent.get_action_value(current_h, time_step, candidates)
+            action_idx, log_prob, value, entropy = self._select_rollout_action(
+                current_h,
+                time_step,
+                candidates,
+                fit_score=fit_score,
+            )
 
             if cand_stats is not None:
                 candidate_stats["dup_rate"] += cand_stats["dup_rate"]
                 candidate_stats["topm_coverage"] += cand_stats["topm_coverage"]
+                candidate_stats["sage_active"] += float(cand_stats.get("sage_active", 0.0))
+                candidate_stats["sage_gate"] += float(cand_stats.get("sage_gate", 0.0))
+                candidate_stats["sage_tail_active"] += float(cand_stats.get("sage_tail_active", 0.0))
+                candidate_stats["sage_pool_fit"] += float(cand_stats.get("sage_pool_fit", 0.0))
+                candidate_stats["sage_two_expert"] += float(cand_stats.get("sage_two_expert", 0.0))
+                candidate_stats["cgrc_recon_sample_active"] += float(cand_stats.get("cgrc_recon_sample_active", 0.0))
+                candidate_stats["cgrc_recon_sample_score"] += float(cand_stats.get("cgrc_recon_sample_score", 0.0))
                 candidate_stats["steps"] += 1
             if fit_score is not None:
                 candidate_stats["course_sample_fit"] += float(fit_score.mean().item())
@@ -1783,6 +2720,13 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 "step_gain",
                 "collapse_penalty",
                 "course_sample_fit",
+                "sage_active",
+                "sage_gate",
+                "sage_tail_active",
+                "sage_pool_fit",
+                "sage_two_expert",
+                "cgrc_recon_sample_active",
+                "cgrc_recon_sample_score",
                 "course_prereq_gap",
                 "course_concept_bonus",
                 "course_difficulty_gap",
@@ -1794,6 +2738,9 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
         return current_h, trajectory, candidate_stats
 
     def compute_ppo_loss(self, trajectory):
+        if len(trajectory["rewards"]) == 0:
+            return next(self.parameters()).sum() * 0.0
+
         rewards = torch.stack(trajectory["rewards"]).squeeze(-1)
         old_log_probs = torch.stack(trajectory["log_probs"])
         old_values = torch.stack(trajectory["values"]).squeeze(-1)
@@ -1937,19 +2884,59 @@ def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df)
             "pseudo_cold_ratio": float(cfg.pseudo_cold_ratio),
             "pseudo_cold_min_pop": int(cfg.pseudo_cold_min_pop),
             "pseudo_cold_mode": str(cfg.pseudo_cold_mode),
+            "mask_known_pos_neg": bool(getattr(cfg, "mask_known_pos_neg", False)),
+            "mask_same_item_neg": bool(getattr(cfg, "mask_same_item_neg", True)),
             "use_paac": bool(cfg.use_paac),
             "use_course_rerank": bool(cfg.use_course_rerank),
             "use_course_reward": bool(cfg.use_course_reward),
             "feedback_course_only_cold": bool(cfg.feedback_course_only_cold),
             "feedback_course_prereq_weight": float(cfg.feedback_course_prereq_weight),
             "feedback_course_concept_weight": float(cfg.feedback_course_concept_weight),
+            "feedback_course_match_mode": str(getattr(cfg, "feedback_course_match_mode", "mean")),
+            "feedback_course_match_topk": int(getattr(cfg, "feedback_course_match_topk", 5)),
+            "feedback_course_match_exclude_target": bool(
+                getattr(cfg, "feedback_course_match_exclude_target", False)
+            ),
             "feedback_course_difficulty_weight": float(cfg.feedback_course_difficulty_weight),
             "feedback_course_redundant_mode": str(cfg.feedback_course_redundant_mode),
             "feedback_course_redundant_weight": float(cfg.feedback_course_redundant_weight),
             "feedback_course_struct_video_min": float(cfg.feedback_course_struct_video_min),
             "feedback_course_struct_chunk": int(getattr(cfg, "feedback_course_struct_chunk", 8192)),
+            "feedback_course_term_norm": str(getattr(cfg, "feedback_course_term_norm", "none")),
+            "feedback_course_term_norm_clip": float(getattr(cfg, "feedback_course_term_norm_clip", 2.0)),
+            "feedback_course_term_norm_eps": float(getattr(cfg, "feedback_course_term_norm_eps", 1e-6)),
+            "feedback_course_term_norm_ema_decay": float(getattr(cfg, "feedback_course_term_norm_ema_decay", 0.95)),
             "feedback_course_sample_beta": float(cfg.feedback_course_sample_beta),
             "feedback_course_sample_only_cold": bool(cfg.feedback_course_sample_only_cold),
+            "use_sage_lite": bool(getattr(cfg, "use_sage_lite", False)),
+            "sage_gate_min": float(getattr(cfg, "sage_gate_min", 0.10)),
+            "sage_gate_max": float(getattr(cfg, "sage_gate_max", 0.60)),
+            "sage_gate_mode": str(getattr(cfg, "sage_gate_mode", "heuristic")),
+            "sage_gate_bucket_count": int(getattr(cfg, "sage_gate_bucket_count", 20)),
+            "sage_gate_hidden_dim": int(getattr(cfg, "sage_gate_hidden_dim", 32)),
+            "sage_gate_bucket_strategy": str(getattr(cfg, "sage_gate_bucket_strategy", "paper")),
+            "sage_pool_topk": int(getattr(cfg, "sage_pool_topk", 64)),
+            "sage_course_temp": float(getattr(cfg, "sage_course_temp", 0.20)),
+            "sage_only_cold_or_tail": bool(getattr(cfg, "sage_only_cold_or_tail", False)),
+            "sage_tail_pop_ratio": float(getattr(cfg, "sage_tail_pop_ratio", 0.10)),
+            "sage_use_two_expert": bool(getattr(cfg, "sage_use_two_expert", False)),
+            "sage_two_expert_score_fusion": bool(getattr(cfg, "sage_two_expert_score_fusion", False)),
+            "use_sage_aux_loss": bool(getattr(cfg, "use_sage_aux_loss", False)),
+            "sage_aux_weight": float(getattr(cfg, "sage_aux_weight", 0.02)),
+            "sage_aux_pool_topk": int(getattr(cfg, "sage_aux_pool_topk", 64)),
+            "sage_aux_course_temp": float(getattr(cfg, "sage_aux_course_temp", 0.20)),
+            "sage_aux_retrieval_temp": float(getattr(cfg, "sage_aux_retrieval_temp", 1.0)),
+            "sage_aux_only_strict_cold": bool(getattr(cfg, "sage_aux_only_strict_cold", True)),
+            "sage_aux_detach_user": bool(getattr(cfg, "sage_aux_detach_user", True)),
+            "use_cgrc_recon": bool(getattr(cfg, "use_cgrc_recon", False)),
+            "cgrc_recon_aux_weight": float(getattr(cfg, "cgrc_recon_aux_weight", 0.0)),
+            "cgrc_recon_sample_weight": float(getattr(cfg, "cgrc_recon_sample_weight", 0.0)),
+            "cgrc_recon_pseudo_ratio": float(getattr(cfg, "cgrc_recon_pseudo_ratio", 0.30)),
+            "cgrc_recon_topk": int(getattr(cfg, "cgrc_recon_topk", 64)),
+            "cgrc_recon_temperature": float(getattr(cfg, "cgrc_recon_temperature", 0.50)),
+            "cgrc_recon_only_cold_or_tail": bool(getattr(cfg, "cgrc_recon_only_cold_or_tail", True)),
+            "cgrc_recon_tail_pop_ratio": float(getattr(cfg, "cgrc_recon_tail_pop_ratio", 0.10)),
+            "cgrc_recon_detach_user": bool(getattr(cfg, "cgrc_recon_detach_user", False)),
             "use_prereq_aux_loss": bool(cfg.use_prereq_aux_loss),
             "prereq_aux_weight": float(cfg.prereq_aux_weight),
             "prereq_aux_only_cold": bool(cfg.prereq_aux_only_cold),
@@ -2111,6 +3098,45 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         f"min_pop={cfg.pseudo_cold_min_pop}"
     )
     print(
+        f">> Course Match: mode={getattr(cfg, 'feedback_course_match_mode', 'mean')} | "
+        f"topk={getattr(cfg, 'feedback_course_match_topk', 5)} | "
+        f"exclude_target={getattr(cfg, 'feedback_course_match_exclude_target', False)}"
+    )
+    print(
+        f">> SAGE-lite: enabled={getattr(cfg, 'use_sage_lite', False)} | "
+        f"gate_mode={getattr(cfg, 'sage_gate_mode', 'heuristic')} | "
+        f"gate=[{getattr(cfg, 'sage_gate_min', 0.10):.2f},{getattr(cfg, 'sage_gate_max', 0.60):.2f}] | "
+        f"buckets={getattr(cfg, 'sage_gate_bucket_count', 20)} | "
+        f"bucket_strategy={getattr(cfg, 'sage_gate_bucket_strategy', 'paper')} | "
+        f"gate_hidden={getattr(cfg, 'sage_gate_hidden_dim', 32)} | "
+        f"pool_topk={getattr(cfg, 'sage_pool_topk', 64)} | "
+        f"course_temp={getattr(cfg, 'sage_course_temp', 0.20):.2f} | "
+        f"only_cold_or_tail={getattr(cfg, 'sage_only_cold_or_tail', False)} | "
+        f"tail_pop_ratio={getattr(cfg, 'sage_tail_pop_ratio', 0.10):.3f} | "
+        f"two_expert={getattr(cfg, 'sage_use_two_expert', False)} | "
+        f"score_fusion={getattr(cfg, 'sage_two_expert_score_fusion', False)}"
+    )
+    print(
+        f">> CGRC Recon: enabled={getattr(cfg, 'use_cgrc_recon', False)} | "
+        f"aux_w={getattr(cfg, 'cgrc_recon_aux_weight', 0.0):.4f} | "
+        f"sample_w={getattr(cfg, 'cgrc_recon_sample_weight', 0.0):.4f} | "
+        f"pseudo_ratio={getattr(cfg, 'cgrc_recon_pseudo_ratio', 0.30):.2f} | "
+        f"topk={getattr(cfg, 'cgrc_recon_topk', 64)} | "
+        f"temp={getattr(cfg, 'cgrc_recon_temperature', 0.50):.2f} | "
+        f"only_cold_or_tail={getattr(cfg, 'cgrc_recon_only_cold_or_tail', True)} | "
+        f"tail_pop_ratio={getattr(cfg, 'cgrc_recon_tail_pop_ratio', 0.10):.3f} | "
+        f"detach_user={getattr(cfg, 'cgrc_recon_detach_user', False)}"
+    )
+    print(
+        f">> SAGE Aux: enabled={getattr(cfg, 'use_sage_aux_loss', False)} | "
+        f"weight={getattr(cfg, 'sage_aux_weight', 0.02):.3f} | "
+        f"pool_topk={getattr(cfg, 'sage_aux_pool_topk', 64)} | "
+        f"course_temp={getattr(cfg, 'sage_aux_course_temp', 0.20):.2f} | "
+        f"retrieval_temp={getattr(cfg, 'sage_aux_retrieval_temp', 1.0):.2f} | "
+        f"strict_cold_only={getattr(cfg, 'sage_aux_only_strict_cold', True)} | "
+        f"detach_user={getattr(cfg, 'sage_aux_detach_user', True)}"
+    )
+    print(
         f">> Eval: sampled={'enabled' if cfg.run_sampled_eval else 'disabled'} "
         f"(1+{cfg.eval_n_neg}) | full_ranking=enabled"
     )
@@ -2133,6 +3159,19 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         "PrereqAuxLoss",
         "DeltaRegLoss",
         "CourseSampleFit",
+        "SageActive",
+        "SageGate",
+        "SageTailActive",
+        "SagePoolFit",
+        "SageTwoExpert",
+        "SageAuxLoss",
+        "SageAuxActive",
+        "SageAuxPoolFit",
+        "CGRCReconLoss",
+        "CGRCReconActive",
+        "CGRCReconPos",
+        "CGRCReconSampleActive",
+        "CGRCReconSampleScore",
         "CoursePrereqGap",
         "CourseConceptBonus",
         "CourseDifficultyGap",
@@ -2148,7 +3187,27 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
     for key in static_diag_keys:
         history[key] = []
 
+    def _ensure_static_history_schema():
+        # Backward-compatible resume: older checkpoints may not have newer
+        # diagnostic columns such as SAGE-lite stats.
+        n_rows = len(history.get("Epoch", []))
+        required_keys = [
+            "Epoch",
+            "Loss",
+            "Val_full_cold_R@10",
+            "Val_full_hot_R@10",
+            "Val_full_cold_N@10",
+            "Val_full_hot_N@10",
+        ] + static_diag_keys
+        for key in required_keys:
+            values = history.get(key)
+            if values is None:
+                history[key] = [0.0] * n_rows
+            elif len(values) < n_rows:
+                history[key] = list(values) + [0.0] * (n_rows - len(values))
+
     def _append_static_history(epoch_num, avg_loss, val_cold_metrics, val_hot_metrics, diag):
+        _ensure_static_history_schema()
         history["Epoch"].append(epoch_num)
         history["Loss"].append(avg_loss)
         history["Val_full_cold_R@10"].append(_metric_or_zero(val_cold_metrics, "R@10"))
@@ -2178,6 +3237,8 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
     ckpt_enabled = _feedback_ckpt_enabled()
     auto_resume = _feedback_ckpt_auto_resume()
     force_fresh = _feedback_ckpt_force_fresh()
+
+    snapshot_epochs = _feedback_ckpt_snapshot_epochs()
 
     def _save_static_checkpoint(status, next_epoch, snapshot_name=None, write_latest=True):
         if not ckpt_enabled:
@@ -2224,16 +3285,32 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 "delta_only_applied": bool(delta_only_applied),
             }
         )
+        effective_snapshot_name = snapshot_name
+        if write_latest and snapshot_name is None and int(next_epoch) in snapshot_epochs:
+            effective_snapshot_name = f"epoch_{int(next_epoch):03d}.pt"
         if write_latest:
-            _save_feedback_checkpoint(ckpt_dir, state, snapshot_name=snapshot_name)
+            _save_feedback_checkpoint(ckpt_dir, state, snapshot_name=effective_snapshot_name)
         elif snapshot_name:
             os.makedirs(ckpt_dir, exist_ok=True)
             torch.save(state, os.path.join(ckpt_dir, snapshot_name))
+        if effective_snapshot_name and effective_snapshot_name != snapshot_name:
+            print(f"  [STATIC-CHECKPOINT] Saved snapshot {effective_snapshot_name}")
 
     print(
         f">> Static Checkpoint: enabled={ckpt_enabled} | resume={auto_resume} | "
         f"force_fresh={force_fresh} | save_opt={_feedback_ckpt_save_optimizer_state()} | dir={ckpt_dir}"
     )
+
+    def _load_static_model_state_compat(state_dict, label):
+        incompatible = model.load_state_dict(state_dict, strict=False)
+        missing = list(getattr(incompatible, "missing_keys", []))
+        unexpected = list(getattr(incompatible, "unexpected_keys", []))
+        if missing or unexpected:
+            print(
+                f">> Static Resume: {label} loaded with compatibility mode | "
+                f"missing={missing} | unexpected={unexpected}"
+            )
+
     if ckpt_enabled and auto_resume and not force_fresh:
         resume_state = _load_feedback_checkpoint(ckpt_dir)
         if resume_state is None:
@@ -2241,7 +3318,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         elif resume_state.get("mode") != "static":
             print(">> Static Resume: latest checkpoint is not static; ignoring it.")
         else:
-            model.load_state_dict(resume_state["model_state"])
+            _load_static_model_state_compat(resume_state["model_state"], "model_state")
             opt_state = resume_state.get("optimizer_state")
             if opt_state:
                 try:
@@ -2250,6 +3327,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 except ValueError as exc:
                     print(f">> Static Resume: skip optimizer state due to parameter-group mismatch: {exc}")
             history = resume_state.get("history") or history
+            _ensure_static_history_schema()
             es_best = resume_state.get("es_best") or {}
             best_epoch = int(es_best.get("epoch", 0) or 0)
             best_score = float(es_best.get("score", -1e9))
@@ -2303,6 +3381,19 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         prereq_aux_loss_sum = 0.0
         delta_reg_loss_sum = 0.0
         course_sample_fit_sum = 0.0
+        sage_active_sum = 0.0
+        sage_gate_sum = 0.0
+        sage_tail_active_sum = 0.0
+        sage_pool_fit_sum = 0.0
+        sage_two_expert_sum = 0.0
+        sage_aux_loss_sum = 0.0
+        sage_aux_active_sum = 0.0
+        sage_aux_pool_fit_sum = 0.0
+        cgrc_recon_loss_sum = 0.0
+        cgrc_recon_active_sum = 0.0
+        cgrc_recon_pos_sum = 0
+        cgrc_recon_sample_active_sum = 0.0
+        cgrc_recon_sample_score_sum = 0.0
         course_prereq_sum = 0.0
         course_concept_sum = 0.0
         course_diff_sum = 0.0
@@ -2351,6 +3442,19 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 prereq_aux_loss_sum += float(cand_info.get("prereq_aux_loss", 0.0))
                 delta_reg_loss_sum += float(cand_info.get("delta_reg_loss", 0.0))
                 course_sample_fit_sum += float(cand_info.get("course_sample_fit", 0.0))
+                sage_active_sum += float(cand_info.get("sage_active", 0.0))
+                sage_gate_sum += float(cand_info.get("sage_gate", 0.0))
+                sage_tail_active_sum += float(cand_info.get("sage_tail_active", 0.0))
+                sage_pool_fit_sum += float(cand_info.get("sage_pool_fit", 0.0))
+                sage_two_expert_sum += float(cand_info.get("sage_two_expert", 0.0))
+                sage_aux_loss_sum += float(cand_info.get("sage_aux_loss", 0.0))
+                sage_aux_active_sum += float(cand_info.get("sage_aux_active_ratio", 0.0))
+                sage_aux_pool_fit_sum += float(cand_info.get("sage_aux_pool_fit", 0.0))
+                cgrc_recon_loss_sum += float(cand_info.get("cgrc_recon_loss", 0.0))
+                cgrc_recon_active_sum += float(cand_info.get("cgrc_recon_active_ratio", 0.0))
+                cgrc_recon_pos_sum += int(cand_info.get("cgrc_recon_pos_count", 0))
+                cgrc_recon_sample_active_sum += float(cand_info.get("cgrc_recon_sample_active", 0.0))
+                cgrc_recon_sample_score_sum += float(cand_info.get("cgrc_recon_sample_score", 0.0))
                 course_prereq_sum += float(cand_info.get("course_prereq_gap", 0.0))
                 course_concept_sum += float(cand_info.get("course_concept_bonus", 0.0))
                 course_diff_sum += float(cand_info.get("course_difficulty_gap", 0.0))
@@ -2396,6 +3500,19 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 "PrereqAuxLoss": prereq_aux_loss_sum / pseudo_info_batches,
                 "DeltaRegLoss": delta_reg_loss_sum / pseudo_info_batches,
                 "CourseSampleFit": course_sample_fit_sum / pseudo_info_batches,
+                "SageActive": sage_active_sum / pseudo_info_batches,
+                "SageGate": sage_gate_sum / pseudo_info_batches,
+                "SageTailActive": sage_tail_active_sum / pseudo_info_batches,
+                "SagePoolFit": sage_pool_fit_sum / pseudo_info_batches,
+                "SageTwoExpert": sage_two_expert_sum / pseudo_info_batches,
+                "SageAuxLoss": sage_aux_loss_sum / pseudo_info_batches,
+                "SageAuxActive": sage_aux_active_sum / pseudo_info_batches,
+                "SageAuxPoolFit": sage_aux_pool_fit_sum / pseudo_info_batches,
+                "CGRCReconLoss": cgrc_recon_loss_sum / pseudo_info_batches,
+                "CGRCReconActive": cgrc_recon_active_sum / pseudo_info_batches,
+                "CGRCReconPos": cgrc_recon_pos_sum,
+                "CGRCReconSampleActive": cgrc_recon_sample_active_sum / pseudo_info_batches,
+                "CGRCReconSampleScore": cgrc_recon_sample_score_sum / pseudo_info_batches,
                 "CoursePrereqGap": course_prereq_sum / pseudo_info_batches,
                 "CourseConceptBonus": course_concept_sum / pseudo_info_batches,
                 "CourseDifficultyGap": course_diff_sum / pseudo_info_batches,
@@ -2421,6 +3538,18 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 f"c={epoch_diag['CourseConceptBonus']:.4f}, "
                 f"d={epoch_diag['CourseDifficultyGap']:.4f}, "
                 f"r={epoch_diag['CourseRedundant']:.4f}]"
+                f" | SAGE[active={epoch_diag['SageActive']:.2f}, "
+                f"gate={epoch_diag['SageGate']:.3f}, "
+                f"tail_active={epoch_diag['SageTailActive']:.2f}, "
+                f"pool_fit={epoch_diag['SagePoolFit']:.4f}, "
+                f"two_expert={epoch_diag['SageTwoExpert']:.2f}, "
+                f"aux={epoch_diag['SageAuxLoss']:.4f}, "
+                f"aux_active={epoch_diag['SageAuxActive']:.2f}]"
+                f" | CGRCRecon[loss={epoch_diag['CGRCReconLoss']:.4f}, "
+                f"active={epoch_diag['CGRCReconActive']:.2f}, "
+                f"pos={int(epoch_diag['CGRCReconPos'])}, "
+                f"sample_active={epoch_diag['CGRCReconSampleActive']:.2f}, "
+                f"sample_score={epoch_diag['CGRCReconSampleScore']:.4f}]"
             )
         print(
             f"  [STATIC-TRAIN] Epoch {epoch + 1}/{cfg.n_epochs} | Loss: {avg_loss:.4f} | "
@@ -2486,7 +3615,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         _save_static_checkpoint("running", epoch + 1)
 
     if best_state is not None:
-        model.load_state_dict(best_state)
+        _load_static_model_state_compat(best_state, "best_state")
         if best_opt_state is not None:
             try:
                 optimizer.load_state_dict(best_opt_state)
@@ -2539,12 +3668,18 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
         user_seen_items=test_seen, all_item_vecs=test_item_vecs,
         average_mode="item_macro",
+        export_item_metrics_path=_feedback_output_path(
+            "per_item_full_cold_usim_feedback_fast3_content_delta_static.csv"
+        ),
     )
     full_hot_item_macro, full_hot_item_macro_count = evaluate_usim(
         model, test_loader, device, llm_scores, k_list=k_list,
         n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
         user_seen_items=test_seen, all_item_vecs=test_item_vecs,
         average_mode="item_macro",
+        export_item_metrics_path=_feedback_output_path(
+            "per_item_full_hot_usim_feedback_fast3_content_delta_static.csv"
+        ),
     )
     sampled_cold = sampled_cold or {key: 0.0 for key in metrics_keys}
     sampled_hot = sampled_hot or {key: 0.0 for key in metrics_keys}
@@ -2644,6 +3779,12 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             "static_summary": summary_path,
             "final_detail": detail_path,
             "final_fullrank": fullrank_path,
+            "per_item_full_cold": _feedback_output_path(
+                "per_item_full_cold_usim_feedback_fast3_content_delta_static.csv"
+            ),
+            "per_item_full_hot": _feedback_output_path(
+                "per_item_full_hot_usim_feedback_fast3_content_delta_static.csv"
+            ),
         }
     )
     _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df)
@@ -2739,7 +3880,8 @@ def main():
     print(
         f">> Window={cfg.stream_train_window} | PPO epochs={cfg.ppo_epochs} | "
         f"lambda={cfg.ppo_lambda:.2f} | value_clip={cfg.ppo_value_clip:.2f} | "
-        f"adv_norm={cfg.ppo_adv_norm}"
+        f"adv_norm={cfg.ppo_adv_norm} | loss_weight={getattr(cfg, 'ppo_loss_weight', 1.0):.2f} | "
+        f"rollout_policy={getattr(cfg, 'rollout_policy', 'ppo')}"
     )
     print(f">> Train Protocol: legacy={cfg.legacy_train_protocol}")
     print(
@@ -2780,13 +3922,32 @@ def main():
         f"batch_pop_ratio={cfg.paac_batch_pop_ratio:.2f} | max_pairs={cfg.paac_align_max_pairs} | "
         f"detach_hot={cfg.paac_align_detach_hot} | group_mode={cfg.paac_group_mode}"
     )
-    print(f">> False Negative Mask: enabled={cfg.mask_known_pos_neg}")
+    print(
+        f">> False Negative Mask: known_pos={cfg.mask_known_pos_neg} | "
+        f"same_item={getattr(cfg, 'mask_same_item_neg', True)}"
+    )
     print(
         f">> Course Soft Rerank: enabled={cfg.feedback_course_sample_soft} | "
         f"beta={cfg.feedback_course_sample_beta:.2f} | topL={cfg.feedback_course_sample_top_l}"
     )
     print(
+        f">> SAGE-lite: enabled={getattr(cfg, 'use_sage_lite', False)} | "
+        f"gate_mode={getattr(cfg, 'sage_gate_mode', 'heuristic')} | "
+        f"gate=[{getattr(cfg, 'sage_gate_min', 0.10):.2f},{getattr(cfg, 'sage_gate_max', 0.60):.2f}] | "
+        f"buckets={getattr(cfg, 'sage_gate_bucket_count', 20)} | "
+        f"bucket_strategy={getattr(cfg, 'sage_gate_bucket_strategy', 'paper')} | "
+        f"gate_hidden={getattr(cfg, 'sage_gate_hidden_dim', 32)} | "
+        f"pool_topk={getattr(cfg, 'sage_pool_topk', 64)} | "
+        f"course_temp={getattr(cfg, 'sage_course_temp', 0.20):.2f} | "
+        f"only_cold_or_tail={getattr(cfg, 'sage_only_cold_or_tail', False)} | "
+        f"tail_pop_ratio={getattr(cfg, 'sage_tail_pop_ratio', 0.10):.3f} | "
+        f"two_expert={getattr(cfg, 'sage_use_two_expert', False)} | "
+        f"score_fusion={getattr(cfg, 'sage_two_expert_score_fusion', False)}"
+    )
+    print(
         f">> Course Feedback: redundant_mode={cfg.feedback_course_redundant_mode} | "
+        f"match={getattr(cfg, 'feedback_course_match_mode', 'mean')}@{getattr(cfg, 'feedback_course_match_topk', 5)} "
+        f"exclude_target={getattr(cfg, 'feedback_course_match_exclude_target', False)} | "
         f"video_min={cfg.feedback_course_struct_video_min:.2f} | "
         f"concept_min={cfg.feedback_course_concept_min:.2f} | "
         f"redundant_thr={cfg.feedback_course_redundant_thr:.2f} | "

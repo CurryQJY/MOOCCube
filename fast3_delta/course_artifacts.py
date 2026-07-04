@@ -1,4 +1,5 @@
 ﻿import json
+import hashlib
 import math
 import os
 import re
@@ -19,6 +20,142 @@ def _empty_course_stats(n_items):
         "prereq_users": 0,
         "n_items": int(n_items),
     }
+
+
+def _sha256_file(path):
+    if not os.path.exists(path):
+        return None
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _file_signature(path):
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        return {"path": path, "exists": False}
+    stat = os.stat(path)
+    return {
+        "path": path,
+        "exists": True,
+        "size": int(stat.st_size),
+        "mtime_ns": int(stat.st_mtime_ns),
+        "sha256": _sha256_file(path),
+    }
+
+
+def _course_mapping_digest(idx_to_course):
+    payload = "\n".join(
+        f"{idx}\t{course_id if course_id is not None else ''}"
+        for idx, course_id in enumerate(idx_to_course)
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _course_artifact_cache_dir(relation_dir):
+    disabled = os.environ.get("USIM_COURSE_ARTIFACT_CACHE_DISABLE", "0").strip().lower()
+    if disabled in {"1", "true", "yes", "on"}:
+        return None
+    cache_dir = os.environ.get("USIM_COURSE_ARTIFACT_CACHE_DIR", "").strip()
+    if not cache_dir:
+        cache_dir = os.path.join(os.path.dirname(os.path.abspath(relation_dir)), ".course_artifact_cache")
+    return cache_dir
+
+
+def _course_artifact_cache_key(
+    idx_to_course,
+    n_items,
+    relation_dir,
+    prereq_min_support,
+    prereq_max_per_item,
+    prereq_min_items,
+    prereq_max_forward,
+    concept_overlap_mode,
+    prereq_graph_source,
+    prereq_concept_score_thr,
+    prereq_concept_min_hits,
+    prereq_concept_file,
+    prereq_hybrid_alpha,
+    prereq_hybrid_strong_concept_thr,
+    weighted_prereq_edges,
+):
+    relation_dir_abs = os.path.abspath(relation_dir)
+    entity_dir = os.path.join(os.path.dirname(relation_dir_abs), "entities")
+    payload = {
+        "cache_version": 1,
+        "n_items": int(n_items),
+        "idx_to_course_sha256": _course_mapping_digest(idx_to_course),
+        "relation_dir": relation_dir_abs,
+        "files": {
+            "course_concept": _file_signature(os.path.join(relation_dir_abs, "course-concept.json")),
+            "prereq_concept": _file_signature(os.path.join(relation_dir_abs, prereq_concept_file)),
+            "course_entity": _file_signature(os.path.join(entity_dir, "course.json")),
+        },
+        "params": {
+            "prereq_min_support": int(prereq_min_support),
+            "prereq_max_per_item": int(prereq_max_per_item),
+            "prereq_min_items": int(prereq_min_items),
+            "prereq_max_forward": int(prereq_max_forward),
+            "concept_overlap_mode": str(concept_overlap_mode),
+            "prereq_graph_source": str(prereq_graph_source),
+            "prereq_concept_score_thr": float(prereq_concept_score_thr),
+            "prereq_concept_min_hits": int(prereq_concept_min_hits),
+            "prereq_concept_file": str(prereq_concept_file),
+            "prereq_hybrid_alpha": float(prereq_hybrid_alpha),
+            "prereq_hybrid_strong_concept_thr": float(prereq_hybrid_strong_concept_thr),
+            "weighted_prereq_edges": bool(weighted_prereq_edges),
+        },
+    }
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _load_course_artifact_cache(cache_path, cache_key):
+    if not cache_path or not os.path.exists(cache_path):
+        return None
+    try:
+        try:
+            payload = torch.load(cache_path, map_location="cpu", weights_only=False)
+        except TypeError:
+            payload = torch.load(cache_path, map_location="cpu")
+    except Exception as exc:
+        print(f"[COURSE-CACHE] Failed to load {cache_path}: {exc}")
+        return None
+    if not isinstance(payload, dict) or payload.get("cache_key") != cache_key:
+        return None
+    artifacts = payload.get("artifacts")
+    stats = dict(payload.get("stats") or {})
+    if not isinstance(artifacts, dict):
+        return None
+    stats["course_artifact_cache_status"] = "hit"
+    stats["course_artifact_cache_path"] = cache_path
+    print(f"[COURSE-CACHE] Loaded course artifacts from {cache_path}")
+    return artifacts, stats
+
+
+def _save_course_artifact_cache(cache_path, cache_key, artifacts, stats):
+    if not cache_path:
+        return None
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    tmp_path = cache_path + ".tmp"
+    payload = {
+        "cache_key": cache_key,
+        "artifacts": artifacts,
+        "stats": stats,
+    }
+    try:
+        torch.save(payload, tmp_path)
+        os.replace(tmp_path, cache_path)
+        return None
+    except Exception as exc:
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except OSError:
+            pass
+        return str(exc)
 
 
 def _read_relation_pairs(filepath):
@@ -335,12 +472,54 @@ def build_course_artifacts(
     prereq_hybrid_strong_concept_thr=None,
 ):
     weighted_prereq_edges = os.environ.get("USIM_FB_PREREQ_WEIGHTED_EDGES", "0") == "1"
+    concept_overlap_mode = (concept_overlap_mode or os.environ.get("USIM_CONCEPT_OVERLAP_MODE", "plain")).strip().lower()
+    prereq_graph_source = (prereq_graph_source or os.environ.get("USIM_PREREQ_GRAPH_SOURCE", "behavior")).strip().lower()
+    prereq_concept_score_thr = float(
+        prereq_concept_score_thr if prereq_concept_score_thr is not None
+        else os.environ.get("USIM_PREREQ_CONCEPT_SCORE_THR", "0.10")
+    )
+    prereq_concept_min_hits = int(
+        prereq_concept_min_hits if prereq_concept_min_hits is not None
+        else os.environ.get("USIM_PREREQ_CONCEPT_MIN_HITS", "1")
+    )
+    prereq_concept_file = prereq_concept_file or os.environ.get("USIM_PREREQ_CONCEPT_FILE", "prerequisite-dependency.json")
+    prereq_hybrid_alpha = float(
+        prereq_hybrid_alpha if prereq_hybrid_alpha is not None
+        else os.environ.get("USIM_PREREQ_HYBRID_ALPHA", "0.70")
+    )
+    prereq_hybrid_strong_concept_thr = float(
+        prereq_hybrid_strong_concept_thr if prereq_hybrid_strong_concept_thr is not None
+        else os.environ.get("USIM_PREREQ_HYBRID_STRONG_CONCEPT_THR", "0.35")
+    )
     idx_course = df[["i_idx", "course_id"]].drop_duplicates(subset=["i_idx"])
     idx_to_course = [None] * n_items
     for row in idx_course.itertuples(index=False):
         i_idx = int(row.i_idx)
         if 0 <= i_idx < n_items:
             idx_to_course[i_idx] = str(row.course_id)
+    cache_dir = _course_artifact_cache_dir(relation_dir)
+    cache_key = _course_artifact_cache_key(
+        idx_to_course=idx_to_course,
+        n_items=n_items,
+        relation_dir=relation_dir,
+        prereq_min_support=prereq_min_support,
+        prereq_max_per_item=prereq_max_per_item,
+        prereq_min_items=prereq_min_items,
+        prereq_max_forward=prereq_max_forward,
+        concept_overlap_mode=concept_overlap_mode,
+        prereq_graph_source=prereq_graph_source,
+        prereq_concept_score_thr=prereq_concept_score_thr,
+        prereq_concept_min_hits=prereq_concept_min_hits,
+        prereq_concept_file=prereq_concept_file,
+        prereq_hybrid_alpha=prereq_hybrid_alpha,
+        prereq_hybrid_strong_concept_thr=prereq_hybrid_strong_concept_thr,
+        weighted_prereq_edges=weighted_prereq_edges,
+    )
+    cache_path = os.path.join(cache_dir, f"{cache_key}.pt") if cache_dir else None
+    cached = _load_course_artifact_cache(cache_path, cache_key)
+    if cached is not None:
+        return cached
+
     course_to_idx = {cid: idx for idx, cid in enumerate(idx_to_course) if cid is not None}
     concept_sets = [set() for _ in range(n_items)]
     video_sets = [set() for _ in range(n_items)]
@@ -361,25 +540,6 @@ def build_course_artifacts(
         video_sets[idx] = set(_extract_course_unit_ids(course_obj))
     item_prereq_item_mat = torch.zeros((n_items, n_items), dtype=torch.float32)
     item_prereq_item_cnt = torch.zeros(n_items, dtype=torch.float32)
-    concept_overlap_mode = (concept_overlap_mode or os.environ.get("USIM_CONCEPT_OVERLAP_MODE", "plain")).strip().lower()
-    prereq_graph_source = (prereq_graph_source or os.environ.get("USIM_PREREQ_GRAPH_SOURCE", "behavior")).strip().lower()
-    prereq_concept_score_thr = float(
-        prereq_concept_score_thr if prereq_concept_score_thr is not None
-        else os.environ.get("USIM_PREREQ_CONCEPT_SCORE_THR", "0.10")
-    )
-    prereq_concept_min_hits = int(
-        prereq_concept_min_hits if prereq_concept_min_hits is not None
-        else os.environ.get("USIM_PREREQ_CONCEPT_MIN_HITS", "1")
-    )
-    prereq_concept_file = prereq_concept_file or os.environ.get("USIM_PREREQ_CONCEPT_FILE", "prerequisite-dependency.json")
-    prereq_hybrid_alpha = float(
-        prereq_hybrid_alpha if prereq_hybrid_alpha is not None
-        else os.environ.get("USIM_PREREQ_HYBRID_ALPHA", "0.70")
-    )
-    prereq_hybrid_strong_concept_thr = float(
-        prereq_hybrid_strong_concept_thr if prereq_hybrid_strong_concept_thr is not None
-        else os.environ.get("USIM_PREREQ_HYBRID_STRONG_CONCEPT_THR", "0.35")
-    )
     if prereq_graph_source == "behavior":
         incoming, prereq_stats = _build_behavior_prereq_candidates(
             df,
@@ -483,7 +643,10 @@ def build_course_artifacts(
         "behavior_prereq_edges_raw": int(prereq_stats.get("behavior_prereq_edges_raw", 0)),
         "concept_prereq_edges_raw": int(prereq_stats.get("concept_prereq_edges_raw", 0)),
         "prereq_weighted_edges": weighted_prereq_edges,
+        "course_artifact_cache_status": "miss" if cache_path else "disabled",
     }
+    if cache_path:
+        stats["course_artifact_cache_path"] = cache_path
     artifacts = {
         "item_hard_adj": item_hard_adj,
         "item_prereq_item_mat": item_prereq_item_mat,
@@ -492,6 +655,12 @@ def build_course_artifacts(
         "item_video_contain": item_video_contain,
         "item_same_family": item_same_family,
     }
+    cache_error = _save_course_artifact_cache(cache_path, cache_key, artifacts, stats)
+    if cache_error:
+        stats["course_artifact_cache_error"] = cache_error
+        print(f"[COURSE-CACHE] Failed to save {cache_path}: {cache_error}")
+    elif cache_path:
+        print(f"[COURSE-CACHE] Saved course artifacts to {cache_path}")
     return artifacts, stats
 
 

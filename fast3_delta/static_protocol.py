@@ -50,6 +50,67 @@ def static_seed():
     return int(os.environ.get("USIM_STATIC_SEED", os.environ.get("USIM_SEED", "2025")))
 
 
+def load_shared_static_split(split_dir):
+    train_path = os.path.join(split_dir, "static_train.pkl")
+    val_path = os.path.join(split_dir, "static_val.pkl")
+    test_path = os.path.join(split_dir, "static_test.pkl")
+    missing = [p for p in (train_path, val_path, test_path) if not os.path.exists(p)]
+    if missing:
+        raise FileNotFoundError(
+            "USIM_STATIC_SPLIT_DIR is set but split files are missing: "
+            + ", ".join(missing)
+        )
+
+    train_df = pd.read_pickle(train_path).copy()
+    val_df = pd.read_pickle(val_path).copy()
+    test_df = pd.read_pickle(test_path).copy()
+    for split_name, split_df in (("train", train_df), ("val", val_df), ("test", test_df)):
+        if "_split_source" not in split_df.columns:
+            split_df["_split_source"] = f"shared_{split_name}"
+        if "_row_id" not in split_df.columns:
+            split_df["_row_id"] = np.arange(len(split_df), dtype=np.int64)
+
+    summary_path = os.path.join(split_dir, "static_split_summary.json")
+    split_info = {}
+    if os.path.exists(summary_path):
+        with open(summary_path, "r", encoding="utf-8") as f:
+            loaded = json.load(f)
+        if isinstance(loaded, dict):
+            split_info.update(loaded)
+
+    total_rows = max(1, len(train_df) + len(val_df) + len(test_df))
+    train_users = set(train_df["u_idx"].astype(int)) if "u_idx" in train_df.columns else set()
+    val_users = set(val_df["u_idx"].astype(int)) if "u_idx" in val_df.columns else set()
+    test_users = set(test_df["u_idx"].astype(int)) if "u_idx" in test_df.columns else set()
+    train_ratio = float(os.environ.get("USIM_STATIC_TRAIN_RATIO", "0.8"))
+    val_ratio = float(os.environ.get("USIM_STATIC_VAL_RATIO", "0.1"))
+    test_ratio = max(0.0, 1.0 - train_ratio - val_ratio)
+    split_mode = os.environ.get("USIM_STATIC_SPLIT_MODE", "shared_static_split").strip().lower()
+    split_info.setdefault("seed", static_seed())
+    split_info.setdefault("split_mode", split_mode)
+    split_info.setdefault("split_family", split_info.get("split_mode", "shared_static_split"))
+    split_info.setdefault("train_ratio", train_ratio)
+    split_info.setdefault("val_ratio", val_ratio)
+    split_info.setdefault("test_ratio", test_ratio)
+    split_info["train_rows"] = int(len(train_df))
+    split_info["val_rows"] = int(len(val_df))
+    split_info["test_rows"] = int(len(test_df))
+    split_info.setdefault("actual_train_ratio", float(len(train_df) / total_rows))
+    split_info.setdefault("actual_val_ratio", float(len(val_df) / total_rows))
+    split_info.setdefault("actual_test_ratio", float(len(test_df) / total_rows))
+    split_info.setdefault("val_user_seen_ratio", float(len(val_users & train_users) / max(1, len(val_users))))
+    split_info.setdefault("test_user_seen_ratio", float(len(test_users & train_users) / max(1, len(test_users))))
+    split_info.setdefault("train_item_coverage_moves", 0)
+    split_info["static_split_loaded"] = True
+    split_info["static_split_dir"] = str(split_dir)
+    split_info["static_split_summary_loaded"] = bool(os.path.exists(summary_path))
+    print(
+        f"Loaded shared static split from {split_dir}: "
+        f"train={len(train_df)}, val={len(val_df)}, test={len(test_df)}"
+    )
+    return train_df, val_df, test_df, split_info
+
+
 def split_exact_warm_user(source_df, seed, train_ratio, val_ratio):
     rng = np.random.default_rng(seed)
     base_train_idx = []
@@ -248,6 +309,10 @@ def sample_strict_item_cold_items(item_counts, eligible_items, seed, split_mode)
 
 
 def static_split_df(df):
+    split_dir = os.environ.get("USIM_STATIC_SPLIT_DIR", "").strip()
+    if split_dir:
+        return load_shared_static_split(split_dir)
+
     seed = static_seed()
     train_ratio = float(os.environ.get("USIM_STATIC_TRAIN_RATIO", "0.8"))
     val_ratio = float(os.environ.get("USIM_STATIC_VAL_RATIO", "0.1"))
@@ -430,7 +495,10 @@ def write_static_split_artifacts(train_df, val_df, test_df, split_info, cfg, out
         "split_counts": split_counts_path,
         "split_sources": split_sources_path,
     }
-    if os.environ.get("USIM_STATIC_EXPORT_SPLIT", "1") == "1":
+    export_split = os.environ.get("USIM_STATIC_EXPORT_SPLIT", "1") == "1"
+    export_shared_split = os.environ.get("USIM_STATIC_EXPORT_SHARED_SPLIT", "0") == "1"
+    shared_split_loaded = bool(split_info.get("static_split_loaded", False))
+    if export_split and (not shared_split_loaded or export_shared_split):
         train_path = output_path_fn("static_train.pkl")
         val_path = output_path_fn("static_val.pkl")
         test_path = output_path_fn("static_test.pkl")
@@ -453,6 +521,8 @@ def write_static_split_artifacts(train_df, val_df, test_df, split_info, cfg, out
                 "split_assignments": assignments_path,
             }
         )
+    elif export_split and shared_split_loaded:
+        exports["split_export_skipped"] = "shared_static_split_loaded"
     return exports
 
 
@@ -468,4 +538,3 @@ _split_user_leave_one_out = split_user_leave_one_out
 _static_seed = static_seed
 _static_split_counts = static_split_counts
 _static_split_df = static_split_df
-

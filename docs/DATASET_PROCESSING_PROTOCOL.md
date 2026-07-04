@@ -20,6 +20,27 @@ Each dataset processor writes:
 The downstream model still expects the generic field name `course_id`, so the
 exercise id / question id is intentionally stored there.
 
+## Content Embedding Protocol
+
+For the three main course recommendation datasets, content embeddings should
+use BERT `[CLS]` representations with the same encoder:
+
+```text
+embedding_backend: bert_cls
+embedding_model: bert-base-chinese
+embedding_max_length: 256
+content_dim: 768
+```
+
+The current MOOCCourse processed directory follows this protocol and records it
+in `processed_data_mooccourse/meta.json`. The MOOCCube and MOOCCubeX processing
+scripts also use BERT `[CLS]` embeddings; their scripts now write the encoder
+metadata when rerun.
+
+For EdNet-KT1 and Junyi, `stable_hash` embeddings are acceptable only for
+generalization/smoke-test experiments. Do not describe those embeddings as BERT
+unless they are regenerated with `--embedding-backend bert_cls`.
+
 ## MOOCCubeX
 
 Current FAST3 experiments use the processed directory and relation directory:
@@ -68,6 +89,115 @@ current local data, this yields 1,355 concept-level prerequisite pairs:
 The converted file has been validated with `prereq_graph_source="concept"`:
 1,355 concept pairs become 2,849 raw item-level candidate edges, 782 kept
 item-level prerequisite edges, and 161 items with prerequisite evidence.
+
+## MOOCCourse
+
+MOOCCourse is the XuetangX course recommendation dataset used by the AAAI 2019
+course recommendation paper. The official MoocData page names it "Course
+Recommendation"; recent course recommendation papers often refer to this data
+as MOOCCourse.
+
+Raw files are under:
+
+```text
+data_raw/MOOCCourse/mooc_data/data.csv
+data_raw/MOOCCourse/mooc_data/Data/mooc.train.rating
+data_raw/MOOCCourse/mooc_data/Data/mooc.test.rating
+data_raw/MOOCCourse/mooc_data/Data/mooc.all.rating
+data_raw/MOOCCourse/mooc_data/Data/mooc.test.negative
+```
+
+`data.csv` is encoded as GB18030 and contains:
+
+```text
+stu_id,time,course_index,name,type,type_id
+```
+
+Run:
+
+```powershell
+.\py.bat -B data_process_mooccourse.py --raw-dir data_raw\MOOCCourse --output-dir processed_data_mooccourse
+```
+
+Current local processed statistics:
+
+| Metric | Value |
+| --- | ---: |
+| Users | 82,535 |
+| Courses | 1,302 |
+| Interactions | 458,453 |
+| Course category concept edges | 2,934 |
+| Content dimension | 768 |
+| Content embedding backend | BERT `[CLS]`, `bert-base-chinese` |
+
+MOOCCourse does not provide an official concept-prerequisite graph. Use
+behavior-derived prerequisites:
+
+```powershell
+$env:USIM_DATA_DIR = "processed_data_mooccourse"
+$env:USIM_RELATION_DIR = "processed_data_mooccourse\relations"
+$env:USIM_PREREQ_GRAPH_SOURCE = "behavior"
+```
+
+Validation with `prereq_graph_source="behavior"` and `prereq_min_support=30`
+currently yields 213,783 raw behavior prerequisite candidates, 1,852 kept
+item-level prerequisite edges, and 453 items with prerequisite evidence.
+
+## COCO
+
+COCO is a semantic-enriched online course dataset. The current local copy uses
+the public KG-preprocessed repository:
+
+```text
+data_raw/COCO_Educational_Recommendation_Dataset/
+```
+
+Required public files:
+
+```text
+preprocessed/ratings.txt
+preprocessed/i2kg_map.txt
+preprocessed/e_map.txt
+preprocessed/r_map.txt
+preprocessed/kg_final.txt
+```
+
+Run:
+
+```powershell
+.\py.bat -B data_process_coco.py --raw-dir data_raw\COCO_Educational_Recommendation_Dataset --output-dir processed_data_coco --concept-scope conservative --embedding-backend bert_cls --embedding-model bert-base-uncased --embedding-batch-size 64
+```
+
+Current local processed statistics:
+
+| Metric | Value |
+| --- | ---: |
+| Users | 24,036 |
+| Courses | 8,196 |
+| Interactions | 378,469 |
+| Course metadata concept edges | 27,827 |
+| Items with metadata concept | 8,196 |
+| Content dimension | 768 |
+| Content embedding backend | BERT `[CLS]`, `bert-base-uncased` |
+
+The conservative relation scope exports `belong_to_category` and
+`related_to_concept` as `relations/course-concept.json`. Course text for
+`content_emb.pt` additionally includes level, language, and target-audience
+labels when present. The public KG does not provide official prerequisite
+relations, so `relations/prerequisite-dependency.json` is intentionally empty.
+Use behavior-derived prerequisites for FAST3:
+
+```powershell
+$env:USIM_DATA_DIR = "processed_data_coco"
+$env:USIM_RELATION_DIR = "processed_data_coco\relations"
+$env:USIM_PREREQ_GRAPH_SOURCE = "behavior"
+```
+
+Single-seed go/no-go triage:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\run_coco_single_seed_triage.ps1
+```
 
 ## EdNet-KT1
 

@@ -86,6 +86,18 @@ class BaseConfig:
         self.ppo_gamma = 0.90
         self.ppo_epochs = 5
         self.ppo_coeffs = {"value": 0.5, "entropy": 0.01}
+        self.ppo_loss_weight = float(os.environ.get("USIM_PPO_LOSS_WEIGHT", "1.0"))
+        self.rollout_policy = os.environ.get("USIM_ROLLOUT_POLICY", "ppo").strip().lower()
+        if self.rollout_policy in {"learned", "agent", "ppo_policy"}:
+            self.rollout_policy = "ppo"
+        if self.rollout_policy in {"greedy", "similarity", "greedy_sim"}:
+            self.rollout_policy = "greedy_similarity"
+        if self.rollout_policy in {"course", "course_fit_greedy", "course-fit"}:
+            self.rollout_policy = "course_fit"
+        if self.rollout_policy not in {"ppo", "random", "greedy_similarity", "course_fit"}:
+            raise ValueError(
+                "USIM_ROLLOUT_POLICY must be one of: ppo, random, greedy_similarity, course_fit"
+            )
         self.usim_steps = int(os.environ.get("USIM_STEPS", "5"))
         self.n_candidates = int(os.environ.get("USIM_N_CANDIDATES", "20"))
         self.usim_lr = 0.3
@@ -109,6 +121,7 @@ class BaseConfig:
         self.hard_neg_ratio = 0.25
         self.use_structured_hard_neg = False
         self.mask_known_pos_neg = os.environ.get("USIM_MASK_KNOWN_POS_NEG", "0") == "1"
+        self.mask_same_item_neg = os.environ.get("USIM_MASK_SAME_ITEM_NEG", "1") == "1"
         self.use_paac = os.environ.get("USIM_USE_PAAC", "1") == "1"
         self.paac_align_weight = float(os.environ.get("USIM_PAAC_ALIGN_W", "0.0"))
         self.paac_align_max_pairs = int(os.environ.get("USIM_PAAC_ALIGN_MAX_PAIRS", "512"))
@@ -176,6 +189,17 @@ class FeedbackConfig(BaseConfig):
         self.feedback_course_only_cold = os.environ.get("USIM_FB_COURSE_ONLY_COLD", "1") == "1"
         self.feedback_course_warm_seen = int(os.environ.get("USIM_FB_COURSE_WARM_SEEN", "5"))
         self.feedback_course_concept_min = float(os.environ.get("USIM_FB_COURSE_CONCEPT_MIN", "0.12"))
+        self.feedback_course_match_mode = os.environ.get("USIM_FB_COURSE_MATCH_MODE", "mean").strip().lower()
+        if self.feedback_course_match_mode in {"topk_mean", "top_k", "top-k"}:
+            self.feedback_course_match_mode = "topk"
+        if self.feedback_course_match_mode not in {"mean", "topk", "max"}:
+            raise ValueError("USIM_FB_COURSE_MATCH_MODE must be one of: mean, topk, max")
+        self.feedback_course_match_topk = max(1, int(os.environ.get("USIM_FB_COURSE_MATCH_TOPK", "5")))
+        default_match_exclude = "1" if self.feedback_course_match_mode in {"topk", "max"} else "0"
+        self.feedback_course_match_exclude_target = os.environ.get(
+            "USIM_FB_COURSE_MATCH_EXCLUDE_TARGET",
+            default_match_exclude,
+        ) == "1"
         self.feedback_course_redundant_mode = os.environ.get(
             "USIM_FB_COURSE_REDUNDANT_MODE",
             "concept",
@@ -198,12 +222,71 @@ class FeedbackConfig(BaseConfig):
         self.feedback_course_redundant_concept_gate = float(
             os.environ.get("USIM_FB_COURSE_REDUNDANT_CONCEPT_GATE", "1.0")
         )
+        self.feedback_course_term_norm = os.environ.get("USIM_FB_COURSE_TERM_NORM", "none").strip().lower()
+        if self.feedback_course_term_norm in {"off", "0", "false"}:
+            self.feedback_course_term_norm = "none"
+        if self.feedback_course_term_norm not in {"none", "batch", "ema"}:
+            raise ValueError("USIM_FB_COURSE_TERM_NORM must be one of: none, batch, ema")
+        self.feedback_course_term_norm_clip = float(os.environ.get("USIM_FB_COURSE_TERM_NORM_CLIP", "2.0"))
+        self.feedback_course_term_norm_eps = float(os.environ.get("USIM_FB_COURSE_TERM_NORM_EPS", "1e-6"))
+        self.feedback_course_term_norm_ema_decay = float(
+            os.environ.get("USIM_FB_COURSE_TERM_NORM_EMA_DECAY", "0.95")
+        )
+        self.feedback_course_term_norm_ema_decay = min(
+            0.999,
+            max(0.0, self.feedback_course_term_norm_ema_decay),
+        )
         self.feedback_course_sample_beta = float(os.environ.get("USIM_FB_COURSE_SAMPLE_BETA", "0.20"))
         self.feedback_course_sample_only_cold = os.environ.get("USIM_FB_COURSE_SAMPLE_ONLY_COLD", "1") == "1"
         self.feedback_course_sample_topk = int(os.environ.get("USIM_FB_COURSE_SAMPLE_TOPK", "32"))
         self.feedback_course_sample_top_l = int(
             os.environ.get("USIM_FB_COURSE_SAMPLE_TOPL", str(self.feedback_course_sample_topk))
         )
+        self.use_sage_lite = os.environ.get("USIM_USE_SAGE_LITE", "0") == "1"
+        self.sage_gate_min = float(os.environ.get("USIM_SAGE_GATE_MIN", "0.10"))
+        self.sage_gate_max = float(os.environ.get("USIM_SAGE_GATE_MAX", "0.60"))
+        self.sage_gate_mode = os.environ.get("USIM_SAGE_GATE_MODE", "heuristic").strip().lower()
+        if self.sage_gate_mode in {"pop", "popularity", "rule"}:
+            self.sage_gate_mode = "heuristic"
+        if self.sage_gate_mode in {"bucket", "mlp"}:
+            self.sage_gate_mode = "bucket_mlp"
+        if self.sage_gate_mode not in {"heuristic", "bucket_mlp"}:
+            raise ValueError("USIM_SAGE_GATE_MODE must be one of: heuristic, bucket_mlp")
+        self.sage_gate_bucket_count = max(2, int(os.environ.get("USIM_SAGE_GATE_BUCKETS", "20")))
+        self.sage_gate_hidden_dim = max(1, int(os.environ.get("USIM_SAGE_GATE_HIDDEN", "32")))
+        self.sage_gate_bucket_strategy = os.environ.get("USIM_SAGE_GATE_BUCKET_STRATEGY", "paper").strip().lower()
+        if self.sage_gate_bucket_strategy in {"raw", "equal_width", "raw_equal_width", "original", "sagerec"}:
+            self.sage_gate_bucket_strategy = "paper"
+        if self.sage_gate_bucket_strategy in {"log_equal_width", "log1p"}:
+            self.sage_gate_bucket_strategy = "log"
+        if self.sage_gate_bucket_strategy not in {"paper", "log"}:
+            raise ValueError("USIM_SAGE_GATE_BUCKET_STRATEGY must be one of: paper, log")
+        self.sage_pool_topk = int(os.environ.get("USIM_SAGE_POOL_TOPK", "64"))
+        self.sage_course_temp = float(os.environ.get("USIM_SAGE_COURSE_TEMP", "0.20"))
+        self.sage_only_cold_or_tail = os.environ.get("USIM_SAGE_ONLY_COLD_OR_TAIL", "0") == "1"
+        self.sage_tail_pop_ratio = float(os.environ.get("USIM_SAGE_TAIL_POP_RATIO", "0.10"))
+        self.sage_tail_pop_ratio = min(1.0, max(0.0, self.sage_tail_pop_ratio))
+        self.sage_use_two_expert = os.environ.get("USIM_SAGE_USE_TWO_EXPERT", "0") == "1"
+        self.sage_two_expert_score_fusion = os.environ.get("USIM_SAGE_TWO_EXPERT_SCORE_FUSION", "0") == "1"
+        self.use_sage_aux_loss = os.environ.get("USIM_USE_SAGE_AUX_LOSS", "0") == "1"
+        self.sage_aux_weight = float(os.environ.get("USIM_SAGE_AUX_WEIGHT", "0.02"))
+        self.sage_aux_pool_topk = int(os.environ.get("USIM_SAGE_AUX_POOL_TOPK", str(self.sage_pool_topk)))
+        self.sage_aux_course_temp = float(os.environ.get("USIM_SAGE_AUX_COURSE_TEMP", str(self.sage_course_temp)))
+        self.sage_aux_retrieval_temp = float(os.environ.get("USIM_SAGE_AUX_RETRIEVAL_TEMP", "1.0"))
+        self.sage_aux_only_strict_cold = os.environ.get("USIM_SAGE_AUX_ONLY_STRICT_COLD", "1") == "1"
+        self.sage_aux_detach_user = os.environ.get("USIM_SAGE_AUX_DETACH_USER", "1") == "1"
+        self.use_cgrc_recon = os.environ.get("USIM_USE_CGRC_RECON", "0") == "1"
+        self.cgrc_recon_aux_weight = float(os.environ.get("USIM_CGRC_RECON_AUX_W", "0.0"))
+        self.cgrc_recon_sample_weight = float(os.environ.get("USIM_CGRC_RECON_SAMPLE_W", "0.0"))
+        self.cgrc_recon_sample_weight = min(1.0, max(0.0, self.cgrc_recon_sample_weight))
+        self.cgrc_recon_pseudo_ratio = float(os.environ.get("USIM_CGRC_RECON_PSEUDO_RATIO", "0.30"))
+        self.cgrc_recon_pseudo_ratio = min(1.0, max(0.0, self.cgrc_recon_pseudo_ratio))
+        self.cgrc_recon_topk = max(2, int(os.environ.get("USIM_CGRC_RECON_TOPK", "64")))
+        self.cgrc_recon_temperature = max(1e-6, float(os.environ.get("USIM_CGRC_RECON_TEMP", "0.50")))
+        self.cgrc_recon_only_cold_or_tail = os.environ.get("USIM_CGRC_RECON_ONLY_COLD_OR_TAIL", "1") == "1"
+        self.cgrc_recon_tail_pop_ratio = float(os.environ.get("USIM_CGRC_RECON_TAIL_POP_RATIO", "0.10"))
+        self.cgrc_recon_tail_pop_ratio = min(1.0, max(0.0, self.cgrc_recon_tail_pop_ratio))
+        self.cgrc_recon_detach_user = os.environ.get("USIM_CGRC_RECON_DETACH_USER", "0") == "1"
         self.use_prereq_aux_loss = os.environ.get(
             "USIM_USE_PREREQ_AUX_LOSS",
             "1" if self.use_prereq_aux_loss else "0",

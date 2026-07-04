@@ -20,6 +20,12 @@ RESULT_FILES = [
     "ccfcrec_static_result.json",
     "cgrc_static_result.json",
     "cgrc_paper_static_result.json",
+    "usim_official_static_result.json",
+    "pam_official_static_result.json",
+    "fsgnn_coldrec_static_result.json",
+    "m2vae_coldrec_static_result.json",
+    "sagerec_static_result.json",
+    "course_aware_mlp_static_result.json",
     "fast3_static_result.json",
 ]
 
@@ -32,9 +38,15 @@ MODEL_ORDER = [
     "ContentProfile",
     "CGRC",
     "CGRC-paper",
+    "USIM",
+    "PAM",
+    "FS-GNN",
+    "M2VAE",
     "CCFCRec",
     "ALDI",
     "LightGCL",
+    "SAGERec",
+    "CourseAware-MLP",
     "FAST3",
 ]
 

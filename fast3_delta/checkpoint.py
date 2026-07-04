@@ -25,6 +25,24 @@ def _feedback_ckpt_save_optimizer_state():
     return os.environ.get("USIM_FB_SAVE_OPT_STATE", "0") == "1"
 
 
+def _feedback_ckpt_snapshot_epochs():
+    raw = os.environ.get("USIM_FB_SNAPSHOT_EPOCHS", "").strip()
+    if not raw:
+        return set()
+    epochs = set()
+    for part in raw.replace(";", ",").split(","):
+        text = part.strip()
+        if not text:
+            continue
+        try:
+            epoch = int(text)
+        except ValueError:
+            continue
+        if epoch > 0:
+            epochs.add(epoch)
+    return epochs
+
+
 def _serialize_user_seen_items(user_seen_items):
     return {
         int(uid): sorted(int(it) for it in items)

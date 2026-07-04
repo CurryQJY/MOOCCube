@@ -1,0 +1,241 @@
+\documentclass[letterpaper]{article}
+\usepackage[submission]{aaai2027}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\frenchspacing
+
+\pdfinfo{
+/TemplateVersion (2027.1)
+}
+
+\setcounter{secnumdepth}{0}
+\newcommand{\sd}[1]{{\footnotesize$\pm$#1}}
+\newcommand{\sigmark}[1]{\rlap{\textsuperscript{\scriptsize #1}}}
+
+\title{Supplementary Tables for CKG-RL}
+\author{Anonymous Submission}
+\affiliations{}
+
+\begin{document}
+\maketitle
+
+This supplement reports the detailed tables underlying the main-paper results:
+full strict item-cold results on all datasets, the MOOCCube component ablation,
+the MOOCCube hyperparameter sensitivity study, and the corresponding
+complexity and timing evidence.
+
+\section{Full Strict Item-Cold Results}
+
+\begin{table*}[t]
+\centering
+\caption{Strict item-cold full-ranking results on MOOCCube. Values are mean\(\pm\)std over three seeds. \(^{*}\) marks Holm-corrected paired seed-course significance against CGRC (\(p<0.05\)); \(^{\dagger}\) marks paired-seed significance against official USIM on all six columns.}
+\label{tab:supp-mooccube-cold}
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
+\toprule
+& \multicolumn{3}{c}{Recall \(\uparrow\)} & \multicolumn{3}{c}{NDCG \(\uparrow\)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Method & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} \\
+\midrule
+Popularity & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} \\
+BPR & 0.0113\sd{0.0037} & 0.0249\sd{0.0068} & 0.0551\sd{0.0114} & 0.0068\sd{0.0023} & 0.0111\sd{0.0030} & 0.0186\sd{0.0033} \\
+LightGCN & 0.0833\sd{0.0150} & 0.1173\sd{0.0126} & 0.1708\sd{0.0155} & 0.0593\sd{0.0120} & 0.0702\sd{0.0113} & 0.0836\sd{0.0119} \\
+DropoutNet & 0.1166\sd{0.0032} & 0.1658\sd{0.0004} & 0.2294\sd{0.0026} & 0.0791\sd{0.0041} & 0.0950\sd{0.0032} & 0.1110\sd{0.0036} \\
+CCFCRec & 0.1476\sd{0.0050} & 0.2033\sd{0.0153} & 0.2688\sd{0.0317} & 0.1101\sd{0.0073} & 0.1281\sd{0.0106} & 0.1447\sd{0.0145} \\
+ALDI & 0.1733\sd{0.0303} & 0.2258\sd{0.0247} & 0.2938\sd{0.0100} & 0.1213\sd{0.0293} & 0.1382\sd{0.0276} & 0.1553\sd{0.0239} \\
+CGRC & 0.2121\sd{0.0205} & 0.2589\sd{0.0171} & 0.3141\sd{0.0168} & 0.1695\sd{0.0190} & 0.1845\sd{0.0182} & 0.1984\sd{0.0178} \\
+USIM & 0.0377\sd{0.0142} & 0.0614\sd{0.0151} & 0.1042\sd{0.0165} & 0.0244\sd{0.0129} & 0.0320\sd{0.0125} & 0.0427\sd{0.0126} \\
+\textbf{CKG-RL}\sigmark{$\dagger$} & \textbf{0.2214}\sd{0.0126}\sigmark{*} & \textbf{0.2667}\sd{0.0150}\sigmark{*} & \textbf{0.3172}\sd{0.0092} & \textbf{0.1818}\sd{0.0112}\sigmark{*} & \textbf{0.1962}\sd{0.0115}\sigmark{*} & \textbf{0.2090}\sd{0.0104}\sigmark{*} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Strict item-cold full-ranking results on Junyi. Values are mean\(\pm\)std over three seeds. \(^{*}\) marks Holm-corrected paired seed-item significance against CGRC (\(p<0.05\)); \(^{\dagger}\) marks paired-seed significance against official USIM on all six columns.}
+\label{tab:supp-junyi-cold}
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
+\toprule
+& \multicolumn{3}{c}{Recall \(\uparrow\)} & \multicolumn{3}{c}{NDCG \(\uparrow\)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Method & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} \\
+\midrule
+Popularity & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} \\
+BPR & 0.0298\sd{0.0039} & 0.0578\sd{0.0079} & 0.1132\sd{0.0110} & 0.0180\sd{0.0027} & 0.0270\sd{0.0040} & 0.0408\sd{0.0047} \\
+LightGCN & 0.0187\sd{0.0033} & 0.0420\sd{0.0074} & 0.0830\sd{0.0153} & 0.0108\sd{0.0018} & 0.0182\sd{0.0030} & 0.0284\sd{0.0050} \\
+DropoutNet & 0.0540\sd{0.0095} & 0.0928\sd{0.0143} & 0.1579\sd{0.0163} & 0.0336\sd{0.0061} & 0.0460\sd{0.0075} & 0.0623\sd{0.0080} \\
+CCFCRec & 0.0942\sd{0.0114} & 0.1462\sd{0.0118} & 0.2177\sd{0.0100} & 0.0619\sd{0.0072} & 0.0786\sd{0.0068} & 0.0967\sd{0.0055} \\
+ALDI & 0.1331\sd{0.0074} & 0.2102\sd{0.0100} & \textbf{0.3186}\sd{0.0158} & 0.0859\sd{0.0053} & 0.1106\sd{0.0061} & 0.1379\sd{0.0073} \\
+CGRC & 0.1269\sd{0.0119} & 0.1915\sd{0.0161} & 0.2732\sd{0.0205} & 0.0833\sd{0.0074} & 0.1041\sd{0.0087} & 0.1246\sd{0.0097} \\
+USIM & 0.0536\sd{0.0021} & 0.0921\sd{0.0032} & 0.1552\sd{0.0033} & 0.0327\sd{0.0024} & 0.0450\sd{0.0014} & 0.0608\sd{0.0011} \\
+\textbf{CKG-RL}\sigmark{$\dagger$} & \textbf{0.1724}\sd{0.0070}\sigmark{*} & \textbf{0.2443}\sd{0.0154}\sigmark{*} & 0.3100\sd{0.0241}\sigmark{*} & \textbf{0.1137}\sd{0.0039}\sigmark{*} & \textbf{0.1370}\sd{0.0069}\sigmark{*} & \textbf{0.1537}\sd{0.0092}\sigmark{*} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Strict item-cold full-ranking results on COCO. Values are mean\(\pm\)std over three seeds. \(^{*}\) marks Holm-corrected paired seed-item significance against CCFCRec (\(p<0.05\)); \(^{\dagger}\) marks paired-seed significance against official USIM on all six columns.}
+\label{tab:supp-coco-cold}
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
+\toprule
+& \multicolumn{3}{c}{Recall \(\uparrow\)} & \multicolumn{3}{c}{NDCG \(\uparrow\)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Method & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} \\
+\midrule
+Popularity & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} \\
+BPR & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} \\
+LightGCN & 0.0067\sd{0.0010} & 0.0132\sd{0.0009} & 0.0254\sd{0.0027} & 0.0040\sd{0.0007} & 0.0060\sd{0.0006} & 0.0091\sd{0.0009} \\
+DropoutNet & 0.0391\sd{0.0013} & 0.0650\sd{0.0017} & 0.1016\sd{0.0019} & 0.0243\sd{0.0007} & 0.0326\sd{0.0008} & 0.0418\sd{0.0007} \\
+CCFCRec & 0.0393\sd{0.0033} & 0.0656\sd{0.0035} & \textbf{0.1048}\sd{0.0045} & 0.0248\sd{0.0024} & 0.0332\sd{0.0025} & 0.0431\sd{0.0027} \\
+ALDI & 0.0202\sd{0.0036} & 0.0383\sd{0.0082} & 0.0694\sd{0.0115} & 0.0121\sd{0.0018} & 0.0179\sd{0.0032} & 0.0257\sd{0.0041} \\
+CGRC & 0.0250\sd{0.0075} & 0.0377\sd{0.0103} & 0.0584\sd{0.0148} & 0.0168\sd{0.0055} & 0.0209\sd{0.0063} & 0.0261\sd{0.0075} \\
+USIM & 0.0069\sd{0.0022} & 0.0131\sd{0.0036} & 0.0265\sd{0.0069} & 0.0043\sd{0.0014} & 0.0063\sd{0.0018} & 0.0096\sd{0.0025} \\
+\textbf{CKG-RL}\sigmark{$\dagger$} & \textbf{0.0487}\sd{0.0023}\sigmark{*} & \textbf{0.0679}\sd{0.0023} & 0.0894\sd{0.0013} & \textbf{0.0330}\sd{0.0015}\sigmark{*} & \textbf{0.0392}\sd{0.0015}\sigmark{*} & \textbf{0.0447}\sd{0.0012} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\clearpage
+
+\section{Ablation and Sensitivity Tables}
+
+\begin{table*}[t]
+\centering
+\caption{MOOCCube core component ablation under strict item-cold full-ranking evaluation. Values are mean\(\pm\)std over three seeds.}
+\label{tab:supp-core-ablation}
+\footnotesize
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
+\toprule
+& \multicolumn{3}{c}{Recall \(\uparrow\)} & \multicolumn{3}{c}{NDCG \(\uparrow\)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Variant & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} \\
+\midrule
+\textbf{Full CKG-RL} & \textbf{0.2214}\sd{0.0126} & \textbf{0.2667}\sd{0.0150} & \textbf{0.3172}\sd{0.0092} & \textbf{0.1818}\sd{0.0112} & \textbf{0.1962}\sd{0.0115} & \textbf{0.2090}\sd{0.0104} \\
+w/o educ. rewards & 0.2150\sd{0.0116} & 0.2595\sd{0.0129} & 0.3111\sd{0.0035} & 0.1775\sd{0.0120} & 0.1918\sd{0.0121} & 0.2048\sd{0.0098} \\
+w/o KG sampler & 0.2171\sd{0.0120} & 0.2613\sd{0.0072} & 0.3153\sd{0.0052} & 0.1777\sd{0.0108} & 0.1920\sd{0.0095} & 0.2056\sd{0.0081} \\
+w/o prereq. aux. loss & 0.2163\sd{0.0161} & 0.2582\sd{0.0125} & 0.3112\sd{0.0094} & 0.1756\sd{0.0122} & 0.1892\sd{0.0113} & 0.2026\sd{0.0107} \\
+w/o course-KG inputs & 0.2192\sd{0.0159} & 0.2608\sd{0.0140} & 0.3113\sd{0.0110} & 0.1783\sd{0.0130} & 0.1917\sd{0.0125} & 0.2044\sd{0.0114} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{MOOCCube hyperparameter sensitivity under strict item-cold full-ranking evaluation. Values are mean\(\pm\)std over three seeds; \(^{\star}\) marks the default setting.}
+\label{tab:supp-hparam}
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llcc}
+\toprule
+Sweep & Value & Recall@10 \(\uparrow\) & NDCG@10 \(\uparrow\) \\
+\midrule
+\(\beta\) & 0.00 & 0.2667\sd{0.0128} & 0.1965\sd{0.0118} \\
+\(\beta\) & 0.05 & 0.2691\sd{0.0178} & 0.1974\sd{0.0157} \\
+\(\beta\) & 0.10 & \textbf{0.2716}\sd{0.0157} & \textbf{0.2004}\sd{0.0150} \\
+\(\beta\) & 0.15 & 0.2694\sd{0.0116} & 0.1977\sd{0.0127} \\
+\(\beta\) & 0.20\(^{\star}\) & 0.2667\sd{0.0150} & 0.1962\sd{0.0115} \\
+\(\beta\) & 0.25 & 0.2636\sd{0.0102} & 0.1933\sd{0.0127} \\
+\(\beta\) & 0.30 & 0.2659\sd{0.0122} & 0.1960\sd{0.0118} \\
+\(\beta\) & 0.40 & 0.2685\sd{0.0142} & 0.1948\sd{0.0119} \\
+\(\beta\) & 0.50 & 0.2700\sd{0.0163} & 0.1973\sd{0.0154} \\
+\midrule
+Reward scale & 0.00 & 0.2663\sd{0.0125} & 0.1951\sd{0.0130} \\
+Reward scale & 0.25 & 0.2626\sd{0.0140} & 0.1938\sd{0.0122} \\
+Reward scale & 0.50 & 0.2654\sd{0.0123} & 0.1958\sd{0.0126} \\
+Reward scale & 0.75 & 0.2661\sd{0.0098} & 0.1945\sd{0.0087} \\
+Reward scale & 1.00\(^{\star}\) & 0.2667\sd{0.0150} & 0.1962\sd{0.0115} \\
+Reward scale & 1.25 & 0.2665\sd{0.0133} & 0.1953\sd{0.0109} \\
+Reward scale & 1.50 & 0.2659\sd{0.0141} & 0.1964\sd{0.0144} \\
+Reward scale & 2.00 & 0.2651\sd{0.0103} & 0.1952\sd{0.0113} \\
+\midrule
+Simulator horizon \(T\) & 1 & 0.2661\sd{0.0190} & 0.1966\sd{0.0152} \\
+Simulator horizon \(T\) & 3 & 0.2666\sd{0.0195} & 0.1967\sd{0.0195} \\
+Simulator horizon \(T\) & 5\(^{\star}\) & 0.2667\sd{0.0150} & 0.1962\sd{0.0115} \\
+Simulator horizon \(T\) & 7 & 0.2659\sd{0.0178} & 0.1950\sd{0.0130} \\
+Simulator horizon \(T\) & 10 & 0.2568\sd{0.0180} & 0.1903\sd{0.0152} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\clearpage
+
+\section{Computational Cost Details}
+
+We compare CKG-RL with CGRC, the graph-reconstruction baseline closest to the
+main experimental setting. Let \(E=|\mathcal{D}_{train}|\), \(I=|\mathcal{I}|\), and
+\(Q=|\mathcal{D}_{eval}|\). Let \(d\) be the embedding size, \(L\) the number of
+graph propagation layers, \(R\) the reconstructed-edge count, \(n_{-}\) the
+sampled ranking negatives in CGRC, \(H\) the simulator hidden width, \(T\) the
+simulator horizon, \(M\) the retrieved-user count per simulator step, and \(N\)
+the sampled-candidate count per simulator step. Table~\ref{tab:supp-complexity}
+uses the same full-catalog scoring convention for both methods.
+
+\begin{table*}[t]
+\centering
+\caption{Theoretical training and inference complexity of CKG-RL and CGRC. One-time data loading is omitted.}
+\label{tab:supp-complexity}
+\small
+\setlength{\tabcolsep}{4.0pt}
+\renewcommand{\arraystretch}{1.10}
+\begin{tabular}{lp{5.5cm}p{4.6cm}p{4.7cm}}
+\toprule
+Method & Training cost per epoch & Full-ranking inference cost & Main extra cost \\
+\midrule
+CGRC & \(O(LEd + Rd + E n_{-}d)\) & \(O(LEd + Rd + QId)\) & Cold-item graph reconstruction and graph propagation. \\
+CKG-RL & \(O(E(d + T(Md + Nd + H)))\) plus auxiliary content and prerequisite losses & \(O(IH + QId)\), or \(O(QId)\) after item vectors are cached & Retrieval-based simulator with fixed \(T=5\), \(M=256\), and \(N=20\). \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+This comparison separates training overhead from final ranking overhead. CKG-RL
+adds a short retrieval-based simulation for each positive instance during
+training, but the added factors are fixed hyperparameters rather than catalog
+size. CGRC instead incurs graph reconstruction and graph propagation costs. At
+test time, CKG-RL does not roll out the simulator for every candidate item; once
+item vectors are available, the dominant full-ranking term is the same
+\(O(QId)\) dot-product scan used by embedding methods.
+
+Table~\ref{tab:supp-runtime} reports the timing evidence that can be separated
+from experiment logs and eval-only profiling. The reported CKG-RL epoch values
+are training-loop timers before validation ranking, so they exclude validation
+and test evaluation. The inference profiler reloads a retained checkpoint, warms
+up the evaluator, and times final cold+hot full-ranking item-macro inference;
+data loading, checkpoint loading, and metric-file writing are excluded. CKG-RL
+inference includes item-bank construction, while CGRC inference includes
+test-time graph reconstruction and graph propagation. The exact MOOCCube
+main-result checkpoints were not retained; for latency only, we profile
+retained checkpoints from the Full-family runs on the original main splits with the same CKG-RL
+inference graph.
+
+\begin{table*}[t]
+\centering
+\caption{Training-loop timing and eval-only final inference timing. Values are mean \(\pm\) standard deviation in seconds. ``--'' means that the matching checkpoint or a separable timer was unavailable.}
+\label{tab:supp-runtime}
+\small
+\setlength{\tabcolsep}{3.2pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{llcccp{4.5cm}}
+\toprule
+Dataset & Method & Train epoch (s) & Final infer. (s) & Infer. cost & Logged coverage \\
+\midrule
+MOOCCube & CKG-RL & \(133.8\pm51.8\) & \(18.0\pm0.7\) & \(O(QId)\) & 3 seeds, 180 training epochs; 3 retained checkpoints from Full-family runs profiled on the main splits. \\
+MOOCCube & CGRC & -- & -- & \(O(LEd+Rd+QId)\) & Comparable main-result timing was unavailable. \\
+Junyi & CKG-RL & \(312.2\pm67.4\) & \(56.4\pm0.3\) & \(O(QId)\) & 2 logged seeds, 120 training epochs; 2 checkpoints profiled. \\
+Junyi & CGRC & -- & \(69.2\pm0.2\) & \(O(LEd+Rd+QId)\) & 2 checkpoints profiled; epoch timers unavailable. \\
+COCO & CKG-RL & \(279.2\pm17.7\) & \(9.8\pm0.1\) & \(O(QId)\) & 3 seeds, 90 training epochs; 3 checkpoints profiled. \\
+COCO & CGRC & \(389.7\pm79.7\) & \(11.8\pm0.2\) & \(O(LEd+Rd+QId)\) & 3 seeds, 150 training epochs; 3 checkpoints profiled. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+These timings are training-loop and eval-only measurements rather than
+end-to-end wall-clock runtimes. On COCO, where both methods expose separable
+epoch timers, CKG-RL is faster per logged training epoch than CGRC. For retained
+CKG-RL checkpoints on MOOCCube, Junyi, and COCO, final full-ranking item-macro
+inference is dominated by the cached full-catalog dot-product scan. Where CGRC
+checkpoints are available, its inference additionally reconstructs cold-item
+edges and propagates the reconstructed graph.
+
+\end{document}

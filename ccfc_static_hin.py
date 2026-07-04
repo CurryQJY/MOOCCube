@@ -73,6 +73,18 @@ class Config:
         self.eval_item_mode = os.environ.get("CCFCREC_EVAL_ITEM_MODE", "mixed").strip().lower()
         if self.eval_item_mode not in {"mixed", "content", "id"}:
             raise ValueError("CCFCREC_EVAL_ITEM_MODE must be one of: mixed, content, id")
+        self.early_stop_average_mode = os.environ.get(
+            "CCFCREC_EARLY_STOP_AVG_MODE",
+            os.environ.get(
+                "BASELINE_EARLY_STOP_AVG_MODE",
+                os.environ.get("USIM_EARLY_STOP_AVG_MODE", "interaction"),
+            ),
+        ).strip().lower()
+        if self.early_stop_average_mode not in {"interaction", "item_macro"}:
+            raise ValueError(
+                "CCFCREC_EARLY_STOP_AVG_MODE/BASELINE_EARLY_STOP_AVG_MODE/"
+                "USIM_EARLY_STOP_AVG_MODE must be interaction or item_macro"
+            )
         self.ckpt = checkpoint_config("CCFCREC")
 
 
@@ -264,6 +276,8 @@ def evaluate_split(
     user_seen_items: Optional[Dict[int, set]],
     full_ranking: bool,
     average_mode: str = "interaction",
+    export_cold_item_metrics_path: Optional[str] = None,
+    export_hot_item_metrics_path: Optional[str] = None,
 ):
     def get_user_vectors(batch: Dict[str, torch.Tensor]) -> torch.Tensor:
         return model.user_embedding(batch["u"])
@@ -282,6 +296,7 @@ def evaluate_split(
         user_seen_items=user_seen_items,
         normalize_user=True,
         average_mode=average_mode,
+        export_item_metrics_path=export_cold_item_metrics_path,
     )
     hot, n_hot = evaluate_embedding_ranker(
         loader,
@@ -297,6 +312,7 @@ def evaluate_split(
         user_seen_items=user_seen_items,
         normalize_user=True,
         average_mode=average_mode,
+        export_item_metrics_path=export_hot_item_metrics_path,
     )
     return cold or {}, n_cold, hot or {}, n_hot
 
@@ -417,6 +433,7 @@ def main():
                 item_bank,
                 user_seen_items=train_seen,
                 full_ranking=True,
+                average_mode=cfg.early_stop_average_mode,
             )
             val_key = val_cold.get("N@10", 0.0)
             if val_key > best_val:
@@ -436,7 +453,8 @@ def main():
                 )
             print(
                 f"CCFCRec Epoch [{epoch}/{cfg.n_epochs}] loss={avg_loss:.4f} | {part_msg} | "
-                f"val_full_cold_N@10={val_key:.4f} | val_cold_count={n_vc}"
+                f"val_full_cold_N@10({cfg.early_stop_average_mode})={val_key:.4f} | "
+                f"val_cold_count={n_vc}"
             )
         else:
             print(f"CCFCRec Epoch [{epoch}/{cfg.n_epochs}] loss={avg_loss:.4f} | {part_msg}")
@@ -453,27 +471,42 @@ def main():
 
     if best_state is not None:
         model.load_state_dict(best_state)
-    print(f"Restore CCFCRec best epoch={best_epoch}, val_full_cold_N@10={best_val:.4f}")
+    print(
+        f"Restore CCFCRec best epoch={best_epoch}, "
+        f"val_full_cold_N@10({cfg.early_stop_average_mode})={best_val:.4f}"
+    )
 
     item_bank = precompute_ccfc_item_bank(cfg, model, item_counts, device)
-    sample_cold, n_sc, sample_hot, n_sh = evaluate_split(
-        cfg,
-        model,
-        test_loader,
-        device,
-        item_bank,
-        user_seen_items=test_seen,
-        full_ranking=False,
-    )
-    full_cold, n_fc, full_hot, n_fh = evaluate_split(
-        cfg,
-        model,
-        test_loader,
-        device,
-        item_bank,
-        user_seen_items=test_seen,
-        full_ranking=True,
-    )
+    export_item_only = os.environ.get("CCFCREC_EXPORT_ITEM_ONLY", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+        "on",
+    }
+    if export_item_only:
+        print("CCFCREC_EXPORT_ITEM_ONLY=1: skip sampled and interaction-macro final eval.")
+        sample_cold, n_sc, sample_hot, n_sh = {}, 0, {}, 0
+        full_cold, n_fc, full_hot, n_fh = {}, 0, {}, 0
+    else:
+        sample_cold, n_sc, sample_hot, n_sh = evaluate_split(
+            cfg,
+            model,
+            test_loader,
+            device,
+            item_bank,
+            user_seen_items=test_seen,
+            full_ranking=False,
+        )
+        full_cold, n_fc, full_hot, n_fh = evaluate_split(
+            cfg,
+            model,
+            test_loader,
+            device,
+            item_bank,
+            user_seen_items=test_seen,
+            full_ranking=True,
+        )
     full_cold_item_macro, n_fc_item_macro, full_hot_item_macro, n_fh_item_macro = evaluate_split(
         cfg,
         model,
@@ -483,58 +516,84 @@ def main():
         user_seen_items=test_seen,
         full_ranking=True,
         average_mode="item_macro",
+        export_cold_item_metrics_path=static_result_path("per_item_full_cold_ccfcrec_static.csv"),
+        export_hot_item_metrics_path=static_result_path("per_item_full_hot_ccfcrec_static.csv"),
     )
 
-    print_final_report(
-        eval_n_neg=cfg.eval_n_neg,
-        metrics_keys=metrics_keys,
-        sample_cold=sample_cold,
-        sample_hot=sample_hot,
-        full_cold=full_cold,
-        full_hot=full_hot,
-        count_sample_cold=n_sc,
-        count_sample_hot=n_sh,
-        count_full_cold=n_fc,
-        count_full_hot=n_fh,
-        title="CCFCRec Static HIN (official-adapted)",
-    )
+    if export_item_only:
+        print(
+            "CCFCRec item-macro full eval exported: "
+            f"cold_items={n_fc_item_macro}, hot_items={n_fh_item_macro}"
+        )
+    else:
+        print_final_report(
+            eval_n_neg=cfg.eval_n_neg,
+            metrics_keys=metrics_keys,
+            sample_cold=sample_cold,
+            sample_hot=sample_hot,
+            full_cold=full_cold,
+            full_hot=full_hot,
+            count_sample_cold=n_sc,
+            count_sample_hot=n_sh,
+            count_full_cold=n_fc,
+            count_full_hot=n_fh,
+            title="CCFCRec Static HIN (official-adapted)",
+        )
 
-    out = {
-        "model": "CCFCRec",
-        "model_display": "CCFCRec (official-adapted)",
-        "source": "Official CCFCRec source pulled under third_party/CCFCRec; PyTorch static-HIN adaptation.",
-        "protocol": "static_item_cold",
-        "sample_cold": sample_cold,
-        "sample_hot": sample_hot,
-        "full_cold": full_cold,
-        "full_hot": full_hot,
-        "full_cold_item_macro": full_cold_item_macro or {},
-        "full_hot_item_macro": full_hot_item_macro or {},
-        "count_sample_cold": n_sc,
-        "count_sample_hot": n_sh,
-        "count_full_cold": n_fc,
-        "count_full_hot": n_fh,
-        "count_full_cold_item_macro": n_fc_item_macro,
-        "count_full_hot_item_macro": n_fh_item_macro,
-        "best_epoch": best_epoch,
-        "best_val_full_cold_n10": best_val,
-        "best_metric": "cold",
-        "eval_n_neg": cfg.eval_n_neg,
-        "static_seed": cfg.static_seed,
-        "lambda1": cfg.lambda1,
-        "tau": cfg.tau,
-        "positive_number": cfg.positive_number,
-        "negative_number": cfg.negative_number,
-        "self_negative_number": cfg.self_negative_number,
-        "eval_item_mode": cfg.eval_item_mode,
-        "checkpoint_dir": cfg.ckpt.dir or None,
-        "resumed_from_epoch": start_epoch,
-        "note": (
-            "Core CCFCRec contrastive content-to-CF idea is adapted to the shared "
-            "user-to-item static item-cold protocol; checkpoint selected by validation full cold N@10."
-        ),
-    }
     result_path = static_result_path("ccfcrec_static_result.json")
+    if export_item_only and os.path.exists(result_path):
+        out = pd.read_json(result_path, orient="records").iloc[0].to_dict()
+    else:
+        out = {
+            "model": "CCFCRec",
+            "model_display": "CCFCRec (official-adapted)",
+            "source": "Official CCFCRec source pulled under third_party/CCFCRec; PyTorch static-HIN adaptation.",
+            "protocol": "static_item_cold",
+            "sample_cold": sample_cold,
+            "sample_hot": sample_hot,
+            "full_cold": full_cold,
+            "full_hot": full_hot,
+            "full_cold_item_macro": full_cold_item_macro or {},
+            "full_hot_item_macro": full_hot_item_macro or {},
+            "count_sample_cold": n_sc,
+            "count_sample_hot": n_sh,
+            "count_full_cold": n_fc,
+            "count_full_hot": n_fh,
+            "count_full_cold_item_macro": n_fc_item_macro,
+            "count_full_hot_item_macro": n_fh_item_macro,
+            "best_epoch": best_epoch,
+            "best_val_full_cold_n10": best_val,
+            "best_metric": "cold",
+            "best_average_mode": cfg.early_stop_average_mode,
+            "eval_n_neg": cfg.eval_n_neg,
+            "static_seed": cfg.static_seed,
+            "lambda1": cfg.lambda1,
+            "tau": cfg.tau,
+            "positive_number": cfg.positive_number,
+            "negative_number": cfg.negative_number,
+            "self_negative_number": cfg.self_negative_number,
+            "eval_item_mode": cfg.eval_item_mode,
+            "checkpoint_dir": cfg.ckpt.dir or None,
+            "resumed_from_epoch": start_epoch,
+            "per_item_full_cold_path": static_result_path("per_item_full_cold_ccfcrec_static.csv"),
+            "per_item_full_hot_path": static_result_path("per_item_full_hot_ccfcrec_static.csv"),
+            "note": (
+                "Core CCFCRec contrastive content-to-CF idea is adapted to the shared "
+                "user-to-item static item-cold protocol; checkpoint selected by "
+                f"validation full cold N@10 ({cfg.early_stop_average_mode})."
+            ),
+        }
+    out.update(
+        {
+            "full_cold_item_macro": full_cold_item_macro or {},
+            "full_hot_item_macro": full_hot_item_macro or {},
+            "count_full_cold_item_macro": n_fc_item_macro,
+            "count_full_hot_item_macro": n_fh_item_macro,
+            "per_item_full_cold_path": static_result_path("per_item_full_cold_ccfcrec_static.csv"),
+            "per_item_full_hot_path": static_result_path("per_item_full_hot_ccfcrec_static.csv"),
+            "resumed_from_epoch": start_epoch,
+        }
+    )
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)
     print(f"Saved: {result_path}")
 

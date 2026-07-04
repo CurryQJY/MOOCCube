@@ -46,13 +46,56 @@ param(
     [bool]$UseCourseReward = $true,
     [bool]$UsePrereqAux = $true,
     [bool]$PrereqAuxOnlyCold = $true,
+    [ValidateSet("behavior", "concept", "hybrid")]
+    [string]$PrereqGraphSource = "concept",
     [double]$CoursePrereqW = 0.08,
+    [double]$CoursePrereqGate = 0.20,
     [double]$CourseConceptW = 0.04,
+    [ValidateSet("mean", "topk", "max")]
+    [string]$CourseMatchMode = "mean",
+    [int]$CourseMatchTopK = 5,
     [double]$CourseDiffW = 0.03,
     [double]$CourseRedundantW = 0.02,
+    [double]$CourseRedundantConceptGate = 1.0,
     [ValidateSet("concept", "video_family")]
     [string]$CourseRedundantMode = "concept",
+    [ValidateSet("none", "batch", "ema")]
+    [string]$CourseTermNorm = "none",
+    [double]$CourseTermNormClip = 2.0,
+    [double]$CourseTermNormEps = 1e-6,
+    [double]$CourseTermNormEmaDecay = 0.95,
     [int]$CourseStructChunk = 8192,
+    [bool]$UseSageLite = $false,
+    [double]$SageGateMin = 0.10,
+    [double]$SageGateMax = 0.60,
+    [ValidateSet("heuristic", "bucket_mlp")]
+    [string]$SageGateMode = "heuristic",
+    [int]$SageGateBuckets = 20,
+    [int]$SageGateHidden = 32,
+    [ValidateSet("paper", "log")]
+    [string]$SageGateBucketStrategy = "paper",
+    [int]$SagePoolTopK = 64,
+    [double]$SageCourseTemp = 0.20,
+    [bool]$SageOnlyColdOrTail = $false,
+    [double]$SageTailPopRatio = 0.10,
+    [bool]$SageUseTwoExpert = $false,
+    [bool]$SageTwoExpertScoreFusion = $false,
+    [bool]$UseSageAuxLoss = $false,
+    [double]$SageAuxWeight = 0.02,
+    [int]$SageAuxPoolTopK = 48,
+    [double]$SageAuxCourseTemp = 0.20,
+    [double]$SageAuxRetrievalTemp = 1.0,
+    [bool]$SageAuxOnlyStrictCold = $true,
+    [bool]$SageAuxDetachUser = $true,
+    [bool]$UseCgrcRecon = $false,
+    [double]$CgrcReconAuxW = 0.0,
+    [double]$CgrcReconSampleW = 0.0,
+    [double]$CgrcReconPseudoRatio = 0.30,
+    [int]$CgrcReconTopK = 64,
+    [double]$CgrcReconTemp = 0.50,
+    [bool]$CgrcReconOnlyColdOrTail = $true,
+    [double]$CgrcReconTailPopRatio = 0.10,
+    [bool]$CgrcReconDetachUser = $false,
     [bool]$CourseFeedbackOnlyCold = $true,
     [bool]$UseCourseSample = $true,
     [bool]$CourseSampleOnlyCold = $true,
@@ -63,6 +106,13 @@ param(
     [double]$CourseRerankLambda = 0.01,
     [int]$CourseRerankTopL = 50,
     [bool]$UseStructuredHardNeg = $false,
+    [bool]$MaskKnownPosNeg = $true,
+    [bool]$MaskSameItemNeg = $true,
+    [bool]$TrainForceCold = $true,
+    [int]$UsimSteps = 5,
+    [double]$PpoLossWeight = 1.0,
+    [ValidateSet("ppo", "random", "greedy_similarity", "course_fit")]
+    [string]$RolloutPolicy = "ppo",
     # Cold-start patch (2026-05-19) flags. Legacy defaults preserved when the
     # caller doesn't pass them; see docs/COLD_START_PATCH_2026_05_19.md.
     [bool]$AuxHotOnly = $false,
@@ -109,10 +159,13 @@ $trackedEnv = @(
     "USIM_EVAL_N_NEG",
     "USIM_RUN_SAMPLED_EVAL",
     "USIM_TRAIN_FORCE_COLD",
+    "USIM_STEPS",
     "USIM_PPO_EPOCHS",
     "USIM_PPO_LAMBDA",
     "USIM_PPO_VALUE_CLIP",
     "USIM_PPO_ADV_NORM",
+    "USIM_PPO_LOSS_WEIGHT",
+    "USIM_ROLLOUT_POLICY",
     "USIM_FAST3_TGT_ALPHA_COLD",
     "USIM_FAST3_TGT_ALPHA_HOT",
     "USIM_FAST3_TGT_ALPHA_STEP",
@@ -160,28 +213,72 @@ $trackedEnv = @(
     "USIM_PREREQ_AUX_ONLY_COLD",
     "USIM_FB_COURSE_ONLY_COLD",
     "USIM_FB_COURSE_PREREQ_W",
+    "USIM_FB_COURSE_PREREQ_GATE",
     "USIM_FB_COURSE_CONCEPT_W",
+    "USIM_FB_COURSE_MATCH_MODE",
+    "USIM_FB_COURSE_MATCH_TOPK",
+    "USIM_FB_COURSE_MATCH_EXCLUDE_TARGET",
     "USIM_FB_COURSE_DIFF_W",
     "USIM_FB_COURSE_REDUNDANT_MODE",
     "USIM_FB_COURSE_REDUNDANT_W",
+    "USIM_FB_COURSE_REDUNDANT_CONCEPT_GATE",
+    "USIM_FB_COURSE_TERM_NORM",
+    "USIM_FB_COURSE_TERM_NORM_CLIP",
+    "USIM_FB_COURSE_TERM_NORM_EPS",
+    "USIM_FB_COURSE_TERM_NORM_EMA_DECAY",
     "USIM_FB_COURSE_STRUCT_CHUNK",
     "USIM_FB_COURSE_SAMPLE_SOFT",
     "USIM_FB_COURSE_SAMPLE_BETA",
     "USIM_FB_COURSE_SAMPLE_ONLY_COLD",
     "USIM_FB_COURSE_SAMPLE_TOPK",
     "USIM_FB_COURSE_SAMPLE_TOPL",
+    "USIM_USE_SAGE_LITE",
+    "USIM_SAGE_GATE_MIN",
+    "USIM_SAGE_GATE_MAX",
+    "USIM_SAGE_GATE_MODE",
+    "USIM_SAGE_GATE_BUCKETS",
+    "USIM_SAGE_GATE_HIDDEN",
+    "USIM_SAGE_GATE_BUCKET_STRATEGY",
+    "USIM_SAGE_POOL_TOPK",
+    "USIM_SAGE_COURSE_TEMP",
+    "USIM_SAGE_ONLY_COLD_OR_TAIL",
+    "USIM_SAGE_TAIL_POP_RATIO",
+    "USIM_SAGE_USE_TWO_EXPERT",
+    "USIM_SAGE_TWO_EXPERT_SCORE_FUSION",
+    "USIM_USE_SAGE_AUX_LOSS",
+    "USIM_SAGE_AUX_WEIGHT",
+    "USIM_SAGE_AUX_POOL_TOPK",
+    "USIM_SAGE_AUX_COURSE_TEMP",
+    "USIM_SAGE_AUX_RETRIEVAL_TEMP",
+    "USIM_SAGE_AUX_ONLY_STRICT_COLD",
+    "USIM_SAGE_AUX_DETACH_USER",
+    "USIM_USE_CGRC_RECON",
+    "USIM_CGRC_RECON_AUX_W",
+    "USIM_CGRC_RECON_SAMPLE_W",
+    "USIM_CGRC_RECON_PSEUDO_RATIO",
+    "USIM_CGRC_RECON_TOPK",
+    "USIM_CGRC_RECON_TEMP",
+    "USIM_CGRC_RECON_ONLY_COLD_OR_TAIL",
+    "USIM_CGRC_RECON_TAIL_POP_RATIO",
+    "USIM_CGRC_RECON_DETACH_USER",
     "USIM_USE_COURSE_RERANK",
     "USIM_COURSE_RERANK_ONLY_COLD",
     "USIM_COURSE_RERANK_ALPHA",
     "USIM_COURSE_RERANK_LAMBDA",
     "USIM_COURSE_RERANK_TOPL",
-    "USIM_USE_STRUCTURED_HARD_NEG"
+    "USIM_USE_STRUCTURED_HARD_NEG",
+    "USIM_MASK_KNOWN_POS_NEG",
+    "USIM_MASK_SAME_ITEM_NEG"
 )
 
 $originalEnv = @{}
 foreach ($name in $trackedEnv) {
     $originalEnv[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
 }
+
+$checkpointRootExplicit = $PSBoundParameters.ContainsKey("CheckpointRoot")
+$saveCkptExplicit = $PSBoundParameters.ContainsKey("SaveCkpt")
+$checkpointSaveDefaulted = $false
 
 $scriptText = Get-Content -Raw -Encoding UTF8 -LiteralPath $ScriptPath
 if ($scriptText -notmatch "def run_static_experiment" -or $scriptText -notmatch "_static_split_df") {
@@ -195,6 +292,11 @@ if ($Protocol -eq "strict_item_cold_balanced") {
     if (-not $PSBoundParameters.ContainsKey("CheckpointRoot")) {
         $CheckpointRoot = "checkpoints\content_delta_pop5\static_item_cold_balanced"
     }
+}
+
+if ($checkpointRootExplicit -and -not $saveCkptExplicit) {
+    $SaveCkpt = $true
+    $checkpointSaveDefaulted = $true
 }
 
 $splitMode = switch ($Protocol) {
@@ -229,11 +331,14 @@ $base = @{
     "USIM_EARLY_STOP_AVG_MODE" = $EarlyStopAverageMode
     "USIM_EVAL_N_NEG" = "200"
     "USIM_RUN_SAMPLED_EVAL" = if ($RunSampledEval) { "1" } else { "0" }
-    "USIM_TRAIN_FORCE_COLD" = "1"
+    "USIM_TRAIN_FORCE_COLD" = if ($TrainForceCold) { "1" } else { "0" }
+    "USIM_STEPS" = [string]$UsimSteps
     "USIM_PPO_EPOCHS" = "2"
     "USIM_PPO_LAMBDA" = "0.95"
     "USIM_PPO_VALUE_CLIP" = "0.20"
     "USIM_PPO_ADV_NORM" = "1"
+    "USIM_PPO_LOSS_WEIGHT" = [string]$PpoLossWeight
+    "USIM_ROLLOUT_POLICY" = $RolloutPolicy
 
     "USIM_FAST3_TGT_ALPHA_COLD" = "0.35"
     "USIM_FAST3_TGT_ALPHA_HOT" = "0.60"
@@ -280,16 +385,24 @@ $base = @{
     "USIM_PAAC_CONTRAST_W" = [string]$PaacContrastW
 
     "USIM_FB_LOAD_COURSE_ARTIFACTS" = "1"
-    "USIM_PREREQ_GRAPH_SOURCE" = "concept"
+    "USIM_PREREQ_GRAPH_SOURCE" = $PrereqGraphSource
     "USIM_USE_COURSE_REWARD" = if ($UseCourseReward) { "1" } else { "0" }
     "USIM_USE_PREREQ_AUX_LOSS" = if ($UsePrereqAux) { "1" } else { "0" }
     "USIM_PREREQ_AUX_ONLY_COLD" = if ($PrereqAuxOnlyCold) { "1" } else { "0" }
     "USIM_FB_COURSE_ONLY_COLD" = if ($CourseFeedbackOnlyCold) { "1" } else { "0" }
     "USIM_FB_COURSE_PREREQ_W" = if ($UseCourseFeedback) { [string]$CoursePrereqW } else { "0" }
+    "USIM_FB_COURSE_PREREQ_GATE" = if ($UseCourseFeedback) { [string]$CoursePrereqGate } else { "1.0" }
     "USIM_FB_COURSE_CONCEPT_W" = if ($UseCourseFeedback) { [string]$CourseConceptW } else { "0" }
+    "USIM_FB_COURSE_MATCH_MODE" = $CourseMatchMode
+    "USIM_FB_COURSE_MATCH_TOPK" = [string]$CourseMatchTopK
     "USIM_FB_COURSE_DIFF_W" = if ($UseCourseFeedback) { [string]$CourseDiffW } else { "0" }
     "USIM_FB_COURSE_REDUNDANT_MODE" = $CourseRedundantMode
     "USIM_FB_COURSE_REDUNDANT_W" = if ($UseCourseFeedback) { [string]$CourseRedundantW } else { "0" }
+    "USIM_FB_COURSE_REDUNDANT_CONCEPT_GATE" = if ($UseCourseFeedback) { [string]$CourseRedundantConceptGate } else { "0" }
+    "USIM_FB_COURSE_TERM_NORM" = $CourseTermNorm
+    "USIM_FB_COURSE_TERM_NORM_CLIP" = [string]$CourseTermNormClip
+    "USIM_FB_COURSE_TERM_NORM_EPS" = [string]$CourseTermNormEps
+    "USIM_FB_COURSE_TERM_NORM_EMA_DECAY" = [string]$CourseTermNormEmaDecay
     "USIM_FB_COURSE_STRUCT_CHUNK" = [string]$CourseStructChunk
 
     "USIM_FB_COURSE_SAMPLE_SOFT" = if ($UseCourseSample) { "1" } else { "0" }
@@ -297,6 +410,35 @@ $base = @{
     "USIM_FB_COURSE_SAMPLE_ONLY_COLD" = if ($CourseSampleOnlyCold) { "1" } else { "0" }
     "USIM_FB_COURSE_SAMPLE_TOPK" = "32"
     "USIM_FB_COURSE_SAMPLE_TOPL" = "32"
+    "USIM_USE_SAGE_LITE" = if ($UseSageLite) { "1" } else { "0" }
+    "USIM_SAGE_GATE_MIN" = [string]$SageGateMin
+    "USIM_SAGE_GATE_MAX" = [string]$SageGateMax
+    "USIM_SAGE_GATE_MODE" = $SageGateMode
+    "USIM_SAGE_GATE_BUCKETS" = [string]$SageGateBuckets
+    "USIM_SAGE_GATE_HIDDEN" = [string]$SageGateHidden
+    "USIM_SAGE_GATE_BUCKET_STRATEGY" = $SageGateBucketStrategy
+    "USIM_SAGE_POOL_TOPK" = [string]$SagePoolTopK
+    "USIM_SAGE_COURSE_TEMP" = [string]$SageCourseTemp
+    "USIM_SAGE_ONLY_COLD_OR_TAIL" = if ($SageOnlyColdOrTail) { "1" } else { "0" }
+    "USIM_SAGE_TAIL_POP_RATIO" = [string]$SageTailPopRatio
+    "USIM_SAGE_USE_TWO_EXPERT" = if ($SageUseTwoExpert) { "1" } else { "0" }
+    "USIM_SAGE_TWO_EXPERT_SCORE_FUSION" = if ($SageTwoExpertScoreFusion) { "1" } else { "0" }
+    "USIM_USE_SAGE_AUX_LOSS" = if ($UseSageAuxLoss) { "1" } else { "0" }
+    "USIM_SAGE_AUX_WEIGHT" = [string]$SageAuxWeight
+    "USIM_SAGE_AUX_POOL_TOPK" = [string]$SageAuxPoolTopK
+    "USIM_SAGE_AUX_COURSE_TEMP" = [string]$SageAuxCourseTemp
+    "USIM_SAGE_AUX_RETRIEVAL_TEMP" = [string]$SageAuxRetrievalTemp
+    "USIM_SAGE_AUX_ONLY_STRICT_COLD" = if ($SageAuxOnlyStrictCold) { "1" } else { "0" }
+    "USIM_SAGE_AUX_DETACH_USER" = if ($SageAuxDetachUser) { "1" } else { "0" }
+    "USIM_USE_CGRC_RECON" = if ($UseCgrcRecon) { "1" } else { "0" }
+    "USIM_CGRC_RECON_AUX_W" = [string]$CgrcReconAuxW
+    "USIM_CGRC_RECON_SAMPLE_W" = [string]$CgrcReconSampleW
+    "USIM_CGRC_RECON_PSEUDO_RATIO" = [string]$CgrcReconPseudoRatio
+    "USIM_CGRC_RECON_TOPK" = [string]$CgrcReconTopK
+    "USIM_CGRC_RECON_TEMP" = [string]$CgrcReconTemp
+    "USIM_CGRC_RECON_ONLY_COLD_OR_TAIL" = if ($CgrcReconOnlyColdOrTail) { "1" } else { "0" }
+    "USIM_CGRC_RECON_TAIL_POP_RATIO" = [string]$CgrcReconTailPopRatio
+    "USIM_CGRC_RECON_DETACH_USER" = if ($CgrcReconDetachUser) { "1" } else { "0" }
 
     "USIM_USE_COURSE_RERANK" = if ($UseCourseRerank) { "1" } else { "0" }
     "USIM_COURSE_RERANK_ONLY_COLD" = if ($CourseRerankOnlyCold) { "1" } else { "0" }
@@ -304,11 +446,17 @@ $base = @{
     "USIM_COURSE_RERANK_LAMBDA" = [string]$CourseRerankLambda
     "USIM_COURSE_RERANK_TOPL" = [string]$CourseRerankTopL
     "USIM_USE_STRUCTURED_HARD_NEG" = if ($UseStructuredHardNeg) { "1" } else { "0" }
+    "USIM_MASK_KNOWN_POS_NEG" = if ($MaskKnownPosNeg) { "1" } else { "0" }
+    "USIM_MASK_SAME_ITEM_NEG" = if ($MaskSameItemNeg) { "1" } else { "0" }
 }
 
 try {
     New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
     New-Item -ItemType Directory -Force -Path $CheckpointRoot | Out-Null
+
+    if ($checkpointSaveDefaulted) {
+        Write-Host "CheckpointRoot was provided without -SaveCkpt; enabling checkpoint saving by default." -ForegroundColor Yellow
+    }
 
     foreach ($coldThreshold in $ColdThresholds) {
         foreach ($seed in $Seeds) {
@@ -332,8 +480,17 @@ try {
             Write-Host ""
             Write-Host "===== Running FAST3 ContentDelta static threshold=$coldThreshold seed=$seed epochs=$Epochs =====" -ForegroundColor Cyan
             Write-Host "Output: $out"
-            Write-Host ("Tune: es_avg={0} es_score={29} aux_hot_only={30} run_sampled_eval={31} delta={1} delta_mode={2} paper={3} replace_item={4} cold_only={5} train_on_id_dropout={6} delta_only_after_epoch={7} delta_max={8} scale={9} lr_mult={10} l2={11} cap={12} cap_margin={33} proj_hidden={34} aux_mode={35} eval_bank={36} aux_w={13} pseudo={14} pseudo_mode={15} pseudo_ratio={16} pseudo_min_pop={17} paac={18} paac_align={19} paac_contrast={20} course_feedback={21} course_reward={32} course_only_cold={22} prereq_aux={23} prereq_only_cold={24} course_sample={25} sample_only_cold={26} rerank={27} structured_hard_neg={28}" -f $EarlyStopAverageMode, $UseContentDelta, $ContentDeltaMode, $ContentDeltaPaperStyle, $ContentDeltaReplaceItem, $ContentDeltaColdOnly, $ContentDeltaTrainOnIdDropout, $ContentDeltaOnlyAfterEpoch, $ContentDeltaMaxNorm, $ContentDeltaScale, $ContentDeltaLrMult, $ContentDeltaL2W, $ContentDeltaCapW, $AuxWeight, $UsePseudoColdTrain, $PseudoColdMode, $PseudoColdRatio, $PseudoColdMinPop, $UsePaac, $PaacAlignW, $PaacContrastW, $UseCourseFeedback, $CourseFeedbackOnlyCold, $UsePrereqAux, $PrereqAuxOnlyCold, $UseCourseSample, $CourseSampleOnlyCold, $UseCourseRerank, $UseStructuredHardNeg, $EarlyStopScoreMode, $AuxHotOnly, $RunSampledEval, $UseCourseReward, $ContentDeltaCapMargin, $ContentDeltaProjectorHidden, $ContentDeltaAuxMode, $ContentDeltaEvalBankMode)
+            Write-Host ("Tune: es_avg={0} es_score={29} aux_hot_only={30} run_sampled_eval={31} delta={1} delta_mode={2} paper={3} replace_item={4} cold_only={5} train_on_id_dropout={6} delta_only_after_epoch={7} delta_max={8} scale={9} lr_mult={10} l2={11} cap={12} cap_margin={33} proj_hidden={34} aux_mode={35} eval_bank={36} aux_w={13} pseudo={14} pseudo_mode={15} pseudo_ratio={16} pseudo_min_pop={17} paac={18} paac_align={19} paac_contrast={20} course_feedback={21} course_reward={32} course_only_cold={22} prereq_aux={23} prereq_only_cold={24} course_sample={25} sample_only_cold={26} rerank={27} structured_hard_neg={28} mask_known_pos={37} mask_same_item={38}" -f $EarlyStopAverageMode, $UseContentDelta, $ContentDeltaMode, $ContentDeltaPaperStyle, $ContentDeltaReplaceItem, $ContentDeltaColdOnly, $ContentDeltaTrainOnIdDropout, $ContentDeltaOnlyAfterEpoch, $ContentDeltaMaxNorm, $ContentDeltaScale, $ContentDeltaLrMult, $ContentDeltaL2W, $ContentDeltaCapW, $AuxWeight, $UsePseudoColdTrain, $PseudoColdMode, $PseudoColdRatio, $PseudoColdMinPop, $UsePaac, $PaacAlignW, $PaacContrastW, $UseCourseFeedback, $CourseFeedbackOnlyCold, $UsePrereqAux, $PrereqAuxOnlyCold, $UseCourseSample, $CourseSampleOnlyCold, $UseCourseRerank, $UseStructuredHardNeg, $EarlyStopScoreMode, $AuxHotOnly, $RunSampledEval, $UseCourseReward, $ContentDeltaCapMargin, $ContentDeltaProjectorHidden, $ContentDeltaAuxMode, $ContentDeltaEvalBankMode, $MaskKnownPosNeg, $MaskSameItemNeg)
+            $matchExcludeTarget = if ([string]::IsNullOrWhiteSpace($env:USIM_FB_COURSE_MATCH_EXCLUDE_TARGET)) { "auto" } else { $env:USIM_FB_COURSE_MATCH_EXCLUDE_TARGET }
+            Write-Host ("Core controls: train_force_cold={0} usim_steps={1}" -f $TrainForceCold, $UsimSteps)
+            Write-Host ("PPO controls: loss_weight={0}" -f $PpoLossWeight)
+            Write-Host ("Rollout policy: {0}" -f $RolloutPolicy)
+            Write-Host ("Course match: mode={0} topk={1} exclude_target={2}" -f $CourseMatchMode, $CourseMatchTopK, $matchExcludeTarget)
             Write-Host ("Course redundancy: mode={0} struct_chunk={1}" -f $CourseRedundantMode, $CourseStructChunk)
+            Write-Host ("Course term norm: mode={0} clip={1} eps={2} ema_decay={3}" -f $CourseTermNorm, $CourseTermNormClip, $CourseTermNormEps, $CourseTermNormEmaDecay)
+            Write-Host ("SAGE-lite: enabled={0} gate_mode={1} gate=[{2},{3}] buckets={4} bucket_strategy={5} gate_hidden={6} pool_topk={7} course_temp={8} only_cold_or_tail={9} tail_pop_ratio={10} two_expert={11} score_fusion={12}" -f $UseSageLite, $SageGateMode, $SageGateMin, $SageGateMax, $SageGateBuckets, $SageGateBucketStrategy, $SageGateHidden, $SagePoolTopK, $SageCourseTemp, $SageOnlyColdOrTail, $SageTailPopRatio, $SageUseTwoExpert, $SageTwoExpertScoreFusion)
+            Write-Host ("SAGE-aux: enabled={0} weight={1} pool_topk={2} course_temp={3} retrieval_temp={4} strict_cold_only={5} detach_user={6}" -f $UseSageAuxLoss, $SageAuxWeight, $SageAuxPoolTopK, $SageAuxCourseTemp, $SageAuxRetrievalTemp, $SageAuxOnlyStrictCold, $SageAuxDetachUser)
+            Write-Host ("CGRC-recon: enabled={0} aux_w={1} sample_w={2} pseudo_ratio={3} topk={4} temp={5} only_cold_or_tail={6} tail_pop_ratio={7} detach_user={8}" -f $UseCgrcRecon, $CgrcReconAuxW, $CgrcReconSampleW, $CgrcReconPseudoRatio, $CgrcReconTopK, $CgrcReconTemp, $CgrcReconOnlyColdOrTail, $CgrcReconTailPopRatio, $CgrcReconDetachUser)
             Write-Host ("Checkpoint: save={0} resume={1} force_fresh={2} save_opt={3} dir={4}" -f $SaveCkpt, $AutoResume, $ForceFresh, $SaveOptState, $ckpt)
 
             $commandLine = ('"{0}" -u -X faulthandler "{1}" 2>&1' -f $PythonRunner, $ScriptPath)

@@ -18,6 +18,7 @@ contrastive formulation and preventing negative unbounded losses.
 
 import copy
 import os
+import time
 from collections import defaultdict
 from typing import Dict, Iterable, List, Sequence, Tuple
 
@@ -63,6 +64,7 @@ class Config:
         self.le_max_edges = int(_env("LE_MAX_EDGES", "4096"))
         self.ranking_neg_per_user = int(_env("RANKING_NEG_PER_USER", "32"))
         self.recon_user_chunk = int(_env("RECON_USER_CHUNK", "4096"))
+        self.progress_interval = int(_env("PROGRESS_INTERVAL", "1"))
 
         self.lr = float(_env("LR", "1e-3"))
         self.reg_weight = float(_env("REG", "1e-4"))
@@ -99,6 +101,66 @@ def _env(name: str, default: str) -> str:
 def _bool_env(name: str, default: str) -> bool:
     value = _env(name, default).strip().lower()
     return value not in {"0", "false", "no", "off", ""}
+
+
+def _resolve_device() -> torch.device:
+    requested = _env("DEVICE", "").strip().lower()
+    if requested:
+        if requested == "cpu":
+            return torch.device("cpu")
+        if requested.startswith("cuda"):
+            if not torch.cuda.is_available():
+                raise RuntimeError(f"Requested {requested}, but CUDA is not available")
+            return torch.device(requested)
+        raise ValueError("CGRC_PAPER_DEVICE/CGRC_DEVICE must be empty, 'cpu', or 'cuda[:index]'")
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def _configure_cuda_memory(device: torch.device) -> None:
+    if device.type != "cuda":
+        return
+    fraction = float(_env("CUDA_MEMORY_FRACTION", "0.85"))
+    fraction = min(1.0, max(0.1, fraction))
+    try:
+        device_index = device.index
+        if device_index is None:
+            device_index = torch.cuda.current_device()
+        torch.cuda.set_per_process_memory_fraction(fraction, device=device_index)
+        print(f"CGRC init: cuda memory fraction={fraction:.2f}", flush=True)
+    except Exception as exc:
+        print(f"CGRC init: cuda memory fraction not set ({exc})", flush=True)
+
+
+def _format_duration(seconds: float) -> str:
+    total = max(0, int(seconds))
+    hours, rem = divmod(total, 3600)
+    minutes, secs = divmod(rem, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m{secs:02d}s"
+    if minutes:
+        return f"{minutes}m{secs:02d}s"
+    return f"{secs}s"
+
+
+def _format_train_progress(
+    epoch: int,
+    n_epochs: int,
+    batch_idx: int,
+    n_batches: int,
+    avg_loss: float,
+    elapsed_s: float,
+) -> str:
+    pct = int((max(0, batch_idx) / max(1, n_batches)) * 100)
+    if batch_idx > 0:
+        eta_s = (elapsed_s / batch_idx) * max(0, n_batches - batch_idx)
+    else:
+        eta_s = 0.0
+    return (
+        f"  [CGRC-TRAIN-PROGRESS] Epoch {epoch}/{n_epochs} | "
+        f"{batch_idx}/{n_batches} ({pct}%) | "
+        f"avg_loss={avg_loss:.4f} | "
+        f"elapsed={_format_duration(elapsed_s)} | eta={_format_duration(eta_s)}"
+    )
 
 
 def _print_full_only_report(
@@ -174,10 +236,23 @@ def _normalize_graph_mat(adj_mat: sp.spmatrix) -> sp.csr_matrix:
 
 
 def _sparse_adj_tensor(adj_mat: sp.spmatrix, device: torch.device) -> torch.Tensor:
+    sparse_format = _env("SPARSE_FORMAT", "csr").strip().lower()
+    if sparse_format == "csr":
+        csr = adj_mat.tocsr()
+        crow = torch.from_numpy(csr.indptr.astype(np.int64, copy=False))
+        col = torch.from_numpy(csr.indices.astype(np.int64, copy=False))
+        values = torch.from_numpy(csr.data.astype(np.float32, copy=False)).float()
+        tensor = torch.sparse_csr_tensor(crow, col, values, size=csr.shape)
+        return tensor.to(device) if device.type != "cpu" else tensor
+    if sparse_format != "coo":
+        raise ValueError("CGRC_PAPER_SPARSE_FORMAT/CGRC_SPARSE_FORMAT must be csr or coo")
     coo = adj_mat.tocoo()
     indices = torch.from_numpy(np.vstack((coo.row, coo.col))).long()
     values = torch.from_numpy(coo.data.astype(np.float32, copy=False)).float()
-    return torch.sparse_coo_tensor(indices, values, coo.shape, device=device).coalesce()
+    # Coalesce on CPU first: CUDA sparse coalesce can allocate large temporary
+    # buffers on medium-size graphs and stall before training logs begin.
+    tensor = torch.sparse_coo_tensor(indices, values, coo.shape).coalesce()
+    return tensor.to(device) if device.type != "cpu" else tensor
 
 
 def _build_interaction_csr(train_df: pd.DataFrame, n_users: int, n_items: int) -> sp.csr_matrix:
@@ -396,6 +471,23 @@ def _l2_reg_loss(reg_weight: float, *embs: torch.Tensor) -> torch.Tensor:
     return reg * reg_weight
 
 
+def _edge_logits_broadcast_chunked(
+    model: CGRCNet,
+    h_u_bar: torch.Tensor,
+    x_all: torch.Tensor,
+    cold_ids: torch.Tensor,
+    user_chunk: int,
+) -> torch.Tensor:
+    if user_chunk <= 0 or h_u_bar.shape[0] <= user_chunk:
+        return model.edge_logits_broadcast(h_u_bar, x_all, cold_ids)
+
+    parts = []
+    for start in range(0, h_u_bar.shape[0], user_chunk):
+        end = min(start + user_chunk, h_u_bar.shape[0])
+        parts.append(model.edge_logits_broadcast(h_u_bar[start:end], x_all, cold_ids))
+    return torch.cat(parts, dim=0)
+
+
 def _iter_cgrc_batches(
     train_users: np.ndarray,
     train_pos: np.ndarray,
@@ -430,6 +522,24 @@ def _cold_items_in(df: pd.DataFrame, cold_threshold: int) -> np.ndarray:
     if cold_df.empty:
         return np.empty(0, dtype=np.int64)
     return np.sort(cold_df["i_idx"].astype(np.int64).unique())
+
+
+def _apply_train_popularity_for_eval(
+    train_df: pd.DataFrame,
+    val_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    train_counts = train_df["i_idx"].astype(int).value_counts().astype(int)
+    aligned = []
+    for split_df in (train_df, val_df, test_df):
+        out = split_df.copy()
+        if "raw_popularity" not in out.columns and "popularity" in out.columns:
+            out["raw_popularity"] = out["popularity"]
+        out["popularity"] = (
+            out["i_idx"].astype(int).map(train_counts).fillna(0).astype(int)
+        )
+        aligned.append(out)
+    return aligned[0], aligned[1], aligned[2]
 
 
 def _topk_users_for_cold(
@@ -508,7 +618,7 @@ def _build_ghat_embeddings(
 
 def main():
     data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
-    print(f"Loading data from {data_dir} ...")
+    print(f"Loading data from {data_dir} ...", flush=True)
     meta, df, content_emb = load_hin_processed(data_dir)
     cfg = Config(meta["n_users"], meta["n_items"], content_dim=content_emb.shape[1])
     setup_seed(cfg.seed)
@@ -519,9 +629,11 @@ def main():
         train_ratio=cfg.train_ratio,
         val_ratio=cfg.val_ratio,
     )
+    train_df, val_df, test_df = _apply_train_popularity_for_eval(train_df, val_df, test_df)
     print(
         f"Static split done: train={len(train_df)}, val={len(val_df)}, test={len(test_df)} | "
-        f"cold_threshold={cfg.cold_threshold}, eval_n_neg={cfg.eval_n_neg}"
+        f"cold_threshold={cfg.cold_threshold}, eval_n_neg={cfg.eval_n_neg}",
+        flush=True,
     )
 
     val_loader = DataLoader(
@@ -542,15 +654,26 @@ def main():
     if os.environ.get("USIM_STATIC_TEST_HISTORY", "train_only").strip().lower() == "train_val":
         add_user_seen_from_df(test_seen, val_df)
 
+    print("CGRC init: build train cache ...", flush=True)
     train_users_np, train_pos_np, _, user_neg_pool = prepare_train_cache(train_df, cfg.n_items)
     train_item_pool = np.unique(train_pos_np).astype(np.int64, copy=False)
+    print(
+        f"CGRC init: train cache done | train_pairs={train_users_np.size} | "
+        f"train_items={train_item_pool.size}",
+        flush=True,
+    )
+    print("CGRC init: build user-rated sets and CSR interaction graph ...", flush=True)
     user_rated = _build_user_rated(train_df, cfg.n_users)
     R_base = _build_interaction_csr(train_df, cfg.n_users, cfg.n_items)
     R_coo = R_base.tocoo()
     R_coo_row = R_coo.row.astype(np.int64, copy=False)
     R_coo_col = R_coo.col.astype(np.int64, copy=False)
+    print(f"CGRC init: R_base nnz={R_base.nnz}", flush=True)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = _resolve_device()
+    _configure_cuda_memory(device)
+    print(f"CGRC init: device={device} | sparse_format={_env('SPARSE_FORMAT', 'csr')}", flush=True)
+    print("CGRC init: create CPU model ...", flush=True)
     model = CGRCNet(
         cfg.n_users,
         cfg.n_items,
@@ -558,12 +681,29 @@ def main():
         cfg.emb_dim,
         cfg.mlp_hidden,
         content_emb,
-    ).to(device)
+    )
+    print("CGRC init: CPU model ready; move model to device ...", flush=True)
+    model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr)
+    if device.type == "cuda":
+        print(
+            "CGRC init: model ready | "
+            f"cuda_alloc={torch.cuda.memory_allocated(device) / 1024 ** 2:.1f}MB | "
+            f"cuda_reserved={torch.cuda.memory_reserved(device) / 1024 ** 2:.1f}MB",
+            flush=True,
+        )
+    else:
+        print("CGRC init: model ready", flush=True)
 
+    print("CGRC init: build normalized full sparse adjacency ...", flush=True)
     sparse_full = _sparse_adj_tensor(
         _normalize_graph_mat(_bip_adj_from_R(R_base, cfg.n_users, cfg.n_items)),
         device,
+    )
+    print(
+        f"CGRC init: sparse adjacency ready | layout={sparse_full.layout} | "
+        f"nnz={sparse_full._nnz()}",
+        flush=True,
     )
     val_cold_items = _cold_items_in(val_df, cfg.cold_threshold)
     test_cold_items = _cold_items_in(test_df, cfg.cold_threshold)
@@ -574,7 +714,8 @@ def main():
         f"rho={cfg.mask_rho} | topk={cfg.recon_topk} | "
         f"best_average_mode={cfg.best_average_mode} | "
         f"sampled_eval={cfg.run_sampled_eval} | "
-        f"val_cold_items={val_cold_items.size} | test_cold_items={test_cold_items.size}"
+        f"val_cold_items={val_cold_items.size} | test_cold_items={test_cold_items.size}",
+        flush=True,
     )
 
     best_val = -1.0
@@ -594,6 +735,8 @@ def main():
         loss_e_sum = 0.0
         loss_r_sum = 0.0
         n_batches = 0
+        n_batches_est = max(1, int(np.ceil(train_users_np.size / max(1, cfg.batch_size))))
+        epoch_start = time.time()
 
         for u_idx, i_idx, B_list in _iter_cgrc_batches(
             train_users_np,
@@ -632,7 +775,13 @@ def main():
                     h_u_bar = _user_mean_layers_1_to_L(layers, cfg.n_users, cfg.layers_gprime)
                     needed_users = sorted({int(uid) for uid, _ in edges})
                     needed_t = torch.tensor(needed_users, dtype=torch.long, device=device)
-                    logits = model.edge_logits_broadcast(h_u_bar[needed_t], x_all, cold_ids)
+                    logits = _edge_logits_broadcast_chunked(
+                        model,
+                        h_u_bar[needed_t],
+                        x_all,
+                        cold_ids,
+                        cfg.recon_user_chunk,
+                    )
                     loss_e = _reconstruction_loss(logits, cold_ids, edges, needed_t, user_rated)
 
             z_u, z_i = _lightgcn_mean_all_layers(
@@ -658,6 +807,21 @@ def main():
             loss_e_sum += float(loss_e.item())
             loss_r_sum += float(loss_r.item())
             n_batches += 1
+            if (
+                cfg.progress_interval > 0
+                and (n_batches == 1 or n_batches == n_batches_est or n_batches % cfg.progress_interval == 0)
+            ):
+                print(
+                    _format_train_progress(
+                        epoch=epoch + 1,
+                        n_epochs=cfg.n_epochs,
+                        batch_idx=n_batches,
+                        n_batches=n_batches_est,
+                        avg_loss=loss_sum / max(1, n_batches),
+                        elapsed_s=time.time() - epoch_start,
+                    ),
+                    flush=True,
+                )
 
         model.eval()
         improved = False
@@ -713,7 +877,8 @@ def main():
             f"loss={loss_sum / denom:.4f} | L_E={loss_e_sum / denom:.4f} | "
             f"L_R={loss_r_sum / denom:.4f} | "
             f"val_full_cold_N@10({cfg.best_average_mode})={val_key:.4f} | "
-            f"val_recon_edges={recon_edges}"
+            f"val_recon_edges={recon_edges}",
+            flush=True,
         )
         if cfg.ckpt.save:
             save_checkpoint(
@@ -735,7 +900,8 @@ def main():
         print(
             f"Restore best epoch={best_epoch}, "
             f"val_full_cold_N@10({cfg.best_average_mode})={best_val:.4f}, "
-            f"val_recon_edges={best_recon_edges}"
+            f"val_recon_edges={best_recon_edges}",
+            flush=True,
         )
 
     model.eval()
@@ -778,11 +944,13 @@ def main():
             test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
             user_seen_items=test_seen, average_mode="item_macro",
+            export_item_metrics_path=static_result_path("per_item_full_cold_cgrc_paper_static.csv"),
         )
         full_hot_item_macro, n_fh_item_macro = evaluate_embedding_ranker(
             test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
             user_seen_items=test_seen, average_mode="item_macro",
+            export_item_metrics_path=static_result_path("per_item_full_hot_cgrc_paper_static.csv"),
         )
 
     sample_cold = sample_cold or {}
@@ -861,10 +1029,12 @@ def main():
         "static_seed": cfg.static_seed,
         "checkpoint_dir": cfg.ckpt.dir or None,
         "resumed_from_epoch": start_epoch,
+        "per_item_full_cold_path": static_result_path("per_item_full_cold_cgrc_paper_static.csv"),
+        "per_item_full_hot_path": static_result_path("per_item_full_hot_cgrc_paper_static.csv"),
     }
     result_path = static_result_path("cgrc_paper_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)
-    print(f"Saved: {result_path}")
+    print(f"Saved: {result_path}", flush=True)
 
 
 if __name__ == "__main__":

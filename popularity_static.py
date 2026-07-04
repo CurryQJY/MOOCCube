@@ -42,6 +42,15 @@ class Config:
         self.train_ratio = float(os.environ.get("POP_STATIC_TRAIN_RATIO", "0.8"))
         self.val_ratio = float(os.environ.get("POP_STATIC_VAL_RATIO", "0.1"))
         self.tie_break_noise = float(os.environ.get("POP_TIE_BREAK_NOISE", "1e-6"))
+        self.device = os.environ.get("POP_DEVICE", os.environ.get("BASELINE_DEVICE", "auto")).strip().lower()
+
+
+def choose_device(preferred: str) -> torch.device:
+    if preferred == "cpu":
+        return torch.device("cpu")
+    if preferred.startswith("cuda"):
+        return torch.device(preferred if torch.cuda.is_available() else "cpu")
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def main():
@@ -74,7 +83,7 @@ def main():
     if os.environ.get("USIM_STATIC_TEST_HISTORY", "train_only").strip().lower() == "train_val":
         add_user_seen_from_df(test_seen, val_df)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = choose_device(cfg.device)
     pop_score = build_pop_score(train_df, cfg.n_items, device)
     print(f"Model: Popularity static | device={device}")
 

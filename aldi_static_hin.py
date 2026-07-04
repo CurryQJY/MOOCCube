@@ -76,6 +76,18 @@ class Config:
         self.seed = int(os.environ.get("ALDI_SEED", str(self.static_seed)))
         self.train_ratio = float(os.environ.get("ALDI_STATIC_TRAIN_RATIO", "0.8"))
         self.val_ratio = float(os.environ.get("ALDI_STATIC_VAL_RATIO", "0.1"))
+        self.early_stop_average_mode = os.environ.get(
+            "ALDI_EARLY_STOP_AVG_MODE",
+            os.environ.get(
+                "BASELINE_EARLY_STOP_AVG_MODE",
+                os.environ.get("USIM_EARLY_STOP_AVG_MODE", "interaction"),
+            ),
+        ).strip().lower()
+        if self.early_stop_average_mode not in {"interaction", "item_macro"}:
+            raise ValueError(
+                "ALDI_EARLY_STOP_AVG_MODE/BASELINE_EARLY_STOP_AVG_MODE/"
+                "USIM_EARLY_STOP_AVG_MODE must be interaction or item_macro"
+            )
         self.ckpt = checkpoint_config("ALDI")
         teacher_ckpt_dir = os.environ.get("ALDI_TEACHER_CKPT_DIR", "").strip()
         if not teacher_ckpt_dir and self.ckpt.dir:
@@ -728,6 +740,7 @@ def main():
                 item_is_cold,
                 full_ranking=True,
                 user_seen_items=train_seen,
+                average_mode=cfg.early_stop_average_mode,
             )
             val_key = val_cold.get("N@10", 0.0) if val_cold else 0.0
             if val_key > best_val:
@@ -747,7 +760,8 @@ def main():
                 )
             print(
                 f"ALDI Epoch [{epoch}/{cfg.n_epochs}] loss={avg_loss:.4f} | {part_msg} | "
-                f"val_full_cold_N@10={val_key:.4f} | val_cold_count={n_vc}"
+                f"val_full_cold_N@10({cfg.early_stop_average_mode})={val_key:.4f} | "
+                f"val_cold_count={n_vc}"
             )
         else:
             print(f"ALDI Epoch [{epoch}/{cfg.n_epochs}] loss={avg_loss:.4f} | {part_msg}")
@@ -764,7 +778,10 @@ def main():
 
     if best_state is not None:
         student.load_state_dict(best_state)
-    print(f"Restore ALDI best epoch={best_epoch}, val_full_cold_N@10={best_val:.4f}")
+    print(
+        f"Restore ALDI best epoch={best_epoch}, "
+        f"val_full_cold_N@10({cfg.early_stop_average_mode})={best_val:.4f}"
+    )
 
     teacher_user, mapped_user, item_bank, item_is_cold = precompute_aldi_banks(
         cfg, teacher, student, content_emb, item_counts, device
@@ -844,6 +861,7 @@ def main():
         "best_epoch": best_epoch,
         "best_val_full_cold_n10": best_val,
         "best_metric": "cold",
+        "best_average_mode": cfg.early_stop_average_mode,
         "teacher_best_epoch": teacher_epoch,
         "teacher_best_val_full_hot_n10": teacher_hot,
         "eval_n_neg": cfg.eval_n_neg,
@@ -855,7 +873,10 @@ def main():
         "checkpoint_dir": cfg.ckpt.dir or None,
         "teacher_checkpoint_dir": cfg.teacher_ckpt.dir or None,
         "resumed_from_epoch": start_epoch,
-        "note": "Warm BPR teacher is trained on the shared static train split; student checkpoint selected by validation full cold N@10.",
+        "note": (
+            "Warm BPR teacher is trained on the shared static train split; "
+            f"student checkpoint selected by validation full cold N@10 ({cfg.early_stop_average_mode})."
+        ),
     }
     result_path = static_result_path("aldi_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)

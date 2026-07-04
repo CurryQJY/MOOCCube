@@ -44,6 +44,18 @@ class Config:
         self.seed = int(os.environ.get("CONTENT_PROFILE_SEED", str(self.static_seed)))
         self.train_ratio = float(os.environ.get("CONTENT_PROFILE_STATIC_TRAIN_RATIO", "0.8"))
         self.val_ratio = float(os.environ.get("CONTENT_PROFILE_STATIC_VAL_RATIO", "0.1"))
+        self.device = os.environ.get(
+            "CONTENT_PROFILE_DEVICE",
+            os.environ.get("BASELINE_DEVICE", "auto"),
+        ).strip().lower()
+
+
+def choose_device(preferred: str) -> torch.device:
+    if preferred == "cpu":
+        return torch.device("cpu")
+    if preferred.startswith("cuda"):
+        return torch.device(preferred if torch.cuda.is_available() else "cpu")
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def build_user_content_profiles(train_seen, item_vectors: torch.Tensor, n_users: int, device) -> torch.Tensor:
@@ -95,7 +107,7 @@ def main():
     if os.environ.get("USIM_STATIC_TEST_HISTORY", "train_only").strip().lower() == "train_val":
         add_user_seen_from_df(test_seen, val_df)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = choose_device(cfg.device)
     all_i = torch.nn.functional.normalize(content_emb.float().to(device), dim=1)
     all_u = build_user_content_profiles(train_seen, all_i, cfg.n_users, device)
     get_user_fn = lambda batch: all_u[batch["u"]]

@@ -1,0 +1,69 @@
+{
+  "canvas": {
+    "width": 2600,
+    "height": 1000
+  },
+  "purpose": "Structure-preserving visual redraw of the cold-course evidence encoder, course-knowledge guided simulation, and strict item-cold ranking method figure.",
+  "panels": [
+    {
+      "title": "(a) Cold-course evidence encoder",
+      "required_modules": [
+        "Dropout-style course encoder",
+        "cold course i",
+        "side-feature tower",
+        "ID-factor tower",
+        "dropout / mask",
+        "fusion MLP + gate",
+        "q_i",
+        "user-history encoder",
+        "history only",
+        "MLP",
+        "z_u"
+      ],
+      "required_relations": [
+        "x_i -> c_i",
+        "v_i odot m_i",
+        "q_i = Gate(c_i, v_i odot m_i)",
+        "user history encoder -> z_u"
+      ]
+    },
+    {
+      "title": "(b) Course-knowledge guided simulation",
+      "required_modules": [
+        "T-step learner-course simulator",
+        "s_t = [h_t, q_i, l_t]",
+        "Exploration set construction",
+        "Top-M",
+        "course prior",
+        "a_end",
+        "actor-critic agent",
+        "pi_theta(a | s_t, S_t)",
+        "State transition",
+        "h_{t+1} = rho(h_t, a_t, q_i)",
+        "l_{t+1} = l_t - 1",
+        "s_{t+1} = [h_{t+1}, q_i, l_{t+1}]",
+        "Reward computation with six components",
+        "r_t = sum_k lambda_k r_t^k"
+      ]
+    },
+    {
+      "title": "(c) Strict Item-Cold Ranking",
+      "required_modules": [
+        "strict item-cold inference",
+        "cold-only full catalog",
+        "dot-product scoring",
+        "user embedding z_u",
+        "cold bank / cold-course bank",
+        "Z_cold",
+        "Top-K courses"
+      ],
+      "required_relation": "s(u, i) = z_u^T z_i^cold"
+    }
+  ],
+  "visual_grammar": {
+    "blue": "state, user embedding, transition",
+    "green": "course, cold course, cold bank",
+    "orange": "course knowledge, reward, prior",
+    "red": "dropout, mask, main transition arrows"
+  }
+}

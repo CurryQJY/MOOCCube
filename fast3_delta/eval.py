@@ -1,3 +1,5 @@
+import csv
+import os
 from collections import defaultdict
 
 import numpy as np
@@ -257,6 +259,7 @@ def evaluate_usim(
     user_seen_items=None,
     all_item_vecs=None,
     average_mode="interaction",
+    export_item_metrics_path=None,
 ):
     average_mode = average_mode.strip().lower()
     if average_mode not in {"interaction", "item_macro"}:
@@ -327,6 +330,13 @@ def evaluate_usim(
                     scores[row_idx, i] = target_scores
                 else:
                     scores[row_idx, i] = target_scores
+                if hasattr(model, "apply_sage_two_expert_score_fusion"):
+                    scores = model.apply_sage_two_expert_score_fusion(
+                        scores,
+                        user_ids=user_ids,
+                        seen_tensor_cache=seen_tensor_cache,
+                        cand_idx=None,
+                    )
                 scores = model.apply_course_rerank(scores, user_ids, seen_tensor_cache, cand_idx=None, target_pop=pop_sel)
                 target_indices = i
             else:
@@ -366,6 +376,13 @@ def evaluate_usim(
                 cand_vecs = item_bank[cand_idx].clone()
                 cand_vecs[:, 0, :] = pos_vec
                 scores = torch.bmm(cand_vecs, z_u.unsqueeze(2)).squeeze(2)
+                if hasattr(model, "apply_sage_two_expert_score_fusion"):
+                    scores = model.apply_sage_two_expert_score_fusion(
+                        scores,
+                        user_ids=user_ids,
+                        seen_tensor_cache=seen_tensor_cache,
+                        cand_idx=cand_idx,
+                    )
                 scores = model.apply_course_rerank(scores, user_ids, seen_tensor_cache, cand_idx=cand_idx, target_pop=pop_sel)
                 target_indices = torch.zeros(n_sel, dtype=torch.long, device=device)
             batch_values = compute_ranking_metric_values(scores, target_indices=target_indices, k_list=k_list)
@@ -385,6 +402,7 @@ def evaluate_usim(
         if not item_counts:
             return None, 0
         macro = {}
+        item_rows = []
         for key, per_item in item_accum.items():
             item_values = [
                 per_item.get(item_id, 0.0) / count
@@ -392,6 +410,18 @@ def evaluate_usim(
                 if count > 0
             ]
             macro[key] = sum(item_values) / max(1, len(item_values))
+        if export_item_metrics_path:
+            os.makedirs(os.path.dirname(export_item_metrics_path) or ".", exist_ok=True)
+            for item_id in sorted(item_counts):
+                row = {"item_id": int(item_id), "count": int(item_counts[item_id])}
+                for key, per_item in item_accum.items():
+                    row[key] = float(per_item.get(item_id, 0.0) / max(1, item_counts[item_id]))
+                item_rows.append(row)
+            fieldnames = ["item_id", "count"] + [f"{m}@{k}" for m in ["R", "N"] for k in k_list]
+            with open(export_item_metrics_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(item_rows)
         return macro, len(item_counts)
     return {key: value / total_samples for key, value in accum_metrics.items()}, total_samples
 
@@ -406,4 +436,3 @@ _build_llm_score_tensor = build_llm_score_tensor
 _resolve_eval_force_cold = resolve_eval_force_cold
 _select_eval_item_bank = select_eval_item_bank
 _build_eval_pos_item_vecs = build_eval_pos_item_vecs
-

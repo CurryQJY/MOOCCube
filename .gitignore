@@ -3,10 +3,14 @@
 .vscode/
 .runtime_tmp/
 .codex_backups/
+.superpowers/
 __pycache__/
 *.py[cod]
 
 # Large raw datasets and generated feature stores
+data_raw/
+data_raw_*/
+*_download/
 MOOCCube/
 MOOCCubeX/
 processed_data/
@@ -34,6 +38,9 @@ ablation_logs/
 *.csv
 *.png
 *.jpg
+*.jpeg
+*.tif
+*.tiff
 *.svg
 *.pdf
 !docs/**/*.svg
@@ -51,6 +58,7 @@ tmp/
 *.tar
 *.tar.gz
 _tail.txt
+tmp_*.txt
 *_log.txt
 *_log_*.txt
 *midresult*.txt
@@ -81,4 +89,3 @@ paper_wsdm/*.blg
 paper_wsdm/*.out
 !paper_wsdm/sampleteaser.pdf
 !paper_wsdm/acmguide.pdf
-
