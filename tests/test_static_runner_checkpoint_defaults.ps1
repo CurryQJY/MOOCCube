@@ -20,6 +20,7 @@ try {
         "echo USIM_FB_FORCE_FRESH=%USIM_FB_FORCE_FRESH%",
         "echo USIM_FB_SAVE_OPT_STATE=%USIM_FB_SAVE_OPT_STATE%",
         "echo USIM_FB_CKPT_DIR=%USIM_FB_CKPT_DIR%",
+        "echo USIM_FB_INIT_CKPT_DIR=%USIM_FB_INIT_CKPT_DIR%",
         "echo USIM_SAGE_GATE_MODE=%USIM_SAGE_GATE_MODE%",
         "echo USIM_SAGE_GATE_BUCKETS=%USIM_SAGE_GATE_BUCKETS%",
         "echo USIM_SAGE_GATE_HIDDEN=%USIM_SAGE_GATE_HIDDEN%",
@@ -28,7 +29,9 @@ try {
         "echo USIM_TRAIN_FORCE_COLD=%USIM_TRAIN_FORCE_COLD%",
         "echo USIM_STEPS=%USIM_STEPS%",
         "echo USIM_PPO_LOSS_WEIGHT=%USIM_PPO_LOSS_WEIGHT%",
+        "echo USIM_RL_RESIDUAL_SCALE=%USIM_RL_RESIDUAL_SCALE%",
         "echo USIM_ROLLOUT_POLICY=%USIM_ROLLOUT_POLICY%",
+        "echo USIM_EARLY_STOP_SCORE_MODE=%USIM_EARLY_STOP_SCORE_MODE%",
         "exit /b 0"
     )
     Set-Content -Encoding ASCII -LiteralPath $fakeScript -Value @(
@@ -158,6 +161,31 @@ try {
     }
     if ($policyControls -notmatch "USIM_ROLLOUT_POLICY=greedy_similarity") {
         throw "Expected static runner to export USIM_ROLLOUT_POLICY=greedy_similarity"
+    }
+
+    $sourceCkpt = Join-Path $tmpRoot "source_ckpt"
+    $rescueControls = Invoke-StaticRunnerDry "rl_rescue_controls" @{
+        InitCheckpointDir = $sourceCkpt
+        RlResidualScale = 0.1
+    }
+    if ($rescueControls -notmatch ("RL rescue: init_checkpoint=.*{0} residual_scale=0.1" -f [regex]::Escape("source_ckpt"))) {
+        throw "Expected static runner to print RL rescue controls"
+    }
+    if ($rescueControls -notmatch ("USIM_FB_INIT_CKPT_DIR=.*{0}" -f [regex]::Escape("source_ckpt"))) {
+        throw "Expected static runner to export USIM_FB_INIT_CKPT_DIR"
+    }
+    if ($rescueControls -notmatch "USIM_RL_RESIDUAL_SCALE=0.1") {
+        throw "Expected static runner to export USIM_RL_RESIDUAL_SCALE=0.1"
+    }
+
+    $rnScoreControls = Invoke-StaticRunnerDry "rn_score_controls" @{
+        EarlyStopScoreMode = "cold_rn"
+    }
+    if ($rnScoreControls -notmatch "es_score=cold_rn") {
+        throw "Expected static runner to print cold_rn early-stop score mode"
+    }
+    if ($rnScoreControls -notmatch "USIM_EARLY_STOP_SCORE_MODE=cold_rn") {
+        throw "Expected static runner to export USIM_EARLY_STOP_SCORE_MODE=cold_rn"
     }
 }
 finally {

@@ -108,15 +108,23 @@ param(
     [bool]$UseStructuredHardNeg = $false,
     [bool]$MaskKnownPosNeg = $true,
     [bool]$MaskSameItemNeg = $true,
+    [bool]$UseSgUrinit = $false,
+    [int]$SgUrinitClusterK = 32,
+    [double]$SgUrinitLocalW = 0.70,
+    [double]$SgUrinitGlobalW = 0.30,
+    [double]$SgUrinitTargetNorm = 0.0,
+    [int]$SgUrinitMaxIter = 20,
     [bool]$TrainForceCold = $true,
     [int]$UsimSteps = 5,
     [double]$PpoLossWeight = 1.0,
+    [string]$InitCheckpointDir = "",
+    [double]$RlResidualScale = 1.0,
     [ValidateSet("ppo", "random", "greedy_similarity", "course_fit")]
     [string]$RolloutPolicy = "ppo",
     # Cold-start patch (2026-05-19) flags. Legacy defaults preserved when the
     # caller doesn't pass them; see docs/COLD_START_PATCH_2026_05_19.md.
     [bool]$AuxHotOnly = $false,
-    [ValidateSet("cold_only", "geometric", "harmonic", "sum")]
+    [ValidateSet("cold_only", "geometric", "harmonic", "sum", "cold_rn", "balanced_rn")]
     [string]$EarlyStopScoreMode = "cold_only",
     [bool]$RunSampledEval = $false,
     [bool]$SaveCkpt = $false,
@@ -152,6 +160,7 @@ $trackedEnv = @(
     "USIM_FB_OUTPUT_DIR",
     "USIM_FB_OUTPUT_TAG",
     "USIM_FB_CKPT_DIR",
+    "USIM_FB_INIT_CKPT_DIR",
     "USIM_N_EPOCHS",
     "USIM_EARLY_STOP_PATIENCE",
     "USIM_EARLY_STOP_MIN_DELTA",
@@ -165,6 +174,7 @@ $trackedEnv = @(
     "USIM_PPO_VALUE_CLIP",
     "USIM_PPO_ADV_NORM",
     "USIM_PPO_LOSS_WEIGHT",
+    "USIM_RL_RESIDUAL_SCALE",
     "USIM_ROLLOUT_POLICY",
     "USIM_FAST3_TGT_ALPHA_COLD",
     "USIM_FAST3_TGT_ALPHA_HOT",
@@ -268,7 +278,14 @@ $trackedEnv = @(
     "USIM_COURSE_RERANK_TOPL",
     "USIM_USE_STRUCTURED_HARD_NEG",
     "USIM_MASK_KNOWN_POS_NEG",
-    "USIM_MASK_SAME_ITEM_NEG"
+    "USIM_MASK_SAME_ITEM_NEG",
+    "USIM_USE_SG_URINIT",
+    "USIM_SG_URINIT_CLUSTER_K",
+    "USIM_SG_URINIT_LOCAL_W",
+    "USIM_SG_URINIT_GLOBAL_W",
+    "USIM_SG_URINIT_TARGET_NORM",
+    "USIM_SG_URINIT_MAX_ITER",
+    "USIM_SG_URINIT_SEED"
 )
 
 $originalEnv = @{}
@@ -338,6 +355,8 @@ $base = @{
     "USIM_PPO_VALUE_CLIP" = "0.20"
     "USIM_PPO_ADV_NORM" = "1"
     "USIM_PPO_LOSS_WEIGHT" = [string]$PpoLossWeight
+    "USIM_FB_INIT_CKPT_DIR" = $InitCheckpointDir
+    "USIM_RL_RESIDUAL_SCALE" = [string]$RlResidualScale
     "USIM_ROLLOUT_POLICY" = $RolloutPolicy
 
     "USIM_FAST3_TGT_ALPHA_COLD" = "0.35"
@@ -448,6 +467,12 @@ $base = @{
     "USIM_USE_STRUCTURED_HARD_NEG" = if ($UseStructuredHardNeg) { "1" } else { "0" }
     "USIM_MASK_KNOWN_POS_NEG" = if ($MaskKnownPosNeg) { "1" } else { "0" }
     "USIM_MASK_SAME_ITEM_NEG" = if ($MaskSameItemNeg) { "1" } else { "0" }
+    "USIM_USE_SG_URINIT" = if ($UseSgUrinit) { "1" } else { "0" }
+    "USIM_SG_URINIT_CLUSTER_K" = [string]$SgUrinitClusterK
+    "USIM_SG_URINIT_LOCAL_W" = [string]$SgUrinitLocalW
+    "USIM_SG_URINIT_GLOBAL_W" = [string]$SgUrinitGlobalW
+    "USIM_SG_URINIT_TARGET_NORM" = [string]$SgUrinitTargetNorm
+    "USIM_SG_URINIT_MAX_ITER" = [string]$SgUrinitMaxIter
 }
 
 try {
@@ -473,6 +498,7 @@ try {
             $env:USIM_COLD_THRESHOLD = [string]$coldThreshold
             $env:USIM_STATIC_SEED = [string]$seed
             $env:USIM_SEED = [string]$seed
+            $env:USIM_SG_URINIT_SEED = [string]$seed
             $env:USIM_FB_OUTPUT_TAG = $tag
             $env:USIM_FB_OUTPUT_DIR = $out
             $env:USIM_FB_CKPT_DIR = $ckpt
@@ -484,6 +510,7 @@ try {
             $matchExcludeTarget = if ([string]::IsNullOrWhiteSpace($env:USIM_FB_COURSE_MATCH_EXCLUDE_TARGET)) { "auto" } else { $env:USIM_FB_COURSE_MATCH_EXCLUDE_TARGET }
             Write-Host ("Core controls: train_force_cold={0} usim_steps={1}" -f $TrainForceCold, $UsimSteps)
             Write-Host ("PPO controls: loss_weight={0}" -f $PpoLossWeight)
+            Write-Host ("RL rescue: init_checkpoint={0} residual_scale={1}" -f $InitCheckpointDir, $RlResidualScale)
             Write-Host ("Rollout policy: {0}" -f $RolloutPolicy)
             Write-Host ("Course match: mode={0} topk={1} exclude_target={2}" -f $CourseMatchMode, $CourseMatchTopK, $matchExcludeTarget)
             Write-Host ("Course redundancy: mode={0} struct_chunk={1}" -f $CourseRedundantMode, $CourseStructChunk)
@@ -491,6 +518,7 @@ try {
             Write-Host ("SAGE-lite: enabled={0} gate_mode={1} gate=[{2},{3}] buckets={4} bucket_strategy={5} gate_hidden={6} pool_topk={7} course_temp={8} only_cold_or_tail={9} tail_pop_ratio={10} two_expert={11} score_fusion={12}" -f $UseSageLite, $SageGateMode, $SageGateMin, $SageGateMax, $SageGateBuckets, $SageGateBucketStrategy, $SageGateHidden, $SagePoolTopK, $SageCourseTemp, $SageOnlyColdOrTail, $SageTailPopRatio, $SageUseTwoExpert, $SageTwoExpertScoreFusion)
             Write-Host ("SAGE-aux: enabled={0} weight={1} pool_topk={2} course_temp={3} retrieval_temp={4} strict_cold_only={5} detach_user={6}" -f $UseSageAuxLoss, $SageAuxWeight, $SageAuxPoolTopK, $SageAuxCourseTemp, $SageAuxRetrievalTemp, $SageAuxOnlyStrictCold, $SageAuxDetachUser)
             Write-Host ("CGRC-recon: enabled={0} aux_w={1} sample_w={2} pseudo_ratio={3} topk={4} temp={5} only_cold_or_tail={6} tail_pop_ratio={7} detach_user={8}" -f $UseCgrcRecon, $CgrcReconAuxW, $CgrcReconSampleW, $CgrcReconPseudoRatio, $CgrcReconTopK, $CgrcReconTemp, $CgrcReconOnlyColdOrTail, $CgrcReconTailPopRatio, $CgrcReconDetachUser)
+            Write-Host ("SG-URInit: enabled={0} cluster_k={1} local_w={2} global_w={3} target_norm={4} max_iter={5} seed={6}" -f $UseSgUrinit, $SgUrinitClusterK, $SgUrinitLocalW, $SgUrinitGlobalW, $SgUrinitTargetNorm, $SgUrinitMaxIter, $seed)
             Write-Host ("Checkpoint: save={0} resume={1} force_fresh={2} save_opt={3} dir={4}" -f $SaveCkpt, $AutoResume, $ForceFresh, $SaveOptState, $ckpt)
 
             $commandLine = ('"{0}" -u -X faulthandler "{1}" 2>&1' -f $PythonRunner, $ScriptPath)

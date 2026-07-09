@@ -154,11 +154,13 @@ def main():
         test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
         k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
         user_seen_items=test_seen, average_mode="item_macro",
+        export_item_metrics_path=static_result_path("per_item_full_cold_content_profile_static.csv"),
     )
     full_hot_item_macro, n_fh_item_macro = evaluate_embedding_ranker(
         test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
         k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
         user_seen_items=test_seen, average_mode="item_macro",
+        export_item_metrics_path=static_result_path("per_item_full_hot_content_profile_static.csv"),
     )
 
     sample_cold = sample_cold or {}
@@ -201,6 +203,8 @@ def main():
         "best_val_full_cold_n10": val_key,
         "eval_n_neg": cfg.eval_n_neg,
         "static_seed": cfg.static_seed,
+        "per_item_full_cold_path": static_result_path("per_item_full_cold_content_profile_static.csv"),
+        "per_item_full_hot_path": static_result_path("per_item_full_hot_content_profile_static.csv"),
         "note": "Mean normalized train-item content profile; no validation-tuned parameters.",
     }
     result_path = static_result_path("content_profile_static_result.json")

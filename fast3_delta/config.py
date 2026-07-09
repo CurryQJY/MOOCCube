@@ -46,6 +46,14 @@ class BaseConfig:
             "USIM_CONTENT_DELTA_EVAL_BANK_MODE",
             "auto",
         ).strip().lower()
+        self.use_sg_urinit = os.environ.get("USIM_USE_SG_URINIT", "0") == "1"
+        self.sg_urinit_cluster_k = max(1, int(os.environ.get("USIM_SG_URINIT_CLUSTER_K", "32")))
+        self.sg_urinit_local_weight = max(0.0, float(os.environ.get("USIM_SG_URINIT_LOCAL_W", "0.70")))
+        self.sg_urinit_global_weight = max(0.0, float(os.environ.get("USIM_SG_URINIT_GLOBAL_W", "0.30")))
+        self.sg_urinit_target_norm = max(0.0, float(os.environ.get("USIM_SG_URINIT_TARGET_NORM", "0.0")))
+        self.sg_urinit_max_iter = max(1, int(os.environ.get("USIM_SG_URINIT_MAX_ITER", "20")))
+        self.sg_urinit_seed = int(os.environ.get("USIM_SG_URINIT_SEED", os.environ.get("USIM_STATIC_SEED", "2025")))
+        self.sg_urinit_stats = {"enabled": False, "initialized_users": 0}
         self.cold_threshold = int(os.environ.get("USIM_COLD_THRESHOLD", "5"))
         self.lr = 0.0005
         self.temp = 0.07
@@ -87,6 +95,8 @@ class BaseConfig:
         self.ppo_epochs = 5
         self.ppo_coeffs = {"value": 0.5, "entropy": 0.01}
         self.ppo_loss_weight = float(os.environ.get("USIM_PPO_LOSS_WEIGHT", "1.0"))
+        self.rl_residual_scale = float(os.environ.get("USIM_RL_RESIDUAL_SCALE", "1.0"))
+        self.rl_residual_scale = min(1.0, max(0.0, self.rl_residual_scale))
         self.rollout_policy = os.environ.get("USIM_ROLLOUT_POLICY", "ppo").strip().lower()
         if self.rollout_policy in {"learned", "agent", "ppo_policy"}:
             self.rollout_policy = "ppo"
@@ -160,17 +170,26 @@ class BaseConfig:
         self.early_stop_average_mode = os.environ.get("USIM_EARLY_STOP_AVG_MODE", "interaction").strip().lower()
         if self.early_stop_average_mode not in {"interaction", "item_macro"}:
             raise ValueError("USIM_EARLY_STOP_AVG_MODE must be 'interaction' or 'item_macro'")
-        # ROLLBACK FLAG (USIM_EARLY_STOP_SCORE_MODE): how cold/hot N@k are
+        # ROLLBACK FLAG (USIM_EARLY_STOP_SCORE_MODE): how validation metrics are
         # combined into the early-stop score. "cold_only" (default) is the
         # legacy behavior. "geometric" / "harmonic" / "sum" let hot pull the
         # selector back when cold gains stop translating into hot improvement.
+        # "cold_rn" / "balanced_rn" jointly select by Recall and NDCG.
         # See _compute_early_stop_score for the formulas.
         self.early_stop_score_mode = os.environ.get(
             "USIM_EARLY_STOP_SCORE_MODE", "cold_only"
         ).strip().lower()
-        if self.early_stop_score_mode not in {"cold_only", "geometric", "harmonic", "sum"}:
+        if self.early_stop_score_mode not in {
+            "cold_only",
+            "geometric",
+            "harmonic",
+            "sum",
+            "cold_rn",
+            "balanced_rn",
+        }:
             raise ValueError(
-                "USIM_EARLY_STOP_SCORE_MODE must be one of: cold_only, geometric, harmonic, sum"
+                "USIM_EARLY_STOP_SCORE_MODE must be one of: "
+                "cold_only, geometric, harmonic, sum, cold_rn, balanced_rn"
             )
         self.early_stop_hot_r10_drop_tol = 0.03
         self.legacy_train_protocol = os.environ.get("USIM_LEGACY_TRAIN_PROTOCOL", "0") == "1"

@@ -412,11 +412,13 @@ def main():
             test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
             user_seen_items=test_seen, average_mode="item_macro",
+            export_item_metrics_path=static_result_path("per_item_full_cold_bpr_static.csv"),
         )
         full_hot_item_macro, n_fh_item_macro = evaluate_embedding_ranker(
             test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
             user_seen_items=test_seen, average_mode="item_macro",
+            export_item_metrics_path=static_result_path("per_item_full_hot_bpr_static.csv"),
         )
 
     sample_cold = sample_cold or {}
@@ -468,6 +470,8 @@ def main():
         "static_seed": cfg.static_seed,
         "checkpoint_dir": cfg.ckpt_dir or None,
         "resumed_from_epoch": start_epoch,
+        "per_item_full_cold_path": static_result_path("per_item_full_cold_bpr_static.csv"),
+        "per_item_full_hot_path": static_result_path("per_item_full_hot_bpr_static.csv"),
     }
     result_path = static_result_path("bpr_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)

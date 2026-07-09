@@ -270,13 +270,27 @@ def _empty_metric_sum() -> Dict[str, float]:
     return {key: 0.0 for key in METRICS}
 
 
-def _macro_result(item_sum: Dict[str, Dict[int, float]], item_count: Dict[int, int]):
+def _macro_result(
+    item_sum: Dict[str, Dict[int, float]],
+    item_count: Dict[int, int],
+    export_path: str | None = None,
+):
     if not item_count:
         return None, 0
     out = {}
     for key, values in item_sum.items():
         vals = [values.get(item_id, 0.0) / count for item_id, count in item_count.items() if count > 0]
         out[key] = float(sum(vals) / max(1, len(vals)))
+    if export_path:
+        rows = []
+        for item_id in sorted(item_count):
+            count = max(1, int(item_count[item_id]))
+            row = {"item_id": int(item_id), "count": int(item_count[item_id])}
+            for key, values in item_sum.items():
+                row[key] = float(values.get(item_id, 0.0) / count)
+            rows.append(row)
+        Path(export_path).parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(rows).to_csv(export_path, index=False)
     return out, len(item_count)
 
 
@@ -289,6 +303,8 @@ def evaluate_full(
     device: torch.device,
     user_seen_items: Dict[int, set[int]] | None,
     average_mode: str = "interaction",
+    export_cold_item_metrics_path: str | None = None,
+    export_hot_item_metrics_path: str | None = None,
 ):
     model.eval()
     average_mode = average_mode.strip().lower()
@@ -369,8 +385,16 @@ def evaluate_full(
             hot_total += int((~cold_mask).sum().item())
 
     if average_mode == "item_macro":
-        cold_res, cold_count = _macro_result(cold_item_sum, cold_item_count)
-        hot_res, hot_count = _macro_result(hot_item_sum, hot_item_count)
+        cold_res, cold_count = _macro_result(
+            cold_item_sum,
+            cold_item_count,
+            export_cold_item_metrics_path,
+        )
+        hot_res, hot_count = _macro_result(
+            hot_item_sum,
+            hot_item_count,
+            export_hot_item_metrics_path,
+        )
         return cold_res, cold_count, hot_res, hot_count
     cold_res = {k: v / max(1, cold_total) for k, v in cold_sum.items()} if cold_total else None
     hot_res = {k: v / max(1, hot_total) for k, v in hot_sum.items()} if hot_total else None
@@ -592,6 +616,8 @@ def main() -> None:
         device,
         test_seen,
         average_mode="item_macro",
+        export_cold_item_metrics_path=static_result_path("per_item_full_cold_dropoutnet_official_static.csv"),
+        export_hot_item_metrics_path=static_result_path("per_item_full_hot_dropoutnet_official_static.csv"),
     )
     sample_cold, n_sc, sample_hot, n_sh = evaluate_sampled(cfg, model, test_loader, all_z, item_counts, device, test_seen)
     print_report(
@@ -643,6 +669,8 @@ def main() -> None:
         "checkpoint_dir": cfg.ckpt.dir or None,
         "teacher_checkpoint_dir": cfg.teacher_ckpt.dir or None,
         "resumed_from_epoch": start_epoch,
+        "per_item_full_cold_path": static_result_path("per_item_full_cold_dropoutnet_official_static.csv"),
+        "per_item_full_hot_path": static_result_path("per_item_full_hot_dropoutnet_official_static.csv"),
         "official_repo": "https://github.com/layer6ai-labs/DropoutNet",
         "official_source_dir": str(official_dir),
         "official_source_present": official_dir.exists(),

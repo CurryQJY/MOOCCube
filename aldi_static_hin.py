@@ -476,6 +476,8 @@ def evaluate_aldi_ranker(
     full_ranking: bool,
     user_seen_items: Optional[Dict[int, set]],
     average_mode: str = "interaction",
+    export_cold_item_metrics_path: Optional[str] = None,
+    export_hot_item_metrics_path: Optional[str] = None,
 ) -> Tuple[Optional[Dict[str, float]], int, Optional[Dict[str, float]], int]:
     average_mode = average_mode.strip().lower()
     if average_mode not in {"interaction", "item_macro"}:
@@ -569,7 +571,7 @@ def evaluate_aldi_ranker(
                 hot_total += n_hot
 
     if average_mode == "item_macro":
-        def macro_result(item_sum, item_count):
+        def macro_result(item_sum, item_count, export_path: Optional[str] = None):
             if not item_count:
                 return None, 0
             res = {}
@@ -580,10 +582,20 @@ def evaluate_aldi_ranker(
                     if count > 0
                 ]
                 res[key] = sum(vals) / max(1, len(vals))
+            if export_path:
+                rows = []
+                for item_id in sorted(item_count):
+                    count = max(1, int(item_count[item_id]))
+                    row = {"item_id": int(item_id), "count": int(item_count[item_id])}
+                    for key, per_item in item_sum.items():
+                        row[key] = float(per_item.get(item_id, 0.0) / count)
+                    rows.append(row)
+                os.makedirs(os.path.dirname(export_path) or ".", exist_ok=True)
+                pd.DataFrame(rows).to_csv(export_path, index=False)
             return res, len(item_count)
 
-        cold_res, cold_count = macro_result(cold_item_sum, cold_item_count)
-        hot_res, hot_count = macro_result(hot_item_sum, hot_item_count)
+        cold_res, cold_count = macro_result(cold_item_sum, cold_item_count, export_cold_item_metrics_path)
+        hot_res, hot_count = macro_result(hot_item_sum, hot_item_count, export_hot_item_metrics_path)
         return cold_res, cold_count, hot_res, hot_count
 
     cold_res = {k: v / cold_total for k, v in cold_sum.items()} if cold_total > 0 else None
@@ -819,6 +831,8 @@ def main():
         full_ranking=True,
         user_seen_items=test_seen,
         average_mode="item_macro",
+        export_cold_item_metrics_path=static_result_path("per_item_full_cold_aldi_static.csv"),
+        export_hot_item_metrics_path=static_result_path("per_item_full_hot_aldi_static.csv"),
     )
 
     sample_cold = sample_cold or {}
@@ -873,6 +887,8 @@ def main():
         "checkpoint_dir": cfg.ckpt.dir or None,
         "teacher_checkpoint_dir": cfg.teacher_ckpt.dir or None,
         "resumed_from_epoch": start_epoch,
+        "per_item_full_cold_path": static_result_path("per_item_full_cold_aldi_static.csv"),
+        "per_item_full_hot_path": static_result_path("per_item_full_hot_aldi_static.csv"),
         "note": (
             "Warm BPR teacher is trained on the shared static train split; "
             f"student checkpoint selected by validation full cold N@10 ({cfg.early_stop_average_mode})."

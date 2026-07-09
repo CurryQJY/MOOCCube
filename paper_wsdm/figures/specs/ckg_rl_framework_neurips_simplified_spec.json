@@ -1,0 +1,58 @@
+{
+  "canvas": {
+    "width": 2480,
+    "height": 1180
+  },
+  "purpose": "Simplified top-conference framework figure: make the training-to-inference main story explicit, collapse overloaded reward details, unify notation, and separate RL training from cold-start retrieval.",
+  "visual_grammar": {
+    "blue": "representation learning and embeddings",
+    "orange": "RL training, simulator, reward, policy learning",
+    "purple": "cold-start inference and retrieval",
+    "solid_arrow": "forward pass / data flow",
+    "dashed_arrow": "training signal",
+    "red_arrow": "stage transition"
+  },
+  "panels": [
+    {
+      "id": "a",
+      "title": "Representation Learning",
+      "main_modules": [
+        "content tower",
+        "masked ID tower",
+        "fusion gate",
+        "history-only user encoder"
+      ],
+      "outputs": [
+        "course representation q_i",
+        "user embedding z_u"
+      ]
+    },
+    {
+      "id": "b",
+      "title": "RL-based Training Simulator",
+      "main_modules": [
+        "environment / simulator",
+        "actor-critic agent",
+        "compact multi-component reward"
+      ],
+      "note": "RL is used for training only; it is not called during retrieval."
+    },
+    {
+      "id": "c",
+      "title": "Cold-start Retrieval",
+      "main_modules": [
+        "strict item-cold course bank",
+        "single embedding-matching score",
+        "Top-K cold courses"
+      ],
+      "score": "s(u,i)=z_u^T z_i^cold"
+    }
+  ],
+  "notation": {
+    "q_i": "course representation",
+    "z_u": "user embedding",
+    "s_t": "simulator state",
+    "h_t": "learner hidden state",
+    "S_t": "exploration candidate set"
+  }
+}

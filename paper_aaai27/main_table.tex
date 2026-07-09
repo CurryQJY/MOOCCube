@@ -1,0 +1,48 @@
+\documentclass[10pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[letterpaper,margin=0.75in]{geometry}
+
+\pagestyle{empty}
+\newcommand{\sigmark}[1]{\rlap{\textsuperscript{\scriptsize #1}}}
+\newcommand{\methodref}[1]{\textsuperscript{\scriptsize[#1]}}
+
+\begin{document}
+\setcounter{table}{1}
+\begin{table}[!ht]
+\centering
+{
+\small
+\setlength{\tabcolsep}{1.35pt}
+\renewcommand{\arraystretch}{0.98}
+\begin{tabular}{lcccccccccccc}
+\toprule
+& \multicolumn{4}{c}{MOOCCube} & \multicolumn{4}{c}{Junyi} & \multicolumn{4}{c}{COCO} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}\cmidrule(lr){10-13}
+Method & R@5 & R@10 & N@5 & N@10 & R@5 & R@10 & N@5 & N@10 & R@5 & R@10 & N@5 & N@10 \\
+\midrule
+Popularity & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+BPR\methodref{UAI'09} & 0.0113 & 0.0249 & 0.0068 & 0.0111 & 0.0298 & 0.0578 & 0.0180 & 0.0270 & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+LightGCN\methodref{SIGIR'20} & 0.0833 & 0.1173 & 0.0593 & 0.0702 & 0.0187 & 0.0420 & 0.0108 & 0.0182 & 0.0067 & 0.0132 & 0.0040 & 0.0060 \\
+DropoutNet\methodref{NeurIPS'17} & 0.1166 & 0.1658 & 0.0791 & 0.0950 & 0.0540 & 0.0928 & 0.0336 & 0.0460 & 0.0391 & 0.0650 & 0.0243 & 0.0326 \\
+CCFCRec\methodref{WWW'23} & 0.1476 & 0.2033 & 0.1101 & 0.1281 & 0.0942 & 0.1462 & 0.0619 & 0.0786 & \underline{0.0393} & \underline{0.0656} & \underline{0.0248} & \underline{0.0332} \\
+ALDI\methodref{SIGIR'23} & 0.1733 & 0.2258 & 0.1213 & 0.1382 & \underline{0.1331} & \underline{0.2102} & \underline{0.0859} & \underline{0.1106} & 0.0202 & 0.0383 & 0.0121 & 0.0179 \\
+SEMCo\methodref{SIGIR'26} & 0.1631 & 0.2306 & 0.1198 & 0.1416 & 0.0907 & 0.1562 & 0.0563 & 0.0773 & 0.0204 & 0.0354 & 0.0126 & 0.0174 \\
+CGRC\methodref{SIGIR'24} & \underline{0.2121} & \underline{0.2589} & \underline{0.1695} & \underline{0.1845} & 0.1269 & 0.1915 & 0.0833 & 0.1041 & 0.0250 & 0.0377 & 0.0168 & 0.0209 \\
+USIM\methodref{NeurIPS'24} & 0.0377 & 0.0614 & 0.0244 & 0.0320 & 0.0536 & 0.0921 & 0.0327 & 0.0450 & 0.0069 & 0.0131 & 0.0043 & 0.0063 \\
+\midrule
+\textbf{CKG-RL} & \textbf{0.2473}\sigmark{*} & \textbf{0.2863}\sigmark{*} & \textbf{0.1972}\sigmark{*} & \textbf{0.2098}\sigmark{*} & \textbf{0.1724}\sigmark{*} & \textbf{0.2443}\sigmark{*} & \textbf{0.1137}\sigmark{*} & \textbf{0.1370}\sigmark{*} & \textbf{0.0487}\sigmark{*} & \textbf{0.0679} & \textbf{0.0330}\sigmark{*} & \textbf{0.0392}\sigmark{*} \\
+\emph{Imp.} & +16.6\% & +10.6\% & +16.3\% & +13.7\% & +29.5\% & +16.2\% & +32.4\% & +23.9\% & +23.9\% & +3.5\% & +33.1\% & +18.1\% \\
+\bottomrule
+\end{tabular}
+}
+\caption{Performance comparison under strict course-cold ranking. Values are three-seed means; underlines mark second-best means. \(^{*}\) denotes Holm-corrected two-sided paired Wilcoxon significance against the strongest non-CKG reference baseline across the @5/@10 main-table comparisons (\(p_{\mathrm{Holm,@5/@10}}<0.01\)); Imp. is the relative gain.}
+\vspace{0.2em}
+\begin{minipage}{\textwidth}
+\scriptsize\emph{Venue tags:} UAI'09=BPR; SIGIR'20=LightGCN; NeurIPS'17=DropoutNet; WWW'23=CCFCRec; SIGIR'23=ALDI; SIGIR'26=SEMCo; SIGIR'24=CGRC; NeurIPS'24=USIM.
+\end{minipage}
+\end{table}
+\end{document}

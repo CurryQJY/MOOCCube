@@ -337,6 +337,7 @@ def evaluate_local(
     eval_type,
     full_ranking,
     average_mode="interaction",
+    export_item_metrics_path=None,
 ):
     average_mode = average_mode.strip().lower()
     if average_mode not in {"interaction", "item_macro"}:
@@ -406,6 +407,16 @@ def evaluate_local(
                 if count > 0
             ]
             macro[key] = sum(item_values) / max(1, len(item_values))
+        if export_item_metrics_path:
+            rows = []
+            for item_id in sorted(item_counts):
+                count = max(1, int(item_counts[item_id]))
+                row = {"item_id": int(item_id), "count": int(item_counts[item_id])}
+                for key, per_item in item_accum.items():
+                    row[key] = float(per_item.get(item_id, 0.0) / count)
+                rows.append(row)
+            os.makedirs(os.path.dirname(export_item_metrics_path) or ".", exist_ok=True)
+            pd.DataFrame(rows).to_csv(export_item_metrics_path, index=False)
         return macro, len(item_counts)
     return {k: v / total for k, v in accum.items()}, total
 
@@ -527,10 +538,12 @@ def main():
     full_cold_item_macro, n_fc_item_macro = evaluate_local(
         model, para_dict, gen_user_emb, gen_item_emb, test_pairs, seen, args, "cold", True,
         average_mode="item_macro",
+        export_item_metrics_path=os.path.join(os.path.dirname(args.result_json), "per_item_full_cold_aldi_official_static.csv"),
     )
     full_hot_item_macro, n_fh_item_macro = evaluate_local(
         model, para_dict, gen_user_emb, gen_item_emb, test_pairs, seen, args, "hot", True,
         average_mode="item_macro",
+        export_item_metrics_path=os.path.join(os.path.dirname(args.result_json), "per_item_full_hot_aldi_official_static.csv"),
     )
     sess.close()
 
@@ -559,6 +572,8 @@ def main():
         "static_seed": args.seed,
         "checkpoint_dir": args.ckpt_dir or None,
         "resumed_from_epoch": start_epoch,
+        "per_item_full_cold_path": os.path.join(os.path.dirname(args.result_json), "per_item_full_cold_aldi_official_static.csv"),
+        "per_item_full_hot_path": os.path.join(os.path.dirname(args.result_json), "per_item_full_hot_aldi_official_static.csv"),
         "alpha": args.alpha,
         "beta": args.beta,
         "gamma": args.gamma,

@@ -114,12 +114,14 @@ def main():
         k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
         user_seen_items=test_seen, tie_break_noise=cfg.tie_break_noise,
         average_mode="item_macro",
+        export_item_metrics_path=static_result_path("per_item_full_cold_popularity_static.csv"),
     )
     full_hot_item_macro, n_fh_item_macro = evaluate_popularity_ranker(
         test_loader, device, cfg.n_items, cfg.cold_threshold, pop_score,
         k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
         user_seen_items=test_seen, tie_break_noise=cfg.tie_break_noise,
         average_mode="item_macro",
+        export_item_metrics_path=static_result_path("per_item_full_hot_popularity_static.csv"),
     )
 
     sample_cold = sample_cold or {}
@@ -163,6 +165,8 @@ def main():
         "best_metric": "non_trainable",
         "eval_n_neg": cfg.eval_n_neg,
         "static_seed": cfg.static_seed,
+        "per_item_full_cold_path": static_result_path("per_item_full_cold_popularity_static.csv"),
+        "per_item_full_hot_path": static_result_path("per_item_full_hot_popularity_static.csv"),
     }
     result_path = static_result_path("popularity_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)

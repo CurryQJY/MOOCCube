@@ -80,6 +80,7 @@ from fast3_delta.reports import (
     _feedback_output_path,
     _save_final_report_exports,
 )
+from fast3_delta.sg_urinit import apply_sg_urinit_
 from fast3_delta.static_protocol import (
     StreamDataset,
     _add_user_seen_from_df,
@@ -2226,6 +2227,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             target_pop=episode_pop,
             user_seen_items=user_seen_items,
         )
+        final_h = self._blend_rl_episode_output(z_i_base, final_h)
         pseudo_cold_mask = effective_cold & (~is_cold)
         candidate_stats["pseudo_cold_count"] = int(pseudo_cold_mask.sum().detach().item())
         candidate_stats["pseudo_cold_ratio"] = (
@@ -2234,6 +2236,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         candidate_stats["effective_cold_ratio"] = (
             float(effective_cold.float().mean().detach().item()) if effective_cold.numel() > 0 else 0.0
         )
+        candidate_stats["rl_residual_scale"] = float(getattr(self.cfg, "rl_residual_scale", 1.0))
         ppo_loss_raw = self.compute_ppo_loss(trajectory)
         ppo_loss = float(getattr(self.cfg, "ppo_loss_weight", 1.0)) * ppo_loss_raw
         z_u = F.normalize(z_u_base, dim=1)
@@ -2411,6 +2414,14 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         candidate_stats["paac_align_pairs"] = int(paac_align_pairs)
         candidate_stats["fn_mask_ratio"] = float(fn_mask_ratio)
         return total_loss, candidate_stats
+
+    def _blend_rl_episode_output(self, z_i_base, final_h):
+        residual_scale = float(getattr(self.cfg, "rl_residual_scale", 1.0))
+        if residual_scale >= 1.0:
+            return final_h
+        if residual_scale <= 0.0:
+            return z_i_base
+        return z_i_base + residual_scale * (final_h - z_i_base)
 
 
 class Fast3FeedbackUSIM(FastFeedbackUSIM):
@@ -2874,6 +2885,14 @@ def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df)
             "content_delta_scale": float(cfg.content_delta_scale),
             "content_delta_lr_mult": float(cfg.content_delta_lr_mult),
             "content_delta_only_after_epoch": int(cfg.content_delta_only_after_epoch),
+            "use_sg_urinit": bool(getattr(cfg, "use_sg_urinit", False)),
+            "sg_urinit_cluster_k": int(getattr(cfg, "sg_urinit_cluster_k", 32)),
+            "sg_urinit_local_weight": float(getattr(cfg, "sg_urinit_local_weight", 0.70)),
+            "sg_urinit_global_weight": float(getattr(cfg, "sg_urinit_global_weight", 0.30)),
+            "sg_urinit_target_norm": float(getattr(cfg, "sg_urinit_target_norm", 0.0)),
+            "sg_urinit_max_iter": int(getattr(cfg, "sg_urinit_max_iter", 20)),
+            "sg_urinit_seed": int(getattr(cfg, "sg_urinit_seed", 2025)),
+            "sg_urinit_stats": getattr(cfg, "sg_urinit_stats", {"enabled": False}),
             "aux_weight": float(cfg.aux_weight),
             "aux_hot_only": bool(cfg.aux_hot_only),
             "early_stop_score_mode": str(cfg.early_stop_score_mode),
@@ -2889,6 +2908,7 @@ def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df)
             "use_paac": bool(cfg.use_paac),
             "use_course_rerank": bool(cfg.use_course_rerank),
             "use_course_reward": bool(cfg.use_course_reward),
+            "rl_residual_scale": float(getattr(cfg, "rl_residual_scale", 1.0)),
             "feedback_course_only_cold": bool(cfg.feedback_course_only_cold),
             "feedback_course_prereq_weight": float(cfg.feedback_course_prereq_weight),
             "feedback_course_concept_weight": float(cfg.feedback_course_concept_weight),
@@ -2978,8 +2998,52 @@ def _make_fast3_optimizer(model, cfg):
     return torch.optim.Adam(base_params, lr=cfg.lr)
 
 
+def _load_init_model_state_from_checkpoint_dir(init_dir):
+    init_dir = str(init_dir or "").strip()
+    if not init_dir:
+        return None, None
+    for name in ("finished.pt", "latest.pt"):
+        path = os.path.join(init_dir, name)
+        if not os.path.exists(path):
+            continue
+        payload = torch.load(path, map_location="cpu")
+        if not isinstance(payload, dict) or "model_state" not in payload:
+            raise KeyError(f"Init checkpoint missing model_state: {path}")
+        return path, payload["model_state"]
+    return None, None
+
+
+def _filter_compatible_model_state(model, state_dict):
+    current_state = model.state_dict()
+    filtered = {}
+    skipped = []
+    for key, value in state_dict.items():
+        current_value = current_state.get(key)
+        if current_value is None:
+            filtered[key] = value
+            continue
+        if torch.is_tensor(value) and torch.is_tensor(current_value) and value.shape != current_value.shape:
+            skipped.append(key)
+            continue
+        filtered[key] = value
+    return filtered, skipped
+
+
+def _apply_static_sg_urinit(model, train_df, content_emb, cfg):
+    stats = apply_sg_urinit_(model, train_df, content_emb, cfg)
+    cfg.sg_urinit_stats = stats
+    return stats
+
+
 def _metric_or_zero(metrics, key):
     return float(metrics.get(key, 0.0)) if metrics else 0.0
+
+
+def _positive_harmonic(values):
+    vals = [float(v) for v in values]
+    if not vals or any(v <= 0.0 for v in vals):
+        return 0.0
+    return float(len(vals) / sum(1.0 / v for v in vals))
 
 
 def _compute_early_stop_score(cold_metrics, hot_metrics, k, mode="cold_only"):
@@ -2995,23 +3059,31 @@ def _compute_early_stop_score(cold_metrics, hot_metrics, k, mode="cold_only"):
       toward balance than geometric. Returns 0 if either side is non-positive.
     - ``sum``: ``cold_n + hot_n``; simplest joint signal but lets a much
       larger side dominate.
+    - ``cold_rn``: harmonic mean of Cold R@k and Cold N@k. This selects
+      checkpoints that improve both hit coverage and ranking quality.
+    - ``balanced_rn``: harmonic mean of Cold/Hot R@k and N@k. This is a
+      conservative selector when hot-start collapse must be penalized.
 
     Both inputs may be ``None`` (e.g., when the matching eval split is empty);
     missing keys are treated as 0 via ``_metric_or_zero``.
     """
-    cold = _metric_or_zero(cold_metrics, f"N@{k}")
-    hot = _metric_or_zero(hot_metrics, f"N@{k}")
+    cold_r = _metric_or_zero(cold_metrics, f"R@{k}")
+    cold_n = _metric_or_zero(cold_metrics, f"N@{k}")
+    hot_r = _metric_or_zero(hot_metrics, f"R@{k}")
+    hot_n = _metric_or_zero(hot_metrics, f"N@{k}")
     mode = (mode or "cold_only").strip().lower()
     if mode == "geometric":
-        return float((max(0.0, cold) * max(0.0, hot)) ** 0.5)
+        return float((max(0.0, cold_n) * max(0.0, hot_n)) ** 0.5)
     if mode == "harmonic":
-        if cold <= 0.0 or hot <= 0.0:
-            return 0.0
-        return float(2.0 * cold * hot / (cold + hot))
+        return _positive_harmonic([cold_n, hot_n])
     if mode == "sum":
-        return float(cold + hot)
+        return float(cold_n + hot_n)
+    if mode == "cold_rn":
+        return _positive_harmonic([cold_r, cold_n])
+    if mode == "balanced_rn":
+        return _positive_harmonic([cold_r, cold_n, hot_r, hot_n])
     # Default / cold_only: legacy behavior.
-    return float(cold)
+    return float(cold_n)
 
 
 def run_static_experiment(df, cfg, device, content_emb, llm_scores):
@@ -3057,6 +3129,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
     if course_artifacts is not None:
         model.set_course_artifacts(course_artifacts)
     model.set_feedback_item_stats(item_train_pop)
+    sg_urinit_stats = _apply_static_sg_urinit(model, train_df, content_emb, cfg)
     optimizer = _make_fast3_optimizer(model, cfg)
 
     exports = _write_static_split_artifacts(train_df, val_df, test_df, split_info, cfg)
@@ -3091,6 +3164,14 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         f"aux_hot_only={cfg.aux_hot_only} | "
         f"lr_mult={cfg.content_delta_lr_mult:.3f} | "
         f"delta_only_after_epoch={cfg.content_delta_only_after_epoch}"
+    )
+    print(
+        f">> SG-URInit: enabled={bool(getattr(cfg, 'use_sg_urinit', False))} | "
+        f"initialized={int(sg_urinit_stats.get('initialized_users', 0))}/{cfg.n_users} | "
+        f"cluster_k={int(getattr(cfg, 'sg_urinit_cluster_k', 32))} | "
+        f"local_w={float(getattr(cfg, 'sg_urinit_local_weight', 0.70)):.2f} | "
+        f"global_w={float(getattr(cfg, 'sg_urinit_global_weight', 0.30)):.2f} | "
+        f"target_norm={float(sg_urinit_stats.get('target_norm', 0.0)):.4f}"
     )
     print(
         f">> Pseudo-Cold Train: enabled={cfg.use_pseudo_cold_train} | "
@@ -3237,6 +3318,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
     ckpt_enabled = _feedback_ckpt_enabled()
     auto_resume = _feedback_ckpt_auto_resume()
     force_fresh = _feedback_ckpt_force_fresh()
+    resumed_from_ckpt = False
 
     snapshot_epochs = _feedback_ckpt_snapshot_epochs()
 
@@ -3339,11 +3421,26 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             delta_only_applied = bool(resume_state.get("delta_only_applied", False))
             resume_start_epoch = int(resume_state.get("next_epoch", 0) or 0)
             resume_start_epoch = max(0, min(resume_start_epoch, int(cfg.n_epochs)))
+            resumed_from_ckpt = True
             print(
                 f">> Static Resume: status={resume_state.get('status')} | "
                 f"next_epoch={resume_start_epoch + 1}/{cfg.n_epochs} | "
                 f"best_epoch={best_epoch} | best_score={best_score:.4f}"
             )
+
+    if not resumed_from_ckpt:
+        init_ckpt_dir = os.environ.get("USIM_FB_INIT_CKPT_DIR", "").strip()
+        init_path, init_model_state = _load_init_model_state_from_checkpoint_dir(init_ckpt_dir)
+        if init_model_state is not None:
+            init_model_state, skipped_shape = _filter_compatible_model_state(model, init_model_state)
+            if skipped_shape:
+                print(
+                    f">> Static Init: skipped shape-mismatched tensors from init checkpoint: {skipped_shape}"
+                )
+            _load_static_model_state_compat(init_model_state, "init_model_state")
+            print(f">> Static Init: loaded model_state from {init_path}")
+        elif init_ckpt_dir:
+            print(f">> Static Init: no finished/latest checkpoint found in {init_ckpt_dir}; starting from scratch.")
 
     print(
         f"\n>>> Start STATIC train/eval | target_split={split_info['train_ratio']:.2f}/"

@@ -198,8 +198,8 @@ try {
         SageAuxDetachUser = $sageAuxDetachUserBool
         UseCourseRerank = $false
         UseStructuredHardNeg = $false
-        MaskKnownPosNeg = $false
-        MaskSameItemNeg = $false
+        MaskKnownPosNeg = $true
+        MaskSameItemNeg = $true
         RunSampledEval = $false
         SaveCkpt = [bool]$SaveCkpt
         AutoResume = $false
@@ -237,8 +237,8 @@ try {
         Write-Setting "PrereqAuxOnlyCold" $false
         Write-Setting "UseCourseRerank" $false
         Write-Setting "UseStructuredHardNeg" $false
-        Write-Setting "MaskKnownPosNeg" $false
-        Write-Setting "MaskSameItemNeg" $false
+        Write-Setting "MaskKnownPosNeg" $true
+        Write-Setting "MaskSameItemNeg" $true
         Write-Setting "SaveCkpt" ([bool]$SaveCkpt)
         Write-Setting "SaveOptState" ([bool]$SaveOptState)
         Write-Setting "CourseTermNorm" $CourseTermNorm

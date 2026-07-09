@@ -25,6 +25,8 @@ RESULT_FILES = [
     "fsgnn_coldrec_static_result.json",
     "m2vae_coldrec_static_result.json",
     "sagerec_static_result.json",
+    "semco_static_result.json",
+    "semco_official_static_result.json",
     "course_aware_mlp_static_result.json",
     "fast3_static_result.json",
 ]
@@ -46,6 +48,7 @@ MODEL_ORDER = [
     "ALDI",
     "LightGCL",
     "SAGERec",
+    "SEMCo",
     "CourseAware-MLP",
     "FAST3",
 ]

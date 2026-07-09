@@ -287,7 +287,17 @@ def evaluate_full_dropoutnet(model, loader, all_item_z, device, k_list=[5, 10, 2
     if total_samples == 0: return None, 0
     return {k: v / total_samples for k, v in metrics_sum.items()}, total_samples
 
-def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_seen_items=None, average_mode="interaction"):
+def evaluate_dual_dropoutnet(
+    model,
+    loader,
+    all_item_z,
+    device,
+    k_list,
+    user_seen_items=None,
+    average_mode="interaction",
+    export_cold_item_metrics_path=None,
+    export_hot_item_metrics_path=None,
+):
     """Compute cold/hot full-ranking metrics with optional seen-item masking."""
     average_mode = average_mode.strip().lower()
     if average_mode not in {"interaction", "item_macro"}:
@@ -387,7 +397,7 @@ def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_see
             h_total += is_h.sum().item()
 
     if average_mode == "item_macro":
-        def _macro(item_sum, item_count):
+        def _macro(item_sum, item_count, export_path=None):
             if not item_count:
                 return None, 0
             out = {}
@@ -398,9 +408,19 @@ def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_see
                     if count > 0
                 ]
                 out[key] = sum(item_values) / max(1, len(item_values))
+            if export_path:
+                rows = []
+                for item_id in sorted(item_count):
+                    count = max(1, int(item_count[item_id]))
+                    row = {"item_id": int(item_id), "count": int(item_count[item_id])}
+                    for key, values in item_sum.items():
+                        row[key] = float(values.get(item_id, 0.0) / count)
+                    rows.append(row)
+                os.makedirs(os.path.dirname(export_path) or ".", exist_ok=True)
+                pd.DataFrame(rows).to_csv(export_path, index=False)
             return out, len(item_count)
-        c_res, c_n = _macro(c_item_sum, c_item_count)
-        h_res, h_n = _macro(h_item_sum, h_item_count)
+        c_res, c_n = _macro(c_item_sum, c_item_count, export_cold_item_metrics_path)
+        h_res, h_n = _macro(h_item_sum, h_item_count, export_hot_item_metrics_path)
         return c_res, c_n, h_res, h_n
 
     c_res = {k: v / c_total for k, v in c_sum.items()} if c_total > 0 else None
@@ -682,6 +702,8 @@ def main():
     c_m_f_item_macro, n_c_f_item_macro, h_m_f_item_macro, n_h_f_item_macro = evaluate_dual_dropoutnet(
         model, test_loader, all_z, device, k_list, user_seen_items=test_seen_items,
         average_mode="item_macro",
+        export_cold_item_metrics_path=static_result_path("per_item_full_cold_drop_static.csv"),
+        export_hot_item_metrics_path=static_result_path("per_item_full_hot_drop_static.csv"),
     )
     c_m_s, n_c_s, h_m_s, n_h_s = evaluate_sampled_dropoutnet(
         model, test_loader, all_z, device, k_list, n_neg=cfg.eval_n_neg, user_seen_items=test_seen_items
@@ -730,6 +752,8 @@ def main():
         "eval_n_neg": cfg.eval_n_neg,
         "checkpoint_dir": cfg.ckpt.dir or None,
         "resumed_from_epoch": start_epoch,
+        "per_item_full_cold_path": static_result_path("per_item_full_cold_drop_static.csv"),
+        "per_item_full_hot_path": static_result_path("per_item_full_hot_drop_static.csv"),
     })
     result_path = static_result_path("drop_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)

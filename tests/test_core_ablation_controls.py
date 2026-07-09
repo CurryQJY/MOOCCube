@@ -1,5 +1,6 @@
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -8,7 +9,7 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fast3_delta.config import Fast3Config
-from usim_feedback_fast3_content_delta import Fast3FeedbackUSIM
+from usim_feedback_fast3_content_delta import Fast3FeedbackUSIM, _compute_early_stop_score
 
 
 class EnvPatch:
@@ -137,6 +138,82 @@ class CoreAblationControlTests(unittest.TestCase):
             self.assertEqual(stats["steps"], 0)
             self.assertEqual(len(trajectory["rewards"]), 0)
             self.assertEqual(float(loss.detach().cpu().item()), 0.0)
+
+    def test_rl_residual_scale_blends_episode_output(self):
+        with EnvPatch(USIM_RL_RESIDUAL_SCALE="0.1"):
+            cfg = Fast3Config(n_users=3, n_items=4, content_dim=5)
+            self.assertAlmostEqual(cfg.rl_residual_scale, 0.1)
+            model = Fast3FeedbackUSIM(cfg, torch.zeros((4, 5), dtype=torch.float32))
+            z_i_base = torch.tensor([[1.0, 2.0], [3.0, 4.0]], dtype=torch.float32)
+            episode_h = z_i_base + 10.0
+
+            blended = model._blend_rl_episode_output(z_i_base, episode_h)
+
+            self.assertTrue(torch.allclose(blended, z_i_base + 1.0))
+
+    def test_init_checkpoint_prefers_finished_then_latest(self):
+        from usim_feedback_fast3_content_delta import _load_init_model_state_from_checkpoint_dir
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ckpt_dir = Path(tmp)
+            latest_state = {"weight": torch.tensor([1.0])}
+            finished_state = {"weight": torch.tensor([2.0])}
+            torch.save({"model_state": latest_state}, ckpt_dir / "latest.pt")
+            torch.save({"model_state": finished_state}, ckpt_dir / "finished.pt")
+
+            path, model_state = _load_init_model_state_from_checkpoint_dir(str(ckpt_dir))
+
+            self.assertEqual(Path(path).name, "finished.pt")
+            self.assertTrue(torch.equal(model_state["weight"], finished_state["weight"]))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ckpt_dir = Path(tmp)
+            latest_state = {"weight": torch.tensor([3.0])}
+            torch.save({"model_state": latest_state}, ckpt_dir / "latest.pt")
+
+            path, model_state = _load_init_model_state_from_checkpoint_dir(str(ckpt_dir))
+
+            self.assertEqual(Path(path).name, "latest.pt")
+            self.assertTrue(torch.equal(model_state["weight"], latest_state["weight"]))
+
+    def test_init_checkpoint_filter_skips_shape_mismatches(self):
+        from usim_feedback_fast3_content_delta import _filter_compatible_model_state
+
+        with EnvPatch(USIM_STEPS="5"):
+            target_cfg = Fast3Config(n_users=3, n_items=4, content_dim=5)
+            target = Fast3FeedbackUSIM(target_cfg, torch.zeros((4, 5), dtype=torch.float32))
+        with EnvPatch(USIM_STEPS="0"):
+            source_cfg = Fast3Config(n_users=3, n_items=4, content_dim=5)
+            source = Fast3FeedbackUSIM(source_cfg, torch.zeros((4, 5), dtype=torch.float32))
+
+        filtered, skipped = _filter_compatible_model_state(target, source.state_dict())
+
+        self.assertIn("user_emb.weight", filtered)
+        self.assertIn("agent.common.0.weight", skipped)
+        self.assertNotIn("agent.common.0.weight", filtered)
+
+    def test_early_stop_cold_rn_uses_cold_recall_and_ndcg(self):
+        score = _compute_early_stop_score(
+            {"R@10": 0.4, "N@10": 0.2},
+            None,
+            10,
+            "cold_rn",
+        )
+
+        self.assertAlmostEqual(score, 2.0 * 0.4 * 0.2 / (0.4 + 0.2))
+
+    def test_early_stop_balanced_rn_penalizes_hot_drop(self):
+        score = _compute_early_stop_score(
+            {"R@10": 0.4, "N@10": 0.2},
+            {"R@10": 0.2, "N@10": 0.1},
+            10,
+            "balanced_rn",
+        )
+
+        self.assertAlmostEqual(
+            score,
+            4.0 / ((1.0 / 0.4) + (1.0 / 0.2) + (1.0 / 0.2) + (1.0 / 0.1)),
+        )
 
 
 if __name__ == "__main__":

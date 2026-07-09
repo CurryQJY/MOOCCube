@@ -11,8 +11,10 @@ popularity_full.py — Popularity baseline under streaming protocol.
 其中 count 来自截至当前 period 的累计 train data.
 """
 
+import csv
 import json
 import os
+from pathlib import Path
 from typing import Dict
 
 import numpy as np
@@ -68,6 +70,7 @@ def evaluate_popularity_ranker(
     user_seen_items: Dict[int, set] = None,
     tie_break_noise: float = 1e-6,
     average_mode: str = "interaction",
+    export_item_metrics_path: str = None,
 ):
     average_mode = average_mode.strip().lower()
     if average_mode not in {"interaction", "item_macro"}:
@@ -186,6 +189,19 @@ def evaluate_popularity_ranker(
                 if count > 0
             ]
             macro[key] = sum(item_values) / max(1, len(item_values))
+        if export_item_metrics_path:
+            out_path = Path(export_item_metrics_path)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            fieldnames = ["item_id", "count"] + [f"{m}@{k}" for m in ["R", "N"] for k in k_list]
+            with out_path.open("w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                for item_id in sorted(item_counts):
+                    count = max(1, item_counts[item_id])
+                    row = {"item_id": int(item_id), "count": int(item_counts[item_id])}
+                    for key, per_item in item_accum.items():
+                        row[key] = float(per_item.get(item_id, 0.0) / count)
+                    writer.writerow(row)
         return macro, len(item_counts)
     return {k: v / total_samples for k, v in accum.items()}, total_samples
 

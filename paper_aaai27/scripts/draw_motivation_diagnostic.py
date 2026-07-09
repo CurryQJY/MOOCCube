@@ -138,7 +138,7 @@ def collect_aggregation_data() -> pd.DataFrame:
                     }
                 )
 
-    ckg_root = ROOT / "outputs" / "content_delta_pop5" / "course_ablation_e60_3seed" / "full"
+    ckg_root = ROOT / "outputs" / "significance_per_item_exports" / "mooccube" / "ckg_rl_full"
     for seed in SEEDS:
         path = ckg_root / f"strict_item_cold_balanced_thr1_seed_{seed}" / "final_fullrank_usim_feedback_fast3_content_delta_static.csv"
         frame = pd.read_csv(path)
