@@ -116,6 +116,11 @@ def _resolve_device() -> torch.device:
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def _sync_device(device: torch.device) -> None:
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+
+
 def _configure_cuda_memory(device: torch.device) -> None:
     if device.type != "cuda":
         return
@@ -823,6 +828,14 @@ def main():
                     flush=True,
                 )
 
+        _sync_device(device)
+        train_epoch_elapsed_s = time.time() - epoch_start
+        print(
+            f"[CGRC-TRAIN] Epoch {epoch + 1}/{cfg.n_epochs} "
+            f"Time: {train_epoch_elapsed_s:.2f}s",
+            flush=True,
+        )
+
         model.eval()
         improved = False
         with torch.no_grad():
@@ -906,6 +919,7 @@ def main():
 
     model.eval()
     with torch.no_grad():
+        infer_t0 = time.perf_counter()
         all_u, all_i, test_recon_edges = _build_ghat_embeddings(
             model,
             cfg,
@@ -914,6 +928,8 @@ def main():
             device,
             test_cold_items,
         )
+        _sync_device(device)
+        infer_t1 = time.perf_counter()
         get_user_fn = lambda batch: all_u[batch["u"]]
 
         if cfg.run_sampled_eval:
@@ -940,18 +956,36 @@ def main():
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
             user_seen_items=test_seen,
         )
+        cold_macro_t0 = time.perf_counter()
         full_cold_item_macro, n_fc_item_macro = evaluate_embedding_ranker(
             test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
             user_seen_items=test_seen, average_mode="item_macro",
             export_item_metrics_path=static_result_path("per_item_full_cold_cgrc_paper_static.csv"),
         )
+        _sync_device(device)
+        cold_macro_t1 = time.perf_counter()
         full_hot_item_macro, n_fh_item_macro = evaluate_embedding_ranker(
             test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
             user_seen_items=test_seen, average_mode="item_macro",
             export_item_metrics_path=static_result_path("per_item_full_hot_cgrc_paper_static.csv"),
         )
+        _sync_device(device)
+        hot_macro_t1 = time.perf_counter()
+
+    precompute_s = float(infer_t1 - infer_t0)
+    cold_itemmacro_s = float(cold_macro_t1 - cold_macro_t0)
+    hot_itemmacro_s = float(hot_macro_t1 - cold_macro_t1)
+    final_infer_s = precompute_s + cold_itemmacro_s + hot_itemmacro_s
+    print(
+        "[CGRC-INFER] "
+        f"precompute={precompute_s:.3f}s | "
+        f"cold_itemmacro={cold_itemmacro_s:.3f}s | "
+        f"hot_itemmacro={hot_itemmacro_s:.3f}s | "
+        f"final={final_infer_s:.3f}s",
+        flush=True,
+    )
 
     sample_cold = sample_cold or {}
     sample_hot = sample_hot or {}
@@ -1012,6 +1046,12 @@ def main():
         "best_val_full_cold_n10": best_val,
         "best_val_recon_edges": best_recon_edges,
         "test_recon_edges": test_recon_edges,
+        "precompute_s": precompute_s,
+        "cold_itemmacro_s": cold_itemmacro_s,
+        "hot_itemmacro_s": hot_itemmacro_s,
+        "ranking_s": cold_itemmacro_s + hot_itemmacro_s,
+        "final_infer_s": final_infer_s,
+        "total_s": final_infer_s,
         "emb_dim": cfg.emb_dim,
         "mlp_hidden": cfg.mlp_hidden,
         "layers_gprime": cfg.layers_gprime,

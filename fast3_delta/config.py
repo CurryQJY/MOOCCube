@@ -193,6 +193,7 @@ class BaseConfig:
             )
         self.early_stop_hot_r10_drop_tol = 0.03
         self.legacy_train_protocol = os.environ.get("USIM_LEGACY_TRAIN_PROTOCOL", "0") == "1"
+        self.use_usim_refined_eval = os.environ.get("USIM_USE_REFINED_EVAL", "1") == "1"
 
 
 class FeedbackConfig(BaseConfig):

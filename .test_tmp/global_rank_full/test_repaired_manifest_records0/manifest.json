@@ -1,0 +1,38 @@
+{
+  "script": {
+    "path": "D:\\DeskTop\\MOOCCube\\usim_feedback_fast3_content_delta_repaired.py",
+    "exists": true,
+    "size_bytes": 67423,
+    "mtime": 1783695337.485117,
+    "sha256": "51e03f13e8414920ac3009f204cbe0bc97066850f73c428e3b3d7bc5f80668da"
+  },
+  "model_config": {
+    "recppo": {
+      "enabled": true,
+      "warmup_epochs": 1,
+      "ppo_epochs": 2,
+      "gamma": 0.99,
+      "actor_lr": 0.0005,
+      "critic_lr": 0.001,
+      "policy_temperature": 1.0,
+      "target_kl": 0.05,
+      "enable_stop": true,
+      "termination_head": "separate_state_head",
+      "step_cost": 0.01,
+      "rank_gain_weight": 1.0,
+      "rank_reward_source": "global_train_user_topk",
+      "rank_topk": 10,
+      "rank_temperature": 0.07,
+      "rank_item_chunk_size": 32,
+      "max_residual_norm": 0.5,
+      "residual_ramp_epochs": 5,
+      "behavior_ce_weight": 0.2,
+      "terminal_value_weight": 0.2,
+      "require_policy_checkpoint": true,
+      "guard_hot_ratio": 0.5,
+      "deterministic_eval_candidates": true,
+      "behavior_supervision": "first_step_only",
+      "strict_determinism": true
+    }
+  }
+}

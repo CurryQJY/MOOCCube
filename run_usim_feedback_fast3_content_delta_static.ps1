@@ -34,11 +34,11 @@ param(
     [bool]$ContentDeltaTrainOnIdDropout = $true,
     [int]$ContentDeltaOnlyAfterEpoch = 0,
     [double]$AuxWeight = 0.3,
-    [bool]$UsePseudoColdTrain = $false,
+    [bool]$UsePseudoColdTrain = $true,
     [ValidateSet("batch_random", "batch_tail", "all_eligible", "none", "off")]
-    [string]$PseudoColdMode = "batch_random",
-    [double]$PseudoColdRatio = 0.30,
-    [int]$PseudoColdMinPop = 5,
+    [string]$PseudoColdMode = "all_eligible",
+    [double]$PseudoColdRatio = 1.00,
+    [int]$PseudoColdMinPop = 1,
     [bool]$UsePaac = $false,
     [double]$PaacAlignW = 0.0,
     [double]$PaacContrastW = 0.0,
@@ -116,6 +116,7 @@ param(
     [int]$SgUrinitMaxIter = 20,
     [bool]$TrainForceCold = $true,
     [int]$UsimSteps = 5,
+    [bool]$UseUsimRefinedEval = $true,
     [double]$PpoLossWeight = 1.0,
     [string]$InitCheckpointDir = "",
     [double]$RlResidualScale = 1.0,
@@ -127,9 +128,10 @@ param(
     [ValidateSet("cold_only", "geometric", "harmonic", "sum", "cold_rn", "balanced_rn")]
     [string]$EarlyStopScoreMode = "cold_only",
     [bool]$RunSampledEval = $false,
-    [bool]$SaveCkpt = $false,
-    [bool]$AutoResume = $false,
-    [bool]$ForceFresh = $true,
+    [bool]$SaveCkpt = $true,
+    # Resume by default; Python-side config fingerprint forces fresh when train knobs change.
+    [bool]$AutoResume = $true,
+    [bool]$ForceFresh = $false,
     [bool]$SaveOptState = $true,
     [switch]$SkipAggregate
 )
@@ -210,6 +212,7 @@ $trackedEnv = @(
     "USIM_AUX_HOT_ONLY",
     "USIM_EARLY_STOP_SCORE_MODE",
     "USIM_USE_PSEUDO_COLD_TRAIN",
+    "USIM_USE_REFINED_EVAL",
     "USIM_PSEUDO_COLD_MODE",
     "USIM_PSEUDO_COLD_RATIO",
     "USIM_PSEUDO_COLD_MIN_POP",
@@ -395,6 +398,7 @@ $base = @{
     "USIM_AUX_HOT_ONLY" = if ($AuxHotOnly) { "1" } else { "0" }
     "USIM_EARLY_STOP_SCORE_MODE" = $EarlyStopScoreMode
     "USIM_USE_PSEUDO_COLD_TRAIN" = if ($UsePseudoColdTrain) { "1" } else { "0" }
+    "USIM_USE_REFINED_EVAL" = if ($UseUsimRefinedEval) { "1" } else { "0" }
     "USIM_PSEUDO_COLD_MODE" = $PseudoColdMode
     "USIM_PSEUDO_COLD_RATIO" = [string]$PseudoColdRatio
     "USIM_PSEUDO_COLD_MIN_POP" = [string]$PseudoColdMinPop

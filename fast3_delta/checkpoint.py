@@ -1,4 +1,6 @@
 import copy
+import hashlib
+import json
 import os
 import time
 
@@ -22,7 +24,107 @@ def _feedback_ckpt_force_fresh():
 
 
 def _feedback_ckpt_save_optimizer_state():
-    return os.environ.get("USIM_FB_SAVE_OPT_STATE", "0") == "1"
+    # Default ON so resumed runs keep optimizer momentum when possible.
+    return os.environ.get("USIM_FB_SAVE_OPT_STATE", "1") == "1"
+
+
+def _stable_json_fingerprint(payload):
+    blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest(), payload
+
+
+def _static_train_config_fingerprint(cfg, split_info=None, script_path=None):
+    """Fingerprint of train knobs that invalidate checkpoint resume when changed."""
+    split_info = split_info or {}
+    script_name = ""
+    script_sha = ""
+    if script_path:
+        script_name = os.path.basename(os.path.abspath(script_path))
+        try:
+            with open(script_path, "rb") as handle:
+                script_sha = hashlib.sha256(handle.read()).hexdigest()
+        except OSError:
+            script_sha = ""
+
+    def _cfg(name, default=None):
+        return getattr(cfg, name, default)
+
+    payload = {
+        "script_name": script_name,
+        # Script body hash: code changes that affect training invalidate resume.
+        "script_sha256": script_sha if os.environ.get("USIM_FB_CKPT_IGNORE_SCRIPT_HASH", "0") != "1" else "",
+        "data_dir": str(os.environ.get("USIM_DATA_DIR", "")),
+        "seed": str(os.environ.get("USIM_SEED", os.environ.get("USIM_STATIC_SEED", ""))),
+        "static_seed": str(os.environ.get("USIM_STATIC_SEED", "")),
+        "split_mode": str(split_info.get("split_mode") or os.environ.get("USIM_STATIC_SPLIT_MODE", "")),
+        "cold_threshold": int(_cfg("cold_threshold", int(os.environ.get("USIM_COLD_THRESHOLD", "1") or 1))),
+        "n_epochs": int(_cfg("n_epochs", 0) or 0),
+        "early_stop_patience": int(_cfg("early_stop_patience", 0) or 0),
+        "early_stop_score_mode": str(_cfg("early_stop_score_mode", "")),
+        "early_stop_average_mode": str(_cfg("early_stop_average_mode", "")),
+        "use_content_delta": bool(_cfg("use_content_delta", False)),
+        "content_delta_mode": str(_cfg("content_delta_mode", "")),
+        "content_delta_scale": float(_cfg("content_delta_scale", 0.0) or 0.0),
+        "rl_residual_scale": float(_cfg("rl_residual_scale", 1.0) or 1.0),
+        "ppo_loss_weight": float(_cfg("ppo_loss_weight", 0.0) or 0.0),
+        "rollout_policy": str(_cfg("rollout_policy", "")),
+        "usim_steps": int(_cfg("usim_steps", _cfg("steps", 0)) or 0),
+        "use_pseudo_cold_train": bool(_cfg("use_pseudo_cold_train", False)),
+        "pseudo_cold_mode": str(_cfg("pseudo_cold_mode", "")),
+        "pseudo_cold_ratio": float(_cfg("pseudo_cold_ratio", 0.0) or 0.0),
+        "pseudo_cold_min_pop": int(_cfg("pseudo_cold_min_pop", 0) or 0),
+        "use_course_reward": bool(_cfg("use_course_reward", False)),
+        "use_course_sample": bool(_cfg("use_course_sample", False)),
+        "use_prereq_aux_loss": bool(_cfg("use_prereq_aux_loss", False)),
+        "recppo_warmup_epochs": int(
+            _cfg("recppo_warmup_epochs", int(os.environ.get("USIM_RECPPO_WARMUP_EPOCHS", "-1") or -1)) or -1
+        ),
+        "recppo_enabled": bool(_cfg("recppo_enabled", False)),
+        "emb_dim": int(_cfg("emb_dim", 0) or 0),
+        "n_users": int(_cfg("n_users", 0) or 0),
+        "n_items": int(_cfg("n_items", 0) or 0),
+    }
+    return _stable_json_fingerprint(payload)
+
+
+def _checkpoint_config_matches(resume_state, cfg, split_info=None, script_path=None):
+    """Return (ok, reason, current_fp, ckpt_fp)."""
+    current_fp, current_payload = _static_train_config_fingerprint(cfg, split_info=split_info, script_path=script_path)
+    if not isinstance(resume_state, dict):
+        return False, "checkpoint missing or invalid", current_fp, None
+    ckpt_fp = resume_state.get("train_config_fingerprint")
+    ckpt_payload = resume_state.get("train_config_payload")
+    if not ckpt_fp:
+        # Legacy checkpoints: fall back to coarse fields when present.
+        coarse = {
+            "n_epochs": int(resume_state.get("n_epochs_requested", -1)),
+            "cold_threshold": int(resume_state.get("cold_threshold", -1)),
+            "split_mode": str(resume_state.get("split_mode", "")),
+        }
+        cur_coarse = {
+            "n_epochs": int(getattr(cfg, "n_epochs", -1)),
+            "cold_threshold": int(getattr(cfg, "cold_threshold", -1)),
+            "split_mode": str((split_info or {}).get("split_mode", "")),
+        }
+        if coarse != cur_coarse:
+            return False, f"legacy coarse config mismatch ckpt={coarse} cur={cur_coarse}", current_fp, None
+        return True, "legacy checkpoint without fingerprint (coarse match)", current_fp, None
+    if str(ckpt_fp) != str(current_fp):
+        diffs = []
+        if isinstance(ckpt_payload, dict):
+            keys = sorted(set(ckpt_payload) | set(current_payload))
+            for key in keys:
+                old = ckpt_payload.get(key, "<missing>")
+                new = current_payload.get(key, "<missing>")
+                if old != new:
+                    diffs.append(f"{key}:{old}->{new}")
+        reason = "train config fingerprint mismatch"
+        if diffs:
+            reason = reason + " | " + "; ".join(diffs[:12])
+            if len(diffs) > 12:
+                reason = reason + f" | ...(+{len(diffs) - 12} more)"
+        return False, reason, current_fp, str(ckpt_fp)
+    return True, "fingerprint match", current_fp, str(ckpt_fp)
 
 
 def _feedback_ckpt_snapshot_epochs():

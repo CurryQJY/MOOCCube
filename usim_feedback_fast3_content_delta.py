@@ -13,6 +13,7 @@ import math
 import os
 import platform
 import random
+import sys
 import time
 
 import matplotlib
@@ -29,6 +30,7 @@ from torch.utils.data import DataLoader
 
 from fast3_delta.checkpoint import (
     _build_feedback_ckpt_state,
+    _checkpoint_config_matches,
     _deserialize_user_seen_items,
     _feedback_ckpt_auto_resume,
     _feedback_ckpt_dir,
@@ -43,6 +45,7 @@ from fast3_delta.checkpoint import (
     _optimizer_state_to_device,
     _save_feedback_checkpoint,
     _serialize_user_seen_items,
+    _static_train_config_fingerprint,
 )
 from fast3_delta.config import BaseConfig, Fast3Config, FeedbackConfig
 from fast3_delta.course_artifacts import (
@@ -2218,7 +2221,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         z_u_base = self.user_proj(self.user_emb(u))
         force_cold_mask = effective_cold if self.cfg.train_force_cold else False
         z_i_base, id_e_true, content_e = self.get_item_vector(i, llm_s, force_cold=force_cold_mask)
-        target_emb = z_i_base.detach().clone()
+        target_emb = id_e_true.detach().clone()
         final_h, trajectory, candidate_stats = self.run_usim_episode(
             z_i_base,
             target_emb,
@@ -2530,9 +2533,26 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
         zero_entropy = candidates.new_zeros((batch_size,))
         return zero_log_prob, zero_value, zero_entropy
 
-    def _select_rollout_action(self, current_h, time_step, candidates, fit_score=None):
+
+    def _select_ppo_argmax_action(self, current_h, time_step, candidates):
+        t_emb = F.one_hot(time_step.squeeze(1).long(), num_classes=self.agent.time_dim).float()
+        state = torch.cat([current_h, t_emb], dim=1)
+        feat = self.agent.common(state)
+        value = self.agent.critic_head(feat)
+        query = self.agent.actor_head(feat).unsqueeze(1)
+        keys = self.agent.user_proj(candidates)
+        logits = torch.matmul(query, keys.transpose(1, 2)).squeeze(1)
+        action_idx = torch.argmax(logits, dim=1)
+        dist = Categorical(logits=logits)
+        log_prob = dist.log_prob(action_idx)
+        entropy = dist.entropy()
+        return action_idx, log_prob, value, entropy
+
+    def _select_rollout_action(self, current_h, time_step, candidates, fit_score=None, deterministic=False):
         policy = str(getattr(self.cfg, "rollout_policy", "ppo")).strip().lower()
         if policy == "ppo":
+            if deterministic:
+                return self._select_ppo_argmax_action(current_h, time_step, candidates)
             return self.agent.get_action_value(current_h, time_step, candidates)
 
         batch_size = candidates.size(0)
@@ -2567,6 +2587,7 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
         item_idx=None,
         target_pop=None,
         user_seen_items=None,
+        deterministic=False,
     ):
         current_h = init_item_emb.clone()
         trajectory = {
@@ -2631,6 +2652,7 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 time_step,
                 candidates,
                 fit_score=fit_score,
+                deterministic=deterministic,
             )
 
             if cand_stats is not None:
@@ -2747,6 +2769,61 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 candidate_stats[key] /= candidate_stats["steps"]
 
         return current_h, trajectory, candidate_stats
+
+    def infer_refined_item_vectors(
+        self,
+        item_idx,
+        llm_s=None,
+        item_batch=1024,
+        force_cold=True,
+        user_bank_raw=None,
+        user_seen_items=None,
+    ):
+        item_idx = torch.as_tensor(item_idx, dtype=torch.long, device=self.device).view(-1)
+        if item_idx.numel() < 1:
+            return torch.empty((0, self.cfg.emb_dim), dtype=self.item_id_emb.weight.dtype, device=self.device)
+        if llm_s is None:
+            llm_s = torch.full((item_idx.numel(),), -1.0, dtype=torch.float32, device=self.device)
+        else:
+            llm_s = torch.as_tensor(llm_s, dtype=torch.float32, device=self.device).view(-1)
+            if llm_s.numel() != item_idx.numel():
+                raise ValueError("llm_s must have the same length as item_idx")
+
+        was_training = self.training
+        self.eval()
+        outputs = []
+        try:
+            bank_arg = user_bank_raw
+            if bank_arg is None and self.cfg.candidate_strategy == "retrieve_sample":
+                bank_arg = self._build_user_bank_raw()
+            batch_size = max(1, int(item_batch))
+            with torch.no_grad():
+                for start in range(0, item_idx.numel(), batch_size):
+                    end = min(start + batch_size, item_idx.numel())
+                    idx_batch = item_idx[start:end]
+                    llm_batch = llm_s[start:end]
+                    z_i_base, _, _ = self.get_item_vector(
+                        idx_batch,
+                        llm_batch,
+                        force_cold=force_cold,
+                        disable_id_dropout=True,
+                    )
+                    target_pop = None
+                    if self.item_popularity is not None:
+                        target_pop = self.item_popularity.to(device=self.device).index_select(0, idx_batch).float()
+                    final_h, _, _ = self.run_usim_episode(
+                        z_i_base,
+                        target_emb=None,
+                        user_bank_raw=bank_arg,
+                        item_idx=idx_batch,
+                        target_pop=target_pop,
+                        user_seen_items=user_seen_items,
+                        deterministic=True,
+                    )
+                    outputs.append(self._blend_rl_episode_output(z_i_base, final_h).detach())
+        finally:
+            self.train(was_training)
+        return torch.cat(outputs, dim=0)
 
     def compute_ppo_loss(self, trajectory):
         if len(trajectory["rewards"]) == 0:
@@ -3357,6 +3434,14 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             es_best_opt_state=best_opt_state,
             es_no_improve=no_improve,
         )
+        entry_script = os.environ.get("USIM_FB_ENTRY_SCRIPT", "").strip() or (
+            os.path.abspath(sys.argv[0]) if sys.argv else os.path.abspath(__file__)
+        )
+        train_fp, train_payload = _static_train_config_fingerprint(
+            cfg,
+            split_info=split_info,
+            script_path=entry_script,
+        )
         state.update(
             {
                 "mode": "static",
@@ -3365,6 +3450,8 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 "cold_threshold": int(cfg.cold_threshold),
                 "n_epochs_requested": int(cfg.n_epochs),
                 "delta_only_applied": bool(delta_only_applied),
+                "train_config_fingerprint": train_fp,
+                "train_config_payload": train_payload,
             }
         )
         effective_snapshot_name = snapshot_name
@@ -3400,33 +3487,50 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         elif resume_state.get("mode") != "static":
             print(">> Static Resume: latest checkpoint is not static; ignoring it.")
         else:
-            _load_static_model_state_compat(resume_state["model_state"], "model_state")
-            opt_state = resume_state.get("optimizer_state")
-            if opt_state:
-                try:
-                    optimizer.load_state_dict(opt_state)
-                    _optimizer_state_to_device(optimizer, device)
-                except ValueError as exc:
-                    print(f">> Static Resume: skip optimizer state due to parameter-group mismatch: {exc}")
-            history = resume_state.get("history") or history
-            _ensure_static_history_schema()
-            es_best = resume_state.get("es_best") or {}
-            best_epoch = int(es_best.get("epoch", 0) or 0)
-            best_score = float(es_best.get("score", -1e9))
-            if best_score != best_score:
-                best_score = -1e9
-            best_state = resume_state.get("es_best_state")
-            best_opt_state = resume_state.get("es_best_opt_state")
-            no_improve = int(resume_state.get("es_no_improve", 0) or 0)
-            delta_only_applied = bool(resume_state.get("delta_only_applied", False))
-            resume_start_epoch = int(resume_state.get("next_epoch", 0) or 0)
-            resume_start_epoch = max(0, min(resume_start_epoch, int(cfg.n_epochs)))
-            resumed_from_ckpt = True
-            print(
-                f">> Static Resume: status={resume_state.get('status')} | "
-                f"next_epoch={resume_start_epoch + 1}/{cfg.n_epochs} | "
-                f"best_epoch={best_epoch} | best_score={best_score:.4f}"
+            entry_script = os.environ.get("USIM_FB_ENTRY_SCRIPT", "").strip() or (
+                os.path.abspath(sys.argv[0]) if sys.argv else os.path.abspath(__file__)
             )
+            cfg_ok, cfg_reason, cur_fp, ckpt_fp = _checkpoint_config_matches(
+                resume_state,
+                cfg,
+                split_info=split_info,
+                script_path=entry_script,
+            )
+            if not cfg_ok:
+                print(
+                    f">> Static Resume: config changed; forcing fresh start | {cfg_reason} | "
+                    f"ckpt_fp={ckpt_fp} cur_fp={cur_fp}"
+                )
+            else:
+                _load_static_model_state_compat(resume_state["model_state"], "model_state")
+                opt_state = resume_state.get("optimizer_state")
+                if opt_state:
+                    try:
+                        optimizer.load_state_dict(opt_state)
+                        _optimizer_state_to_device(optimizer, device)
+                    except ValueError as exc:
+                        print(f">> Static Resume: skip optimizer state due to parameter-group mismatch: {exc}")
+                history = resume_state.get("history") or history
+                _ensure_static_history_schema()
+                es_best = resume_state.get("es_best") or {}
+                best_epoch = int(es_best.get("epoch", 0) or 0)
+                best_score = float(es_best.get("score", -1e9))
+                if best_score != best_score:
+                    best_score = -1e9
+                best_state = resume_state.get("es_best_state")
+                best_opt_state = resume_state.get("es_best_opt_state")
+                no_improve = int(resume_state.get("es_no_improve", 0) or 0)
+                delta_only_applied = bool(resume_state.get("delta_only_applied", False))
+                resume_start_epoch = int(resume_state.get("next_epoch", 0) or 0)
+                resume_start_epoch = max(0, min(resume_start_epoch, int(cfg.n_epochs)))
+                resumed_from_ckpt = True
+                print(
+                    f">> Static Resume: status={resume_state.get('status')} | "
+                    f"next_epoch={resume_start_epoch + 1}/{cfg.n_epochs} | "
+                    f"best_epoch={best_epoch} | best_score={best_score:.4f} | {cfg_reason}"
+                )
+    elif force_fresh:
+        print(">> Static Resume: force_fresh=1; ignoring existing checkpoints.")
 
     if not resumed_from_ckpt:
         init_ckpt_dir = os.environ.get("USIM_FB_INIT_CKPT_DIR", "").strip()

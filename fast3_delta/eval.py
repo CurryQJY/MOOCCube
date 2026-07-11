@@ -160,6 +160,67 @@ def resolve_eval_force_cold(model, idx_batch, force_cold):
     return force_cold
 
 
+def refined_eval_enabled(model):
+    if getattr(model.cfg, "legacy_train_protocol", False):
+        return False
+    return bool(getattr(model.cfg, "use_usim_refined_eval", True)) and hasattr(
+        model,
+        "infer_refined_item_vectors",
+    )
+
+
+def strict_cold_item_mask(model, device):
+    pop = getattr(model, "item_popularity", None)
+    if pop is None:
+        return None
+    return pop.to(device=device).float().view(-1) < float(getattr(model.cfg, "cold_threshold", 1))
+
+
+def item_llm_score_batch(llm_scores, item_idx, device):
+    if llm_scores is None:
+        return torch.full((item_idx.numel(),), -1.0, dtype=torch.float, device=device)
+    values = [
+        lookup_llm_score(llm_scores, int(idx), allow_pair=False, allow_item=True)
+        for idx in item_idx.detach().cpu().tolist()
+    ]
+    return torch.tensor(values, dtype=torch.float, device=device)
+
+
+def refined_item_vectors(model, item_idx, llm_s=None, item_batch=1024, force_cold=True):
+    if llm_s is None:
+        llm_s = torch.full((item_idx.numel(),), -1.0, dtype=torch.float, device=item_idx.device)
+    return model.infer_refined_item_vectors(
+        item_idx,
+        llm_s=llm_s,
+        item_batch=item_batch,
+        force_cold=force_cold,
+    )
+
+
+def replace_strict_cold_with_refined(model, base_bank, device, llm_scores, item_batch=1024):
+    if not refined_eval_enabled(model):
+        return base_bank
+    cold_mask = strict_cold_item_mask(model, device)
+    if cold_mask is None or not bool(cold_mask.any().item()):
+        return base_bank
+
+    out = base_bank.clone()
+    cold_idx = torch.nonzero(cold_mask, as_tuple=False).view(-1)
+    with torch.no_grad():
+        for start in range(0, cold_idx.numel(), item_batch):
+            idx_batch = cold_idx[start : start + item_batch]
+            llm_batch = item_llm_score_batch(llm_scores, idx_batch, device)
+            refined = refined_item_vectors(
+                model,
+                idx_batch,
+                llm_s=llm_batch,
+                item_batch=item_batch,
+                force_cold=True,
+            )
+            out[idx_batch] = F.normalize(refined, dim=1)
+    return out
+
+
 def build_all_item_vecs(model, device, llm_scores, item_batch=1024, force_cold=True):
     n_items = model.cfg.n_items
     all_item_idx = torch.arange(n_items, device=device)
@@ -210,6 +271,15 @@ def build_eval_item_vecs(model, device, llm_scores, item_batch=1024):
     try:
         hot_bank = build_all_item_vecs(model, device, llm_scores, item_batch=item_batch, force_cold=hot_force_cold)
         cold_bank = build_all_item_vecs(model, device, llm_scores, item_batch=item_batch, force_cold=cold_force_cold)
+        if refined_eval_enabled(model):
+            mixed_bank = replace_strict_cold_with_refined(
+                model,
+                hot_bank,
+                device,
+                llm_scores,
+                item_batch=item_batch,
+            )
+            return {"cold": mixed_bank, "hot": mixed_bank, "all": mixed_bank}
         return {"cold": cold_bank, "hot": hot_bank, "all": hot_bank}
     finally:
         model.train(was_training)
@@ -229,6 +299,28 @@ def select_eval_item_bank(all_item_vecs, eval_type):
 def build_eval_pos_item_vecs(model, item_idx, llm_s, pop_sel, eval_type):
     if item_idx.numel() < 1:
         return torch.empty((0, model.cfg.emb_dim), device=item_idx.device)
+    if refined_eval_enabled(model):
+        if eval_type == "cold":
+            cold_mask = torch.ones_like(item_idx, dtype=torch.bool)
+        elif eval_type == "hot":
+            cold_mask = torch.zeros_like(item_idx, dtype=torch.bool)
+        else:
+            cold_mask = pop_sel.to(device=item_idx.device).float().view(-1) < float(model.cfg.cold_threshold)
+        pos_vec = torch.empty((item_idx.size(0), model.cfg.emb_dim), device=item_idx.device)
+        if cold_mask.any():
+            cold_vec = refined_item_vectors(
+                model,
+                item_idx[cold_mask],
+                llm_s=llm_s[cold_mask],
+                item_batch=max(1, int(item_idx.numel())),
+                force_cold=True,
+            )
+            pos_vec[cold_mask] = cold_vec
+        hot_mask = ~cold_mask
+        if hot_mask.any():
+            hot_vec, _, _ = model.get_item_vector(item_idx[hot_mask], llm_s[hot_mask], force_cold=False)
+            pos_vec[hot_mask] = hot_vec
+        return F.normalize(pos_vec, dim=1)
     if eval_type == "cold":
         pos_vec, _, _ = model.get_item_vector(item_idx, llm_s, force_cold=True)
         return F.normalize(pos_vec, dim=1)
@@ -434,5 +526,8 @@ _count_llm_key_types = count_llm_key_types
 _item_mean_llm_scores = item_mean_llm_scores
 _build_llm_score_tensor = build_llm_score_tensor
 _resolve_eval_force_cold = resolve_eval_force_cold
+_refined_eval_enabled = refined_eval_enabled
+_strict_cold_item_mask = strict_cold_item_mask
+_replace_strict_cold_with_refined = replace_strict_cold_with_refined
 _select_eval_item_bank = select_eval_item_bank
 _build_eval_pos_item_vecs = build_eval_pos_item_vecs

@@ -383,15 +383,36 @@ def summarize_significance(pairs: pd.DataFrame) -> pd.DataFrame:
 def parse_epoch_times(paths: list[Path]) -> list[float]:
     times: list[float] = []
     pat = re.compile(r"Time:\s*([0-9.]+)s")
+    progress_pat = re.compile(
+        r"\[CGRC-TRAIN-PROGRESS\] Epoch \d+/\d+ \| "
+        r"(\d+)/(\d+) .*?elapsed=([0-9hms]+)"
+    )
+
+    def duration_to_seconds(value: str) -> float:
+        match = re.fullmatch(r"(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?", value)
+        if not match:
+            return math.nan
+        hours = int(match.group(1) or 0)
+        minutes = int(match.group(2) or 0)
+        seconds = int(match.group(3) or 0)
+        return float(hours * 3600 + minutes * 60 + seconds)
+
     for path in paths:
         if not path.exists():
             continue
         for line in read_text_auto(path).splitlines():
-            if "[STATIC-TRAIN] Epoch" not in line:
+            if "[STATIC-TRAIN] Epoch" in line or "[CGRC-TRAIN] Epoch" in line:
+                match = pat.search(line)
+                if match:
+                    times.append(float(match.group(1)))
                 continue
-            match = pat.search(line)
-            if match:
-                times.append(float(match.group(1)))
+            if "[CGRC-TRAIN-PROGRESS]" not in line:
+                continue
+            match = progress_pat.search(line)
+            if match and int(match.group(1)) == int(match.group(2)):
+                elapsed = duration_to_seconds(match.group(3))
+                if math.isfinite(elapsed):
+                    times.append(elapsed)
     return times
 
 
@@ -414,6 +435,36 @@ def load_runtime_profiles() -> pd.DataFrame:
                         "seed": int(seed),
                         "infer_s": float(infer),
                         "source_file": path.name,
+                    }
+                )
+    runtime_result_subdirs = {"runtime_cgrc_profile", "cgrc_runtime_profile"}
+    for path in ROOT.glob("outputs/**/cgrc_paper_static_result.json"):
+        if not runtime_result_subdirs.intersection(path.parts):
+            continue
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, list):
+            continue
+        if "content_delta_pop5" in path.parts:
+            dataset = "MOOCCube"
+        elif "junyi" in path.parts:
+            dataset = "Junyi"
+        elif "coco" in path.parts:
+            dataset = "COCO"
+        else:
+            continue
+        for row in data:
+            infer = row.get("final_infer_s", row.get("total_s"))
+            seed = row.get("static_seed")
+            if seed is None:
+                seed = row.get("seed")
+            if infer is not None and seed is not None:
+                rows.append(
+                    {
+                        "dataset": dataset,
+                        "method": "CGRC",
+                        "seed": int(seed),
+                        "infer_s": float(infer),
+                        "source_file": str(path.relative_to(ROOT)),
                     }
                 )
     return pd.DataFrame(rows)
@@ -475,6 +526,31 @@ def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd
             ROOT / f"outputs/coco/single_seed_triage/ours_full/strict_item_cold_balanced_thr1_seed_{seed}/run.log"
             for seed in SEEDS
         ],
+        ("MOOCCube", "CGRC"): [
+            ROOT
+            / f"outputs/content_delta_pop5/static_item_cold_balanced/strict_item_cold_balanced_thr1_seed_{seed}/runtime_cgrc_profile/run.log"
+            for seed in SEEDS
+        ],
+        ("Junyi", "CGRC"): [
+            ROOT
+            / f"outputs/junyi/main_table_3seed/strict_item_cold_balanced_thr1_seed_{seed}/cgrc_runtime_profile/run.log"
+            for seed in SEEDS
+        ],
+        ("COCO", "CGRC"): [
+            ROOT
+            / f"outputs/coco/single_seed_triage/ours_full/strict_item_cold_balanced_thr1_seed_{seed}/cgrc_runtime_profile/run.log"
+            for seed in SEEDS
+        ]
+        + [
+            path
+            for seed in SEEDS
+            for path in sorted(
+                (
+                    ROOT
+                    / f"outputs/coco/single_seed_triage/ours_full/strict_item_cold_balanced_thr1_seed_{seed}/main_table_compare"
+                ).glob("run_cgrc_paper*.log")
+            )
+        ],
     }
     train_summary: dict[tuple[str, str], tuple[float, float, int]] = {}
     for key, paths in train_specs.items():
@@ -489,6 +565,7 @@ def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd
     for dataset in ["MOOCCube", "Junyi", "COCO"]:
         cost_ref = cost_refs[dataset]
         ckg_train = train_summary.get((dataset, "CKG-RL"), (math.nan, math.nan, 0))
+        base_train = train_summary.get((dataset, cost_ref), (math.nan, math.nan, 0))
         ckg_infer = runtime[(runtime["dataset"].eq(dataset)) & (runtime["method"].eq(infer_alias["CKG-RL"]))]
         if dataset == "MOOCCube":
             # The MOOCCube inference audit has a smoke and a full-family file; keep the full-family rows.
@@ -498,6 +575,16 @@ def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd
         base_i_mean, base_i_std = mean_std(base_infer["infer_s"].astype(float).tolist())
         ci_row = seed_ci_table[seed_ci_table["dataset"].eq(dataset)].iloc[0]
         cost_mean, cost_low, cost_high = cost_ref_diff_ci(seed_values, dataset, cost_ref)
+        if dataset == "MOOCCube":
+            coverage = (
+                "CKG train logs; retained full-family CKG inference profile; "
+                "matched CGRC MOOCCube checkpoint/profile unavailable"
+            )
+        elif dataset == "Junyi":
+            coverage = "CKG train logs; CGRC eval-only profiles; CGRC epoch timers unavailable"
+        else:
+            coverage = "CKG train logs; CGRC eval-only profiles; CGRC epoch timers available"
+
         rows.append(
             {
                 "dataset": dataset,
@@ -505,9 +592,9 @@ def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd
                 "ckg_train_epoch_mean_s": ckg_train[0],
                 "ckg_train_epoch_std_s": ckg_train[1],
                 "ckg_train_epoch_n": ckg_train[2],
-                "baseline_train_epoch_mean_s": math.nan,
-                "baseline_train_epoch_std_s": math.nan,
-                "baseline_train_epoch_n": 0,
+                "baseline_train_epoch_mean_s": base_train[0],
+                "baseline_train_epoch_std_s": base_train[1],
+                "baseline_train_epoch_n": base_train[2],
                 "ckg_infer_mean_s": ckg_i_mean,
                 "ckg_infer_std_s": ckg_i_std,
                 "baseline_infer_mean_s": base_i_mean,
@@ -515,11 +602,7 @@ def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd
                 "cost_ref_diff_N@10_mean": cost_mean,
                 "cost_ref_diff_N@10_ci_low": cost_low,
                 "cost_ref_diff_N@10_ci_high": cost_high,
-                "coverage": (
-                    "CKG train logs; CGRC eval-only profiles"
-                    if dataset != "MOOCCube"
-                    else "CKG train logs; retained full-family CKG inference profile; CGRC MOOCCube profile unavailable"
-                ),
+                "coverage": coverage,
             }
         )
     return pd.DataFrame(rows)
@@ -640,28 +723,31 @@ def write_latex(
     lines.append(
         "Table~\\ref{tab:supp-cost-tradeoff} separates training-loop cost from final full-ranking inference. "
         "The cost reference is CGRC, the closest graph-reconstruction baseline, while strongest-baseline "
-        "accuracy comparisons remain in Table~\\ref{tab:supp-seed-ci} and Table~\\ref{tab:supp-significance-tests}."
+        "accuracy comparisons remain in Table~\\ref{tab:supp-seed-ci} and Table~\\ref{tab:supp-significance-tests}. "
+        "Missing entries are left as unavailable rather than extrapolated."
     )
     lines.append("")
     lines.append(r"\begin{table*}[t]")
     lines.append(r"\centering")
     lines.append(
-        r"\caption{Cost and gain analysis against CGRC. Times are mean\(\pm\)std seconds; CGRC is the cost reference.}"
+        r"\caption{Cost and gain analysis against CGRC. Times are mean\(\pm\)std seconds; CGRC is the cost reference. "
+        r"``--'' indicates that no matched checkpoint or separable timer was retained.}"
     )
     lines.append(r"\label{tab:supp-cost-tradeoff}")
     lines.append(r"\tablecaptiongap")
     lines.append(r"\small")
-    lines.append(r"\setlength{\tabcolsep}{3.0pt}")
-    lines.append(r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llcccc}")
+    lines.append(r"\setlength{\tabcolsep}{2.4pt}")
+    lines.append(r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llccccc}")
     lines.append(r"\toprule")
     lines.append(
-        r"Dataset & Cost ref. & CKG train/epoch & CKG infer. & CGRC infer. & \(\Delta\)N@10 vs CGRC \\"
+        r"Dataset & Cost ref. & CKG train/epoch & CGRC train/epoch & CKG infer. & CGRC infer. & \(\Delta\)N@10 vs CGRC \\"
     )
     lines.append(r"\midrule")
     for _, row in cost.iterrows():
         lines.append(
             f"{row['dataset']} & {row['cost_ref']} & "
             f"{sec_cell(row['ckg_train_epoch_mean_s'], row['ckg_train_epoch_std_s'])} & "
+            f"{sec_cell(row['baseline_train_epoch_mean_s'], row['baseline_train_epoch_std_s'])} & "
             f"{sec_cell(row['ckg_infer_mean_s'], row['ckg_infer_std_s'])} & "
             f"{sec_cell(row['baseline_infer_mean_s'], row['baseline_infer_std_s'])} & "
             f"{ci_cell(row['cost_ref_diff_N@10_mean'], row['cost_ref_diff_N@10_ci_low'], row['cost_ref_diff_N@10_ci_high'])} \\\\"
@@ -669,6 +755,14 @@ def write_latex(
     lines.append(r"\bottomrule")
     lines.append(r"\end{tabular*}")
     lines.append(r"\end{table*}")
+    lines.append("")
+    lines.append(
+        r"\noindent\footnotesize "
+        r"MOOCCube CGRC latency is not inferred from accuracy logs because CGRC inference includes "
+        r"test-time graph reconstruction and propagation. Junyi and COCO CGRC inference use retained "
+        r"checkpoints and eval-only profiling; CGRC training-loop timing is complete only for COCO. "
+        r"\normalsize"
+    )
     lines.append("")
 
     OUT_TEX.write_text("\n".join(lines) + "\n", encoding="utf-8")
