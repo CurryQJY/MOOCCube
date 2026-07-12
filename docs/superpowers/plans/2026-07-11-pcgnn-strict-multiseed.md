@@ -4,7 +4,7 @@
 
 **Goal:** Complete PCGNN under the shared strict item-cold protocol for seeds 2025, 2026, and 2027, then publish only verified full-catalog item-macro results.
 
-**Architecture:** Reuse `paper_aaai27/scripts/pcgnn_strict_adapter.py` and its KG-joint, warm-candidate configuration. Each seed receives an isolated output/checkpoint directory and reads the corresponding existing strict split. Results are accepted only after the adapter report confirms full-catalog evaluation, train-history masking, and nonempty cold item-macro metrics.
+**Architecture:** Reuse `paper_aaai27/scripts/pcgnn_strict_adapter.py` and its KG-joint, warm-candidate configuration. Each seed receives an isolated output/checkpoint directory, reads the corresponding existing strict split, and uses `--device cuda` on the verified CUDA host. Results are accepted only after the adapter report confirms CUDA execution, full-catalog evaluation, train-history masking, and nonempty cold item-macro metrics.
 
 **Tech Stack:** Python, PyTorch, PCGNN/RecBole adapter, shared pickle splits, JSON reports.
 
@@ -52,12 +52,12 @@ Get-Content -Raw outputs/content_delta_pop5/static_item_cold_balanced/strict_ite
 
 Expected: `split_mode` is `strict_item_cold_balanced` and `true_item_cold_start` is `true`.
 
-- [x] **Step 2: Queue the unchanged formal adapter with the 2026 split after the active GPU job finishes**
+- [x] **Step 2: Queue the formal CUDA adapter with the 2026 split**
 
 Run:
 
 ```powershell
-.\py.bat paper_aaai27\scripts\pcgnn_strict_adapter.py --split-root outputs\content_delta_pop5\static_item_cold_balanced\strict_item_cold_balanced_thr1_seed_2026 --seed 2026 --max-train-examples -1 --max-val-examples -1 --max-test-examples -1 --epochs 20 --early-stop-patience 5 --train-batch-size 32 --eval-batch-size 64 --kg-batch-size 256 --kg-loss-weight 1.0 --rs-candidate-mode warm --out-dir paper_aaai27\baseline_sources\_pcgnn_strict\mooccube_seed2026_full_formal_kg_warm --checkpoint-dir paper_aaai27\baseline_sources\_pcgnn_strict\mooccube_seed2026_full_formal_kg_warm\checkpoints
+.\py.bat paper_aaai27\scripts\pcgnn_strict_adapter.py --split-root outputs\content_delta_pop5\static_item_cold_balanced\strict_item_cold_balanced_thr1_seed_2026 --seed 2026 --max-train-examples -1 --max-val-examples -1 --max-test-examples -1 --epochs 20 --early-stop-patience 5 --train-batch-size 32 --eval-batch-size 64 --kg-batch-size 256 --kg-loss-weight 1.0 --rs-candidate-mode warm --device cuda --out-dir paper_aaai27\baseline_sources\_pcgnn_strict\mooccube_seed2026_full_formal_kg_warm --checkpoint-dir paper_aaai27\baseline_sources\_pcgnn_strict\mooccube_seed2026_full_formal_kg_warm\checkpoints
 ```
 
 Expected: an isolated report and best checkpoint are written without changing the 2025 directory.
@@ -70,7 +70,7 @@ Run:
 Get-Content -Raw paper_aaai27/baseline_sources/_pcgnn_strict/mooccube_seed2026_full_formal_kg_warm/pcgnn_strict_adapter_report.json
 ```
 
-Expected: the report identifies seed 2026 and has nonempty validation/test cold item-macro metrics.
+Expected: the report identifies seed 2026, records `device: cuda`, and has nonempty validation/test cold item-macro metrics.
 
 ### Task 3: Launch and verify seed 2027
 
@@ -93,7 +93,7 @@ Expected: `split_mode` is `strict_item_cold_balanced` and `true_item_cold_start`
 Run:
 
 ```powershell
-.\py.bat paper_aaai27\scripts\pcgnn_strict_adapter.py --split-root outputs\content_delta_pop5\static_item_cold_balanced\strict_item_cold_balanced_thr1_seed_2027 --seed 2027 --max-train-examples -1 --max-val-examples -1 --max-test-examples -1 --epochs 20 --early-stop-patience 5 --train-batch-size 32 --eval-batch-size 64 --kg-batch-size 256 --kg-loss-weight 1.0 --rs-candidate-mode warm --out-dir paper_aaai27\baseline_sources\_pcgnn_strict\mooccube_seed2027_full_formal_kg_warm --checkpoint-dir paper_aaai27\baseline_sources\_pcgnn_strict\mooccube_seed2027_full_formal_kg_warm\checkpoints
+.\py.bat paper_aaai27\scripts\pcgnn_strict_adapter.py --split-root outputs\content_delta_pop5\static_item_cold_balanced\strict_item_cold_balanced_thr1_seed_2027 --seed 2027 --max-train-examples -1 --max-val-examples -1 --max-test-examples -1 --epochs 20 --early-stop-patience 5 --train-batch-size 32 --eval-batch-size 64 --kg-batch-size 256 --kg-loss-weight 1.0 --rs-candidate-mode warm --device cuda --out-dir paper_aaai27\baseline_sources\_pcgnn_strict\mooccube_seed2027_full_formal_kg_warm --checkpoint-dir paper_aaai27\baseline_sources\_pcgnn_strict\mooccube_seed2027_full_formal_kg_warm\checkpoints
 ```
 
 Expected: an isolated report and checkpoint with nonempty cold item-macro metrics.

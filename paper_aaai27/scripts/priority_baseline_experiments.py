@@ -136,11 +136,17 @@ def tensorize_examples(examples: list[dict[str, object]], max_len: int):
     return item_seq, item_len, target
 
 
-def pcgnn_smoke_config_overrides(train_batch_size: int = 32, eval_batch_size: int = 64) -> dict[str, object]:
+def pcgnn_smoke_config_overrides(
+    train_batch_size: int = 32,
+    eval_batch_size: int = 64,
+    device: str = "cpu",
+) -> dict[str, object]:
+    if device not in {"cpu", "cuda"}:
+        raise ValueError(f"unsupported PCGNN device [{device}]")
     return {
-        "device": "cpu",
-        "use_gpu": False,
-        "gpu_id": -1,
+        "device": device,
+        "use_gpu": device == "cuda",
+        "gpu_id": 0 if device == "cuda" else -1,
         "show_progress": False,
         "train_batch_size": train_batch_size,
         "eval_batch_size": eval_batch_size,

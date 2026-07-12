@@ -1,0 +1,102 @@
+{
+  "model": "PCGNN",
+  "protocol": "strict_item_cold_full_catalog_item_macro",
+  "requested_device": "cuda",
+  "device": "cuda",
+  "dataset_name": "mooccube_strict_seed2025_full",
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2025",
+  "epochs": 1,
+  "learning_rate": 0.0001,
+  "train_batch_size": 32,
+  "eval_batch_size": 64,
+  "kg_batch_size": 64,
+  "kg_loss_weight": 1.0,
+  "kg_triples": 5115,
+  "rs_candidate_mode": "warm",
+  "rs_candidate_items": 596,
+  "max_train_examples": 64,
+  "max_val_examples": 64,
+  "max_test_examples": 64,
+  "train_sequence_examples": 64,
+  "validation_sequence_examples": 64,
+  "test_sequence_examples": 64,
+  "epoch_losses": [
+    8.379919528961182
+  ],
+  "epoch_loss_history": [
+    {
+      "loss": 8.379919528961182,
+      "rs_loss": 6.386752367019653,
+      "kg_loss": 1.9931674003601074
+    }
+  ],
+  "validation_metric": "full_cold_item_macro.N@10",
+  "best_epoch": 1,
+  "best_validation_score": 0.0,
+  "early_stop_patience": 0,
+  "stopped_early": false,
+  "best_checkpoint_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\_device_parity_cuda\\checkpoints\\best_model.pt",
+  "validation_history": [
+    {
+      "epoch": 1,
+      "loss": 8.379919528961182,
+      "rs_loss": 6.386752367019653,
+      "kg_loss": 1.9931674003601074,
+      "validation_metric": "full_cold_item_macro.N@10",
+      "validation_score": 0.0,
+      "improved": true,
+      "validation": {
+        "full_cold_item_macro": {
+          "R@5": 0.0,
+          "R@10": 0.0,
+          "R@20": 0.0,
+          "N@5": 0.0,
+          "N@10": 0.0,
+          "N@20": 0.0
+        },
+        "full_hot_item_macro": {},
+        "count_full_cold_item_macro": 19,
+        "count_full_hot_item_macro": 0,
+        "rows_full_cold": 64,
+        "rows_full_hot": 0
+      }
+    }
+  ],
+  "validation": {
+    "full_cold_item_macro": {
+      "R@5": 0.0,
+      "R@10": 0.0,
+      "R@20": 0.0,
+      "N@5": 0.0,
+      "N@10": 0.0,
+      "N@20": 0.0
+    },
+    "full_hot_item_macro": {},
+    "count_full_cold_item_macro": 19,
+    "count_full_hot_item_macro": 0,
+    "rows_full_cold": 64,
+    "rows_full_hot": 0
+  },
+  "test": {
+    "full_cold_item_macro": {
+      "R@5": 0.0,
+      "R@10": 0.041666666666666664,
+      "R@20": 0.041666666666666664,
+      "N@5": 0.0,
+      "N@10": 0.013888888888888888,
+      "N@20": 0.013888888888888888
+    },
+    "full_hot_item_macro": {},
+    "count_full_cold_item_macro": 24,
+    "count_full_hot_item_macro": 0,
+    "rows_full_cold": 64,
+    "rows_full_hot": 0
+  },
+  "notes": [
+    "This adapter bypasses PCGNN's stock sequential dataloader because it drops strict item-cold validation/test batches.",
+    "Training jointly optimizes PCGNN recommendation loss and KG margin-ranking loss; the external evaluator still uses strict full-catalog item-macro metrics.",
+    "The default RS candidate mode computes cross-entropy only over train-split items, so strict item-cold validation/test courses are not treated as negative classes during RS training.",
+    "Scores are produced by PCGNN full_sort_predict, then train-history items and padding token 0 are masked while the target score is restored.",
+    "Reported metrics are full-catalog item-macro Recall/NDCG under the existing strict split. Runs with capped examples are adaptation/smoke results, not final paper numbers."
+  ]
+}

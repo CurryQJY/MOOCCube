@@ -43,6 +43,16 @@ def resolve_workspace_path(path: Path) -> Path:
     return path if path.is_absolute() else ROOT / path
 
 
+def resolve_torch_device(requested_device: str):
+    import torch
+
+    if requested_device == "auto":
+        requested_device = "cuda" if torch.cuda.is_available() else "cpu"
+    if requested_device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("--device cuda was requested, but PyTorch cannot access a CUDA device")
+    return torch.device(requested_device)
+
+
 @contextmanager
 def clean_argv_for_recbole():
     old_argv = sys.argv[:]
@@ -271,6 +281,13 @@ def _iter_batches(examples: list[dict[str, object]], batch_size: int):
         yield examples[start : start + batch_size]
 
 
+def move_tensor_dict_to_device(values: dict[str, object], device):
+    return {
+        key: value.to(device) if hasattr(value, "to") else value
+        for key, value in values.items()
+    }
+
+
 @dataclass
 class KGTrainingPool:
     head_field: str
@@ -392,7 +409,8 @@ def calculate_rs_loss_with_candidates(model, interaction, candidate_item_ids=Non
     item_seq_len = interaction[model.ITEM_SEQ_LEN]
     pos_items = interaction[model.ITEM_ID]
     device = item_seq.device
-    candidates = torch.as_tensor(candidate_item_ids, dtype=torch.long, device=device)
+    candidate_indices = torch.as_tensor(candidate_item_ids, dtype=torch.long)
+    candidates = candidate_indices.to(device)
     if candidates.numel() == 0:
         raise ValueError("candidate_item_ids must not be empty")
 
@@ -404,14 +422,14 @@ def calculate_rs_loss_with_candidates(model, interaction, candidate_item_ids=Non
         raise ValueError(f"positive train items missing from candidate_item_ids: {missing[:5]}")
 
     output, cat_prediction = model.forward(item_seq, item_seq_len)
-    cat = model._get_cat_seq(candidates)
+    cat = model._get_cat_seq(candidate_indices)
     correspond_cat_emb = model.entity_embedding(cat)
     test_item_emb = torch.cat([model.entity_embedding(candidates), correspond_cat_emb], dim=1)
     logits = torch.matmul(output, test_item_emb.transpose(0, 1))
     loss = model.loss_fct(logits, labels)
 
     if getattr(model, "aux_weight", 0) != 0:
-        pos_cats = model.dataset.dataset.item_feat["first_level_category"][pos_items].to(device)
+        pos_cats = model.dataset.dataset.item_feat["first_level_category"][pos_items.detach().cpu()].to(device)
         all_cat = [i for i in range(0, model.n_cats)]
         all_cat = model.dataset.dataset.field2id_token["first_level_category"][all_cat]
         all_cat = [model.dataset.dataset.field2token_id["entity_id"][i] for i in all_cat]
@@ -435,6 +453,7 @@ def train_one_epoch(
     kg_loss_weight: float = 1.0,
     rng: np.random.Generator | None = None,
     rs_candidate_item_ids=None,
+    device=None,
 ) -> dict[str, float]:
     model.train()
     random.shuffle(examples)
@@ -445,20 +464,26 @@ def train_one_epoch(
     rng = rng or np.random.default_rng()
     for batch in _iter_batches(examples, batch_size):
         item_seq, item_len, target = tensorize_examples(batch, max_len)
-        interaction_data = {
+        interaction_data = move_tensor_dict_to_device(
+            {
             model.ITEM_SEQ: item_seq,
             model.ITEM_SEQ_LEN: item_len,
             model.ITEM_ID: target,
-        }
+            },
+            device,
+        )
         if use_kg:
             interaction_data.update(
-                sample_kg_batch(
+                move_tensor_dict_to_device(
+                    sample_kg_batch(
                     kg_pool,
                     batch_size=kg_batch_size,
                     neg_tail_field=model.NEG_TAIL_ENTITY_ID,
                     rng=rng,
+                    ),
+                    device,
                 )
-        )
+            )
         interaction = interaction_cls(interaction_data)
         optimizer.zero_grad()
         rs_loss = calculate_rs_loss_with_candidates(model, interaction, rs_candidate_item_ids)
@@ -490,6 +515,7 @@ def evaluate_pcgnn_full_item_macro(
     batch_size: int,
     k_list: Iterable[int] = (5, 10, 20),
     cold_threshold: int = 1,
+    device=None,
 ) -> dict[str, object]:
     import torch
 
@@ -498,7 +524,12 @@ def evaluate_pcgnn_full_item_macro(
     with torch.no_grad():
         for batch in _iter_batches(examples, batch_size):
             item_seq, item_len, _ = tensorize_examples(batch, max_len)
-            interaction = interaction_cls({model.ITEM_SEQ: item_seq, model.ITEM_SEQ_LEN: item_len})
+            interaction = interaction_cls(
+                move_tensor_dict_to_device(
+                    {model.ITEM_SEQ: item_seq, model.ITEM_SEQ_LEN: item_len},
+                    device,
+                )
+            )
             scores = model.full_sort_predict(interaction).detach().cpu().numpy()
             accumulator.add_batch(scores, batch, user_seen_items)
     return accumulator.result()
@@ -538,6 +569,9 @@ def run_pcgnn_strict_adapter(args: argparse.Namespace) -> dict[str, object]:
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+    device = resolve_torch_device(args.device)
+    if device.type == "cuda":
+        torch.cuda.manual_seed_all(args.seed)
 
     train_rows, val_df, test_df = _read_split_rows(args.split_root)
     val_rows = _frame_rows(val_df[val_df["_split_source"].eq("strict_item_cold_val")])
@@ -556,6 +590,7 @@ def run_pcgnn_strict_adapter(args: argparse.Namespace) -> dict[str, object]:
                 config_dict=pcgnn_smoke_config_overrides(
                     train_batch_size=args.train_batch_size,
                     eval_batch_size=args.eval_batch_size,
+                    device=device.type,
                 ),
             )
         dataset = create_dataset(config)
@@ -585,7 +620,11 @@ def run_pcgnn_strict_adapter(args: argparse.Namespace) -> dict[str, object]:
         )
         user_seen_items = build_user_seen_items(train_rows, token_map)
         train_item_ids = build_train_item_ids(train_rows, token_map)
-        rs_candidate_item_ids = train_item_ids if args.rs_candidate_mode == "warm" else None
+        rs_candidate_item_ids = (
+            train_item_ids
+            if args.rs_candidate_mode == "warm"
+            else list(range(dataset.num(config["ITEM_ID_FIELD"])))
+        )
         kg_pool = (
             build_kg_training_pool(
                 dataset.kg_feat,
@@ -599,7 +638,7 @@ def run_pcgnn_strict_adapter(args: argparse.Namespace) -> dict[str, object]:
         )
         kg_rng = np.random.default_rng(args.seed)
 
-        model = get_model(config["model"])(config, train_data).to("cpu")
+        model = get_model(config["model"])(config, train_data).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
         epoch_losses = []
         epoch_loss_history: list[dict[str, float]] = []
@@ -624,6 +663,7 @@ def run_pcgnn_strict_adapter(args: argparse.Namespace) -> dict[str, object]:
                 kg_loss_weight=args.kg_loss_weight,
                 rng=kg_rng,
                 rs_candidate_item_ids=rs_candidate_item_ids,
+                device=device,
             )
             loss = train_stats["loss"]
             epoch_losses.append(loss)
@@ -637,6 +677,7 @@ def run_pcgnn_strict_adapter(args: argparse.Namespace) -> dict[str, object]:
                 batch_size=args.eval_batch_size,
                 k_list=args.k_list,
                 cold_threshold=args.cold_threshold,
+                device=device,
             )
             state = {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
             improved = tracker.update(epoch, validation_report, state)
@@ -692,11 +733,16 @@ def run_pcgnn_strict_adapter(args: argparse.Namespace) -> dict[str, object]:
             batch_size=args.eval_batch_size,
             k_list=args.k_list,
             cold_threshold=args.cold_threshold,
+            device=device,
         )
 
     return {
         "model": "PCGNN",
         "protocol": "strict_item_cold_full_catalog_item_macro",
+        "seed": args.seed,
+        "session_graph_backend": "torch_batch_scatter",
+        "requested_device": args.device,
+        "device": str(device),
         "dataset_name": args.dataset_name,
         "split_root": str(args.split_root),
         "epochs": args.epochs,
@@ -806,6 +852,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--early-stop-patience", type=int, default=5)
     parser.add_argument("--checkpoint-dir", type=Path, default=OUT_DIR / "checkpoints")
     parser.add_argument("--seed", type=int, default=2025)
+    parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     return parser.parse_args(argv)
 
 

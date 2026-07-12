@@ -1,0 +1,76 @@
+{
+  "model": "PCGNN",
+  "protocol": "strict_item_cold_full_catalog_item_macro",
+  "seeds": [
+    2025,
+    2026,
+    2027
+  ],
+  "runs": 3,
+  "count_cold_items": 68,
+  "metrics": {
+    "R@5": {
+      "mean": 0.02407772474090461,
+      "std": 0.008561942967011923,
+      "values": [
+        0.025134703151686796,
+        0.03206210607662479,
+        0.015036364994402238
+      ]
+    },
+    "R@10": {
+      "mean": 0.05197384604480621,
+      "std": 0.011655194548883932,
+      "values": [
+        0.06225125154268782,
+        0.05436008596318311,
+        0.03931020062854771
+      ]
+    },
+    "R@20": {
+      "mean": 0.09969378147700399,
+      "std": 0.013723284449489821,
+      "values": [
+        0.11185974721302742,
+        0.1024040058943937,
+        0.08481759132359083
+      ]
+    },
+    "N@5": {
+      "mean": 0.014457814482921378,
+      "std": 0.005678727441069768,
+      "values": [
+        0.015253324591537295,
+        0.019696842030441898,
+        0.008423276826784943
+      ]
+    },
+    "N@10": {
+      "mean": 0.02336007356033647,
+      "std": 0.00611668072203269,
+      "values": [
+        0.026940295853395413,
+        0.02684256037918414,
+        0.016297364448429857
+      ]
+    },
+    "N@20": {
+      "mean": 0.0352587695310481,
+      "std": 0.006635279243747636,
+      "values": [
+        0.039417761215994045,
+        0.03875188723752332,
+        0.027606660139626923
+      ]
+    }
+  },
+  "reports": [
+    "D:/DeskTop/MOOCCube/paper_aaai27/baseline_sources/_pcgnn_strict/mooccube_seed2025_full_formal_kg_warm/pcgnn_strict_adapter_report.json",
+    "D:/DeskTop/MOOCCube/paper_aaai27/baseline_sources/_pcgnn_strict/mooccube_seed2026_full_formal_kg_warm/pcgnn_strict_adapter_report.json",
+    "D:/DeskTop/MOOCCube/paper_aaai27/baseline_sources/_pcgnn_strict/mooccube_seed2027_full_formal_kg_warm/pcgnn_strict_adapter_report.json"
+  ],
+  "notes": [
+    "2027 uses the tensor-equivalent torch_batch_scatter session graph backend.",
+    "2025/2026 are legacy formal reports; 2026 uses CUDA and 2025 predates device metadata."
+  ]
+}

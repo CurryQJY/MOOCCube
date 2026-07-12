@@ -27,6 +27,7 @@ _legacy_build_eval_pos_item_vecs = eval_mod.build_eval_pos_item_vecs
 _legacy_make_fast3_optimizer = legacy._make_fast3_optimizer
 _legacy_build_feedback_ckpt_state = legacy._build_feedback_ckpt_state
 _legacy_load_feedback_checkpoint = legacy._load_feedback_checkpoint
+_legacy_save_feedback_checkpoint = legacy._save_feedback_checkpoint
 _legacy_write_static_manifest = legacy._write_static_manifest
 _legacy_compute_early_stop_score = legacy._compute_early_stop_score
 _legacy_setup_seed = legacy.setup_seed
@@ -53,7 +54,7 @@ class RepairedFast3Config(legacy.Fast3Config):
             # Keep RecPPO attribution clean; ablation shows OFF is better under v2 recipe.
             self.use_content_delta = False
         if "USIM_RL_RESIDUAL_SCALE" not in os.environ:
-            self.rl_residual_scale = 0.06
+            self.rl_residual_scale = 0.30
         self.recppo_enabled = (
             float(self.ppo_loss_weight) > 0.0
             and str(self.rollout_policy).strip().lower() == "ppo"
@@ -62,17 +63,6 @@ class RepairedFast3Config(legacy.Fast3Config):
         self.reward_step_cost = float(os.environ.get("USIM_FB_REWARD_STEP_COST", "0.01"))
         self.recppo_terminal_value_weight = float(os.environ.get("USIM_RECPPO_TERM_VALUE_W", "0.20"))
         self.recppo_behavior_ce_weight = float(os.environ.get("USIM_RECPPO_BEHAVIOR_CE_W", "0.20"))
-        self.recppo_behavior_ce_final_weight = max(
-            0.0,
-            min(
-                self.recppo_behavior_ce_weight,
-                float(os.environ.get("USIM_RECPPO_BEHAVIOR_CE_FINAL_W", "0.02")),
-            ),
-        )
-        self.recppo_behavior_ce_anneal_epochs = max(
-            1,
-            int(os.environ.get("USIM_RECPPO_BEHAVIOR_CE_ANNEAL_EPOCHS", "10")),
-        )
         self.recppo_bootstrap_next_value = os.environ.get("USIM_RECPPO_BOOTSTRAP_NEXT", "1") == "1"
         self.recppo_inject_behavior_user = os.environ.get("USIM_RECPPO_INJECT_BEHAVIOR_USER", "1") == "1"
         self.recppo_teacher_force_behavior = os.environ.get("USIM_RECPPO_TEACHER_FORCE_BEHAVIOR", "0") == "1"
@@ -89,18 +79,6 @@ class RepairedFast3Config(legacy.Fast3Config):
         self.recppo_critic_lr = float(os.environ.get("USIM_RECPPO_CRITIC_LR", "1e-3"))
         self.recppo_max_grad_norm = float(os.environ.get("USIM_RECPPO_MAX_GRAD_NORM", "1.0"))
         self.recppo_rank_gain_weight = float(os.environ.get("USIM_RECPPO_RANK_GAIN_W", "1.0"))
-        self.recppo_embedding_gain_weight = max(
-            0.0,
-            float(os.environ.get("USIM_RECPPO_EMBEDDING_GAIN_W", "0.10")),
-        )
-        self.recppo_course_reward_scale = max(
-            0.0,
-            float(os.environ.get("USIM_RECPPO_COURSE_REWARD_SCALE", "0.10")),
-        )
-        self.recppo_course_reward_clip = max(
-            0.0,
-            float(os.environ.get("USIM_RECPPO_COURSE_REWARD_CLIP", "0.02")),
-        )
         self.recppo_rank_topk = max(1, int(os.environ.get("USIM_RECPPO_RANK_TOPK", "10")))
         self.recppo_rank_temperature = max(
             1e-4,
@@ -116,7 +94,7 @@ class RepairedFast3Config(legacy.Fast3Config):
         self.recppo_max_residual_norm = float(os.environ.get("USIM_RECPPO_MAX_RESIDUAL_NORM", "0.5"))
         self.recppo_residual_ramp_epochs = max(
             1,
-            int(os.environ.get("USIM_RECPPO_RESIDUAL_RAMP_EPOCHS", "1")),
+            int(os.environ.get("USIM_RECPPO_RESIDUAL_RAMP_EPOCHS", "5")),
         )
         self.recppo_target_kl = max(0.0, float(os.environ.get("USIM_RECPPO_TARGET_KL", "0.05")))
         self.recppo_guard_hot_ratio = min(
@@ -156,10 +134,6 @@ class RepairedFast3Config(legacy.Fast3Config):
             "USIM_RECPPO_EARLY_STOP_MODE",
             "recppo_stage_guarded",
         ).strip().lower()
-        self.early_stop_min_delta = max(
-            0.0,
-            float(os.environ.get("USIM_RECPPO_EARLY_STOP_MIN_DELTA", "0")),
-        )
 
 
 def repaired_strict_cold_item_mask(model, device):
@@ -291,10 +265,17 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
             + list(self.recppo_stop_head.parameters())
         )
         critic_params = list(self.agent.critic_head.parameters())
+        update_scale = max(0.0, float(self.cfg.ppo_loss_weight))
         self._recppo_optimizer = torch.optim.Adam(
             [
-                {"params": actor_params, "lr": float(self.cfg.recppo_actor_lr)},
-                {"params": critic_params, "lr": float(self.cfg.recppo_critic_lr)},
+                {
+                    "params": actor_params,
+                    "lr": float(self.cfg.recppo_actor_lr) * update_scale,
+                },
+                {
+                    "params": critic_params,
+                    "lr": float(self.cfg.recppo_critic_lr) * update_scale,
+                },
             ]
         )
         return self._recppo_optimizer
@@ -304,6 +285,9 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
             self._recppo_phase_state.zero_()
             return
         entering_phase = int(self._recppo_phase_state.item()) == 0
+        keep_ids = self.recppo_parameter_ids() | {id(self.recppo_outer_anchor)}
+        for param in self.parameters():
+            param.requires_grad_(id(param) in keep_ids)
         self._recppo_phase_state.fill_(1)
         if entering_phase:
             self._clear_recppo_rank_cache()
@@ -325,8 +309,8 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
         self._recppo_epoch_state.add_(1)
         self._recppo_epoch_pending = False
         if int(self._recppo_phase_state.item()) == 1:
-            self._clear_recppo_rank_cache(clear_history=False)
-        elif (
+            self._activate_recppo_phase()
+        if (
             int(self._recppo_phase_state.item()) == 0
             and int(self._recppo_epoch_state.item()) >= int(self.cfg.recppo_warmup_epochs)
         ):
@@ -358,6 +342,9 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
                 self.optimize_recppo(self._last_recppo_trajectory)
                 self._accumulate_recppo_diagnostics(self._last_recppo_info)
                 reported_ppo_loss = float(self._last_recppo_info.get("recppo_total_loss", 0.0))
+                loss = self.recppo_outer_anchor * 0.0 + self.recppo_outer_anchor.new_tensor(
+                    reported_ppo_loss
+                )
                 stats["ppo_loss"] = reported_ppo_loss
                 stats["ppo_loss_raw"] = stats["ppo_loss"]
             stats["recppo_phase"] = "ppo" if recppo_active else "warmup"
@@ -391,19 +378,6 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
         phase_epoch = max(1, epoch_idx - int(self.cfg.recppo_warmup_epochs) + 1)
         ramp_epochs = max(1, int(getattr(self.cfg, "recppo_residual_ramp_epochs", 1)))
         return configured * min(1.0, float(phase_epoch) / float(ramp_epochs))
-
-    def _effective_recppo_behavior_ce_weight(self):
-        start = float(self.cfg.recppo_behavior_ce_weight)
-        final = float(self.cfg.recppo_behavior_ce_final_weight)
-        if int(self._recppo_phase_state.item()) != 1:
-            return start
-        phase_epoch = max(
-            0,
-            int(self._recppo_epoch_state.item()) - int(self.cfg.recppo_warmup_epochs),
-        )
-        anneal_epochs = max(1, int(self.cfg.recppo_behavior_ce_anneal_epochs))
-        progress = min(1.0, float(phase_epoch) / float(anneal_epochs))
-        return start + (final - start) * progress
 
     def _recppo_blend_state(self, base_h, state_h):
         residual = self._effective_recppo_residual_scale() * (state_h - base_h)
@@ -601,29 +575,13 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
             for key in ("concept_bonus", "prereq_gap", "difficulty_gap", "redundant")
         }
 
-    def _scaled_recppo_course_reward(self, course_terms):
-        contribution = (
-            float(self.cfg.feedback_course_concept_weight) * course_terms["concept_bonus"]
-            - float(self.cfg.feedback_course_prereq_weight) * course_terms["prereq_gap"]
-            - float(self.cfg.feedback_course_difficulty_weight) * course_terms["difficulty_gap"]
-            - float(self.cfg.feedback_course_redundant_weight) * course_terms["redundant"]
-        )
-        contribution = float(self.cfg.recppo_course_reward_scale) * contribution
-        clip = float(self.cfg.recppo_course_reward_clip)
-        if clip <= 0.0:
-            return torch.zeros_like(contribution)
-        return contribution.clamp(-clip, clip)
-
-    def _clear_recppo_rank_cache(self, clear_history=True):
+    def _clear_recppo_rank_cache(self):
         self._recppo_rank_topk_cache = {}
         self._recppo_train_user_ids_cache = None
         self._recppo_train_user_pool_signature = None
         self._recppo_rank_cache_hits = 0
         self._recppo_rank_cache_misses = 0
         self._recppo_train_user_pool_size = 0
-        if clear_history:
-            self._recppo_item_positive_user_cache = None
-            self._recppo_item_positive_signature = None
 
     def _recppo_train_user_pool(self, user_bank_norm, user_seen_items):
         if user_bank_norm is None:
@@ -649,26 +607,7 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
         user_ids = self._recppo_train_user_ids_cache.to(device=user_bank_norm.device)
         return F.normalize(user_bank_norm[user_ids].detach(), dim=1), user_ids
 
-    def _recppo_item_positive_users(self, user_seen_items):
-        if not isinstance(user_seen_items, dict):
-            raise RuntimeError("RecPPO global rank reward requires train-only user histories")
-        signature = (id(user_seen_items), len(user_seen_items))
-        if self._recppo_item_positive_signature != signature:
-            item_users = {}
-            for user_id, seen_items in user_seen_items.items():
-                user_id = int(user_id)
-                if user_id < 0:
-                    continue
-                for item_id in seen_items:
-                    item_users.setdefault(int(item_id), set()).add(user_id)
-            self._recppo_item_positive_user_cache = {
-                item_id: tuple(sorted(user_ids))
-                for item_id, user_ids in item_users.items()
-            }
-            self._recppo_item_positive_signature = signature
-        return self._recppo_item_positive_user_cache
-
-    def _recppo_item_hard_negative_user_ids(
+    def _recppo_target_topk_user_ids(
         self,
         item_idx,
         target_emb,
@@ -683,7 +622,6 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
             raise ValueError("RecPPO rank reward item/target batch size mismatch")
         if user_bank_norm is None:
             raise RuntimeError("RecPPO global rank reward requires the training user embedding bank")
-        item_positive_users = self._recppo_item_positive_users(user_seen_items)
 
         item_ids = [int(value) for value in item_idx.cpu().tolist()]
         missing_items = []
@@ -699,47 +637,26 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
                 self._recppo_rank_cache_misses += 1
 
         if missing_items:
-            train_pool, train_user_ids = self._recppo_train_user_pool(user_bank_norm, user_seen_items)
+            train_pool, train_user_ids = self._recppo_train_user_pool(
+                user_bank_norm,
+                user_seen_items,
+            )
             missing_target_tensor = F.normalize(torch.stack(missing_targets, dim=0), dim=1)
             top_k = min(int(self.cfg.recppo_rank_topk), int(train_pool.size(0)))
             chunk_size = int(self.cfg.recppo_rank_item_chunk_size)
             for start in range(0, len(missing_items), chunk_size):
                 end = min(start + chunk_size, len(missing_items))
                 scores = torch.matmul(missing_target_tensor[start:end], train_pool.t())
+                top_local = torch.topk(
+                    scores,
+                    k=top_k,
+                    dim=1,
+                    largest=True,
+                    sorted=True,
+                ).indices
+                top_user_ids = train_user_ids[top_local]
                 for offset, item_id in enumerate(missing_items[start:end]):
-                    row_scores = scores[offset].clone()
-                    positive_ids = item_positive_users.get(item_id, ())
-                    if positive_ids:
-                        positive_tensor = torch.tensor(
-                            positive_ids,
-                            dtype=torch.long,
-                            device=train_user_ids.device,
-                        )
-                        local = torch.searchsorted(train_user_ids, positive_tensor)
-                        safe_local = local.clamp(max=max(0, train_user_ids.numel() - 1))
-                        present = (local < train_user_ids.numel()) & (
-                            train_user_ids[safe_local] == positive_tensor
-                        )
-                        row_scores[safe_local[present]] = -torch.inf
-                    available = int(torch.isfinite(row_scores).sum().item())
-                    if available < 1:
-                        raise RuntimeError(
-                            f"RecPPO rank reward found no train-user negative for item {item_id}"
-                        )
-                    row_k = min(top_k, available)
-                    top_local = torch.topk(
-                        row_scores,
-                        k=row_k,
-                        largest=True,
-                        sorted=True,
-                    ).indices
-                    top_user_ids = train_user_ids[top_local]
-                    if row_k < top_k:
-                        top_user_ids = torch.cat(
-                            [top_user_ids, top_user_ids[-1:].expand(top_k - row_k)],
-                            dim=0,
-                        )
-                    self._recppo_rank_topk_cache[item_id] = top_user_ids.detach().clone()
+                    self._recppo_rank_topk_cache[item_id] = top_user_ids[offset].detach().clone()
 
         return torch.stack(
             [self._recppo_rank_topk_cache[item_id] for item_id in item_ids],
@@ -754,43 +671,36 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
         item_idx,
         user_bank_norm,
         user_seen_items,
-        positive_user_ids,
     ):
-        positive_user_ids = positive_user_ids.detach().long().view(-1)
-        item_ids = item_idx.detach().long().view(-1)
-        if positive_user_ids.numel() != item_ids.numel():
-            raise ValueError("RecPPO rank reward positive-user/item batch size mismatch")
-        item_positive_users = self._recppo_item_positive_users(user_seen_items)
-        for item_id, user_id in zip(item_ids.cpu().tolist(), positive_user_ids.cpu().tolist()):
-            if int(user_id) not in item_positive_users.get(int(item_id), ()):
-                raise RuntimeError(
-                    "RecPPO rank reward positive user is not present in the train-only item history"
-                )
-        hard_negative_ids = self._recppo_item_hard_negative_user_ids(
+        top_user_ids = self._recppo_target_topk_user_ids(
             item_idx,
             target_emb,
             user_bank_norm,
             user_seen_items,
         )
-        positive_users = F.normalize(
-            user_bank_norm[positive_user_ids].detach(),
-            dim=1,
-        ).unsqueeze(1)
-        hard_negative_users = F.normalize(
-            user_bank_norm[hard_negative_ids].detach(),
-            dim=2,
-        )
-        listwise_users = torch.cat([positive_users, hard_negative_users], dim=1)
+        top_users = F.normalize(user_bank_norm[top_user_ids].detach(), dim=2)
         temperature = float(self.cfg.recppo_rank_temperature)
+        target_scores = (
+            F.normalize(target_emb.detach(), dim=1).unsqueeze(1) * top_users
+        ).sum(dim=2) / temperature
         prev_scores = (
-            F.normalize(prev_h.detach(), dim=1).unsqueeze(1) * listwise_users
+            F.normalize(prev_h.detach(), dim=1).unsqueeze(1) * top_users
         ).sum(dim=2) / temperature
         next_scores = (
-            F.normalize(next_h.detach(), dim=1).unsqueeze(1) * listwise_users
+            F.normalize(next_h.detach(), dim=1).unsqueeze(1) * top_users
         ).sum(dim=2) / temperature
-        labels = torch.zeros(prev_scores.size(0), dtype=torch.long, device=prev_scores.device)
-        prev_ce = F.cross_entropy(prev_scores, labels, reduction="none").unsqueeze(1)
-        next_ce = F.cross_entropy(next_scores, labels, reduction="none").unsqueeze(1)
+        discount = 1.0 / torch.log2(
+            torch.arange(
+                top_users.size(1),
+                device=prev_h.device,
+                dtype=prev_h.dtype,
+            )
+            + 2.0
+        )
+        teacher = torch.softmax(target_scores, dim=1) * discount.view(1, -1)
+        teacher = teacher / teacher.sum(dim=1, keepdim=True).clamp_min(1e-8)
+        prev_ce = -(teacher * F.log_softmax(prev_scores, dim=1)).sum(dim=1, keepdim=True)
+        next_ce = -(teacher * F.log_softmax(next_scores, dim=1)).sum(dim=1, keepdim=True)
         return self._normalize_recppo_rank_gain((prev_ce - next_ce).detach())
 
     def _recppo_rank_transition_scale(self):
@@ -834,9 +744,7 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
                 "actions",
                 "action_masks",
                 "behavior_actions",
-                "embedding_gains",
                 "rank_gains",
-                "course_rewards",
             )
         }
         if target_emb is not None:
@@ -848,7 +756,6 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
             "steps": 0,
             "step_gain": 0.0,
             "rank_gain": 0.0,
-            "course_reward": 0.0,
             "collapse_penalty": 0.0,
             "course_sample_fit": 0.0,
             "sage_active": 0.0,
@@ -1052,10 +959,6 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
                     raise RuntimeError(
                         "RecPPO global rank reward requires the training user bank and warm item IDs"
                     )
-                if global_rank_active and behavior_user_idx is None:
-                    raise RuntimeError(
-                        "RecPPO global rank reward requires observed train-positive users"
-                    )
                 if global_rank_active:
                     rank_gain = self._global_train_user_listwise_gain(
                         reward_prev_h,
@@ -1064,20 +967,18 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
                         item_idx=item_idx,
                         user_bank_norm=user_bank_norm,
                         user_seen_items=user_seen_items,
-                        positive_user_ids=behavior_user_idx,
                     )
                 gain_clip = float(self.cfg.reward_gain_clip)
                 step_gain = step_gain.clamp(-gain_clip, gain_clip)
                 rank_gain = rank_gain.clamp(-gain_clip, gain_clip)
                 reward = (
-                    float(self.cfg.recppo_embedding_gain_weight) * step_gain
+                    float(self.cfg.reward_gain_weight) * step_gain
                     + float(self.cfg.recppo_rank_gain_weight) * rank_gain
                 )
             transition_float = transition_mask.float().unsqueeze(1)
             reward = (reward - float(self.cfg.reward_step_cost)) * transition_float
 
             course_terms = self._zero_course_terms(batch_size, self.device)
-            course_reward = torch.zeros_like(reward)
             if (
                 bool(getattr(self.cfg, "use_course_reward", True))
                 and item_idx is not None
@@ -1092,17 +993,19 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
                 )
                 for key in course_terms:
                     course_terms[key] = course_terms[key] * transition_float
-                course_reward = self._scaled_recppo_course_reward(course_terms)
-                reward = reward + course_reward
+                reward = (
+                    reward
+                    + float(self.cfg.feedback_course_concept_weight) * course_terms["concept_bonus"]
+                    - float(self.cfg.feedback_course_prereq_weight) * course_terms["prereq_gap"]
+                    - float(self.cfg.feedback_course_difficulty_weight) * course_terms["difficulty_gap"]
+                    - float(self.cfg.feedback_course_redundant_weight) * course_terms["redundant"]
+                )
             reward = reward * valid.float().unsqueeze(1)
             if valid.any():
                 valid_reward_values.append(reward[valid].detach().view(-1))
 
             candidate_stats["step_gain"] += float(step_gain[valid].mean().item()) if valid.any() else 0.0
             candidate_stats["rank_gain"] += float(rank_gain[valid].mean().item()) if valid.any() else 0.0
-            candidate_stats["course_reward"] += (
-                float(course_reward[valid].mean().item()) if valid.any() else 0.0
-            )
             candidate_stats["reward_step_cost"] += float(self.cfg.reward_step_cost)
             for stat_key, term_key in (
                 ("course_prereq_gap", "prereq_gap"),
@@ -1115,9 +1018,7 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
             trajectory["values"].append(value.detach())
             trajectory["rewards"].append(reward.detach())
             trajectory["entropies"].append(entropy.detach())
-            trajectory["embedding_gains"].append(step_gain.detach())
             trajectory["rank_gains"].append(rank_gain.detach())
-            trajectory["course_rewards"].append(course_reward.detach())
 
         if candidate_stats["steps"] > 0:
             for key in (
@@ -1125,7 +1026,6 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
                 "topm_coverage",
                 "step_gain",
                 "rank_gain",
-                "course_reward",
                 "collapse_penalty",
                 "course_sample_fit",
                 "sage_active",
@@ -1161,29 +1061,16 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
 
     def _terminal_value_loss(self, trajectory):
         target_emb = trajectory.get("target_emb")
-        time_steps = trajectory.get("time_steps", [])
-        dones = trajectory.get("dones", [])
-        valids = trajectory.get("valids", [])
-        if (
-            target_emb is None
-            or len(time_steps) == 0
-            or len(dones) != len(time_steps)
-            or len(valids) != len(time_steps)
-        ):
+        if target_emb is None or len(trajectory.get("time_steps", [])) == 0:
             return next(self.parameters()).sum() * 0.0
         batch_size = target_emb.size(0)
-        done_tensor = torch.stack(dones).bool()
-        valid_tensor = torch.stack(valids).bool()
-        terminal_tensor = done_tensor & valid_tensor
-        has_terminal = terminal_tensor.any(dim=0)
-        if not bool(has_terminal.any().item()):
-            return next(self.parameters()).sum() * 0.0
-        first_terminal_step = terminal_tensor.to(dtype=torch.int64).argmax(dim=0)
-        rows = torch.arange(batch_size, device=target_emb.device)[has_terminal]
-        selected_steps = first_terminal_step[has_terminal]
-        time_tensor = torch.stack(time_steps)
-        states = target_emb[has_terminal]
-        times = time_tensor[selected_steps, rows].view(-1, 1)
+        target_states = []
+        target_times = []
+        for time_step in trajectory["time_steps"]:
+            target_states.append(target_emb)
+            target_times.append(time_step)
+        states = torch.cat(target_states, dim=0)
+        times = torch.cat(target_times, dim=0).view(-1, 1)
         values = self._bound_recppo_value(self._agent_value(states, times)).view(-1)
         return 0.5 * values.pow(2).mean()
 
@@ -1319,11 +1206,10 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
             + float(self.cfg.ppo_coeffs["value"]) * critic_loss
             - float(self.cfg.ppo_coeffs["entropy"]) * entropy
         )
-        behavior_ce_weight = self._effective_recppo_behavior_ce_weight()
         total_loss = (
             float(self.cfg.ppo_loss_weight) * policy_loss
             + float(self.cfg.recppo_terminal_value_weight) * terminal_loss
-            + behavior_ce_weight * behavior_ce
+            + float(self.cfg.recppo_behavior_ce_weight) * behavior_ce
         )
         valid_ratio = ratio[valids]
         ratio_deviation = (
@@ -1343,7 +1229,6 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
             "recppo_critic_loss": float(critic_loss.detach().item()),
             "recppo_terminal_value_loss": float(terminal_loss.detach().item()),
             "recppo_behavior_ce_loss": float(behavior_ce.detach().item()),
-            "recppo_behavior_ce_weight": float(behavior_ce_weight),
             "recppo_entropy": float(entropy.detach().item()),
             "recppo_approx_kl": float(approx_kl.detach().item()),
             "recppo_clip_fraction": float(clip_fraction.detach().item()),
@@ -1364,16 +1249,6 @@ class RepairedFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
         else:
             info["recppo_rank_gain_mean"] = 0.0
             info["recppo_rank_gain_std"] = 0.0
-        for trajectory_key, info_key in (
-            ("embedding_gains", "recppo_embedding_gain_mean"),
-            ("course_rewards", "recppo_course_reward_mean"),
-        ):
-            values = trajectory.get(trajectory_key, [])
-            if len(values) == len(trajectory["states"]):
-                stacked = torch.stack(values).squeeze(-1)
-                info[info_key] = float(stacked[valids].mean().item()) if valids.any() else 0.0
-            else:
-                info[info_key] = 0.0
         cache_total = self._recppo_rank_cache_hits + self._recppo_rank_cache_misses
         info["recppo_rank_cache_hit_rate"] = (
             float(self._recppo_rank_cache_hits) / float(cache_total) if cache_total > 0 else 0.0
@@ -1532,11 +1407,68 @@ def repaired_build_feedback_ckpt_state(*args, **kwargs):
     return state
 
 
+_WARMUP_STAGE_IGNORED_KEYS = {
+    "n_epochs",
+    "early_stop_patience",
+    "early_stop_score_mode",
+    "rl_residual_scale",
+    "ppo_loss_weight",
+    "recppo_actor_lr",
+    "recppo_critic_lr",
+    "recppo_target_kl",
+    "recppo_policy_temperature",
+    "recppo_behavior_ce_weight",
+    "recppo_terminal_value_weight",
+    "recppo_guard_hot_ratio",
+    "early_stop_min_delta",
+}
+
+
+def repaired_warmup_stage_fingerprint(cfg, split_info=None, script_path=None):
+    _, payload = repaired_static_train_config_fingerprint(
+        cfg, split_info=split_info, script_path=script_path
+    )
+    payload = {
+        key: value for key, value in payload.items()
+        if key not in _WARMUP_STAGE_IGNORED_KEYS
+    }
+    return checkpoint_mod._stable_json_fingerprint(payload)
+
+
+def repaired_build_warmup_stage_state(state):
+    stage = dict(state)
+    stage["checkpoint_kind"] = "warmup_stage"
+    stage["warmup_stage_epoch"] = int(stage.get("next_epoch", 0) or 0)
+    stage["recppo_optimizer_state"] = None
+    stage["recppo_best_optimizer_state"] = None
+    return stage
+
+
+def repaired_save_feedback_checkpoint(ckpt_dir, state, snapshot_name=None):
+    warmup_epoch = int(os.environ.get("USIM_RECPPO_WARMUP_EPOCHS", "-1") or -1)
+    next_epoch = int((state or {}).get("next_epoch", -1) or -1)
+    if warmup_epoch > 0 and next_epoch == warmup_epoch:
+        state = repaired_build_warmup_stage_state(state)
+        payload = state.get("train_config_payload") or {}
+        stage_payload = {
+            key: value for key, value in payload.items()
+            if key not in _WARMUP_STAGE_IGNORED_KEYS
+        }
+        stage_fp, stage_payload = checkpoint_mod._stable_json_fingerprint(stage_payload)
+        state["warmup_stage_fingerprint"] = stage_fp
+        state["warmup_stage_payload"] = stage_payload
+        snapshot_name = "warmup_stage.pt"
+    return _legacy_save_feedback_checkpoint(ckpt_dir, state, snapshot_name=snapshot_name)
+
+
 def repaired_load_feedback_checkpoint(*args, **kwargs):
     global _candidate_recppo_best_optimizer_state
     global _candidate_recppo_optimizer_state, _pending_recppo_best_optimizer_state
     global _pending_recppo_optimizer_state
     state = _legacy_load_feedback_checkpoint(*args, **kwargs)
+    stage_path = os.environ.get("USIM_FB_WARMUP_STAGE_CKPT", "").strip()
+    if state is None and stage_path:
+        state = torch.load(stage_path, map_location="cpu")
     _pending_recppo_optimizer_state = None
     _pending_recppo_best_optimizer_state = None
     _candidate_recppo_optimizer_state = (
@@ -1552,7 +1484,24 @@ def repaired_checkpoint_config_matches(*args, **kwargs):
     global _candidate_recppo_best_optimizer_state
     global _candidate_recppo_optimizer_state, _pending_recppo_best_optimizer_state
     global _pending_recppo_optimizer_state
-    result = _legacy_checkpoint_config_matches(*args, **kwargs)
+    resume_state = args[0] if args else kwargs.get("resume_state")
+    cfg = args[1] if len(args) > 1 else kwargs.get("cfg")
+    if isinstance(resume_state, dict) and resume_state.get("checkpoint_kind") == "warmup_stage":
+        split_info = kwargs.get("split_info")
+        script_path = kwargs.get("script_path")
+        current_fp, _ = repaired_warmup_stage_fingerprint(
+            cfg, split_info=split_info, script_path=script_path
+        )
+        saved_fp = resume_state.get("warmup_stage_fingerprint")
+        accepted = bool(saved_fp) and str(saved_fp) == str(current_fp)
+        result = (
+            accepted,
+            "warmup stage fingerprint match" if accepted else "warmup stage fingerprint mismatch",
+            current_fp,
+            saved_fp,
+        )
+    else:
+        result = _legacy_checkpoint_config_matches(*args, **kwargs)
     accepted = bool(result[0]) if isinstance(result, tuple) and result else False
     _pending_recppo_optimizer_state = (
         _candidate_recppo_optimizer_state if accepted else None
@@ -1574,8 +1523,8 @@ def repaired_static_train_config_fingerprint(cfg, split_info=None, script_path=N
     payload.update(
         {
             "recppo_fingerprint_schema": 2,
-            "recppo_rank_reward_source": "train_positive_vs_global_hard_negatives",
-            "recppo_joint_supervised_backbone": True,
+            "recppo_rank_reward_source": "global_train_user_topk",
+            "recppo_joint_supervised_backbone": False,
             "rl_residual_scale": float(cfg.rl_residual_scale),
             "reward_step_cost": float(cfg.reward_step_cost),
             "reward_gain_clip": float(cfg.reward_gain_clip),
@@ -1585,12 +1534,7 @@ def repaired_static_train_config_fingerprint(cfg, split_info=None, script_path=N
             "recppo_rank_temperature": float(cfg.recppo_rank_temperature),
             "recppo_rank_normalize_transition": bool(cfg.recppo_rank_normalize_transition),
             "recppo_rank_item_chunk_size": int(cfg.recppo_rank_item_chunk_size),
-            "recppo_embedding_gain_weight": float(cfg.recppo_embedding_gain_weight),
-            "recppo_course_reward_scale": float(cfg.recppo_course_reward_scale),
-            "recppo_course_reward_clip": float(cfg.recppo_course_reward_clip),
             "recppo_behavior_ce_weight": float(cfg.recppo_behavior_ce_weight),
-            "recppo_behavior_ce_final_weight": float(cfg.recppo_behavior_ce_final_weight),
-            "recppo_behavior_ce_anneal_epochs": int(cfg.recppo_behavior_ce_anneal_epochs),
             "recppo_terminal_value_weight": float(cfg.recppo_terminal_value_weight),
             "recppo_residual_ramp_epochs": int(cfg.recppo_residual_ramp_epochs),
             "recppo_max_residual_norm": float(cfg.recppo_max_residual_norm),
@@ -1682,7 +1626,7 @@ def repaired_write_static_manifest(split_info, exports, cfg, course_stats, data_
         "termination_head": "separate_state_head",
         "step_cost": float(cfg.reward_step_cost),
         "rank_gain_weight": float(cfg.recppo_rank_gain_weight),
-        "rank_reward_source": "train_positive_vs_global_hard_negatives",
+        "rank_reward_source": "global_train_user_topk",
         "rank_topk": int(cfg.recppo_rank_topk),
         "rank_temperature": float(cfg.recppo_rank_temperature),
         "rank_normalize_transition": bool(cfg.recppo_rank_normalize_transition),
@@ -1690,13 +1634,8 @@ def repaired_write_static_manifest(split_info, exports, cfg, course_stats, data_
         "max_residual_norm": float(cfg.recppo_max_residual_norm),
         "residual_ramp_epochs": int(cfg.recppo_residual_ramp_epochs),
         "behavior_ce_weight": float(cfg.recppo_behavior_ce_weight),
-        "behavior_ce_final_weight": float(cfg.recppo_behavior_ce_final_weight),
-        "behavior_ce_anneal_epochs": int(cfg.recppo_behavior_ce_anneal_epochs),
-        "embedding_gain_weight": float(cfg.recppo_embedding_gain_weight),
-        "course_reward_scale": float(cfg.recppo_course_reward_scale),
-        "course_reward_clip": float(cfg.recppo_course_reward_clip),
-        "joint_supervised_backbone": True,
-        "hard_negative_cache_scope": "epoch",
+        "joint_supervised_backbone": False,
+        "hard_negative_cache_scope": "run",
         "terminal_value_weight": float(cfg.recppo_terminal_value_weight),
         "require_policy_checkpoint": bool(cfg.recppo_require_policy_checkpoint),
         "guard_hot_ratio": float(cfg.recppo_guard_hot_ratio),
@@ -1764,6 +1703,7 @@ def install_repaired_bindings():
     legacy._make_fast3_optimizer = repaired_make_fast3_optimizer
     legacy._build_feedback_ckpt_state = repaired_build_feedback_ckpt_state
     legacy._load_feedback_checkpoint = repaired_load_feedback_checkpoint
+    legacy._save_feedback_checkpoint = repaired_save_feedback_checkpoint
     legacy._checkpoint_config_matches = repaired_checkpoint_config_matches
     legacy._static_train_config_fingerprint = repaired_static_train_config_fingerprint
     legacy._write_static_manifest = repaired_write_static_manifest

@@ -18,6 +18,7 @@ param(
     [int]$RetryDelaySeconds = 120,
     [int]$MinFreeGpuMiB = 9000,
     [int]$GpuPollSeconds = 300,
+    [switch]$RunAllSeeds,
     [switch]$SkipGpuWait,
     [switch]$PreflightOnly,
     [switch]$StartupProbe,
@@ -630,7 +631,7 @@ $decisionRows = @()
 $failures = @()
 
 Write-QueueLine "PLAN frozen_script=$frozenScriptAbs sha256=$expectedScriptHash"
-Write-QueueLine "PLAN pilot_seed=$PilotSeed remaining_seeds=$(Format-ListValue $RemainingSeeds) gate_metric=$GateMetric min_drop=$GateMinDrop"
+Write-QueueLine "PLAN pilot_seed=$PilotSeed remaining_seeds=$(Format-ListValue $RemainingSeeds) gate_metric=$GateMetric min_drop=$GateMinDrop run_all_seeds=$RunAllSeeds"
 foreach ($definition in @($fullDefinition) + @($variants)) {
     Write-QueueLine "PLAN variant=$($definition.Name) | $($definition.Rationale)"
 }
@@ -710,7 +711,7 @@ try {
             }
         }
         $effective = $drop -ge $GateMinDrop
-        $action = if ($effective) { "run_remaining_seeds" } else { "skip_remaining_seeds" }
+        $action = if ($RunAllSeeds) { "run_all_seeds" } elseif ($effective) { "run_remaining_seeds" } else { "skip_remaining_seeds" }
         Write-QueueLine ("GATE variant={0} full={1:F8} ablation={2:F8} drop={3:F8} lower_early={4}/4 effective={5} action={6}" -f $definition.Name, $fullGateValue, $variantGateValue, $drop, $lowerCount, $effective, $action)
 
         $decisionRows += [pscustomobject]@{
@@ -729,7 +730,7 @@ try {
         }
         $decisionRows | Export-Csv -LiteralPath $decisionCsv -NoTypeInformation -Encoding UTF8
 
-        if (-not $effective) {
+        if (-not $effective -and -not $RunAllSeeds) {
             continue
         }
 
@@ -769,6 +770,7 @@ try {
         remaining_seeds = $RemainingSeeds
         gate_metric = $GateMetric
         gate_min_drop = $GateMinDrop
+        run_all_seeds = [bool]$RunAllSeeds
         failures = $failures
         decision_csv = $decisionCsv
         existing_result_audit_csv = $existingAuditCsv

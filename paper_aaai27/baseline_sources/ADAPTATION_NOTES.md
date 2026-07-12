@@ -376,6 +376,8 @@ Interpretation:
 - The adapter now defaults to the full dataset/config name and includes best validation checkpointing based on validation `full_cold_item_macro.N@10`, plus early stopping.
 - The adapter now jointly trains PCGNN's recommendation loss and KG margin-ranking loss. This is required for a fair strict item-cold run because cold validation/test courses do not appear as recommendation positives in the train split, so item/entity embeddings must still receive KG-side updates.
 - The adapter now computes the recommendation cross-entropy over train-split items by default (`--rs-candidate-mode warm`). This avoids treating strict validation/test cold courses as negative classes in every warm-item training step. Evaluation remains full-catalog.
+- The adapter accepts `--device auto|cpu|cuda` and records the resolved device in each report. On the CUDA path, model weights, recommendation batches, and KG batches use the selected device.
+- The local PCGNN source maps category lookup indices to CPU before indexing RecBole's CPU-resident item feature table, then moves the resulting category entity ids back to the model device. This is a device-compatibility fix only; it does not change PCGNN's graph, loss, candidates, or evaluator. A fixed-checkpoint CPU/CUDA check on 64 strict test sequences had identical Top-20 sets and orders, with maximum score difference `2.12e-5` from FP32 arithmetic.
 - The full RecBole config no longer loads the all-one `rating` column, so the noisy `All the same value in [rating]` warning is avoided. PCGNN's session adjacency conversion was also changed from `torch.FloatTensor(A)` on a Python list to `torch.from_numpy(np.asarray(A, dtype=np.float32))`, removing the slow tensor-construction warning.
 - Existing capped runs should not be copied into the paper main table. They prove the adaptation path works. A paper-number run should use uncapped examples, for example `--max-train-examples -1 --max-val-examples -1 --max-test-examples -1`.
 - The earlier no-KG formal directory `mooccube_seed2025_full_formal` should not be used as a final result because it optimized only the recommendation loss and showed validation `full_cold_item_macro.N@10=0.0000` for the first five epochs.
@@ -395,6 +397,7 @@ Formal single-seed KG-joint command:
   --kg-batch-size 256 `
   --kg-loss-weight 1.0 `
   --rs-candidate-mode warm `
+  --device cuda `
   --out-dir paper_aaai27\baseline_sources\_pcgnn_strict\mooccube_seed2025_full_formal_kg_warm `
   --checkpoint-dir paper_aaai27\baseline_sources\_pcgnn_strict\mooccube_seed2025_full_formal_kg_warm\checkpoints
 ```

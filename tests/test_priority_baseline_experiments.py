@@ -12,6 +12,7 @@ from paper_aaai27.scripts.priority_baseline_experiments import (  # noqa: E402
     compute_relation_reachability,
     pcgnn_smoke_config_overrides,
 )
+from paper_aaai27.scripts.pcgnn_strict_adapter import parse_args  # noqa: E402
 
 
 class PriorityBaselineExperimentTests(unittest.TestCase):
@@ -55,12 +56,21 @@ class PriorityBaselineExperimentTests(unittest.TestCase):
         self.assertEqual(report["target_reachable"], 1)
         self.assertAlmostEqual(report["target_reachable_rate"], 0.5)
 
-    def test_pcgnn_smoke_config_forces_cpu_execution(self):
-        overrides = pcgnn_smoke_config_overrides(train_batch_size=16, eval_batch_size=32)
+    def test_pcgnn_cli_defaults_to_auto_device(self):
+        args = parse_args([])
 
-        self.assertEqual(overrides["device"], "cpu")
-        self.assertFalse(overrides["use_gpu"])
-        self.assertEqual(overrides["gpu_id"], -1)
+        self.assertEqual(args.device, "auto")
+
+    def test_pcgnn_smoke_config_uses_requested_cuda_device(self):
+        overrides = pcgnn_smoke_config_overrides(
+            train_batch_size=16,
+            eval_batch_size=32,
+            device="cuda",
+        )
+
+        self.assertEqual(overrides["device"], "cuda")
+        self.assertTrue(overrides["use_gpu"])
+        self.assertEqual(overrides["gpu_id"], 0)
         self.assertEqual(overrides["train_batch_size"], 16)
         self.assertEqual(overrides["eval_batch_size"], 32)
 

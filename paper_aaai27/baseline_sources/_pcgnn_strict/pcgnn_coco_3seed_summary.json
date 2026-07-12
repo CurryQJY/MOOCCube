@@ -1,0 +1,125 @@
+{
+  "model": "PCGNN (adapted)",
+  "dataset": "coco",
+  "protocol": "strict_item_cold_full_catalog_item_macro",
+  "seeds": [
+    2025,
+    2026,
+    2027
+  ],
+  "reports": [
+    "paper_aaai27\\baseline_sources\\_pcgnn_strict\\coco_seed2025_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+    "paper_aaai27\\baseline_sources\\_pcgnn_strict\\coco_seed2026_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+    "paper_aaai27\\baseline_sources\\_pcgnn_strict\\coco_seed2027_full_formal_kg_warm\\pcgnn_strict_adapter_report.json"
+  ],
+  "n": 3,
+  "metrics": {
+    "R@5": {
+      "mean": 0.013546053493351426,
+      "std": 0.001253224217502229,
+      "values": [
+        0.014980261347497269,
+        0.012995853169187053,
+        0.012662045963369953
+      ]
+    },
+    "R@10": {
+      "mean": 0.02537784428225476,
+      "std": 0.002445314040758438,
+      "values": [
+        0.027732647571148974,
+        0.0255497894653098,
+        0.02285109581030551
+      ]
+    },
+    "R@20": {
+      "mean": 0.04530343922717356,
+      "std": 0.0035640483533334786,
+      "values": [
+        0.04617360950046342,
+        0.048351821247903756,
+        0.04138488693315352
+      ]
+    },
+    "N@5": {
+      "mean": 0.008075063314439758,
+      "std": 0.0008308732230982977,
+      "values": [
+        0.009030346723152755,
+        0.007520444213140964,
+        0.007674399007025554
+      ]
+    },
+    "N@10": {
+      "mean": 0.011839020016134282,
+      "std": 0.0011274549667664572,
+      "values": [
+        0.013099216852171016,
+        0.011491910383969007,
+        0.010925932812262824
+      ]
+    },
+    "N@20": {
+      "mean": 0.016831957673999007,
+      "std": 0.0011073447929433207,
+      "values": [
+        0.01771123188702089,
+        0.01719629204347135,
+        0.015588349091504777
+      ]
+    }
+  },
+  "per_seed": [
+    {
+      "dataset": "coco",
+      "seed": 2025,
+      "report_path": "paper_aaai27\\baseline_sources\\_pcgnn_strict\\coco_seed2025_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+      "best_epoch": 11,
+      "stopped_early": true,
+      "train_batch_size": 32,
+      "eval_batch_size": 64,
+      "device": "cuda",
+      "session_graph_backend": "torch_batch_scatter",
+      "R@5": 0.014980261347497269,
+      "R@10": 0.027732647571148974,
+      "R@20": 0.04617360950046342,
+      "N@5": 0.009030346723152755,
+      "N@10": 0.013099216852171016,
+      "N@20": 0.01771123188702089
+    },
+    {
+      "dataset": "coco",
+      "seed": 2026,
+      "report_path": "paper_aaai27\\baseline_sources\\_pcgnn_strict\\coco_seed2026_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+      "best_epoch": 20,
+      "stopped_early": false,
+      "train_batch_size": 32,
+      "eval_batch_size": 64,
+      "device": "cuda",
+      "session_graph_backend": "torch_batch_scatter",
+      "R@5": 0.012995853169187053,
+      "R@10": 0.0255497894653098,
+      "R@20": 0.048351821247903756,
+      "N@5": 0.007520444213140964,
+      "N@10": 0.011491910383969007,
+      "N@20": 0.01719629204347135
+    },
+    {
+      "dataset": "coco",
+      "seed": 2027,
+      "report_path": "paper_aaai27\\baseline_sources\\_pcgnn_strict\\coco_seed2027_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+      "best_epoch": 10,
+      "stopped_early": true,
+      "train_batch_size": 32,
+      "eval_batch_size": 64,
+      "device": "cuda",
+      "session_graph_backend": "torch_batch_scatter",
+      "R@5": 0.012662045963369953,
+      "R@10": 0.02285109581030551,
+      "R@20": 0.04138488693315352,
+      "N@5": 0.007674399007025554,
+      "N@10": 0.010925932812262824,
+      "N@20": 0.015588349091504777
+    }
+  ]
+}

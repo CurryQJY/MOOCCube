@@ -127,11 +127,11 @@ def test_repaired_defaults_enable_recppo_as_main_component(monkeypatch):
     assert cfg.use_content_delta is False
     assert cfg.recppo_terminal_value_weight > 0.0
     assert cfg.recppo_behavior_ce_weight >= 0.2
-    assert cfg.recppo_behavior_ce_final_weight < cfg.recppo_behavior_ce_weight
-    assert cfg.recppo_behavior_ce_anneal_epochs > 0
-    assert 0.0 < cfg.recppo_course_reward_scale < 1.0
-    assert cfg.recppo_course_reward_clip > 0.0
-    assert cfg.recppo_embedding_gain_weight < cfg.recppo_rank_gain_weight
+    assert not hasattr(cfg, "recppo_behavior_ce_final_weight")
+    assert not hasattr(cfg, "recppo_behavior_ce_anneal_epochs")
+    assert not hasattr(cfg, "recppo_embedding_gain_weight")
+    assert not hasattr(cfg, "recppo_course_reward_scale")
+    assert not hasattr(cfg, "recppo_course_reward_clip")
     assert cfg.recppo_teacher_force_behavior is False
     assert cfg.feedback_course_match_exclude_target is True
     assert cfg.reward_step_cost <= 0.01
@@ -139,12 +139,17 @@ def test_repaired_defaults_enable_recppo_as_main_component(monkeypatch):
     assert '$runnerArgs["PpoLossWeight"] = 1.0' in runner_text
     assert '$runnerArgs["RolloutPolicy"] = "ppo"' in runner_text
     assert '$runnerArgs["UseContentDelta"] = $false' in runner_text
-    assert '$runnerArgs["Epochs"] = 60' in runner_text
-    assert '$runnerArgs["Patience"] = 20' in runner_text
+    assert '$runnerArgs["Epochs"] = 30' in runner_text
+    assert '$runnerArgs["Patience"] = 12' in runner_text
     assert '$runnerArgs["PseudoColdMode"] = "all_eligible"' in runner_text
     assert '$runnerArgs["PseudoColdRatio"] = 1.0' in runner_text
+    assert "RecPpoBehaviorCeFinalWeight" not in runner_text
+    assert "RecPpoBehaviorCeAnnealEpochs" not in runner_text
+    assert "RecPpoEmbeddingGainWeight" not in runner_text
+    assert "RecPpoCourseRewardScale" not in runner_text
+    assert "RecPpoCourseRewardClip" not in runner_text
     assert '$runnerArgs["PseudoColdMinPop"] = 1' in runner_text
-    assert '$runnerArgs["RlResidualScale"] = 0.06' in runner_text
+    assert '$runnerArgs["RlResidualScale"] = 0.30' in runner_text
     assert '$env:PYTHONHASHSEED = "0"' in runner_text
     assert '$env:CUBLAS_WORKSPACE_CONFIG = ":4096:8"' in runner_text
     assert 'USIM_RECPPO_STRICT_DETERMINISM' in runner_text
@@ -805,6 +810,20 @@ def test_recppo_policy_weight_scales_the_rl_objective(monkeypatch):
     assert quarter_info["recppo_policy_loss"] == pytest.approx(full_info["recppo_policy_loss"])
 
 
+def test_recppo_policy_weight_scales_independent_optimizer_learning_rates(monkeypatch):
+    monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
+    cfg = RepairedFast3Config(n_users=4, n_items=3, content_dim=5)
+    cfg.recppo_actor_lr = 5e-4
+    cfg.recppo_critic_lr = 1e-3
+    cfg.ppo_loss_weight = 0.25
+    model = RepairedFast3FeedbackUSIM(cfg, torch.zeros((3, 5), dtype=torch.float32))
+
+    optimizer = model._reset_recppo_optimizer()
+
+    assert optimizer.param_groups[0]["lr"] == pytest.approx(1.25e-4)
+    assert optimizer.param_groups[1]["lr"] == pytest.approx(2.5e-4)
+
+
 def test_recppo_candidate_logits_use_scaled_dot_product(monkeypatch):
     monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
     cfg = RepairedFast3Config(n_users=4, n_items=3, content_dim=5)
@@ -867,7 +886,7 @@ def test_recppo_residual_is_ramped_after_phase_transition(monkeypatch):
     assert model._effective_recppo_residual_scale() == pytest.approx(0.30)
 
 
-def test_joint_forward_keeps_warm_backbone_trainable_in_recppo_phase(monkeypatch):
+def test_recppo_phase_freezes_warm_backbone_and_trains_only_policy_heads(monkeypatch):
     monkeypatch.setenv("USIM_N_EPOCHS", "2")
     monkeypatch.setenv("USIM_RECPPO_WARMUP_EPOCHS", "1")
     monkeypatch.setenv("USIM_STEPS", "0")
@@ -900,14 +919,13 @@ def test_joint_forward_keeps_warm_backbone_trainable_in_recppo_phase(monkeypatch
     assert ppo_stats["recppo_phase"] == "ppo"
     assert ppo_loss.requires_grad
     ppo_loss.backward()
-    assert model.user_emb.weight.requires_grad is True
-    assert model.item_id_emb.weight.requires_grad is True
-    assert model.user_emb.weight.grad is not None
-    assert float(model.user_emb.weight.grad.abs().sum().item()) > 0.0
+    assert model.user_emb.weight.requires_grad is False
+    assert model.item_id_emb.weight.requires_grad is False
+    assert model.user_emb.weight.grad is None
     assert all(param.requires_grad for param in model.agent.parameters())
 
 
-def test_recppo_phase_preserves_supervised_outer_loss_and_reports_policy_loss(monkeypatch):
+def test_recppo_phase_reports_policy_loss_without_outer_backbone_gradients(monkeypatch):
     monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
     cfg = RepairedFast3Config(n_users=2, n_items=3, content_dim=5)
     model = RepairedFast3FeedbackUSIM(cfg, torch.zeros((3, 5), dtype=torch.float32))
@@ -932,10 +950,11 @@ def test_recppo_phase_preserves_supervised_outer_loss_and_reports_policy_loss(mo
     )
     loss.backward()
 
-    assert loss.item() == pytest.approx(model.user_emb.weight[0].detach().sum().item())
+    assert loss.item() == pytest.approx(0.375)
     assert stats["ppo_loss"] == pytest.approx(0.375)
-    assert model.user_emb.weight.grad is not None
-    assert torch.allclose(model.user_emb.weight.grad[0], torch.ones_like(model.user_emb.weight.grad[0]))
+    assert model.user_emb.weight.grad is None
+    assert model.recppo_outer_anchor.grad is not None
+    assert model.recppo_outer_anchor.grad.item() == pytest.approx(0.0)
 
 
 def test_outer_optimizer_excludes_recppo_agent_parameters(monkeypatch):
@@ -979,7 +998,7 @@ def test_reward_uses_the_same_residual_blend_as_inference(monkeypatch):
     cfg.recppo_enable_stop = False
     cfg.usim_lr = 1.0
     cfg.rl_residual_scale = 0.5
-    cfg.recppo_embedding_gain_weight = 1.0
+    cfg.reward_gain_weight = 1.0
     cfg.recppo_rank_gain_weight = 0.0
     cfg.reward_gain_clip = 1.0
     cfg.reward_step_cost = 0.0
@@ -1030,12 +1049,14 @@ def test_global_rank_reward_pool_contains_only_users_with_train_history(monkeypa
     assert torch.allclose(pool, bank[user_ids])
 
 
-def test_global_rank_reward_mines_hard_negatives_and_excludes_all_train_positives(monkeypatch):
+def test_global_rank_reward_caches_behavior_target_topk_users(monkeypatch):
     model = _make_global_rank_reward_model(monkeypatch)
     bank = torch.zeros((4, model.cfg.emb_dim), dtype=torch.float32)
-    bank[0, 0] = 0.9
-    bank[1, 0] = 1.0
-    bank[2, 0] = 0.8
+    bank[0, 0] = 1.0
+    bank[1, 0] = 0.8
+    bank[1, 1] = 0.6
+    bank[2, 0] = 0.6
+    bank[2, 1] = 0.8
     bank[3, 1] = 1.0
     bank = F.normalize(bank, dim=1)
     train_seen = {0: {1}, 1: {1}, 2: {0}, 3: {2}}
@@ -1043,7 +1064,7 @@ def test_global_rank_reward_mines_hard_negatives_and_excludes_all_train_positive
     target[0, 0] = 1.0
     item_idx = torch.tensor([1], dtype=torch.long)
 
-    first = model._recppo_item_hard_negative_user_ids(item_idx, target, bank, train_seen)
+    first = model._recppo_target_topk_user_ids(item_idx, target, bank, train_seen)
     misses_after_first = model._recppo_rank_cache_misses
     original_pool_builder = model._recppo_train_user_pool
 
@@ -1051,18 +1072,16 @@ def test_global_rank_reward_mines_hard_negatives_and_excludes_all_train_positive
         raise AssertionError("a pure Top-K cache hit must not rescan the full training-user pool")
 
     model._recppo_train_user_pool = fail_if_pool_is_rescanned
-    second = model._recppo_item_hard_negative_user_ids(item_idx, target, bank, train_seen)
+    second = model._recppo_target_topk_user_ids(item_idx, target, bank, train_seen)
     model._recppo_train_user_pool = original_pool_builder
 
     assert first.tolist() == second.tolist()
-    assert 0 not in first[0].tolist()
-    assert 1 not in first[0].tolist()
-    assert set(first[0].tolist()) == {2, 3}
+    assert first[0].tolist() == [0, 1]
     assert misses_after_first == 1
     assert model._recppo_rank_cache_hits >= 1
 
 
-def test_global_listwise_rank_gain_is_positive_when_state_moves_toward_train_positive(monkeypatch):
+def test_global_listwise_rank_gain_is_positive_when_state_moves_toward_behavior_target(monkeypatch):
     model = _make_global_rank_reward_model(monkeypatch, n_users=3)
     bank = torch.zeros((3, model.cfg.emb_dim), dtype=torch.float32)
     bank[0, 0] = 1.0
@@ -1080,14 +1099,13 @@ def test_global_listwise_rank_gain_is_positive_when_state_moves_toward_train_pos
         item_idx=torch.tensor([0], dtype=torch.long),
         user_bank_norm=bank,
         user_seen_items=train_seen,
-        positive_user_ids=torch.tensor([0], dtype=torch.long),
     )
 
     assert gain.shape == (1, 1)
     assert gain.item() > 0.0
 
 
-def test_global_rank_cache_is_invalidated_at_joint_epoch_boundary(monkeypatch):
+def test_global_rank_cache_persists_across_recppo_epochs(monkeypatch):
     monkeypatch.setenv("USIM_N_EPOCHS", "4")
     monkeypatch.setenv("USIM_RECPPO_WARMUP_EPOCHS", "1")
     model = _make_global_rank_reward_model(monkeypatch)
@@ -1097,53 +1115,54 @@ def test_global_rank_cache_is_invalidated_at_joint_epoch_boundary(monkeypatch):
 
     model._begin_pending_epoch()
 
-    assert model._recppo_rank_topk_cache == {}
+    assert model._recppo_rank_topk_cache[1].tolist() == [2]
 
 
-def test_behavior_ce_weight_anneals_to_configured_floor(monkeypatch):
-    monkeypatch.setenv("USIM_N_EPOCHS", "20")
-    monkeypatch.setenv("USIM_RECPPO_WARMUP_EPOCHS", "5")
+def test_recppo_objective_uses_fixed_behavior_ce_weight(monkeypatch):
+    monkeypatch.setenv("USIM_STEPS", "1")
     monkeypatch.setenv("USIM_RECPPO_BEHAVIOR_CE_W", "0.20")
-    monkeypatch.setenv("USIM_RECPPO_BEHAVIOR_CE_FINAL_W", "0.02")
-    monkeypatch.setenv("USIM_RECPPO_BEHAVIOR_CE_ANNEAL_EPOCHS", "10")
     monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
-    cfg = RepairedFast3Config(n_users=3, n_items=4, content_dim=5)
-    model = RepairedFast3FeedbackUSIM(cfg, torch.zeros((4, 5), dtype=torch.float32))
+    cfg = RepairedFast3Config(n_users=3, n_items=3, content_dim=5)
+    cfg.n_candidates = 2
+    cfg.recppo_enable_stop = False
+    cfg.ppo_loss_weight = 0.0
+    cfg.recppo_terminal_value_weight = 0.0
+    model = RepairedFast3FeedbackUSIM(cfg, torch.zeros((3, 5), dtype=torch.float32))
+    model.device = torch.device("cpu")
+    model._recppo_behavior_user_idx = torch.tensor([1], dtype=torch.long)
+
+    def fake_get_candidates(*args, **kwargs):
+        candidates = torch.randn((1, 2, cfg.emb_dim), dtype=torch.float32)
+        return candidates, torch.tensor([[0, 2]], dtype=torch.long), {
+            "dup_rate": 0.0,
+            "topm_coverage": 1.0,
+        }
+
+    model.get_candidates = fake_get_candidates
+    init = torch.zeros((1, cfg.emb_dim), dtype=torch.float32)
+    target = torch.ones((1, cfg.emb_dim), dtype=torch.float32)
+    _, trajectory, _ = model.run_usim_episode(
+        init,
+        target_emb=target,
+        item_idx=torch.tensor([0]),
+    )
+    prepared = model._prepare_recppo_targets(trajectory)
     model._recppo_phase_state.fill_(1)
 
     model._recppo_epoch_state.fill_(5)
-    assert model._effective_recppo_behavior_ce_weight() == pytest.approx(0.20)
-    model._recppo_epoch_state.fill_(10)
-    assert model._effective_recppo_behavior_ce_weight() == pytest.approx(0.11)
+    early_loss, early_info = model._recppo_objective(trajectory, prepared)
     model._recppo_epoch_state.fill_(15)
-    assert model._effective_recppo_behavior_ce_weight() == pytest.approx(0.02)
-    model._recppo_epoch_state.fill_(19)
-    assert model._effective_recppo_behavior_ce_weight() == pytest.approx(0.02)
+    late_loss, late_info = model._recppo_objective(trajectory, prepared)
+
+    expected = 0.20 * early_info["recppo_behavior_ce_loss"]
+    assert early_loss.item() == pytest.approx(expected)
+    assert late_loss.item() == pytest.approx(expected)
+    assert late_info["recppo_behavior_ce_loss"] == pytest.approx(
+        early_info["recppo_behavior_ce_loss"]
+    )
 
 
-def test_course_reward_contribution_is_scaled_and_clipped(monkeypatch):
-    monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
-    cfg = RepairedFast3Config(n_users=3, n_items=4, content_dim=5)
-    cfg.recppo_course_reward_scale = 0.1
-    cfg.recppo_course_reward_clip = 0.02
-    model = RepairedFast3FeedbackUSIM(cfg, torch.zeros((4, 5), dtype=torch.float32))
-    terms = {
-        "concept_bonus": torch.tensor([[0.0], [100.0]]),
-        "prereq_gap": torch.tensor([[100.0], [0.0]]),
-        "difficulty_gap": torch.tensor([[100.0], [0.0]]),
-        "redundant": torch.tensor([[100.0], [0.0]]),
-    }
-
-    contribution = model._scaled_recppo_course_reward(terms)
-
-    assert torch.allclose(contribution, torch.tensor([[-0.02], [0.02]]))
-
-    cfg.recppo_course_reward_clip = 0.0
-    disabled = model._scaled_recppo_course_reward(terms)
-    assert torch.equal(disabled, torch.zeros_like(disabled))
-
-
-def test_terminal_value_anchor_uses_each_episode_terminal_once(monkeypatch):
+def test_terminal_value_anchor_repeats_behavior_target_at_each_global_step(monkeypatch):
     monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
     cfg = RepairedFast3Config(n_users=3, n_items=4, content_dim=5)
     model = RepairedFast3FeedbackUSIM(cfg, torch.zeros((4, 5), dtype=torch.float32))
@@ -1177,8 +1196,8 @@ def test_terminal_value_anchor_uses_each_episode_terminal_once(monkeypatch):
 
     model._terminal_value_loss(trajectory)
 
-    assert torch.equal(captured["states"], target)
-    assert captured["times"].view(-1).tolist() == [0, 2]
+    assert torch.equal(captured["states"], torch.cat([target, target, target], dim=0))
+    assert captured["times"].view(-1).tolist() == [0, 0, 1, 1, 2, 2]
 
 
 def test_global_rank_gain_is_normalized_by_effective_transition_scale(monkeypatch):
@@ -1287,16 +1306,16 @@ def test_repaired_manifest_records_entrypoint_and_recppo_config(tmp_path, monkey
     assert payload["model_config"]["recppo"]["behavior_supervision"] == "first_step_only"
     assert (
         payload["model_config"]["recppo"]["rank_reward_source"]
-        == "train_positive_vs_global_hard_negatives"
+        == "global_train_user_topk"
     )
-    assert payload["model_config"]["recppo"]["joint_supervised_backbone"] is True
+    assert payload["model_config"]["recppo"]["joint_supervised_backbone"] is False
     assert payload["model_config"]["recppo"]["rank_topk"] == cfg.recppo_rank_topk
     assert payload["model_config"]["recppo"]["rank_temperature"] == pytest.approx(
         cfg.recppo_rank_temperature
     )
 
 
-def test_repaired_checkpoint_fingerprint_covers_joint_reward_controls(monkeypatch):
+def test_repaired_checkpoint_fingerprint_covers_recppo_reward_controls(monkeypatch):
     monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
     cfg = RepairedFast3Config(n_users=3, n_items=4, content_dim=5)
 
@@ -1305,15 +1324,15 @@ def test_repaired_checkpoint_fingerprint_covers_joint_reward_controls(monkeypatc
         split_info={"split_mode": "strict_item_cold_balanced"},
         script_path=repaired_mod.__file__,
     )
-    cfg.recppo_behavior_ce_final_weight += 0.01
+    cfg.recppo_behavior_ce_weight += 0.01
     second, changed_payload = repaired_mod.repaired_static_train_config_fingerprint(
         cfg,
         split_info={"split_mode": "strict_item_cold_balanced"},
         script_path=repaired_mod.__file__,
     )
 
-    assert payload["recppo_rank_reward_source"] == "train_positive_vs_global_hard_negatives"
-    assert payload["recppo_joint_supervised_backbone"] is True
+    assert payload["recppo_rank_reward_source"] == "global_train_user_topk"
+    assert payload["recppo_joint_supervised_backbone"] is False
     expected_controls = {
         "recppo_fingerprint_schema",
         "reward_step_cost",
@@ -1360,7 +1379,7 @@ def test_repaired_checkpoint_fingerprint_covers_joint_reward_controls(monkeypatc
     }
     assert expected_controls.issubset(payload)
     assert payload["rl_residual_scale"] == pytest.approx(cfg.rl_residual_scale)
-    assert changed_payload["recppo_behavior_ce_final_weight"] != payload["recppo_behavior_ce_final_weight"]
+    assert changed_payload["recppo_behavior_ce_weight"] != payload["recppo_behavior_ce_weight"]
     assert first != second
 
 
@@ -1425,3 +1444,81 @@ def test_finished_checkpoint_pairs_best_model_with_best_recppo_optimizer(monkeyp
 
     assert finished["recppo_optimizer_state"]["marker"] == 1
     assert finished["recppo_best_optimizer_state"]["marker"] == 1
+
+
+def test_warmup_stage_payload_keeps_outer_state_and_drops_recppo_state():
+    state = {
+        "model_state": {"weight": torch.tensor([1.0])},
+        "optimizer_state": {"state": {1: {"step": torch.tensor(3.0)}}},
+        "recppo_optimizer_state": {"state": {2: {"step": torch.tensor(4.0)}}},
+        "recppo_best_optimizer_state": {"state": {}},
+        "next_epoch": 30,
+        "train_config_payload": {"split_mode": "strict_item_cold_balanced"},
+    }
+
+    stage = repaired_mod.repaired_build_warmup_stage_state(state)
+
+    assert stage["checkpoint_kind"] == "warmup_stage"
+    assert stage["optimizer_state"] is state["optimizer_state"]
+    assert stage["recppo_optimizer_state"] is None
+    assert stage["recppo_best_optimizer_state"] is None
+    assert stage["warmup_stage_epoch"] == 30
+
+
+def test_warmup_stage_fingerprint_allows_ppo_branch_controls(monkeypatch):
+    monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
+    cfg = RepairedFast3Config(n_users=3, n_items=4, content_dim=5)
+    _, base = repaired_mod.repaired_warmup_stage_fingerprint(
+        cfg, split_info={"split_mode": "strict_item_cold_balanced"}
+    )
+    cfg.rl_residual_scale += 0.1
+    cfg.ppo_loss_weight += 0.2
+    cfg.n_epochs += 5
+    cfg.early_stop_patience += 2
+    _, branch = repaired_mod.repaired_warmup_stage_fingerprint(
+        cfg, split_info={"split_mode": "strict_item_cold_balanced"}
+    )
+
+    assert branch == base
+
+
+def test_warmup_stage_fingerprint_rejects_pseudo_cold_change(monkeypatch):
+    monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
+    cfg = RepairedFast3Config(n_users=3, n_items=4, content_dim=5)
+    first, _ = repaired_mod.repaired_warmup_stage_fingerprint(
+        cfg, split_info={"split_mode": "strict_item_cold_balanced"}
+    )
+    cfg.pseudo_cold_ratio = 0.5
+    second, _ = repaired_mod.repaired_warmup_stage_fingerprint(
+        cfg, split_info={"split_mode": "strict_item_cold_balanced"}
+    )
+
+    assert second != first
+
+
+def test_repaired_runner_exposes_warmup_stage_checkpoint_argument():
+    runner_text = Path("run_usim_feedback_fast3_content_delta_repaired_static.ps1").read_text(
+        encoding="utf-8"
+    )
+
+    assert "WarmupStageCheckpoint" in runner_text
+    assert "USIM_FB_WARMUP_STAGE_CKPT" in runner_text
+
+
+def test_warmup_stage_is_only_used_when_branch_has_no_latest(monkeypatch, tmp_path):
+    branch = tmp_path / "branch"
+    branch.mkdir()
+    stage = tmp_path / "warmup_stage.pt"
+    torch.save({"checkpoint_kind": "warmup_stage", "next_epoch": 30}, stage)
+    monkeypatch.setenv("USIM_FB_WARMUP_STAGE_CKPT", str(stage))
+    monkeypatch.setattr(repaired_mod, "_legacy_load_feedback_checkpoint", lambda *_: None)
+
+    loaded = repaired_mod.repaired_load_feedback_checkpoint(str(branch))
+    assert loaded["checkpoint_kind"] == "warmup_stage"
+
+    latest_state = {"checkpoint_kind": "branch_latest", "next_epoch": 32}
+    monkeypatch.setattr(
+        repaired_mod, "_legacy_load_feedback_checkpoint", lambda *_: latest_state
+    )
+    loaded = repaired_mod.repaired_load_feedback_checkpoint(str(branch))
+    assert loaded is latest_state

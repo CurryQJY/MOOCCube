@@ -1,14 +1,10 @@
 param(
     [int]$RecPpoWarmupEpochs = -1,
+    [string]$WarmupStageCheckpoint = "",
     [double]$RecPpoActorLr = 0.0,
     [double]$RecPpoCriticLr = 0.0,
     [double]$RecPpoBehaviorCeWeight = -1.0,
-    [double]$RecPpoBehaviorCeFinalWeight = -1.0,
-    [int]$RecPpoBehaviorCeAnnealEpochs = -1,
     [double]$RecPpoTerminalValueWeight = -1.0,
-    [double]$RecPpoEmbeddingGainWeight = -1.0,
-    [double]$RecPpoCourseRewardScale = -1.0,
-    [double]$RecPpoCourseRewardClip = -1.0,
     [double]$RecPpoTargetKl = -1.0,
     [int]$RecPpoResidualRampEpochs = -1,
     [double]$RecPpoMaxResidualNorm = -1.0,
@@ -134,10 +130,10 @@ if (-not $runnerArgs.ContainsKey("UseContentDelta")) {
     $runnerArgs["UseContentDelta"] = $false
 }
 if (-not $runnerArgs.ContainsKey("Epochs")) {
-    $runnerArgs["Epochs"] = 60
+    $runnerArgs["Epochs"] = 30
 }
 if (-not $runnerArgs.ContainsKey("Patience")) {
-    $runnerArgs["Patience"] = 20
+    $runnerArgs["Patience"] = 12
 }
 if (-not $runnerArgs.ContainsKey("PseudoColdMode")) {
     $runnerArgs["PseudoColdMode"] = "all_eligible"
@@ -149,7 +145,7 @@ if (-not $runnerArgs.ContainsKey("PseudoColdMinPop")) {
     $runnerArgs["PseudoColdMinPop"] = 1
 }
 if (-not $runnerArgs.ContainsKey("RlResidualScale")) {
-    $runnerArgs["RlResidualScale"] = 0.06
+    $runnerArgs["RlResidualScale"] = 0.30
 }
 if (-not $runnerArgs.ContainsKey("SaveCkpt")) {
     $runnerArgs["SaveCkpt"] = $true
@@ -168,15 +164,11 @@ if (-not $runnerArgs.ContainsKey("SaveOptState")) {
 $recppoTrackedEnv = @(
     "USIM_RECPPO_EARLY_STOP_MODE",
     "USIM_RECPPO_WARMUP_EPOCHS",
+    "USIM_FB_WARMUP_STAGE_CKPT",
     "USIM_RECPPO_ACTOR_LR",
     "USIM_RECPPO_CRITIC_LR",
     "USIM_RECPPO_BEHAVIOR_CE_W",
-    "USIM_RECPPO_BEHAVIOR_CE_FINAL_W",
-    "USIM_RECPPO_BEHAVIOR_CE_ANNEAL_EPOCHS",
     "USIM_RECPPO_TERM_VALUE_W",
-    "USIM_RECPPO_EMBEDDING_GAIN_W",
-    "USIM_RECPPO_COURSE_REWARD_SCALE",
-    "USIM_RECPPO_COURSE_REWARD_CLIP",
     "USIM_RECPPO_TARGET_KL",
     "USIM_RECPPO_RESIDUAL_RAMP_EPOCHS",
     "USIM_RECPPO_MAX_RESIDUAL_NORM",
@@ -197,13 +189,9 @@ if (-not (Test-Path Env:USIM_RECPPO_EARLY_STOP_MODE)) {
 }
 if ($RecPpoWarmupEpochs -ge 0) {
     $env:USIM_RECPPO_WARMUP_EPOCHS = [string]$RecPpoWarmupEpochs
-} elseif (-not (Test-Path Env:USIM_RECPPO_WARMUP_EPOCHS)) {
-    $resolvedEpochs = [int]$runnerArgs["Epochs"]
-    $env:USIM_RECPPO_WARMUP_EPOCHS = if ($resolvedEpochs -le 1) {
-        "0"
-    } else {
-        [string][math]::Floor($resolvedEpochs / 2)
-    }
+}
+if (-not [string]::IsNullOrWhiteSpace($WarmupStageCheckpoint)) {
+    $env:USIM_FB_WARMUP_STAGE_CKPT = [System.IO.Path]::GetFullPath($WarmupStageCheckpoint)
 }
 if ($RecPpoActorLr -gt 0.0) {
     $env:USIM_RECPPO_ACTOR_LR = [string]$RecPpoActorLr
@@ -214,23 +202,8 @@ if ($RecPpoCriticLr -gt 0.0) {
 if ($RecPpoBehaviorCeWeight -ge 0.0) {
     $env:USIM_RECPPO_BEHAVIOR_CE_W = [string]$RecPpoBehaviorCeWeight
 }
-if ($RecPpoBehaviorCeFinalWeight -ge 0.0) {
-    $env:USIM_RECPPO_BEHAVIOR_CE_FINAL_W = [string]$RecPpoBehaviorCeFinalWeight
-}
-if ($RecPpoBehaviorCeAnnealEpochs -gt 0) {
-    $env:USIM_RECPPO_BEHAVIOR_CE_ANNEAL_EPOCHS = [string]$RecPpoBehaviorCeAnnealEpochs
-}
 if ($RecPpoTerminalValueWeight -ge 0.0) {
     $env:USIM_RECPPO_TERM_VALUE_W = [string]$RecPpoTerminalValueWeight
-}
-if ($RecPpoEmbeddingGainWeight -ge 0.0) {
-    $env:USIM_RECPPO_EMBEDDING_GAIN_W = [string]$RecPpoEmbeddingGainWeight
-}
-if ($RecPpoCourseRewardScale -ge 0.0) {
-    $env:USIM_RECPPO_COURSE_REWARD_SCALE = [string]$RecPpoCourseRewardScale
-}
-if ($RecPpoCourseRewardClip -ge 0.0) {
-    $env:USIM_RECPPO_COURSE_REWARD_CLIP = [string]$RecPpoCourseRewardClip
 }
 if ($RecPpoTargetKl -ge 0.0) {
     $env:USIM_RECPPO_TARGET_KL = [string]$RecPpoTargetKl
