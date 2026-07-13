@@ -36,8 +36,10 @@ class AggregateGARColdRecThreeSeedTests(unittest.TestCase):
                 "static_seed": seed,
                 "official_commit": "18efd24",
                 "source_model_unchanged": True,
+                "protocol": "static_item_cold_balanced",
                 "candidate_mode": "full_catalog",
                 "checkpoint_metric": "validation_full_cold_item_macro.N@10",
+                "item_macro_metrics": True,
                 "train_history_masking": True,
                 "train_only_interaction_evidence": True,
                 "test_history_policy": "train_only",
@@ -138,6 +140,18 @@ class AggregateGARColdRecThreeSeedTests(unittest.TestCase):
             result["strict_audit"]["train_overlap_count"] = 1
             self._save_result(paths[1], result)
             with self.assertRaisesRegex(ValueError, "overlap"):
+                aggregate(root, (2025, 2026, 2027), root / "aggregate")
+
+    def test_aggregate_rejects_missing_protocol_gate(self):
+        from aggregate_gar_coldrec_3seed import aggregate
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            paths = [self._write_result(root, seed, 0.1) for seed in (2025, 2026, 2027)]
+            result = self._load_result(paths[0])
+            del result["protocol"]
+            self._save_result(paths[0], result)
+            with self.assertRaisesRegex(ValueError, "protocol"):
                 aggregate(root, (2025, 2026, 2027), root / "aggregate")
 
     def test_aggregate_rejects_nonfinite_metric(self):

@@ -69,10 +69,7 @@ def validate_result(result: dict, path: Path, expected_seed: int) -> None:
         "cuda_used": True,
         "epochs": EXPECTED_EPOCHS,
     }
-    # Older synthetic fixtures may omit protocol/model flags; real formal results may not.
     for key, expected in required_equal.items():
-        if key in ("protocol", "item_macro_metrics") and key not in result:
-            continue
         _require_equal(result, expected_seed, key, expected)
 
     device = str(result.get("device", ""))
