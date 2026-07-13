@@ -29,7 +29,8 @@ try {
         "gar_coldrec_3seed_detail.csv",
         "gar_coldrec_3seed_summary.csv",
         "gar_coldrec_3seed_summary.json",
-        "gar_coldrec_3seed_report.md"
+        "gar_coldrec_3seed_report.md",
+        "aggregate_log=aggregate.log"
     )) {
         if ($text -notmatch [regex]::Escape($needle)) {
             throw "Expected dry-run output to contain '$needle'. Output:`n$text"

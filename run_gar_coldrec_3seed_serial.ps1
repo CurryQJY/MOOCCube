@@ -68,6 +68,7 @@ $AggregateDir = Join-Path $OutputRootAbs "aggregate"
 $Timestamp = if ($RunId) { $RunId } else { Get-Date -Format "yyyyMMdd_HHmmss" }
 $LogDir = Join-Path (Join-Path $OutputRootAbs "_logs") $Timestamp
 $MasterLog = Join-Path $LogDir "queue.log"
+$AggregateLog = Join-Path $LogDir "aggregate.log"
 
 Write-Host "ColdRec GAR strict source-default three-seed"
 Write-Host "seeds=$actualSeeds"
@@ -87,6 +88,7 @@ Write-Host "aggregate=gar_coldrec_3seed_detail.csv"
 Write-Host "aggregate=gar_coldrec_3seed_summary.csv"
 Write-Host "aggregate=gar_coldrec_3seed_summary.json"
 Write-Host "aggregate=gar_coldrec_3seed_report.md"
+Write-Host "aggregate_log=$(Split-Path -Leaf $AggregateLog)"
 
 if ($DryRun) {
     Write-Host "DRY RUN: no training commands were executed."
@@ -150,9 +152,10 @@ try {
     & $PythonRunnerAbs -u $Aggregator `
         --root $OutputRootAbs `
         --seeds $actualSeeds `
-        --out-dir $AggregateDir
-    if ($LASTEXITCODE -ne 0) {
-        throw "GAR three-seed aggregation failed with exit=$LASTEXITCODE"
+        --out-dir $AggregateDir *> $AggregateLog
+    $aggregateExit = $LASTEXITCODE
+    if ($aggregateExit -ne 0) {
+        throw "GAR three-seed aggregation failed with exit=$aggregateExit. See $AggregateLog"
     }
 
     foreach ($name in @(
