@@ -21,6 +21,8 @@ try {
         "echo USIM_FB_SAVE_OPT_STATE=%USIM_FB_SAVE_OPT_STATE%",
         "echo USIM_FB_CKPT_DIR=%USIM_FB_CKPT_DIR%",
         "echo USIM_FB_INIT_CKPT_DIR=%USIM_FB_INIT_CKPT_DIR%",
+        "echo USIM_FB_ALLOW_LEGACY_CKPT=%USIM_FB_ALLOW_LEGACY_CKPT%",
+        "echo USIM_RUNNER_PATH=%USIM_RUNNER_PATH%",
         "echo USIM_SAGE_GATE_MODE=%USIM_SAGE_GATE_MODE%",
         "echo USIM_SAGE_GATE_BUCKETS=%USIM_SAGE_GATE_BUCKETS%",
         "echo USIM_SAGE_GATE_HIDDEN=%USIM_SAGE_GATE_HIDDEN%",
@@ -88,15 +90,28 @@ try {
         throw "Expected explicit SaveCkpt=false run to export USIM_FB_SAVE_CKPT=0"
     }
 
-    $implicitRoot = Invoke-StaticRunnerDry "implicit_root_legacy_default" @{}
+    $implicitRoot = Invoke-StaticRunnerDry "implicit_root_default_save" @{}
     if ($implicitRoot -match "enabling checkpoint saving by default") {
-        throw "Implicit default CheckpointRoot should keep legacy no-save behavior"
+        throw "Implicit default CheckpointRoot should not print an explicit-root warning"
     }
-    if ($implicitRoot -notmatch "Checkpoint: save=False") {
-        throw "Expected implicit default CheckpointRoot run to print Checkpoint: save=False"
+    if ($implicitRoot -notmatch "Checkpoint: save=True") {
+        throw "Expected implicit default CheckpointRoot run to print Checkpoint: save=True"
     }
-    if ($implicitRoot -notmatch "USIM_FB_SAVE_CKPT=0") {
-        throw "Expected implicit default CheckpointRoot run to export USIM_FB_SAVE_CKPT=0"
+    if ($implicitRoot -notmatch "USIM_FB_SAVE_CKPT=1") {
+        throw "Expected implicit default CheckpointRoot run to export USIM_FB_SAVE_CKPT=1"
+    }
+    if ($implicitRoot -notmatch "USIM_FB_ALLOW_LEGACY_CKPT=0") {
+        throw "Expected legacy checkpoint loading to be disabled by default"
+    }
+    if ($implicitRoot -notmatch "USIM_RUNNER_PATH=.+run_usim_feedback_fast3_content_delta_static.ps1") {
+        throw "Expected runner path to be exported for provenance capture"
+    }
+
+    $legacyAllowed = Invoke-StaticRunnerDry "allow_legacy_checkpoint" @{
+        AllowLegacyCheckpoint = $true
+    }
+    if ($legacyAllowed -notmatch "USIM_FB_ALLOW_LEGACY_CKPT=1") {
+        throw "Expected explicit legacy checkpoint override to be exported"
     }
 
     $sageGate = Invoke-StaticRunnerDry "sage_gate_bucket_mlp" @{
