@@ -133,6 +133,7 @@ param(
     [bool]$AutoResume = $true,
     [bool]$ForceFresh = $false,
     [bool]$SaveOptState = $true,
+    [bool]$AllowLegacyCheckpoint = $false,
     [switch]$SkipAggregate
 )
 
@@ -163,6 +164,8 @@ $trackedEnv = @(
     "USIM_FB_OUTPUT_TAG",
     "USIM_FB_CKPT_DIR",
     "USIM_FB_INIT_CKPT_DIR",
+    "USIM_FB_ALLOW_LEGACY_CKPT",
+    "USIM_RUNNER_PATH",
     "USIM_N_EPOCHS",
     "USIM_EARLY_STOP_PATIENCE",
     "USIM_EARLY_STOP_MIN_DELTA",
@@ -344,6 +347,8 @@ $base = @{
     "USIM_FB_AUTO_RESUME" = if ($AutoResume) { "1" } else { "0" }
     "USIM_FB_SAVE_CKPT" = if ($SaveCkpt) { "1" } else { "0" }
     "USIM_FB_SAVE_OPT_STATE" = if ($SaveOptState) { "1" } else { "0" }
+    "USIM_FB_ALLOW_LEGACY_CKPT" = if ($AllowLegacyCheckpoint) { "1" } else { "0" }
+    "USIM_RUNNER_PATH" = $MyInvocation.MyCommand.Path
 
     "USIM_N_EPOCHS" = [string]$Epochs
     "USIM_EARLY_STOP_PATIENCE" = [string]$Patience
