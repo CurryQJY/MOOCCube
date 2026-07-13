@@ -51,6 +51,7 @@ results_mooccubex/
 outputs/
 output/
 tmp/
+.worktrees/
 
 # Large archives and scratch dumps
 *.zip
