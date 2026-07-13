@@ -33,6 +33,7 @@ _legacy_compute_early_stop_score = legacy._compute_early_stop_score
 _legacy_setup_seed = legacy.setup_seed
 _legacy_static_train_config_fingerprint = checkpoint_mod._static_train_config_fingerprint
 _legacy_checkpoint_config_matches = checkpoint_mod._checkpoint_config_matches
+_legacy_checkpoint_resume_decision = checkpoint_mod.checkpoint_resume_decision
 _pending_recppo_optimizer_state = None
 _candidate_recppo_optimizer_state = None
 _pending_recppo_best_optimizer_state = None
@@ -1514,6 +1515,18 @@ def repaired_checkpoint_config_matches(*args, **kwargs):
     return result
 
 
+def repaired_checkpoint_resume_decision(*args, **kwargs):
+    global _candidate_recppo_best_optimizer_state
+    global _candidate_recppo_optimizer_state, _pending_recppo_best_optimizer_state
+    global _pending_recppo_optimizer_state
+    decision = _legacy_checkpoint_resume_decision(*args, **kwargs)
+    _pending_recppo_optimizer_state = _candidate_recppo_optimizer_state if decision.ok else None
+    _pending_recppo_best_optimizer_state = _candidate_recppo_best_optimizer_state if decision.ok else None
+    _candidate_recppo_optimizer_state = None
+    _candidate_recppo_best_optimizer_state = None
+    return decision
+
+
 def repaired_static_train_config_fingerprint(cfg, split_info=None, script_path=None):
     _, payload = _legacy_static_train_config_fingerprint(
         cfg,
@@ -1705,6 +1718,7 @@ def install_repaired_bindings():
     legacy._load_feedback_checkpoint = repaired_load_feedback_checkpoint
     legacy._save_feedback_checkpoint = repaired_save_feedback_checkpoint
     legacy._checkpoint_config_matches = repaired_checkpoint_config_matches
+    legacy.checkpoint_resume_decision = repaired_checkpoint_resume_decision
     legacy._static_train_config_fingerprint = repaired_static_train_config_fingerprint
     legacy._write_static_manifest = repaired_write_static_manifest
     legacy._compute_early_stop_score = repaired_compute_early_stop_score
@@ -1715,6 +1729,7 @@ def install_repaired_bindings():
     eval_mod.build_eval_pos_item_vecs = repaired_build_eval_pos_item_vecs
     checkpoint_mod._static_train_config_fingerprint = repaired_static_train_config_fingerprint
     checkpoint_mod._checkpoint_config_matches = repaired_checkpoint_config_matches
+    checkpoint_mod.checkpoint_resume_decision = repaired_checkpoint_resume_decision
 
 
 def main():

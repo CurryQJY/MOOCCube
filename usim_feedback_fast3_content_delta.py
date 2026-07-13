@@ -29,6 +29,7 @@ from torch.distributions import Categorical
 from torch.utils.data import DataLoader
 
 from fast3_delta.checkpoint import (
+    CHECKPOINT_FINGERPRINT_SCHEMA_VERSION,
     _build_feedback_ckpt_state,
     _checkpoint_config_matches,
     _deserialize_user_seen_items,
@@ -46,8 +47,17 @@ from fast3_delta.checkpoint import (
     _save_feedback_checkpoint,
     _serialize_user_seen_items,
     _static_train_config_fingerprint,
+    checkpoint_resume_decision,
 )
 from fast3_delta.config import BaseConfig, Fast3Config, FeedbackConfig
+from fast3_delta.provenance import (
+    PROVENANCE_SCHEMA_VERSION,
+    build_runtime_metadata,
+    build_source_manifest,
+    build_split_fingerprint,
+    create_provenance_snapshot,
+    write_resume_source_audit,
+)
 from fast3_delta.course_artifacts import (
     _build_behavior_prereq_candidates,
     _build_concept_prereq_candidates,
@@ -2927,7 +2937,7 @@ def _file_digest(path):
         return None
 
 
-def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df):
+def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df, provenance=None):
     script_path = os.path.abspath(__file__)
     manifest = {
         "protocol": "static_threshold",
@@ -3050,6 +3060,7 @@ def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df)
             "torch": torch.__version__,
         },
         "exports": exports,
+        "provenance": provenance or {},
     }
     manifest_path = _feedback_output_path("static_protocol_manifest.json")
     with open(manifest_path, "w", encoding="utf-8") as f:
@@ -3211,7 +3222,36 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
 
     exports = _write_static_split_artifacts(train_df, val_df, test_df, split_info, cfg)
     data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
-    manifest_path = _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df)
+    entry_script = os.environ.get("USIM_FB_ENTRY_SCRIPT", "").strip() or (
+        os.path.abspath(sys.argv[0]) if sys.argv else os.path.abspath(__file__)
+    )
+    source_root = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.dirname(os.path.abspath(_feedback_output_path("static_protocol_manifest.json")))
+    runner_path = os.environ.get("USIM_RUNNER_PATH", "").strip()
+    provenance_snapshot = create_provenance_snapshot(
+        output_dir, source_root, entry_script, runner_path
+    )
+    current_source_manifest, resume_audit_path = write_resume_source_audit(
+        output_dir, source_root, entry_script, runner_path
+    )
+    train_fp, train_payload = _static_train_config_fingerprint(cfg, split_info=split_info)
+    split_fp, split_payload = build_split_fingerprint(split_info, exports=exports)
+    provenance_record = {
+        "schema_version": PROVENANCE_SCHEMA_VERSION,
+        "source_manifest_sha256": provenance_snapshot["source_manifest_sha256"],
+        "training_config_sha256": train_fp,
+        "training_config_payload": train_payload,
+        "split_sha256": split_fp,
+        "split_payload": split_payload,
+        "runtime": build_runtime_metadata(source_root),
+        "resume_source_audit": resume_audit_path,
+        "resume_decision": "fresh",
+        "source_warning": "",
+        "legacy_override": False,
+    }
+    manifest_path = _write_static_manifest(
+        split_info, exports, cfg, course_stats, data_dir, df, provenance=provenance_record
+    )
 
     print(f">> Architecture: Feedback-Aware RL-USIM + InfoNCE [FAST3 ContentDelta] (Batch Size={cfg.batch_size})")
     print(f">> Device: {device}")
@@ -3434,16 +3474,9 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             es_best_opt_state=best_opt_state,
             es_no_improve=no_improve,
         )
-        entry_script = os.environ.get("USIM_FB_ENTRY_SCRIPT", "").strip() or (
-            os.path.abspath(sys.argv[0]) if sys.argv else os.path.abspath(__file__)
-        )
-        train_fp, train_payload = _static_train_config_fingerprint(
-            cfg,
-            split_info=split_info,
-            script_path=entry_script,
-        )
         state.update(
             {
+                "fingerprint_schema_version": CHECKPOINT_FINGERPRINT_SCHEMA_VERSION,
                 "mode": "static",
                 "protocol": "static",
                 "split_mode": str(split_info.get("split_mode", "")),
@@ -3452,6 +3485,10 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 "delta_only_applied": bool(delta_only_applied),
                 "train_config_fingerprint": train_fp,
                 "train_config_payload": train_payload,
+                "split_fingerprint": split_fp,
+                "split_payload": split_payload,
+                "source_manifest": current_source_manifest,
+                "source_manifest_sha256": provenance_snapshot["source_manifest_sha256"],
             }
         )
         effective_snapshot_name = snapshot_name
@@ -3487,19 +3524,21 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         elif resume_state.get("mode") != "static":
             print(">> Static Resume: latest checkpoint is not static; ignoring it.")
         else:
-            entry_script = os.environ.get("USIM_FB_ENTRY_SCRIPT", "").strip() or (
-                os.path.abspath(sys.argv[0]) if sys.argv else os.path.abspath(__file__)
-            )
-            cfg_ok, cfg_reason, cur_fp, ckpt_fp = _checkpoint_config_matches(
+            decision = checkpoint_resume_decision(
                 resume_state,
                 cfg,
                 split_info=split_info,
-                script_path=entry_script,
+                current_source_manifest=current_source_manifest,
+                split_exports=exports,
             )
-            if not cfg_ok:
+            provenance_record["resume_decision"] = decision.reason
+            provenance_record["source_warning"] = decision.source_warning
+            provenance_record["legacy_override"] = decision.legacy_override
+            if decision.source_warning:
+                print(f">> Static Resume: {decision.source_warning}")
+            if not decision.ok:
                 print(
-                    f">> Static Resume: config changed; forcing fresh start | {cfg_reason} | "
-                    f"ckpt_fp={ckpt_fp} cur_fp={cur_fp}"
+                    f">> Static Resume: config or split changed; forcing fresh start | {decision.reason}"
                 )
             else:
                 _load_static_model_state_compat(resume_state["model_state"], "model_state")
@@ -3988,7 +4027,9 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             ),
         }
     )
-    _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df)
+    _write_static_manifest(
+        split_info, exports, cfg, course_stats, data_dir, df, provenance=provenance_record
+    )
     last_completed_epoch = int(history["Epoch"][-1]) if history.get("Epoch") else int(resume_start_epoch)
     _save_static_checkpoint("finished", last_completed_epoch, snapshot_name="finished.pt", write_latest=False)
     print(f">> Saved {summary_path}, {detail_path}, and {fullrank_path}")
