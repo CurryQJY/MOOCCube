@@ -3,8 +3,24 @@ import hashlib
 import json
 import os
 import time
+from dataclasses import dataclass
 
 import torch
+
+from .provenance import build_split_fingerprint, compare_source_manifests
+
+
+CHECKPOINT_FINGERPRINT_SCHEMA_VERSION = 2
+
+
+@dataclass(frozen=True)
+class ResumeDecision:
+    ok: bool
+    reason: str
+    train_fingerprint: str
+    split_fingerprint: str
+    source_warning: str = ""
+    legacy_override: bool = False
 
 
 def _feedback_ckpt_dir():
@@ -36,30 +52,17 @@ def _stable_json_fingerprint(payload):
 def _static_train_config_fingerprint(cfg, split_info=None, script_path=None):
     """Fingerprint of train knobs that invalidate checkpoint resume when changed."""
     split_info = split_info or {}
-    script_name = ""
-    script_sha = ""
-    if script_path:
-        script_name = os.path.basename(os.path.abspath(script_path))
-        try:
-            with open(script_path, "rb") as handle:
-                script_sha = hashlib.sha256(handle.read()).hexdigest()
-        except OSError:
-            script_sha = ""
 
     def _cfg(name, default=None):
         return getattr(cfg, name, default)
 
     payload = {
-        "script_name": script_name,
-        # Script body hash: code changes that affect training invalidate resume.
-        "script_sha256": script_sha if os.environ.get("USIM_FB_CKPT_IGNORE_SCRIPT_HASH", "0") != "1" else "",
+        "schema_version": CHECKPOINT_FINGERPRINT_SCHEMA_VERSION,
         "data_dir": str(os.environ.get("USIM_DATA_DIR", "")),
         "seed": str(os.environ.get("USIM_SEED", os.environ.get("USIM_STATIC_SEED", ""))),
         "static_seed": str(os.environ.get("USIM_STATIC_SEED", "")),
         "split_mode": str(split_info.get("split_mode") or os.environ.get("USIM_STATIC_SPLIT_MODE", "")),
         "cold_threshold": int(_cfg("cold_threshold", int(os.environ.get("USIM_COLD_THRESHOLD", "1") or 1))),
-        "n_epochs": int(_cfg("n_epochs", 0) or 0),
-        "early_stop_patience": int(_cfg("early_stop_patience", 0) or 0),
         "early_stop_score_mode": str(_cfg("early_stop_score_mode", "")),
         "early_stop_average_mode": str(_cfg("early_stop_average_mode", "")),
         "use_content_delta": bool(_cfg("use_content_delta", False)),
@@ -87,44 +90,62 @@ def _static_train_config_fingerprint(cfg, split_info=None, script_path=None):
     return _stable_json_fingerprint(payload)
 
 
-def _checkpoint_config_matches(resume_state, cfg, split_info=None, script_path=None):
-    """Return (ok, reason, current_fp, ckpt_fp)."""
-    current_fp, current_payload = _static_train_config_fingerprint(cfg, split_info=split_info, script_path=script_path)
+def _payload_differences(old_payload, new_payload):
+    if not isinstance(old_payload, dict):
+        return []
+    differences = []
+    for key in sorted(set(old_payload) | set(new_payload)):
+        old = old_payload.get(key, "<missing>")
+        new = new_payload.get(key, "<missing>")
+        if old != new:
+            differences.append(f"{key}:{old}->{new}")
+    return differences
+
+
+def checkpoint_resume_decision(resume_state, cfg, split_info=None, current_source_manifest=None, split_exports=None):
+    split_info = split_info or {}
+    train_fp, train_payload = _static_train_config_fingerprint(cfg, split_info=split_info)
+    split_fp, split_payload = build_split_fingerprint(split_info, exports=split_exports)
     if not isinstance(resume_state, dict):
-        return False, "checkpoint missing or invalid", current_fp, None
-    ckpt_fp = resume_state.get("train_config_fingerprint")
-    ckpt_payload = resume_state.get("train_config_payload")
-    if not ckpt_fp:
-        # Legacy checkpoints: fall back to coarse fields when present.
-        coarse = {
-            "n_epochs": int(resume_state.get("n_epochs_requested", -1)),
-            "cold_threshold": int(resume_state.get("cold_threshold", -1)),
-            "split_mode": str(resume_state.get("split_mode", "")),
-        }
-        cur_coarse = {
-            "n_epochs": int(getattr(cfg, "n_epochs", -1)),
-            "cold_threshold": int(getattr(cfg, "cold_threshold", -1)),
-            "split_mode": str((split_info or {}).get("split_mode", "")),
-        }
-        if coarse != cur_coarse:
-            return False, f"legacy coarse config mismatch ckpt={coarse} cur={cur_coarse}", current_fp, None
-        return True, "legacy checkpoint without fingerprint (coarse match)", current_fp, None
-    if str(ckpt_fp) != str(current_fp):
-        diffs = []
-        if isinstance(ckpt_payload, dict):
-            keys = sorted(set(ckpt_payload) | set(current_payload))
-            for key in keys:
-                old = ckpt_payload.get(key, "<missing>")
-                new = current_payload.get(key, "<missing>")
-                if old != new:
-                    diffs.append(f"{key}:{old}->{new}")
+        return ResumeDecision(False, "checkpoint missing or invalid", train_fp, split_fp)
+
+    schema = resume_state.get("fingerprint_schema_version")
+    ckpt_train_fp = resume_state.get("train_config_fingerprint")
+    ckpt_split_fp = resume_state.get("split_fingerprint")
+    if schema != CHECKPOINT_FINGERPRINT_SCHEMA_VERSION or not ckpt_train_fp or not ckpt_split_fp:
+        if os.environ.get("USIM_FB_ALLOW_LEGACY_CKPT", "0") == "1":
+            return ResumeDecision(True, "legacy checkpoint override", train_fp, split_fp, legacy_override=True)
+        return ResumeDecision(False, "legacy checkpoint requires USIM_FB_ALLOW_LEGACY_CKPT=1", train_fp, split_fp)
+
+    if str(ckpt_train_fp) != str(train_fp):
+        diffs = _payload_differences(resume_state.get("train_config_payload"), train_payload)
         reason = "train config fingerprint mismatch"
         if diffs:
-            reason = reason + " | " + "; ".join(diffs[:12])
-            if len(diffs) > 12:
-                reason = reason + f" | ...(+{len(diffs) - 12} more)"
-        return False, reason, current_fp, str(ckpt_fp)
-    return True, "fingerprint match", current_fp, str(ckpt_fp)
+            reason += " | " + "; ".join(diffs[:12])
+        return ResumeDecision(False, reason, train_fp, split_fp)
+
+    if str(ckpt_split_fp) != str(split_fp):
+        diffs = _payload_differences(resume_state.get("split_payload"), split_payload)
+        reason = "split fingerprint mismatch"
+        if diffs:
+            reason += " | " + "; ".join(diffs[:12])
+        return ResumeDecision(False, reason, train_fp, split_fp)
+
+    warning = ""
+    expected_source = resume_state.get("source_manifest")
+    if isinstance(expected_source, dict) and isinstance(current_source_manifest, dict):
+        changes = compare_source_manifests(expected_source, current_source_manifest)
+        parts = [f"{kind}={','.join(paths)}" for kind, paths in changes.items() if paths]
+        if parts:
+            warning = "WARNING: source provenance differs | " + " | ".join(parts)
+    return ResumeDecision(True, "fingerprint match", train_fp, split_fp, source_warning=warning)
+
+
+def _checkpoint_config_matches(resume_state, cfg, split_info=None, script_path=None):
+    """Return (ok, reason, current_fp, ckpt_fp)."""
+    decision = checkpoint_resume_decision(resume_state, cfg, split_info=split_info)
+    ckpt_fp = resume_state.get("train_config_fingerprint") if isinstance(resume_state, dict) else None
+    return decision.ok, decision.reason, decision.train_fingerprint, None if ckpt_fp is None else str(ckpt_fp)
 
 
 def _feedback_ckpt_snapshot_epochs():
