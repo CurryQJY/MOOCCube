@@ -29,6 +29,14 @@ class InferenceAudit:
 AUDIT = InferenceAudit()
 EVAL_SEED = 7001
 ACTIVE_ITEM_BANK = None
+INFERENCE_ROLLOUT_POLICY = "ppo"
+POLICY_MODES = {
+    "actor": "ppo",
+    "ppo": "ppo",
+    "greedy_similarity": "greedy_similarity",
+    "course_fit": "course_fit",
+    "random": "random",
+}
 ORIGINAL_EVALUATE = legacy.evaluate_usim
 ORIGINAL_BUILD_POS = eval_core.build_eval_pos_item_vecs
 ORIGINAL_GET_ACTION_VALUE = legacy.FixedSimpleAC.get_action_value
@@ -112,6 +120,7 @@ def infer_actor_refined_item_vectors(
             raise ValueError("llm_s must have the same length as item_idx")
 
     was_training = self.training
+    previous_rollout_policy = str(getattr(self.cfg, "rollout_policy", "ppo"))
     self.eval()
     outputs = []
     bank = user_bank_raw if user_bank_raw is not None else self._build_user_bank_raw()
@@ -122,6 +131,7 @@ def infer_actor_refined_item_vectors(
         history_context = {}
     batch_size = max(1, int(item_batch))
     try:
+        self.cfg.rollout_policy = INFERENCE_ROLLOUT_POLICY
         with torch.no_grad():
             for start in range(0, item_idx.numel(), batch_size):
                 end = min(start + batch_size, item_idx.numel())
@@ -153,6 +163,7 @@ def infer_actor_refined_item_vectors(
                 AUDIT.l2_sum += float(l2.sum().item())
                 outputs.append(refined.detach())
     finally:
+        self.cfg.rollout_policy = previous_rollout_policy
         self.train(was_training)
     return torch.cat(outputs, dim=0)
 
@@ -178,12 +189,13 @@ def evaluate_with_bank_targets(*args, **kwargs):
 
 
 def install_mode(mode, eval_seed):
-    """Install either static control or deterministic Actor inference."""
+    """Install static or one of the frozen-checkpoint rollout policies."""
+    global INFERENCE_ROLLOUT_POLICY
     reset_audit()
     set_eval_seed(eval_seed)
     mode = str(mode).strip().lower()
-    if mode not in {"static", "actor"}:
-        raise ValueError("USIM_ACTOR_INFERENCE_MODE must be static or actor")
+    if mode != "static" and mode not in POLICY_MODES:
+        raise ValueError(f"Unsupported inference policy: {mode}")
 
     legacy.evaluate_usim = evaluate_with_bank_targets
     eval_core.build_eval_pos_item_vecs = bank_aligned_pos_item_vecs
@@ -191,11 +203,14 @@ def install_mode(mode, eval_seed):
 
     current_refiner = getattr(legacy.Fast3FeedbackUSIM, "infer_refined_item_vectors", None)
     if mode == "static":
+        INFERENCE_ROLLOUT_POLICY = "ppo"
         if current_refiner is infer_actor_refined_item_vectors:
             delattr(legacy.Fast3FeedbackUSIM, "infer_refined_item_vectors")
         return
 
-    legacy.FixedSimpleAC.get_action_value = deterministic_get_action_value
+    INFERENCE_ROLLOUT_POLICY = POLICY_MODES[mode]
+    if INFERENCE_ROLLOUT_POLICY == "ppo":
+        legacy.FixedSimpleAC.get_action_value = deterministic_get_action_value
     legacy.Fast3FeedbackUSIM.infer_refined_item_vectors = infer_actor_refined_item_vectors
 
 

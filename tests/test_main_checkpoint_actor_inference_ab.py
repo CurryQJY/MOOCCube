@@ -121,6 +121,26 @@ def test_install_actor_attaches_refinement(monkeypatch):
     assert legacy.Fast3FeedbackUSIM.infer_refined_item_vectors is ab.infer_actor_refined_item_vectors
 
 
+@pytest.mark.parametrize(
+    "mode,rollout,uses_refiner,uses_argmax",
+    [
+        ("static", "ppo", False, False),
+        ("ppo", "ppo", True, True),
+        ("greedy_similarity", "greedy_similarity", True, False),
+        ("course_fit", "course_fit", True, False),
+        ("random", "random", True, False),
+    ],
+)
+def test_install_policy_mode(monkeypatch, mode, rollout, uses_refiner, uses_argmax):
+    monkeypatch.delattr(legacy.Fast3FeedbackUSIM, "infer_refined_item_vectors", raising=False)
+
+    ab.install_mode(mode, eval_seed=7001)
+
+    assert ab.INFERENCE_ROLLOUT_POLICY == rollout
+    assert hasattr(legacy.Fast3FeedbackUSIM, "infer_refined_item_vectors") is uses_refiner
+    assert (legacy.FixedSimpleAC.get_action_value is ab.deterministic_get_action_value) is uses_argmax
+
+
 def test_positive_target_vector_comes_from_the_same_refined_bank():
     previous = getattr(ab, "ACTIVE_ITEM_BANK", None)
     ab.ACTIVE_ITEM_BANK = torch.tensor([[1.0, 0.0], [0.0, 2.0], [3.0, 4.0]])
