@@ -1,0 +1,219 @@
+{
+  "best_epoch": 1,
+  "checkpoint_metric": "validation.full_cold_item_macro.N@10",
+  "content_path": "D:\\DeskTop\\MOOCCube\\processed_data_hin_clean_pop5\\content_emb.pt",
+  "device": "cuda",
+  "elapsed_seconds": 34.8037474155426,
+  "gates": {
+    "author_source_class_loaded": true,
+    "cold_semantics_nonconstant": true,
+    "content_catalog_aligned": true,
+    "device_request_satisfied": true,
+    "finite_loss": true,
+    "full_catalog_ranking": true,
+    "item_macro_metrics": true,
+    "no_positive_cold_train_edges": true,
+    "nonconstant_test_scores": true,
+    "nonconstant_validation_scores": true,
+    "nonempty_train_graph": true,
+    "source_mode_item_se": true,
+    "test_has_cold_courses": true,
+    "train_history_masked": true,
+    "validation_has_cold_courses": true,
+    "warm_only_negatives": true
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "improved": true,
+      "train": {
+        "batches": 13,
+        "examples": 100000,
+        "loss": 0.6660674718710092
+      },
+      "validation": {
+        "candidate_courses": 698,
+        "count_full_cold_item_macro": 34,
+        "count_full_hot_item_macro": 0,
+        "evaluated_users": 2048,
+        "full_cold_item_macro": {
+          "N@10": 0.000586513815606025,
+          "N@20": 0.002534859568969577,
+          "N@5": 0.0005277898995997464,
+          "R@10": 0.0014116406056093322,
+          "R@20": 0.009409313904388681,
+          "R@5": 0.0012254901960784314
+        },
+        "full_hot_item_macro": {},
+        "rows_full_cold": 2202,
+        "rows_full_hot": 0,
+        "score_std": 0.057335708290338516
+      }
+    },
+    {
+      "epoch": 2,
+      "improved": false,
+      "train": {
+        "batches": 13,
+        "examples": 100000,
+        "loss": 0.47172059233372027
+      },
+      "validation": {
+        "candidate_courses": 698,
+        "count_full_cold_item_macro": 34,
+        "count_full_hot_item_macro": 0,
+        "evaluated_users": 2048,
+        "full_cold_item_macro": {
+          "N@10": 0.0,
+          "N@20": 0.0,
+          "N@5": 0.0,
+          "R@10": 0.0,
+          "R@20": 0.0,
+          "R@5": 0.0
+        },
+        "full_hot_item_macro": {},
+        "rows_full_cold": 2202,
+        "rows_full_hot": 0,
+        "score_std": 0.36510804295539856
+      }
+    },
+    {
+      "epoch": 3,
+      "improved": false,
+      "train": {
+        "batches": 13,
+        "examples": 100000,
+        "loss": 0.2949965985921713
+      },
+      "validation": {
+        "candidate_courses": 698,
+        "count_full_cold_item_macro": 34,
+        "count_full_hot_item_macro": 0,
+        "evaluated_users": 2048,
+        "full_cold_item_macro": {
+          "N@10": 0.0,
+          "N@20": 0.0,
+          "N@5": 0.0,
+          "R@10": 0.0,
+          "R@20": 0.0,
+          "R@5": 0.0
+        },
+        "full_hot_item_macro": {},
+        "rows_full_cold": 2202,
+        "rows_full_hot": 0,
+        "score_std": 0.8120279908180237
+      }
+    },
+    {
+      "epoch": 4,
+      "improved": false,
+      "train": {
+        "batches": 13,
+        "examples": 100000,
+        "loss": 0.20891738969546098
+      },
+      "validation": {
+        "candidate_courses": 698,
+        "count_full_cold_item_macro": 34,
+        "count_full_hot_item_macro": 0,
+        "evaluated_users": 2048,
+        "full_cold_item_macro": {
+          "N@10": 0.0,
+          "N@20": 0.0,
+          "N@5": 0.0,
+          "R@10": 0.0,
+          "R@20": 0.0,
+          "R@5": 0.0
+        },
+        "full_hot_item_macro": {},
+        "rows_full_cold": 2202,
+        "rows_full_hot": 0,
+        "score_std": 1.1449450254440308
+      }
+    }
+  ],
+  "hyperparameters": {
+    "batch_size": 8192,
+    "edge_drop": 0.8,
+    "embed_dim": 64,
+    "epochs_completed": 4,
+    "epochs_requested": 10,
+    "eval_batch_size": 256,
+    "item_loss_reg": 0.0001,
+    "item_temperature": 0.1,
+    "lr": 0.005,
+    "max_eval_users": 2048,
+    "max_train_examples": 100000,
+    "n_layers": 1,
+    "weight_decay": 5e-05
+  },
+  "model": "KLU4EduRec-item_se (author source, strict adapter)",
+  "protocol": {
+    "adaptation_scope": "Official item-semantic mode only; author precomputed user summaries cannot be mapped to the strict users.",
+    "bitwise_cuda_reproducibility_verified": false,
+    "candidate_courses": 698,
+    "cold_courses": 102,
+    "content_shape": [
+      698,
+      768
+    ],
+    "deterministic_algorithms": true,
+    "expected_course_catalog": 698,
+    "full_catalog_ranking": true,
+    "full_model_claimed": false,
+    "item_macro": true,
+    "positive_train_edges": 464314,
+    "source_mode": "item_se",
+    "train_history_masked": true,
+    "validation_checkpointing": true,
+    "warm_courses": 596,
+    "warm_only_training_negatives": true
+  },
+  "seed": 2025,
+  "source_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\KLU4EduRec",
+  "source_hashes": {
+    "main.py": "67a5ee09a4ed0588b1cc0bd738bc4205bd69e9fbff2eb3890c6ec1667af827fa",
+    "model/GNNRec.py": "7c7a30029827a7855849ecc08348d60afcb62be695b96efc9964ac1d8863e216",
+    "model/dataset.py": "34a9a32793a98f24b16ed450972a02bbae0c956e7fb7110c2bdc1c2d41e425b8",
+    "model/metric.py": "0a65dea3b4f6c06ad625534d1be320658f537be8bd7da86ce18f1b15f1e5158f",
+    "readme.md": "9ab4102187a3131333ab1d9376ab2de8672de61b523b738a19ca50773e7ea428"
+  },
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2025",
+  "status": "smoke_passed",
+  "test": {
+    "candidate_courses": 698,
+    "count_full_cold_item_macro": 64,
+    "count_full_hot_item_macro": 0,
+    "evaluated_users": 2048,
+    "full_cold_item_macro": {
+      "N@10": 2.1623822245062273e-05,
+      "N@20": 0.0013062439362650745,
+      "N@5": 0.0,
+      "R@10": 6.836850819766e-05,
+      "R@20": 0.005344188696239087,
+      "R@5": 0.0
+    },
+    "full_hot_item_macro": {},
+    "rows_full_cold": 2334,
+    "rows_full_hot": 0,
+    "score_std": 0.06469695270061493
+  },
+  "validation": {
+    "candidate_courses": 698,
+    "count_full_cold_item_macro": 34,
+    "count_full_hot_item_macro": 0,
+    "evaluated_users": 2048,
+    "full_cold_item_macro": {
+      "N@10": 0.000586513815606025,
+      "N@20": 0.002534859568969577,
+      "N@5": 0.0005277898995997464,
+      "R@10": 0.0014116406056093322,
+      "R@20": 0.009409313904388681,
+      "R@5": 0.0012254901960784314
+    },
+    "full_hot_item_macro": {},
+    "rows_full_cold": 2202,
+    "rows_full_hot": 0,
+    "score_std": 0.057335708290338516
+  }
+}

@@ -1,6 +1,6 @@
 PWD D:\DeskTop\MOOCCube\paper_aaai27
 INPUT C:\Users\pc\AppData\Local\MiKTeX\miktex\data\le\pdftex\pdflatex.fmt
-INPUT main.tex
+INPUT main_revised.tex
 OUTPUT main.log
 INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls
 INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls
@@ -120,6 +120,7 @@ INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Bold-
 INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Regular-tlf-t1.tfm
 INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Bold-tlf-t1.tfm
 INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Italic-tlf-t1.tfm
+INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Italic-tlf-t1.tfm
 INPUT .\figures\mooccube_method_motivation.pdf
 INPUT .\figures\mooccube_method_motivation.pdf
 INPUT .\figures\mooccube_method_motivation.pdf
@@ -176,7 +177,6 @@ INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\symbol
 INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Bold-tlf-t1.tfm
 INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Regular-tlf-t1.tfm
 INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Regular-tlf-t1.tfm
-INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\fonts\tfm\public\newtx\ntx-Italic-tlf-t1.tfm
 INPUT .\figures\mooccube_ablation_updated_main_table_aaai_main.pdf
 INPUT .\figures\mooccube_ablation_updated_main_table_aaai_main.pdf
 INPUT .\figures\mooccube_ablation_updated_main_table_aaai_main.pdf

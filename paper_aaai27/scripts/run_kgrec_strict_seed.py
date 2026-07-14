@@ -78,6 +78,39 @@ def sample_warm_negatives(
     return triples
 
 
+def average_loss_components(loss_rows: Sequence[Mapping[str, float]]) -> dict[str, float]:
+    if not loss_rows:
+        return {}
+    keys = sorted({key for row in loss_rows for key in row})
+    return {
+        key: float(np.mean([float(row[key]) for row in loss_rows if key in row]))
+        for key in keys
+    }
+
+
+def apply_validation_result(
+    *,
+    row: dict[str, object],
+    validation: Mapping[str, object],
+    best_score: float,
+    bad_epochs: int,
+    eligible_for_best: bool = True,
+) -> tuple[float, int, bool]:
+    cold_metrics = validation["full_cold_item_macro"]
+    score = float(cold_metrics["N@10"])
+    is_best = eligible_for_best and score > best_score
+    row["validation_full_cold_item_macro"] = cold_metrics
+    row["validation_score"] = score
+    row["best"] = is_best
+    if is_best:
+        best_score = score
+        bad_epochs = 0
+    elif eligible_for_best:
+        bad_epochs += 1
+    row["bad_epochs"] = bad_epochs
+    return best_score, bad_epochs, is_best
+
+
 def _empty_metric_dict(k_list: Sequence[int]) -> dict[str, float]:
     return {f"{name}@{k}": 0.0 for name in ("R", "N") for k in k_list}
 
@@ -237,6 +270,7 @@ class RunConfig:
     mess_dropout_rate: float
     max_train_batches: int
     requested_device: str
+    epoch0_diagnostic_only: bool
 
 
 def run_single_seed(args: argparse.Namespace) -> dict[str, object]:
@@ -341,9 +375,34 @@ def run_single_seed(args: argparse.Namespace) -> dict[str, object]:
         mess_dropout_rate=args.mess_dropout_rate,
         max_train_batches=args.max_train_batches,
         requested_device=args.device,
+        epoch0_diagnostic_only=args.epoch0_diagnostic_only,
     )
 
     with progress_path.open("a", encoding="utf-8") as progress:
+        initial_validation = evaluate_model_item_macro(
+            model,
+            eval_pairs=validation_pairs,
+            train_seen_by_user=train_seen_by_user,
+            cold_item_ids=cold_item_ids,
+            n_items=int(manifest["n_items"]),
+            device=device,
+            batch_size=args.eval_batch_size,
+        )
+        initial_row: dict[str, object] = {"epoch": 0}
+        best_score, bad_epochs, initial_is_best = apply_validation_result(
+            row=initial_row,
+            validation=initial_validation,
+            best_score=best_score,
+            bad_epochs=bad_epochs,
+            eligible_for_best=not args.epoch0_diagnostic_only,
+        )
+        if initial_is_best:
+            best_epoch = 0
+            best_validation = initial_validation
+            torch.save(model.state_dict(), checkpoint_path)
+        progress.write(json.dumps(initial_row, sort_keys=True) + "\n")
+        progress.flush()
+
         for epoch in range(1, args.epochs + 1):
             epoch_start = time.time()
             train_cf_with_neg = sample_warm_negatives(
@@ -358,6 +417,7 @@ def run_single_seed(args: argparse.Namespace) -> dict[str, object]:
 
             model.train()
             losses: list[float] = []
+            loss_component_rows: list[dict[str, float]] = []
             batch_count = 0
             for start in range(0, train_cf_with_neg.shape[0], args.batch_size):
                 end = min(start + args.batch_size, train_cf_with_neg.shape[0])
@@ -371,11 +431,12 @@ def run_single_seed(args: argparse.Namespace) -> dict[str, object]:
                     "neg_items": batch_tensor[:, 2],
                     "batch_start": start,
                 }
-                loss, _loss_dict = model(batch)
+                loss, loss_dict = model(batch)
                 optimizer.zero_grad(set_to_none=True)
                 loss.backward()
                 optimizer.step()
                 losses.append(float(loss.detach().cpu().item()))
+                loss_component_rows.append({key: float(value) for key, value in loss_dict.items()})
                 batch_count += 1
                 if args.max_train_batches > 0 and batch_count >= args.max_train_batches:
                     break
@@ -383,6 +444,7 @@ def run_single_seed(args: argparse.Namespace) -> dict[str, object]:
             row: dict[str, object] = {
                 "epoch": epoch,
                 "train_loss": float(np.mean(losses)) if losses else None,
+                "train_loss_components": average_loss_components(loss_component_rows),
                 "train_batches": batch_count,
                 "epoch_seconds": time.time() - epoch_start,
             }
@@ -397,20 +459,16 @@ def run_single_seed(args: argparse.Namespace) -> dict[str, object]:
                     device=device,
                     batch_size=args.eval_batch_size,
                 )
-                score = float(validation["full_cold_item_macro"]["N@10"])
-                row["validation_full_cold_item_macro"] = validation["full_cold_item_macro"]
-                row["validation_score"] = score
-                if score > best_score:
-                    best_score = score
+                best_score, bad_epochs, is_best = apply_validation_result(
+                    row=row,
+                    validation=validation,
+                    best_score=best_score,
+                    bad_epochs=bad_epochs,
+                )
+                if is_best:
                     best_epoch = epoch
                     best_validation = validation
-                    bad_epochs = 0
                     torch.save(model.state_dict(), checkpoint_path)
-                    row["best"] = True
-                else:
-                    bad_epochs += 1
-                    row["best"] = False
-                row["bad_epochs"] = bad_epochs
                 progress.write(json.dumps(row, sort_keys=True) + "\n")
                 progress.flush()
                 if args.patience > 0 and bad_epochs >= args.patience:
@@ -447,6 +505,7 @@ def run_single_seed(args: argparse.Namespace) -> dict[str, object]:
             "train_history_masking": True,
             "item_macro_metrics": True,
             "user_video_edges_excluded": True,
+            "epoch0_diagnostic_only": args.epoch0_diagnostic_only,
         },
         "data": {
             "n_users": manifest["n_users"],
@@ -493,6 +552,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cl-drop-ratio", type=float, default=0.5)
     parser.add_argument("--max-train-batches", type=int, default=-1)
     parser.add_argument("--device", choices=("auto", "cuda", "cpu"), default="auto")
+    parser.add_argument(
+        "--epoch0-diagnostic-only",
+        action="store_true",
+        help="Log epoch 0 validation metrics but exclude epoch 0 from checkpoint selection.",
+    )
     return parser.parse_args()
 
 

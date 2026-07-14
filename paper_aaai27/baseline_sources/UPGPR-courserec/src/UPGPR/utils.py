@@ -9,7 +9,10 @@ import numpy as np
 import scipy.sparse as sp
 from sklearn.feature_extraction.text import TfidfTransformer
 import torch
-import wandb
+try:
+    import wandb
+except (ImportError, AttributeError):
+    wandb = None
 
 
 def get_entities(args):

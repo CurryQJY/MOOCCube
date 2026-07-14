@@ -1,0 +1,10 @@
+\begin{tabular}{lcccc}
+\toprule
+Method & R@5 & R@10 & N@5 & N@10 \\
+\midrule
+CGRC (exact re-export) & 0.2059 $\pm$ 0.0227 & 0.2569 $\pm$ 0.0220 & 0.1670 $\pm$ 0.0233 & 0.1835 $\pm$ 0.0231 \\
+RecPPO (w=0.5, r=0.04) & 0.2389 $\pm$ 0.0122\textsuperscript{\scriptsize ***} & 0.2794 $\pm$ 0.0076\textsuperscript{\scriptsize *} & 0.1954 $\pm$ 0.0163\textsuperscript{\scriptsize ***} & 0.2086 $\pm$ 0.0148\textsuperscript{\scriptsize ***} \\
+\bottomrule
+\end{tabular}
+% Stars compare RecPPO with CGRC using paired Wilcoxon tests.
+% P-values use Bonferroni correction over 12 tests (3 datasets x 4 metrics).

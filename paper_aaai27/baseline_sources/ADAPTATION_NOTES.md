@@ -6,10 +6,10 @@ Date: 2026-07-04
 
 | Candidate | Source | Local path | Pull result | Adaptation status |
 |---|---|---|---|---|
-| IDRMI | https://github.com/miaomiao924/IDRMI | `paper_aaai27/baseline_sources/IDRMI` | downloaded via GitHub codeload, branch `master` | Data files can be generated, but official graph loader builds an empty user-course adjacency unless source code is fixed. |
-| KGAN | https://github.com/StZHY/KGAN | `paper_aaai27/baseline_sources/KGAN` | downloaded via GitHub codeload, branch `main` | Best current candidate for a course-specific baseline. Data loader accepts adapted MOOCCube format in a smoke test. Training needs a TensorFlow 1.x/Keras environment or porting. |
+| IDRMI | https://github.com/miaomiao924/IDRMI | `paper_aaai27/baseline_sources/IDRMI` | downloaded via GitHub codeload, branch `master`; matched to ESWA 2025 DOI `10.1016/j.eswa.2024.125889` | Newest verified direct-course source. Data files can be generated, but the official graph loader builds an empty user-course adjacency and the released evaluator is label classification; run only a source-repair feasibility gate first. |
+| KGAN | https://github.com/StZHY/KGAN | `paper_aaai27/baseline_sources/KGAN` | downloaded via GitHub codeload, branch `main` | Lower-risk current course-specific candidate. Data loader accepts adapted MOOCCube format in a smoke test. Training needs a TensorFlow 1.x/Keras environment or porting. |
 | DRG | https://github.com/WHCK1102/DRG | `paper_aaai27/baseline_sources/DRG` | downloaded via GitHub codeload, branch `main` | Repository contains prompt/data examples, not a directly runnable recommender training pipeline. Better treated as LLM-course-recommendation discussion or future baseline. |
-| MSEC-Rec | https://github.com/mmx124/MSEC-Rec | `paper_aaai27/baseline_sources/MSEC-Rec` | downloaded via GitHub codeload, branch `main` | Recent course-specific IP&M 2025 candidate. Key files compile, but the official evaluator uses sampled ranking and random validation positives; needs strict split, full-catalog evaluator, and DGL dependency. |
+| MSEC-Rec | https://github.com/mmx124/MSEC-Rec | `paper_aaai27/baseline_sources/MSEC-Rec` | downloaded via GitHub codeload, branch `main` | Direct course-specific IP&M 2026 source. Strict audit is NO-GO: the HAN outputs users only, courses remain ID embeddings, and the released random-walk scale is infeasible. |
 | UPGPR / courserec | https://github.com/epfl-ml4ed/courserec | `paper_aaai27/baseline_sources/UPGPR-courserec` | downloaded via GitHub codeload, branch `main` | LAK 2024 explainable MOOC recommendation code. Custom-dataset interface is usable, but default split is user-level random and evaluation is top-10 path ranking; needs strict item-cold data generation and evaluator replacement. |
 | PCGNN | https://github.com/lcwy220/PCGNN plus Google Drive code package from README | `paper_aaai27/baseline_sources/PCGNN` and `paper_aaai27/baseline_sources/PCGNN_recbole_drive` | GitHub README downloaded via codeload; 103 MB Drive package downloaded with `gdown` and extracted | Strong recent course-specific TKDD 2024 candidate. Drive package contains a modified RecBole project with `kg_model`, `course` and `xuetangx` atomic files. This is the best new baseline candidate if we can export our strict item-cold split into its RecBole atomic format. |
 
@@ -121,6 +121,16 @@ Observed smoke output:
 Root cause in official code:
 
 `NGCF/utility/load_data.py` reads `train_set.txt`, `user_items.txt`, and `item_users.txt`, but the block that populates `self.R[uid, item] = 1` is commented out. As a result, `get_adj_mat()` creates an empty user-course graph.
+
+The source is now matched to *An Explainable Graph-Based Course Recommendation
+Model Based on Multiple Interest Factors* (ESWA 2025). It contains the NGCF,
+KGCN, course-match, user-choice, and course-preference modules and can score
+arbitrary user-course pairs. Its KGCN branch gives a plausible representation
+path for KG-connected zero-interaction courses. In addition to the empty graph,
+the released code hard-codes 199,199 users/698 courses and `.cuda()`, resamples
+training batches with replacement, constructs heuristic histories internally,
+and evaluates balanced-label classification every epoch. Therefore IDRMI is a
+source-valid but repair-heavy feasibility candidate, not a ready baseline.
 
 ### MSEC-Rec
 

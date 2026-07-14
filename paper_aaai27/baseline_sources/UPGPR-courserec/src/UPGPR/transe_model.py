@@ -86,7 +86,9 @@ class KnowledgeEmbedding(nn.Module):
     def _make_distrib(self, distrib):
         """Normalize input numpy vector to distribution."""
         distrib = np.power(np.array(distrib, dtype=float), 0.75)
-        distrib = distrib / distrib.sum()
+        total = distrib.sum()
+        if total > 0:
+            distrib = distrib / total
         distrib = torch.FloatTensor(distrib).to(self.device)
         return distrib
 
@@ -198,4 +200,3 @@ def kg_neg_loss(entity_head_embed, entity_tail_embed, entity_head_idxs, entity_t
 
     loss = (pos_loss + neg_loss).mean()
     return loss, [entity_head_vec, entity_tail_vec, neg_vec]
-

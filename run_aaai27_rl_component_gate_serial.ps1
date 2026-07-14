@@ -19,6 +19,7 @@ param(
     [int]$MinFreeGpuMiB = 9000,
     [int]$GpuPollSeconds = 300,
     [switch]$RunAllSeeds,
+    [switch]$FullOnly,
     [switch]$SkipGpuWait,
     [switch]$PreflightOnly,
     [switch]$StartupProbe,
@@ -290,6 +291,9 @@ $baseRunnerParams = @{
     EarlyStopScoreMode = "cold_only"
     UseContentDelta = $false
     UsePseudoColdTrain = $false
+    PseudoColdRatio = 0.30
+    PseudoColdMinPop = 5
+    PseudoColdMode = "batch_random"
     UsePaac = $false
     UseCourseFeedback = $true
     UseCourseReward = $true
@@ -671,6 +675,26 @@ try {
     $fullPilotRow = Get-MetricRow -Root $fullPilotResult.Root -Seed $PilotSeed
     $fullGateValue = Get-MetricValue -Row $fullPilotRow -Metric $GateMetric
     Write-QueueLine ("FULL_PILOT metric={0} value={1:F8} root={2}" -f $GateMetric, $fullGateValue, $fullPilotResult.Root)
+
+    if ($FullOnly) {
+        Invoke-AggregateIfPresent -Definition $fullDefinition
+        [ordered]@{
+            completed_at = (Get-Date).ToString("o")
+            status = "complete"
+            mode = "full_only"
+            pid = $PID
+            frozen_script = $frozenScriptAbs
+            frozen_script_sha256 = $expectedScriptHash
+            pilot_seed = $PilotSeed
+            gate_metric = $GateMetric
+            full_value = $fullGateValue
+            failures = $failures
+            existing_result_audit_csv = $existingAuditCsv
+        } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $completionJson -Encoding UTF8
+        Write-State -Phase "complete" -Message "full_only"
+        Write-QueueLine "FULL_ONLY_END status=complete seed=$PilotSeed"
+        return
+    }
 
     $remainingFullEnsured = $false
     foreach ($definition in $variants) {

@@ -68,3 +68,23 @@ def test_kgrec_modules_import_without_pyg_extensions() -> None:
     assert AttnHGCN is not None
     assert KGRec is not None
 
+
+def test_relation_aware_sampling_includes_every_noninteraction_relation() -> None:
+    from modules.KGRec import _relation_aware_edge_sampling
+
+    edge_index = torch.tensor(
+        [[0, 1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 0]],
+        dtype=torch.long,
+    )
+    edge_type = torch.arange(1, 7, dtype=torch.long)
+
+    sampled_index, sampled_type = _relation_aware_edge_sampling(
+        edge_index,
+        edge_type,
+        n_relations=7,
+        samp_rate=1.0,
+    )
+
+    assert sampled_index.shape == edge_index.shape
+    assert torch.equal(torch.sort(sampled_type).values, edge_type)
+

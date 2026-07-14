@@ -34,6 +34,78 @@ def test_validation_target_routes_validation_rows_without_test_rows():
     assert info == {"test_rows": 1, "val_rows": 1}
 
 
+def test_history_fingerprint_is_order_independent_and_counts_pairs():
+    left = {1: {4, 2}, 0: {3}}
+    right = {0: {3}, 1: {2, 4}}
+
+    left_summary = ab.history_fingerprint(left)
+    right_summary = ab.history_fingerprint(right)
+
+    assert left_summary == right_summary
+    assert left_summary["users"] == 2
+    assert left_summary["pairs"] == 3
+
+
+def test_audited_split_records_history_fingerprints_and_item_sets():
+    train = pd.DataFrame({"u_idx": [0, 0, 1], "i_idx": [1, 2, 2]})
+    val = pd.DataFrame({"u_idx": [0], "i_idx": [3]})
+    test = pd.DataFrame({"u_idx": [1], "i_idx": [4]})
+
+    def split_fn(_):
+        return train, val, test, {"mode": "strict"}
+
+    ab.reset_audit()
+    wrapped = ab.make_audited_split(split_fn)
+    got_train, got_val, got_test, info = wrapped(object())
+
+    assert got_train.equals(train)
+    assert got_val.equals(val)
+    assert got_test.equals(test)
+    assert info == {"mode": "strict"}
+    assert ab.AUDIT.split_train_rows == 3
+    assert ab.AUDIT.split_validation_rows == 1
+    assert ab.AUDIT.split_test_rows == 1
+    assert ab.AUDIT_CONTEXT.train_items == {1, 2}
+    assert ab.AUDIT_CONTEXT.validation_items == {3}
+    assert ab.AUDIT_CONTEXT.test_items == {4}
+    assert ab.AUDIT_CONTEXT.train_history["pairs"] == 3
+    assert ab.AUDIT_CONTEXT.train_plus_validation_history["pairs"] == 4
+
+
+def test_audited_course_fit_counts_candidate_histories_containing_target(monkeypatch):
+    class TinyCourseFitModel:
+        user_seen_index = torch.tensor(
+            [
+                [False, False, True],
+                [True, False, False],
+                [False, False, False],
+            ]
+        )
+
+    monkeypatch.setattr(
+        ab,
+        "ORIGINAL_COMPUTE_COURSE_FIT",
+        lambda self, candidate_user_idx, item_idx, target_pop=None, user_seen_items=None: torch.zeros_like(
+            candidate_user_idx, dtype=torch.float32
+        ),
+    )
+    ab.reset_audit()
+
+    result = ab.audited_compute_candidate_course_fit(
+        TinyCourseFitModel(),
+        candidate_user_idx=torch.tensor([[0, 2], [1, 2]]),
+        item_idx=torch.tensor([2, 0]),
+        user_seen_items={},
+    )
+
+    assert torch.equal(result, torch.zeros((2, 2)))
+    assert ab.AUDIT.course_fit_calls == 1
+    assert ab.AUDIT.course_fit_candidate_pairs == 4
+    assert ab.AUDIT.target_seen_candidate_pairs == 2
+    assert ab.AUDIT.course_fit_target_rows == 2
+    assert ab.AUDIT.target_rows_with_seen_candidate == 2
+
+
 def test_deterministic_action_uses_actor_argmax():
     torch.manual_seed(7)
     agent = legacy.FixedSimpleAC(item_dim=4, time_dim=5)
@@ -65,7 +137,16 @@ class TinyInferenceModel:
     def __init__(self):
         self.device = torch.device("cpu")
         self.training = False
-        self.cfg = type("Cfg", (), {"emb_dim": 2, "candidate_strategy": "retrieve_sample"})()
+        self.cfg = type(
+            "Cfg",
+            (),
+            {
+                "emb_dim": 2,
+                "candidate_strategy": "retrieve_sample",
+                "rollout_policy": "ppo",
+                "feedback_course_match_exclude_target": False,
+            },
+        )()
         self.item_id_emb = type("Emb", (), {"weight": torch.zeros(3, 2)})()
         self.item_popularity = torch.tensor([3.0, 0.0, 0.0])
         self.user_seen_index = torch.zeros((2, 3), dtype=torch.bool)
@@ -86,7 +167,13 @@ class TinyInferenceModel:
         return base, base, base
 
     def run_usim_episode(self, init, target_emb, **kwargs):
-        self.calls.append({"target_emb": target_emb, **kwargs})
+        self.calls.append(
+            {
+                "target_emb": target_emb,
+                "exclude_target": self.cfg.feedback_course_match_exclude_target,
+                **kwargs,
+            }
+        )
         return init + 0.25, {}, {}
 
     def _blend_rl_episode_output(self, base, final):
@@ -103,6 +190,55 @@ def test_refinement_never_supplies_behavior_target():
     assert model.calls[0]["target_emb"] is None
     assert torch.equal(model.calls[0]["item_idx"], torch.tensor([1, 2]))
     assert model.calls[0]["user_seen_items"] == {}
+
+
+def test_audited_history_install_classifies_exact_train_only_mapping(monkeypatch):
+    class TinyHistoryModel:
+        installed = None
+
+    train_seen = {0: {1, 2}, 1: {2}}
+    train_val_seen = {0: {1, 2, 3}, 1: {2}}
+    ab.reset_audit()
+    ab.AUDIT_CONTEXT.train_history = ab.history_fingerprint(train_seen)
+    ab.AUDIT_CONTEXT.train_plus_validation_history = ab.history_fingerprint(train_val_seen)
+    monkeypatch.setattr(
+        ab,
+        "ORIGINAL_SET_USER_SEEN_INDEX",
+        lambda self, value: setattr(self, "installed", value),
+    )
+    model = TinyHistoryModel()
+
+    ab.audited_set_user_seen_index(model, train_seen)
+
+    assert model.installed == train_seen
+    assert ab.AUDIT.history_set_calls == 1
+    assert ab.AUDIT.history_sources == ["train_only"]
+
+
+def test_refinement_temporarily_overrides_target_exclusion_and_records_inputs():
+    model = TinyInferenceModel()
+    previous = ab.COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE
+    ab.COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE = True
+    ab.reset_audit()
+    try:
+        ab.infer_actor_refined_item_vectors(model, torch.tensor([1, 2]))
+    finally:
+        ab.COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE = previous
+
+    assert model.calls[0]["exclude_target"] is True
+    assert model.cfg.feedback_course_match_exclude_target is False
+    assert ab.AUDIT.behavior_target_none_calls == 1
+    assert ab.AUDIT.behavior_target_non_null_calls == 0
+    assert ab.AUDIT.refined_item_ids == [1, 2]
+    assert ab.AUDIT.course_match_exclude_target_values == [True]
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [(None, None), ("", None), ("true", True), ("1", True), ("false", False), ("0", False)],
+)
+def test_parse_optional_bool(raw, expected):
+    assert ab.parse_optional_bool(raw) is expected
 
 
 def test_install_static_does_not_attach_refinement(monkeypatch):
@@ -175,6 +311,44 @@ def test_audit_export_reports_mean_displacement_and_target(tmp_path, monkeypatch
     assert payload["mean_cosine"] == pytest.approx(0.8)
     assert payload["mean_l2"] == pytest.approx(0.2)
     assert payload["evaluation_target"] == "validation"
+
+
+def test_audit_export_reports_history_target_seen_and_refined_composition(tmp_path):
+    ab.AUDIT = ab.InferenceAudit(
+        history_set_calls=2,
+        history_sources=["train_only", "train_only"],
+        course_fit_candidate_pairs=8,
+        target_seen_candidate_pairs=0,
+        course_fit_target_rows=4,
+        target_rows_with_seen_candidate=0,
+        refined_item_ids=[2, 3, 4],
+        behavior_target_none_calls=1,
+        behavior_target_non_null_calls=0,
+        course_match_exclude_target_values=[True],
+    )
+    ab.AUDIT_CONTEXT = ab.InferenceAuditContext(
+        train_items={1},
+        validation_items={2},
+        test_items={3},
+    )
+    path = tmp_path / "audit.json"
+
+    ab.write_audit(path, mode="course_fit", eval_seed=7001)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["history_source_counts"] == {"train_only": 2}
+    assert payload["history_all_train_only"] is True
+    assert payload["target_seen_candidate_rate"] == 0.0
+    assert payload["target_rows_with_seen_candidate_rate"] == 0.0
+    assert payload["refined_item_composition"] == {
+        "total_unique": 3,
+        "train_present": 0,
+        "validation_only": 1,
+        "test_only": 1,
+        "validation_and_test": 0,
+        "neither_validation_nor_test": 1,
+    }
+    assert payload["effective_course_match_exclude_target"] == [True]
 
 
 def test_checkpoint_write_blocker_preserves_checkpoint(tmp_path):

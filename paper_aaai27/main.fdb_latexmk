@@ -1,15 +1,15 @@
 # Fdb version 4
-["bibtex main"] 1783569864.04804 "main.aux" "main.bbl" "main" 1783569866.71567 0
+["bibtex main"] 1783989600.15268 "main.aux" "main.bbl" "main" 1783989603.21559 0
   "./aaai2027.bst" 1777882188 30207 bd248dfe461b9b2fc7481a44feafe197 ""
-  "./references.bib" 1783494061 21674 7c37fc07708ded86f7a6f881827ac250 ""
-  "main.aux" 1783569865 6739 c72b132213cc573805916d7099072310 "pdflatex"
+  "./references.bib" 1783989234.08219 23070 379fd0e725170cd07f12e7e69ccef3fe ""
+  "main.aux" 1783989601.703 7082 6fa405ade01f5c4cff18f4f9517b2414 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1783569864.6299 "main.tex" "main.pdf" "main" 1783569866.71618 0
-  "C:/Users/pc/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1783511961 228176 6d9b37f7f66041b290712cf4fd077214 ""
-  "C:/Users/pc/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1779804430 13332076 88fc7f4d5d39d6bfc70ee02a97d13caa ""
+["pdflatex"] 1783989600.72276 "main_revised.tex" "main.pdf" "main" 1783989603.21634 0
+  "C:/Users/pc/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1783511961.69298 228176 6d9b37f7f66041b290712cf4fd077214 ""
+  "C:/Users/pc/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1779804430.44865 13332076 7265fddc37ecfb89a61e48ba9bbfe65e ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-ec-tlf.enc" 1736607166 2914 fdbc4a54b9bc76f4551b5303f2737d33 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/tex-gyre/q-ts1.enc" 1525740614 3124 3813fd4c981d99822890a2861b0d274c ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/tfm/jknappen/ec/ecrm1000.tfm" 993062122 3148 7e594c8240c71e432203f65ab5f95a51 ""
@@ -106,13 +106,13 @@
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xpatch/xpatch.sty" 1585221260 8510 7803f78066c4f9d008405191a4b43073 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xstring/xstring.sty" 1693735632 123 a302f2c651a95033260db60e51527ae8 ""
   "aaai2027.sty" 1779092464 16915 1b1c792e2acfbbd8b672259e267b95d8 ""
-  "figures/ckg_rl_framework_topconf.pdf" 1783414966 106135 2457337446dfc39afcd0540a53c98eec ""
-  "figures/mooccube_ablation_updated_main_table_aaai_main.pdf" 1783516987 80625 a9e4cf1ee14a5dc95ae4dff9b58f0c39 ""
-  "figures/mooccube_hparam_validation_updated_default_aaai_main.pdf" 1783516993 60567 a2ba752abeb0a4d35166d30393869ff0 ""
-  "figures/mooccube_method_motivation.pdf" 1783151294 60086 d5741918bf1bf860b6a99f283b5eb7f1 ""
-  "main.aux" 1783569865 6739 c72b132213cc573805916d7099072310 "pdflatex"
-  "main.bbl" 1783569864 17497 5b5f31fd905fce87f65d018cc7a12797 "bibtex main"
-  "main.tex" 1783569751 39449 740a9c432f2b0811c1af18ff1257cd41 ""
+  "figures/ckg_rl_framework_topconf.pdf" 1783989342.63048 86500 856dbc2a1405fef08373df85a61f7815 ""
+  "figures/mooccube_ablation_updated_main_table_aaai_main.pdf" 1783516987.76542 80625 8c676d6a1e7300b7f61332db9799dd17 ""
+  "figures/mooccube_hparam_validation_updated_default_aaai_main.pdf" 1783516993.00353 60567 3535757b4a10989069d2ab21e19429dc ""
+  "figures/mooccube_method_motivation.pdf" 1783151294.90185 60086 46ed9ca3b88d46e14b3907806a46d9cb ""
+  "main.aux" 1783989601.703 7082 6fa405ade01f5c4cff18f4f9517b2414 "pdflatex"
+  "main.bbl" 1783989600.60504 18655 288896c3860abac48dc972e79d620c10 "bibtex main"
+  "main_revised.tex" 1783989234.08633 43217 028485f81e8a0d1d3cd4cfcc31ca8c97 ""
   (generated)
   "main.aux"
   "main.log"

@@ -109,9 +109,20 @@ class Dataset(object):
             data=interaction_data,
             size=len(interaction_data),
             item_distrib=item_distrib,
-            item_uniform_distrib=np.ones(self.item.vocab_size),
+            # Strict item-cold adaptation: interaction negatives must be warm.
+            # Static item relations can still describe cold items, but they may
+            # not receive a collaborative training signal as negatives.
+            item_uniform_distrib=(item_distrib > 0).astype(float),
             interaction_distrib=np.ones(len(interaction_data)),
         )
+        warm_items = set(np.flatnonzero(item_distrib > 0).tolist())
+        for relation_name in self.data_args.item_relation:
+            relation = getattr(self, relation_name)
+            warm_tail_distrib = np.zeros_like(relation.et_distrib)
+            for item_idx in warm_items:
+                for tail_idx in relation.data[item_idx]:
+                    warm_tail_distrib[tail_idx] += 1
+            relation.et_distrib = warm_tail_distrib
         print("Load interactions of size", self.interactions.size)
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -9,6 +10,7 @@ from typing import Iterable, Mapping, Sequence
 
 Pair = tuple[str, str]
 Triple = tuple[int, int, int]
+RawTriple = tuple[str, str, str]
 
 MOOCCUBE_RELATION_FILES = {
     "course-video": ("course_video", "course_external", "video"),
@@ -140,6 +142,60 @@ def build_atomic_data(
     )
 
 
+def build_atomic_data_from_kg_triples(
+    *,
+    train_pairs: Sequence[Pair],
+    validation_pairs: Sequence[Pair],
+    test_pairs: Sequence[Pair],
+    kg_triples: Sequence[RawTriple],
+) -> AtomicKGRecData:
+    users = _ordered_tokens(user for pairs in (train_pairs, validation_pairs, test_pairs) for user, _ in pairs)
+    courses = _ordered_tokens(course for pairs in (train_pairs, validation_pairs, test_pairs) for _, course in pairs)
+    user_to_id = {user: idx for idx, user in enumerate(users)}
+    course_to_item = {course: idx for idx, course in enumerate(courses)}
+    n_items = len(course_to_item)
+
+    kg_entities = _ordered_tokens(entity for head, _relation, tail in kg_triples for entity in (head, tail))
+    external_entities = [entity for entity in kg_entities if entity not in course_to_item]
+    entity_to_id = dict(course_to_item)
+    entity_to_id.update({entity: n_items + idx for idx, entity in enumerate(external_entities)})
+    relation_to_id = {
+        relation: idx for idx, relation in enumerate(_ordered_tokens(relation for _head, relation, _tail in kg_triples))
+    }
+
+    mapped_train = _map_pairs(train_pairs, user_to_id, course_to_item)
+    mapped_validation = _map_pairs(validation_pairs, user_to_id, course_to_item)
+    mapped_test = _map_pairs(test_pairs, user_to_id, course_to_item)
+    warm_item_ids = {item for _user, item in mapped_train}
+    eval_item_ids = {item for _user, item in mapped_validation + mapped_test}
+    cold_item_ids = eval_item_ids - warm_item_ids
+
+    mapped_triples: list[Triple] = []
+    degree_counter: Counter[int] = Counter()
+    for head, relation, tail in kg_triples:
+        head_id = entity_to_id[str(head)]
+        tail_id = entity_to_id[str(tail)]
+        mapped_triples.append((head_id, relation_to_id[str(relation)], tail_id))
+        if head_id < n_items:
+            degree_counter[head_id] += 1
+        if tail_id < n_items:
+            degree_counter[tail_id] += 1
+
+    return AtomicKGRecData(
+        user_to_id=user_to_id,
+        course_to_item=course_to_item,
+        entity_to_id=entity_to_id,
+        relation_to_id=relation_to_id,
+        train_pairs=mapped_train,
+        validation_pairs=mapped_validation,
+        test_pairs=mapped_test,
+        warm_item_ids=warm_item_ids,
+        cold_item_ids=cold_item_ids,
+        kg_triples=mapped_triples,
+        course_kg_degree=dict(degree_counter),
+    )
+
+
 def _group_items_by_user(pairs: Sequence[tuple[int, int]]) -> dict[int, list[int]]:
     grouped: dict[int, list[int]] = defaultdict(list)
     for user, item in pairs:
@@ -256,6 +312,101 @@ def _read_mooccube_relation_rows(relations_dir: Path) -> dict[str, list[Pair]]:
         raw_relation: _read_tsv_pairs(relations_dir / f"{raw_relation}.json")
         for raw_relation in MOOCCUBE_RELATION_FILES
     }
+
+
+def _read_recbole_tsv(path: Path, required_columns: Sequence[str]) -> list[dict[str, str]]:
+    if not path.exists():
+        raise FileNotFoundError(path)
+    with path.open("r", encoding="utf-8", errors="replace", newline="") as handle:
+        reader = csv.reader(handle, delimiter="\t")
+        try:
+            raw_header = next(reader)
+        except StopIteration as exc:
+            raise ValueError(f"RecBole TSV is empty: {path}") from exc
+        header = [column.split(":", 1)[0] for column in raw_header]
+        missing = set(required_columns) - set(header)
+        if missing:
+            raise ValueError(f"RecBole TSV {path} is missing columns: {sorted(missing)}")
+        indices = {column: header.index(column) for column in required_columns}
+        rows: list[dict[str, str]] = []
+        for line_number, values in enumerate(reader, start=2):
+            if not values or not any(value.strip() for value in values):
+                continue
+            if len(values) != len(header):
+                raise ValueError(f"RecBole TSV {path} line {line_number} has {len(values)} fields; expected {len(header)}")
+            rows.append({column: values[index] for column, index in indices.items()})
+    return rows
+
+
+def export_recbole_kgrec_dataset(
+    *,
+    split_root: str | Path,
+    link_path: str | Path,
+    kg_path: str | Path,
+    output_dir: str | Path,
+) -> dict[str, object]:
+    split_path = Path(split_root)
+    link_file = Path(link_path)
+    kg_file = Path(kg_path)
+    output_path = Path(output_dir)
+
+    train_pairs, validation_pairs, test_pairs = _read_split_pairs(split_path)
+    course_ids = {course for pairs in (train_pairs, validation_pairs, test_pairs) for _user, course in pairs}
+
+    link_rows = _read_recbole_tsv(link_file, ("item_id", "entity_id"))
+    item_to_entity: dict[str, str] = {}
+    entity_to_item: dict[str, str] = {}
+    for row in link_rows:
+        item = str(row["item_id"])
+        entity = str(row["entity_id"])
+        if item in item_to_entity and item_to_entity[item] != entity:
+            raise ValueError(f"RecBole link item {item!r} maps to multiple entities")
+        if entity in entity_to_item and entity_to_item[entity] != item:
+            raise ValueError(f"RecBole link entity {entity!r} maps to multiple items")
+        item_to_entity[item] = entity
+        entity_to_item[entity] = item
+
+    missing_courses = sorted(course_ids - set(entity_to_item))
+    if missing_courses:
+        preview = ", ".join(missing_courses[:10])
+        raise ValueError(f"Split courses missing from RecBole link entities: {preview}")
+
+    kg_rows = _read_recbole_tsv(kg_file, ("head_id", "relation_id", "tail_id"))
+    raw_triples: list[RawTriple] = [
+        (str(row["head_id"]), str(row["relation_id"]), str(row["tail_id"]))
+        for row in kg_rows
+    ]
+    atomic = build_atomic_data_from_kg_triples(
+        train_pairs=train_pairs,
+        validation_pairs=validation_pairs,
+        test_pairs=test_pairs,
+        kg_triples=raw_triples,
+    )
+    missing_cold_items = sorted(item for item in atomic.cold_item_ids if atomic.course_kg_degree.get(item, 0) == 0)
+    if missing_cold_items:
+        missing_tokens = [
+            course for course, item in sorted(atomic.course_to_item.items(), key=lambda entry: entry[1])
+            if item in set(missing_cold_items)
+        ]
+        raise ValueError(f"Cold courses missing KG edges: {', '.join(missing_tokens[:10])}")
+
+    manifest = write_kgrec_atomic_dataset(output_path, atomic)
+    relation_counts = Counter(relation for _head, relation, _tail in raw_triples)
+    manifest["source"] = {
+        "split_root": str(split_path),
+        "link_path": str(link_file),
+        "kg_path": str(kg_file),
+        "kg_scope": "full_arbitrary_entity_graph",
+        "included_relations": sorted(relation_counts),
+    }
+    manifest["relation_edge_counts"] = {
+        relation: int(relation_counts[relation]) for relation in sorted(relation_counts)
+    }
+    (output_path / "strict_manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return manifest
 
 
 def export_mooccube_kgrec_dataset(

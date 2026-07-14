@@ -1,0 +1,116 @@
+{
+  "atomic_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\mooccube_seed2025_atomic",
+  "best_epoch": 1,
+  "best_validation_score": 0.1379883469568084,
+  "checkpoint_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\diagnostic_lr_screen_seed2025\\lr_5e-5\\best_model.pt",
+  "config": {
+    "batch_size": 4096,
+    "context_hops": 2,
+    "dim": 64,
+    "epochs": 10,
+    "eval_batch_size": 4096,
+    "eval_every": 1,
+    "l2": 1e-05,
+    "lr": 5e-05,
+    "max_train_batches": -1,
+    "mess_dropout_rate": 0.1,
+    "node_dropout_rate": 0.5,
+    "patience": 4,
+    "requested_device": "cuda",
+    "seed": 2025
+  },
+  "data": {
+    "n_entities": 65621,
+    "n_items": 698,
+    "n_kg_triples": 216124,
+    "n_relations": 4,
+    "n_test_pairs": 123643,
+    "n_train_pairs": 464314,
+    "n_users": 197104,
+    "n_validation_pairs": 90501
+  },
+  "device": "cuda",
+  "model": "KGRec (adapted)",
+  "output_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\diagnostic_lr_screen_seed2025\\lr_5e-5",
+  "progress_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\diagnostic_lr_screen_seed2025\\lr_5e-5\\training_progress.jsonl",
+  "requested_device": "cuda",
+  "runtime_seconds": 319.79485535621643,
+  "seed": 2025,
+  "status": "complete",
+  "strict_protocol": {
+    "candidate_mode": "full_catalog",
+    "cf_train_source": "static_train.pkl via train.txt",
+    "item_macro_metrics": true,
+    "negative_sampling": "warm_items_only",
+    "train_history_masking": true,
+    "user_video_edges_excluded": true
+  },
+  "test": {
+    "counts": {
+      "all_items": 643,
+      "all_rows": 123643,
+      "cold_items": 68,
+      "cold_rows": 65605,
+      "hot_items": 575,
+      "hot_rows": 58038
+    },
+    "full_all_item_macro": {
+      "N@10": 0.09312011209921635,
+      "N@20": 0.1054233298533826,
+      "N@5": 0.08182075895867744,
+      "R@10": 0.1405231018211069,
+      "R@20": 0.18946647470081956,
+      "R@5": 0.1052764692555671
+    },
+    "full_cold_item_macro": {
+      "N@10": 0.08563640559051368,
+      "N@20": 0.10166315753967305,
+      "N@5": 0.07340671296340903,
+      "R@10": 0.13907817878062748,
+      "R@20": 0.20389366413784155,
+      "R@5": 0.10075630878722623
+    },
+    "full_hot_item_macro": {
+      "N@10": 0.09400514173850641,
+      "N@20": 0.10586801110091695,
+      "N@5": 0.0828158113546396,
+      "R@10": 0.1406939796763288,
+      "R@20": 0.1877603027326152,
+      "R@5": 0.1058110273631274
+    }
+  },
+  "validation": {
+    "counts": {
+      "all_items": 601,
+      "all_rows": 90501,
+      "cold_items": 34,
+      "cold_rows": 32464,
+      "hot_items": 567,
+      "hot_rows": 58037
+    },
+    "full_all_item_macro": {
+      "N@10": 0.09331972409016506,
+      "N@20": 0.10466306087378767,
+      "N@5": 0.08159183054167725,
+      "R@10": 0.14082296623710613,
+      "R@20": 0.1859613890194286,
+      "R@5": 0.10413025964322734
+    },
+    "full_cold_item_macro": {
+      "N@10": 0.1379883469568084,
+      "N@20": 0.1547317117946412,
+      "N@5": 0.12566556303023083,
+      "R@10": 0.1849449810802595,
+      "R@20": 0.25162623915288307,
+      "R@5": 0.14684150306962312
+    },
+    "full_hot_item_macro": {
+      "N@10": 0.09064118233096599,
+      "N@20": 0.10166070790851604,
+      "N@5": 0.07894896122137599,
+      "R@10": 0.1381772016786102,
+      "R@20": 0.1820238142318846,
+      "R@5": 0.10156909160707664
+    }
+  }
+}

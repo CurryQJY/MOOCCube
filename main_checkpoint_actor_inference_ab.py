@@ -3,7 +3,9 @@
 # Static runner guard tokens delegated to the recovered implementation:
 # def run_static_experiment, _static_split_df
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
+from collections import Counter
+import hashlib
 import json
 import os
 import random
@@ -24,12 +26,37 @@ class InferenceAudit:
     refined_items: int = 0
     cosine_sum: float = 0.0
     l2_sum: float = 0.0
+    split_train_rows: int = 0
+    split_validation_rows: int = 0
+    split_test_rows: int = 0
+    course_fit_calls: int = 0
+    course_fit_candidate_pairs: int = 0
+    target_seen_candidate_pairs: int = 0
+    course_fit_target_rows: int = 0
+    target_rows_with_seen_candidate: int = 0
+    history_set_calls: int = 0
+    history_sources: list = field(default_factory=list)
+    refined_item_ids: list = field(default_factory=list)
+    behavior_target_none_calls: int = 0
+    behavior_target_non_null_calls: int = 0
+    course_match_exclude_target_values: list = field(default_factory=list)
+
+
+@dataclass
+class InferenceAuditContext:
+    train_items: set = field(default_factory=set)
+    validation_items: set = field(default_factory=set)
+    test_items: set = field(default_factory=set)
+    train_history: dict = field(default_factory=dict)
+    train_plus_validation_history: dict = field(default_factory=dict)
 
 
 AUDIT = InferenceAudit()
+AUDIT_CONTEXT = InferenceAuditContext()
 EVAL_SEED = 7001
 ACTIVE_ITEM_BANK = None
 INFERENCE_ROLLOUT_POLICY = "ppo"
+COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE = None
 POLICY_MODES = {
     "actor": "ppo",
     "ppo": "ppo",
@@ -41,6 +68,111 @@ ORIGINAL_EVALUATE = legacy.evaluate_usim
 ORIGINAL_BUILD_POS = eval_core.build_eval_pos_item_vecs
 ORIGINAL_GET_ACTION_VALUE = legacy.FixedSimpleAC.get_action_value
 ORIGINAL_STATIC_SPLIT = legacy._static_split_df
+ORIGINAL_COMPUTE_COURSE_FIT = legacy.Fast3FeedbackUSIM._compute_candidate_course_fit
+ORIGINAL_SET_USER_SEEN_INDEX = legacy.Fast3FeedbackUSIM.set_user_seen_index
+
+
+def history_fingerprint(user_seen_items):
+    """Return an order-independent digest and cardinalities for a history map."""
+    digest = hashlib.sha256()
+    users = 0
+    pairs = 0
+    for user_id in sorted(int(uid) for uid in user_seen_items):
+        items = sorted(int(item_id) for item_id in user_seen_items[user_id])
+        if items:
+            users += 1
+        for item_id in items:
+            digest.update(f"{user_id}:{item_id}\n".encode("ascii"))
+            pairs += 1
+    return {"sha256": digest.hexdigest(), "users": users, "pairs": pairs}
+
+
+def parse_optional_bool(raw):
+    """Parse an optional environment boolean without inventing a default."""
+    if raw is None or str(raw).strip() == "":
+        return None
+    value = str(raw).strip().lower()
+    if value in {"1", "true", "yes", "on"}:
+        return True
+    if value in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"Invalid optional boolean: {raw!r}")
+
+
+def classify_history_source(user_seen_items):
+    """Classify an installed history mapping against audited split histories."""
+    if user_seen_items is None:
+        return "cleared"
+    summary = history_fingerprint(user_seen_items)
+    if summary == AUDIT_CONTEXT.train_history:
+        return "train_only"
+    if summary == AUDIT_CONTEXT.train_plus_validation_history:
+        return "train_plus_validation"
+    return "unknown"
+
+
+def audited_set_user_seen_index(self, user_seen_items):
+    """Record the exact history source before building the dense index."""
+    AUDIT.history_set_calls += 1
+    AUDIT.history_sources.append(classify_history_source(user_seen_items))
+    return ORIGINAL_SET_USER_SEEN_INDEX(self, user_seen_items)
+
+
+def make_audited_split(split_fn):
+    """Observe split/history provenance without changing returned dataframes."""
+    def audited_split(df):
+        train, validation, test, info = split_fn(df)
+        AUDIT.split_train_rows = int(len(train))
+        AUDIT.split_validation_rows = int(len(validation))
+        AUDIT.split_test_rows = int(len(test))
+        AUDIT_CONTEXT.train_items = set(int(x) for x in train["i_idx"].unique())
+        AUDIT_CONTEXT.validation_items = set(int(x) for x in validation["i_idx"].unique())
+        AUDIT_CONTEXT.test_items = set(int(x) for x in test["i_idx"].unique())
+
+        train_seen = legacy._add_user_seen_from_df({}, train)
+        train_plus_validation = legacy._clone_user_seen(train_seen)
+        legacy._add_user_seen_from_df(train_plus_validation, validation)
+        AUDIT_CONTEXT.train_history = history_fingerprint(train_seen)
+        AUDIT_CONTEXT.train_plus_validation_history = history_fingerprint(train_plus_validation)
+        return train, validation, test, info
+
+    return audited_split
+
+
+def audited_compute_candidate_course_fit(
+    self,
+    candidate_user_idx,
+    item_idx,
+    target_pop=None,
+    user_seen_items=None,
+):
+    """Count whether candidate train histories contain their strict-cold target."""
+    seen_index = getattr(self, "user_seen_index", None)
+    if seen_index is not None and candidate_user_idx is not None and item_idx is not None:
+        candidates = torch.as_tensor(candidate_user_idx, device=self.user_seen_index.device).long()
+        targets = torch.as_tensor(item_idx, device=self.user_seen_index.device).long().view(-1)
+        if candidates.ndim == 2 and candidates.size(0) == targets.numel():
+            expanded_targets = targets.unsqueeze(1).expand_as(candidates)
+            seen = self.user_seen_index[candidates, expanded_targets]
+            AUDIT.course_fit_calls += 1
+            AUDIT.course_fit_candidate_pairs += int(seen.numel())
+            AUDIT.target_seen_candidate_pairs += int(seen.sum().item())
+            AUDIT.course_fit_target_rows += int(seen.size(0))
+            AUDIT.target_rows_with_seen_candidate += int(seen.any(dim=1).sum().item())
+    return ORIGINAL_COMPUTE_COURSE_FIT(
+        self,
+        candidate_user_idx,
+        item_idx,
+        target_pop=target_pop,
+        user_seen_items=user_seen_items,
+    )
+
+
+def install_integrity_audit():
+    """Install evaluation-only provenance wrappers after target routing."""
+    legacy._static_split_df = make_audited_split(legacy._static_split_df)
+    legacy.Fast3FeedbackUSIM.set_user_seen_index = audited_set_user_seen_index
+    legacy.Fast3FeedbackUSIM._compute_candidate_course_fit = audited_compute_candidate_course_fit
 
 
 def make_validation_target_split(split_fn):
@@ -80,8 +212,9 @@ def deterministic_get_action_value(self, item_state, time_step, candidates_emb, 
 
 
 def reset_audit():
-    global AUDIT
+    global AUDIT, AUDIT_CONTEXT
     AUDIT = InferenceAudit()
+    AUDIT_CONTEXT = InferenceAuditContext()
 
 
 def set_eval_seed(seed):
@@ -121,6 +254,9 @@ def infer_actor_refined_item_vectors(
 
     was_training = self.training
     previous_rollout_policy = str(getattr(self.cfg, "rollout_policy", "ppo"))
+    previous_exclude_target = bool(
+        getattr(self.cfg, "feedback_course_match_exclude_target", False)
+    )
     self.eval()
     outputs = []
     bank = user_bank_raw if user_bank_raw is not None else self._build_user_bank_raw()
@@ -132,6 +268,15 @@ def infer_actor_refined_item_vectors(
     batch_size = max(1, int(item_batch))
     try:
         self.cfg.rollout_policy = INFERENCE_ROLLOUT_POLICY
+        if COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE is not None:
+            self.cfg.feedback_course_match_exclude_target = bool(
+                COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE
+            )
+        effective_exclude = bool(
+            getattr(self.cfg, "feedback_course_match_exclude_target", False)
+        )
+        if effective_exclude not in AUDIT.course_match_exclude_target_values:
+            AUDIT.course_match_exclude_target_values.append(effective_exclude)
         with torch.no_grad():
             for start in range(0, item_idx.numel(), batch_size):
                 end = min(start + batch_size, item_idx.numel())
@@ -146,9 +291,14 @@ def infer_actor_refined_item_vectors(
                 pop = None
                 if self.item_popularity is not None:
                     pop = self.item_popularity.to(self.device).index_select(0, idx).float()
+                target_emb = None
+                if target_emb is None:
+                    AUDIT.behavior_target_none_calls += 1
+                else:
+                    AUDIT.behavior_target_non_null_calls += 1
                 final, _, _ = self.run_usim_episode(
                     base,
-                    target_emb=None,
+                    target_emb=target_emb,
                     user_bank_raw=bank,
                     item_idx=idx,
                     target_pop=pop,
@@ -161,9 +311,11 @@ def infer_actor_refined_item_vectors(
                 AUDIT.refined_items += int(idx.numel())
                 AUDIT.cosine_sum += float(cosine.sum().item())
                 AUDIT.l2_sum += float(l2.sum().item())
+                AUDIT.refined_item_ids.extend(int(x) for x in idx.detach().cpu().tolist())
                 outputs.append(refined.detach())
     finally:
         self.cfg.rollout_policy = previous_rollout_policy
+        self.cfg.feedback_course_match_exclude_target = previous_exclude_target
         self.train(was_training)
     return torch.cat(outputs, dim=0)
 
@@ -218,6 +370,13 @@ def write_audit(path, mode, eval_seed):
     """Write inference call counts and representation displacement statistics."""
     payload = asdict(AUDIT)
     count = max(1, int(AUDIT.refined_items))
+    candidate_pairs = max(1, int(AUDIT.course_fit_candidate_pairs))
+    target_rows = max(1, int(AUDIT.course_fit_target_rows))
+    refined = set(int(x) for x in AUDIT.refined_item_ids)
+    train_items = AUDIT_CONTEXT.train_items
+    validation_items = AUDIT_CONTEXT.validation_items
+    test_items = AUDIT_CONTEXT.test_items
+    history_counts = dict(Counter(AUDIT.history_sources))
     payload.update(
         {
             "mode": str(mode),
@@ -225,6 +384,28 @@ def write_audit(path, mode, eval_seed):
             "evaluation_target": os.environ.get("USIM_ACTOR_EVAL_TARGET", "test").strip().lower(),
             "mean_cosine": float(AUDIT.cosine_sum) / count,
             "mean_l2": float(AUDIT.l2_sum) / count,
+            "history_source_counts": history_counts,
+            "history_all_train_only": bool(AUDIT.history_sources)
+            and all(source == "train_only" for source in AUDIT.history_sources),
+            "target_seen_candidate_rate": float(AUDIT.target_seen_candidate_pairs)
+            / candidate_pairs,
+            "target_rows_with_seen_candidate_rate": float(
+                AUDIT.target_rows_with_seen_candidate
+            )
+            / target_rows,
+            "refined_item_composition": {
+                "total_unique": len(refined),
+                "train_present": len(refined & train_items),
+                "validation_only": len((refined & validation_items) - test_items),
+                "test_only": len((refined & test_items) - validation_items),
+                "validation_and_test": len(refined & validation_items & test_items),
+                "neither_validation_nor_test": len(
+                    refined - validation_items - test_items
+                ),
+            },
+            "effective_course_match_exclude_target": list(
+                AUDIT.course_match_exclude_target_values
+            ),
         }
     )
     path = os.fspath(path)
@@ -255,6 +436,7 @@ def make_read_only_torch_save(checkpoint_dir, real_save):
 
 
 def main():
+    global COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE
     mode = os.environ.get("USIM_ACTOR_INFERENCE_MODE", "static")
     eval_seed = int(os.environ.get("USIM_ACTOR_INFERENCE_SEED", "7001"))
     evaluation_target = os.environ.get("USIM_ACTOR_EVAL_TARGET", "test")
@@ -263,8 +445,12 @@ def main():
         raise RuntimeError("USIM_FB_CKPT_DIR is required for checkpoint replay")
 
     torch.save = make_read_only_torch_save(checkpoint_dir, real_save=torch.save)
+    COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE = parse_optional_bool(
+        os.environ.get("USIM_COURSE_MATCH_EXCLUDE_TARGET")
+    )
     install_evaluation_target(evaluation_target)
     install_mode(mode, eval_seed)
+    install_integrity_audit()
     legacy.main()
 
     output_path = legacy._feedback_output_path("actor_inference_audit.json")

@@ -1,0 +1,132 @@
+﻿[
+    {
+        "Path":  "run_recovered_main_core_ablation_seed2025.ps1",
+        "SHA256":  "38F841B97BBD983720012EB839035EB2CB96806EB2273E0DE2761FD3E656D7ED",
+        "Size":  3069
+    },
+    {
+        "Path":  "run_recovered_ppo_weight_screen_seed2025.ps1",
+        "SHA256":  "85A950B3E9666AD62083966DDD920703D5BE1E124B059C71D79053C5DEE6700E",
+        "Size":  2456
+    },
+    {
+        "Path":  "run_usim_feedback_fast3_content_delta_static.ps1",
+        "SHA256":  "B20E6F85B10D57EBC207DC4E717CFFB2224484F8B8ECB3177CC93AFA76AD172E",
+        "Size":  27321
+    },
+    {
+        "Path":  "usim_feedback_fast3_content_delta.py",
+        "SHA256":  "BB4074DBF2C806FACFCA1628E85A795D8068D3F94935B7A1BC05C40416C39502",
+        "Size":  239040
+    },
+    {
+        "Path":  "usim_feedback_fast3_content_delta_recovered_51ea_candidate.py",
+        "SHA256":  "B828BE81404FAA4E56A819BDC639678FB985281076ABFEB65FEA4F274F9BF755",
+        "Size":  225929
+    },
+    {
+        "Path":  "fast3_delta\\checkpoint.py",
+        "SHA256":  "34076DFC604BC4878F81FA3B34EF8174D7B466FB9C6B82DDD3434305A12599D8",
+        "Size":  10939
+    },
+    {
+        "Path":  "fast3_delta\\config.py",
+        "SHA256":  "94444A8062D256585F1A0A082B28D49FA5C7E64978B443608B6EBEB718E4BF6F",
+        "Size":  25491
+    },
+    {
+        "Path":  "fast3_delta\\course_artifacts.py",
+        "SHA256":  "D1C7ADC2DFE0FD496F1E403408174328BD35D5242E1F804FC7881E9EE7A1F14E",
+        "Size":  26913
+    },
+    {
+        "Path":  "fast3_delta\\eval.py",
+        "SHA256":  "57743F15AE11B6142522EF0DE2A65F58DC7F0276E799D662E6A7AB637F41944A",
+        "Size":  22943
+    },
+    {
+        "Path":  "fast3_delta\\provenance.py",
+        "SHA256":  "643BCFBAA10F9961016FF662259A3CF5DCEEFF2B714CB5A6FCFF0D08BCE98544",
+        "Size":  6018
+    },
+    {
+        "Path":  "fast3_delta\\reports.py",
+        "SHA256":  "97DC9B3EC46F328B36F9E6FAE8D1F40759FDB99814BE051DBA05B0A1AE56B56A",
+        "Size":  4630
+    },
+    {
+        "Path":  "fast3_delta\\sg_urinit.py",
+        "SHA256":  "C45EA56F7DF7A350D95310EE4C57B025BC1173FD279912D19C5AD3A1DA0D6AB0",
+        "Size":  6599
+    },
+    {
+        "Path":  "fast3_delta\\static_protocol.py",
+        "SHA256":  "0F28A45A41F2EF7BE5748AE7080E8730AFE671BB8602F6FF47BF23C1EA6CCB0A",
+        "Size":  24995
+    },
+    {
+        "Path":  "fast3_delta\\__init__.py",
+        "SHA256":  "DDAEE84B2CCC9A3E05C2613B204CF3B28C67902CDCBA17868CA31E79D4A97130",
+        "Size":  175
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\checkpoint.cpython-312.pyc",
+        "SHA256":  "74418CB65BB12722D23FBEC381ED65DDF138E47C2DD4D17B7C190031C5B3B496",
+        "Size":  16728
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\config.cpython-311.pyc",
+        "SHA256":  "297D57E9510D1F99B799EDFD8C35865FA4C0FD8A3F216BDA17110A57738CB5C4",
+        "Size":  40996
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\config.cpython-312.pyc",
+        "SHA256":  "A28A1173A324A86B0D34914FC1B987422ACCE5FFD2570F31D92C2D331FD9B0C8",
+        "Size":  38702
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\course_artifacts.cpython-311.pyc",
+        "SHA256":  "AB233662286AFFF71E7D5D43CEC5883EBABC973237B187EDFE76A5B0C5BA555E",
+        "Size":  38001
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\course_artifacts.cpython-312.pyc",
+        "SHA256":  "564FAFC4D9239A19BAC04856BEF1663C47411FB2928B5BE02A41164293E8EF95",
+        "Size":  31726
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\eval.cpython-312.pyc",
+        "SHA256":  "46322A66D1CACFD154B650AAE2780D7EA18FB756D069714FBF61516D76C0665E",
+        "Size":  26598
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\provenance.cpython-312.pyc",
+        "SHA256":  "60108F6185C315F34EDA829081B7A69F07F9BF1CCB628D64F1B993E0879A98AA",
+        "Size":  9972
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\reports.cpython-312.pyc",
+        "SHA256":  "07F1CFFB061ACC7DACB3AA623FEE1F357A5D8BDD8C417C1867F0643C40D84246",
+        "Size":  6258
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\sg_urinit.cpython-312.pyc",
+        "SHA256":  "05E09C2D91A0262A9A2343CDD3E92CEBB44D9CAAEAEAB0333CBC02A6F12F63C8",
+        "Size":  10955
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\static_protocol.cpython-312.pyc",
+        "SHA256":  "FC029331A2D43AA80B57B3F3D36AF7CF5831D48A2666A8D6714839F00A53D9CE",
+        "Size":  36698
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\__init__.cpython-311.pyc",
+        "SHA256":  "1B5F6810A9B327CEAE1635DEA4A2BE5247B34A789D0242724BFE5BF56ED07DE9",
+        "Size":  378
+    },
+    {
+        "Path":  "fast3_delta\\__pycache__\\__init__.cpython-312.pyc",
+        "SHA256":  "827497FD043C4605373C3F3209AC90256F158C1A11F79ECC58539D00FD6C6734",
+        "Size":  339
+    }
+]

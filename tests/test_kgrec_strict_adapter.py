@@ -3,9 +3,12 @@ from __future__ import annotations
 import json
 
 import pandas as pd
+import pytest
 
 from paper_aaai27.scripts.kgrec_strict_adapter import build_atomic_data
+from paper_aaai27.scripts.kgrec_strict_adapter import build_atomic_data_from_kg_triples
 from paper_aaai27.scripts.kgrec_strict_adapter import export_mooccube_kgrec_dataset
+from paper_aaai27.scripts.kgrec_strict_adapter import export_recbole_kgrec_dataset
 from paper_aaai27.scripts.kgrec_strict_adapter import normalize_mooccube_course_side_edges
 from paper_aaai27.scripts.kgrec_strict_adapter import write_kgrec_atomic_dataset
 
@@ -114,4 +117,86 @@ def test_export_mooccube_kgrec_dataset_from_strict_split(tmp_path) -> None:
         "course_teacher": 1,
         "course_video": 2,
     }
+
+
+def test_generic_kg_builder_preserves_external_to_external_triples() -> None:
+    atomic = build_atomic_data_from_kg_triples(
+        train_pairs=[("u0", "c0")],
+        validation_pairs=[("u0", "c1")],
+        test_pairs=[("u1", "c1")],
+        kg_triples=[
+            ("c0", "course_concept", "k0"),
+            ("c1", "course_concept", "k1"),
+            ("k0", "prerequisite", "k1"),
+        ],
+    )
+
+    assert atomic.course_to_item == {"c0": 0, "c1": 1}
+    assert atomic.entity_to_id["c0"] == 0
+    assert atomic.entity_to_id["c1"] == 1
+    prerequisite = atomic.relation_to_id["prerequisite"]
+    assert (
+        atomic.entity_to_id["k0"],
+        prerequisite,
+        atomic.entity_to_id["k1"],
+    ) in atomic.kg_triples
+    assert atomic.course_kg_degree[atomic.course_to_item["c1"]] == 1
+
+
+def test_export_recbole_kgrec_dataset_preserves_full_graph(tmp_path) -> None:
+    split_root = tmp_path / "strict_item_cold_balanced_thr1_seed_2025"
+    split_root.mkdir()
+    pd.DataFrame([{"user_id": "u0", "course_id": "c0"}]).to_pickle(split_root / "static_train.pkl")
+    pd.DataFrame([{"user_id": "u0", "course_id": "c1"}]).to_pickle(split_root / "static_val.pkl")
+    pd.DataFrame([{"user_id": "u1", "course_id": "c1"}]).to_pickle(split_root / "static_test.pkl")
+
+    link_path = tmp_path / "toy.link"
+    link_path.write_text("item_id:token\tentity_id:token\n0\tc0\n1\tc1\n", encoding="utf-8")
+    kg_path = tmp_path / "toy.kg"
+    kg_path.write_text(
+        "head_id:token\trelation_id:token\ttail_id:token\n"
+        "c0\tcourse_concept\tk0\n"
+        "c1\tcourse_concept\tk1\n"
+        "k0\tprerequisite\tk1\n",
+        encoding="utf-8",
+    )
+
+    manifest = export_recbole_kgrec_dataset(
+        split_root=split_root,
+        link_path=link_path,
+        kg_path=kg_path,
+        output_dir=tmp_path / "atomic",
+    )
+
+    assert manifest["n_items"] == 2
+    assert manifest["n_entities"] == 4
+    assert manifest["n_kg_triples"] == 3
+    assert manifest["source"]["kg_scope"] == "full_arbitrary_entity_graph"
+    assert manifest["source"]["included_relations"] == ["course_concept", "prerequisite"]
+    assert manifest["relation_edge_counts"] == {"course_concept": 2, "prerequisite": 1}
+    assert manifest["strict_checks"]["all_cold_items_have_kg_edges"]
+
+
+def test_export_recbole_kgrec_dataset_rejects_unlinked_course(tmp_path) -> None:
+    split_root = tmp_path / "strict_item_cold_balanced_thr1_seed_2025"
+    split_root.mkdir()
+    pd.DataFrame([{"user_id": "u0", "course_id": "c0"}]).to_pickle(split_root / "static_train.pkl")
+    pd.DataFrame([{"user_id": "u0", "course_id": "c1"}]).to_pickle(split_root / "static_val.pkl")
+    pd.DataFrame([{"user_id": "u1", "course_id": "c1"}]).to_pickle(split_root / "static_test.pkl")
+
+    link_path = tmp_path / "toy.link"
+    link_path.write_text("item_id:token\tentity_id:token\n0\tc0\n", encoding="utf-8")
+    kg_path = tmp_path / "toy.kg"
+    kg_path.write_text(
+        "head_id:token\trelation_id:token\ttail_id:token\nc0\tcourse_concept\tk0\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="c1"):
+        export_recbole_kgrec_dataset(
+            split_root=split_root,
+            link_path=link_path,
+            kg_path=kg_path,
+            output_dir=tmp_path / "atomic",
+        )
 

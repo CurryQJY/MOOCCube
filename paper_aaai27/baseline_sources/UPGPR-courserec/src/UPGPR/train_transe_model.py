@@ -31,7 +31,7 @@ def train(config):
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     steps = 0
     smooth_loss = 0.0
-    min_val_loss = np.Inf
+    min_val_loss = np.inf
     patience = args.patience
     epochs_no_improve = 0
 

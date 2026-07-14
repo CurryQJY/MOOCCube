@@ -21,24 +21,22 @@
 
 \begin{document}
 
-\title{Course-Knowledge-Guided Reinforcement Learning for Strict Course-Cold MOOC Recommendation}
+\title{Course-Knowledge-Guided Reinforcement Learning for Cold-Start Course Recommendation}
 \author{Anonymous Submission}
 \affiliations{}
 
 \maketitle
 
 \begin{abstract}
-MOOC platforms must rank newly released courses before those courses collect interactions, but standard offline protocols can make this setting appear easier than deployed full-catalog ranking. Sampled candidates remove many warm competitors, and interaction-weighted averages can be driven by a few frequently requested cold courses. We study strict course-cold MOOC recommendation, where target courses have zero training interactions, compete against the full catalog, and are evaluated by course-macro Recall/NDCG. The benchmark asks whether each zero-interaction course, rather than only each cold-course interaction, receives early exposure while remaining pedagogically plausible. We propose Course-Knowledge-Guided Reinforcement Learning (CKG-RL), which anchors course representations in content, masks cold-course ID evidence, refines course states through retrieval-based learner simulation, and uses concept, prerequisite, difficulty, and redundancy signals in sampling and rewards. On MOOCCube, Junyi, and COCO, CKG-RL has the highest mean in every @5/@10 column, with relative gains from +3.5\% to +33.1\%; Holm-corrected paired tests support 11 of 12 early-rank comparisons. MOOCCube ablations attribute the gains to educational rewards, knowledge-guided sampling, and prerequisite supervision. These results suggest that strict course-cold ranking benefits from making educational constraints part of candidate construction and reward design, rather than treating course knowledge only as side features.
+MOOC platforms continually publish new courses that must be recommended before they accumulate any interaction history, a persistent cold-start condition. Course recommendation, however, is not only a sparsity problem: a useful new course must also be pedagogically appropriate---resting on mastered prerequisites, matched in difficulty, and non-redundant with prior learning. Existing cold-start recommenders reconstruct item embeddings from content but still inherit warm-item ranking objectives and treat course knowledge as passive side features; as a result, even strong content-graph baselines leave a large fraction of genuinely new courses with near-zero ranking quality and never model pedagogical fit---failures that candidate-sampled, interaction-weighted evaluation tends to hide. We propose Course-Knowledge-Guided Reinforcement Learning (CKG-RL), which casts cold-start course ranking as a sequential candidate-selection policy trained to maximize an educational reward rather than to fit past clicks, placing concept overlap, prerequisites, difficulty, and redundancy inside both candidate construction and the reward; it further anchors course representations in content, masks cold-course ID evidence, and refines course states through retrieval-based learner simulation. We evaluate under strict course-cold conditions---zero-interaction target courses competing against the entire catalog, scored by course-macro Recall/NDCG so that each new course, rather than each interaction of a popular course, is the unit of success. On MOOCCube, Junyi, and COCO, CKG-RL attains the highest mean in every @5/@10 column, with relative gains from +3.5\% to +33.1\%; Holm-corrected paired tests confirm 11 of 12 early-rank comparisons, the only exception being the descriptive +3.5\% COCO Recall@10 mean. MOOCCube ablations attribute the gains to educational rewards, knowledge-guided sampling, and prerequisite supervision.
 \end{abstract}
 
 \section{Introduction}
 MOOC platforms continually add courses, course versions, and learning paths. Recommenders therefore must rank courses before interaction histories are available, a persistent cold-start condition~\cite{schein2002coldstart,gantner2010attribute,lin2024tdro,zhang2025coldstartllm}. In education, cold-start ranking is not only a sparsity problem. A useful course should be topically relevant, prerequisite-safe, difficulty-appropriate, and non-redundant with prior learning. Public MOOC resources expose such course-side signals through metadata, concepts, and prerequisite relations~\cite{yu2020mooccube,wang2021mooccubex}.
 
-Common offline protocols can hide this risk. Sampled candidate sets may remove the warm courses that dominate the real catalog~\cite{krichene2020sampled}, and reproducibility studies show that weak protocols and baselines can overstate progress~\cite{dacrema2019progress}. Interaction-weighted averages may also be driven by a few high-volume cold courses, echoing recent concerns that mean ranking utility can conceal tail-risk failures~\cite{takehi2025diversification}.
+Existing cold-start recommenders reconstruct item representations from content or side attributes, yet they inherit ranking objectives tuned for warm items and treat course knowledge as a passive feature appended to the model~\cite{schein2002coldstart,gantner2010attribute,volkovs2017dropoutnet,kim2024cgrc}. Under full-catalog course-cold ranking, this leaves genuinely new courses poorly served and their pedagogical fit unmodeled. Figure~\ref{fig:method-motivation} makes this concrete on MOOCCube: the closest content-graph baseline, CGRC, still leaves 46\% of seed-course cases with NDCG@10 no greater than 0.10, and the same cold-test setting exhibits large prerequisite and difficulty gaps and sparse concept continuity. Cold MOOC recommendation must therefore address both exposure and pedagogical fit, which motivates placing course knowledge inside retrieval, sampling, and reward design rather than treating it as a passive course feature.
 
-We study \emph{strict course-cold MOOC recommendation}: target courses have zero training interactions, compete against the full catalog, and are evaluated by course-macro Recall/NDCG. The evaluation unit is the cold course itself rather than a cold-course interaction drawn from a popular course. This benchmark forces the model to answer two questions at once: whether a new course can obtain early exposure at all, and whether the exposed course is educationally plausible for the learner.
-
-Figure~\ref{fig:method-motivation} makes this motivation concrete on MOOCCube. The closest content-graph baseline, CGRC, still leaves 46\% of seed-course cases with NDCG@10 no greater than 0.10 under full-catalog course-cold ranking. The same cold-test setting also exhibits large prerequisite and difficulty gaps and sparse concept continuity, indicating that cold MOOC recommendation must address both exposure and pedagogical fit. These diagnostics motivate placing course knowledge inside retrieval, sampling, and reward design rather than treating it as a passive course feature.
+To measure this honestly, we study \emph{strict course-cold MOOC recommendation}: target courses have zero training interactions, compete against the full catalog, and are evaluated by course-macro Recall/NDCG, so the evaluation unit is the cold course itself rather than a cold-course interaction drawn from a popular course. This distinction matters because common offline protocols can hide the failure above: sampled candidate sets remove the warm courses that dominate the real catalog~\cite{krichene2020sampled}, weak protocols and baselines can overstate progress~\cite{dacrema2019progress}, and interaction-weighted averages can be driven by a few high-volume cold courses~\cite{takehi2025diversification}. The benchmark thus forces the model to answer two questions at once: whether a new course obtains early exposure at all, and whether the exposed course is educationally plausible for the learner.
 
 \begin{figure}[t]
 \centering
@@ -68,37 +66,39 @@ Offline recommender evaluation is sensitive to metric choice, candidate construc
 \section{Problem Formulation}
 
 \subsection{Preliminaries}
-Let \(\mathcal{U}\) denote the set of learners and \(\mathcal{I}\) denote the set of courses. Each observed interaction is represented as \((u,c,t)\), where learner \(u \in \mathcal{U}\) interacted with course \(c \in \mathcal{I}\) at time \(t\). Given the training interactions \(\mathcal{D}_{\mathrm{train}}\) and course-side information, a recommender produces, for each learner \(u\), a ranked list \(\pi_u\) over candidate courses.
+Let \(\mathcal{U}\) denote the set of learners and \(\mathcal{C}\) denote the set of courses. The static training interactions satisfy \(\mathcal{D}_{\mathrm{train}}\subseteq\mathcal{U}\times\mathcal{C}\); an observed pair \((u,c)\) records that learner \(u\in\mathcal{U}\) interacted with course \(c\in\mathcal{C}\). Given \(\mathcal{D}_{\mathrm{train}}\) and course-side information, a recommender produces, for each learner \(u\), a ranked list \(\Pi_u\) over a candidate course set (specified in Eq.~\eqref{eq:candidate-set}).
 
 Each course \(c\) has a content vector \(\mathbf{x}_c\) and educational signals. We use concept overlap, prerequisite links, training popularity, and history similarity as proxies for topical continuity, readiness, difficulty, and redundancy, consistent with pedagogical-fit views of educational recommendation~\cite{dasilva2023educationalrs,rahayu2023learningpath}. These signals are available even when \(c\) has no training interactions. They are not complete learner-state measurements.
 
 \subsection{Strict Course-Cold Protocol}
-We study a course-cold held-out setting. The course set is partitioned into warm courses \(\mathcal{I}_{\mathrm{warm}}\) and cold test courses \(\mathcal{I}_{\mathrm{cold}}\). A cold test course satisfies
+We study a course-cold held-out setting. The course set is partitioned into warm courses \(\mathcal{C}_{\mathrm{warm}}\) and cold test courses \(\mathcal{C}_{\mathrm{cold}}\). A cold test course satisfies
 \begin{equation}
-|\{(u',c',t)\in \mathcal{D}_{\mathrm{train}}: c'=c\}|=0.
+|\{(u',c')\in \mathcal{D}_{\mathrm{train}}: c'=c\}|=0.
 \end{equation}
-Thus the model cannot use interaction-trained evidence for the target course ID. Its representation must come from content and educational knowledge.
+Thus the model cannot use interaction-trained evidence for the target course ID. Concretely, the target-course ID embedding is replaced by a masked vector \(\bar{\mathbf{v}}_c\) (defined in Eq.~\eqref{eq:cold-mask}), so its representation must come from content and educational knowledge.
 
-For a test pair \((u,c^+)\) with \(c^+\in\mathcal{I}_{\mathrm{cold}}\), the candidate set is the full catalog after removing courses already observed in the learner's training history:
+For a test pair \((u,c^+)\) with \(c^+\in\mathcal{C}_{\mathrm{cold}}\), let \(\mathcal{H}^{\mathrm{train}}_u\) be the courses observed in \(u\)'s training history. The available candidate set is the full catalog after this history is removed:
 \begin{equation}
-\mathcal{C}_u=\mathcal{I}\setminus \mathcal{H}^{\mathrm{train}}_u .
+\mathcal{A}_u=\mathcal{C}\setminus \mathcal{H}^{\mathrm{train}}_u .
+\label{eq:candidate-set}
 \end{equation}
-The model scores every course in \(\mathcal{C}_u\), avoiding sampled-candidate artifacts~\cite{krichene2020sampled,li2024itemsampling} and weak-protocol effects that can distort recommender comparisons~\cite{dacrema2019progress,hidasi2023flaws}. The split is course-based rather than user-based: test learners have training histories, while target courses have none.
+The model scores every course in \(\mathcal{A}_u\), avoiding sampled-candidate artifacts~\cite{krichene2020sampled,li2024itemsampling} and weak-protocol effects that can distort recommender comparisons~\cite{dacrema2019progress,hidasi2023flaws}. The split is course-based rather than user-based: test learners have training histories, while target courses have none.
 
 \subsection{Standard Interaction Average}
-Let \(m_K(u,c^+)\) denote a top-\(K\) utility for a test pair, instantiated as Recall@\(K\) or NDCG@\(K\). Let \(r_{u,c^+}\) be the rank of target course \(c^+\) in \(\pi_u\). Recall@\(K\) equals one when \(r_{u,c^+}\le K\) and zero otherwise, and NDCG@\(K\) is
+Let \(m_K(u,c^+)\) denote a top-\(K\) utility for a test pair, instantiated as Recall@\(K\) or NDCG@\(K\). Let \(\kappa_{u,c^+}\) be the rank position of target course \(c^+\) in \(\Pi_u\). Recall@\(K\) equals one when \(\kappa_{u,c^+}\le K\) and zero otherwise, and NDCG@\(K\) is
 \begin{equation}
 \operatorname{NDCG@K}(u,c^+)=
 \begin{cases}
-1/\log_2(r_{u,c^+}+1), & r_{u,c^+}\le K,\\
-0, & r_{u,c^+}>K.
+1/\log_2(\kappa_{u,c^+}+1), & \kappa_{u,c^+}\le K,\\
+0, & \kappa_{u,c^+}>K.
 \end{cases}
+\label{eq:topk-utility}
 \end{equation}
 Since each test case contains one held-out positive course, these metrics measure whether the target cold course is surfaced early in the full ranking.
 
-A common evaluation choice is to average the utility over cold-course test interactions:
+Let \(\mathcal{D}_{\mathrm{test}}\) be the held-out interaction set and \(\mathcal{D}^{\mathrm{cold}}_{\mathrm{test}}:=\{(u,c^+)\in\mathcal{D}_{\mathrm{test}}:c^+\in\mathcal{C}_{\mathrm{cold}}\}\). A common evaluation choice is to average the utility over these cold-course test interactions:
 \begin{equation}
-M_{\mathrm{micro}}(K)=
+\operatorname{Micro}(K)=
 \frac{1}{|\mathcal{D}^{\mathrm{cold}}_{\mathrm{test}}|}
 \sum_{(u,c^+)\in \mathcal{D}^{\mathrm{cold}}_{\mathrm{test}}}
 m_K(u,c^+).
@@ -106,27 +106,27 @@ m_K(u,c^+).
 This measures interaction-level utility, but it does not show whether each cold course receives exposure.
 
 \subsection{Cold-Course Risk Metric}
-Strict course-cold recommendation has a course-level failure mode: high-volume cold courses can dominate the average while other cold courses remain unseen. To expose this tail risk and distributional variation~\cite{ekstrand2024distributional,takehi2025diversification}, we aggregate first within each cold course. Let the scalar course-level quality at cutoff \(K\) be
+Strict course-cold recommendation has a course-level failure mode: high-volume cold courses can dominate the average while other cold courses remain unseen. To expose this tail risk and distributional variation~\cite{ekstrand2024distributional,takehi2025diversification}, we aggregate first within each cold course. Let \(\mathcal{D}_{\mathrm{test}}(c):=\{(u,c^+)\in\mathcal{D}^{\mathrm{cold}}_{\mathrm{test}}:c^+=c\}\) be the test cases whose held-out target course is \(c\), and let \(\mathcal{C}^{\mathrm{eval}}_{\mathrm{cold}}:=\{c\in\mathcal{C}_{\mathrm{cold}}:\mathcal{D}_{\mathrm{test}}(c)\neq\emptyset\}\) be the cold courses that appear as a target at test time. For \(c\in\mathcal{C}^{\mathrm{eval}}_{\mathrm{cold}}\), the scalar course-level quality at cutoff \(K\) is
 \begin{equation}
 q_c(K)=
 \frac{1}{|\mathcal{D}_{\mathrm{test}}(c)|}
 \sum_{(u,c)\in \mathcal{D}_{\mathrm{test}}(c)}
 m_K(u,c),
 \end{equation}
-where \(\mathcal{D}_{\mathrm{test}}(c)\) is the set of test cases whose target course is \(c\). The course-macro metric is then
+where each case in \(\mathcal{D}_{\mathrm{test}}(c)\) has \(c\) as its held-out positive, so \(m_K(u,c)\) is the top-\(K\) utility defined around Eq.~\eqref{eq:topk-utility}. The course-macro metric is then
 \begin{equation}
-M_{\mathrm{macro}}(K)=
-\frac{1}{|\mathcal{I}_{\mathrm{cold}}|}
-\sum_{c\in\mathcal{I}_{\mathrm{cold}}} q_c(K).
+\operatorname{Macro}(K)=
+\frac{1}{|\mathcal{C}^{\mathrm{eval}}_{\mathrm{cold}}|}
+\sum_{c\in\mathcal{C}^{\mathrm{eval}}_{\mathrm{cold}}} q_c(K).
 \end{equation}
 Micro averaging asks whether a random cold-course interaction is served well. Course-macro averaging asks whether a random cold course is served well. We use course-macro as the primary metric because the unit of failure is a zero-interaction course receiving no useful full-catalog rank.
 
 \subsection{Main Objective}
-The objective is to learn \(s(u,c)\) that ranks \(c^+\in\mathcal{I}_{\mathrm{cold}}\) highly within \(\mathcal{C}_u\), using learner history and course-side evidence but no interaction-derived target-course signal. Hot-course metrics are diagnostics for the trade-off between zero-interaction generalization and warm-course ranking.
+The objective is to learn a logit \(\ell(u,c)\), realized as the learner--course match of Eq.~\eqref{eq:ranking-logit}, that ranks \(c^+\in\mathcal{C}_{\mathrm{cold}}\) highly within \(\mathcal{A}_u\), using learner history and course-side evidence but no interaction-derived target-course signal. Hot-course metrics are diagnostics for the trade-off between zero-interaction generalization and warm-course ranking.
 
 \section{Method}
 \subsection{Overview}
-CKG-RL makes the evidence boundary of strict course-cold ranking explicit. For each learner-course pair \((u,c)\), the model builds a learner representation \(\mathbf{z}_u\) from the learner history and an initial course embedding \(\mathbf{e}_c\) from course-side evidence. A simulator starts from \(\mathbf{e}_c\), refines it through \(T\) learner-matching steps, and returns the final course embedding \(\mathbf{z}_{c,T}:=\mathbf{h}_{T,c}\). The ranking score then matches \(\mathbf{z}_{c,T}\) with the target learner representation.
+CKG-RL makes the evidence boundary of strict course-cold ranking explicit. For each learner-course pair \((u,c)\), the model builds a learner representation \(\mathbf{z}_u\) from the learner history and an initial course embedding \(\mathbf{e}_c\) from course-side evidence. A simulator starts from \(\mathbf{e}_c\), refines it through \(T\) learner-matching steps, and returns the final course embedding \(\mathbf{z}_{c,T}:=\mathbf{h}_{T,c}\). The ranking logit \(\ell(u,c)\) then matches \(\mathbf{z}_{c,T}\) with the target learner representation \(\mathbf{z}_u\) (Eq.~\eqref{eq:ranking-logit}).
 
 Three design constraints connect the architecture to the two-part motivation. Content anchoring and forced masking enforce the zero-interaction evidence boundary. Simulation exposes cold representations to plausible learner states under full-catalog competition. Course knowledge then filters matches that are semantically related but prerequisite-unsafe, too difficult, or redundant. Figure~\ref{fig:ckg-rl-framework} summarizes the training and evaluation flow.
 
@@ -138,9 +138,9 @@ Three design constraints connect the architecture to the two-part motivation. Co
 \end{figure*}
 
 \subsection{Content-Anchored Course Representation}
-The content branch provides the evidence available for a course with zero training interactions, a role emphasized in content-based and LLM-assisted recommendation~\cite{liu2024once,wu2024llmrec}. Each learner \(u\) has a trainable ID embedding \(\mathbf{e}_u\), projected into the recommendation space:
+The content branch provides the evidence available for a course with zero training interactions, a role emphasized in content-based and LLM-assisted recommendation~\cite{liu2024once,wu2024llmrec}. Each learner \(u\) has a trainable ID embedding \(\mathbf{p}_u\), projected into the recommendation space:
 \begin{equation}
-\mathbf{z}_u=f_u(\mathbf{e}_u).
+\mathbf{z}_u=f_u(\mathbf{p}_u).
 \end{equation}
 Each course \(c\) has a trainable ID embedding \(\mathbf{v}_c\) and a frozen 768-dimensional content embedding \(\mathbf{x}_c\). A content projection network maps \(\mathbf{x}_c\) into the same latent space:
 \begin{equation}
@@ -152,7 +152,7 @@ The initial course embedding is a gated fusion of the projected content vector a
 \quad
 \mathbf{e}_c=\mathbf{g}_c\odot \bar{\mathbf{v}}_c+(1-\mathbf{g}_c)\odot \mathbf{c}_c.
 \end{equation}
-Here \(\bar{\mathbf{v}}_c\) is the ID branch after masking and ID dropout. The gate lets warm courses use collaborative evidence when available, while the content branch defines \(\mathbf{e}_c\) when ID evidence is unavailable.
+Here \(f_u\) and \(f_c\) are learned projection networks, \(\mathbf{W}_g\) is a learned gate matrix, \(\sigma\) is the sigmoid function, and \(\odot\) denotes elementwise multiplication. \(\bar{\mathbf{v}}_c\) is the ID branch after masking and ID dropout. The gate lets warm courses use collaborative evidence when available, while the content branch defines \(\mathbf{e}_c\) when ID evidence is unavailable.
 
 \subsection{Forced-Cold ID Masking}
 Forced-cold masking enforces the protocol inside the model. Let \(p_c\) be the training-set popularity of course \(c\). Under the strict course-cold protocol, a course is cold when \(p_c<1\), which is equivalent to having zero training interactions. For cold examples, CKG-RL removes the course ID evidence:
@@ -160,18 +160,26 @@ Forced-cold masking enforces the protocol inside the model. Let \(p_c\) be the t
 \bar{\mathbf{v}}_c=(1-\xi_c)\mathbf{v}_c,
 \quad
 \xi_c=\mathbb{I}[p_c<1].
+\label{eq:cold-mask}
 \end{equation}
-During training, ordinary ID dropout is additionally applied with probability \(0.35\). At cold-course evaluation time, the target course vector is also built with the ID branch masked. This keeps the representation used at inference aligned with the evidence available in the strict course-cold protocol.
+Here \(\mathbb{I}[\cdot]\) is the indicator function. During training, ordinary ID dropout is additionally applied with probability \(0.35\). At cold-course evaluation time, the target course vector is also built with the ID branch masked. This keeps the representation used at inference aligned with the evidence available in the strict course-cold protocol.
 
 \subsection{Retrieval-Based User Simulation}
-Full-catalog course-cold ranking requires a course representation that can compete for plausible learners, not only a pointwise content score. Like recent augmentation or simulation approaches~\cite{wang2024llmaugmenter,huang2025coldllm}, CKG-RL compensates for missing course interactions while keeping the simulator bounded. It initializes \(\mathbf{h}_{0,c}=\mathbf{e}_c\). At step \(t\), it retrieves candidate learners from a normalized user bank by cosine similarity to \(\mathbf{h}_{t,c}\). Let \(\mathcal{N}_M(\mathbf{h}_{t,c})\) be the top-\(M\) retrieved learners. CKG-RL samples \(N\) candidates from this set with a temperature-smoothed distribution and an exploration floor:
+Full-catalog course-cold ranking requires a course representation that can compete for plausible learners, not only a pointwise content score. Like recent augmentation or simulation approaches~\cite{wang2024llmaugmenter,huang2025coldllm}, CKG-RL compensates for missing course interactions while keeping the simulator bounded. It initializes \(\mathbf{h}_{0,c}=\mathbf{e}_c\). At step \(t\), it retrieves candidate learners from a normalized user bank by cosine similarity to \(\mathbf{h}_{t,c}\). Let \(\mathcal{N}_M(\mathbf{h}_{t,c})\) be the top-\(M\) retrieved learners. CKG-RL samples \(N\) candidates from this set with a temperature-smoothed distribution \(q_t\) and an exploration floor:
 \begin{equation}
-p(u'\mid \mathbf{h}_{t,c})=
-(1-\epsilon)\operatorname{softmax}
-\left(\frac{\mathbf{h}_{t,c}^\top\mathbf{z}_{u'}}{\tau_s}\right)
-+\frac{\epsilon}{M}.
+\begin{aligned}
+q_t(u'\mid \mathbf{h}_{t,c})=&
+(1-\epsilon)
+\frac{\exp(\mathbf{h}_{t,c}^{\top}\mathbf{z}_{u'}/\tau_s)}
+{Z_t}
++\frac{\epsilon}{M},\\
+Z_t=&
+\sum_{v\in\mathcal{N}_M(\mathbf{h}_{t,c})}
+\exp(\mathbf{h}_{t,c}^{\top}\mathbf{z}_{v}/\tau_s),\\
+&u'\in\mathcal{N}_M(\mathbf{h}_{t,c}).
+\end{aligned}
 \end{equation}
-The sampled candidates are then reordered by a course-fit score:
+Here \(\tau_s>0\) is the sampling temperature and \(\epsilon\in[0,1]\) is the exploration mass. Let \(w_C,w_P,w_D,w_R\geq0\) weight the concept bonus, prerequisite gap, difficulty gap, and redundancy penalty, respectively. The sampled candidates are then reordered by a course-fit score:
 \begin{equation}
 \begin{aligned}
 b(u',c)=&
@@ -182,11 +190,11 @@ w_C C(u',c)-w_P P(u',c)\\
 \begin{equation}
 s_{sample}(u',c)=
 \cos(\mathbf{h}_{t,c},\mathbf{z}_{u'})
-+\beta\operatorname{norm}(b(u',c)).
++\beta\operatorname{scale}_t(b(u',c)).
 \end{equation}
-The four terms \(C\), \(P\), \(D\), and \(R\) are the concept bonus, prerequisite gap, difficulty gap, and redundancy penalty defined below. This knowledge-guided sampling bias is applied to both cold and hot examples in the final run, so retrieval is filtered by educational plausibility as well as latent similarity.
+Here \(\operatorname{scale}_t(\cdot)\) maps a scalar fit score to \([0,1]\) over the step-\(t\) sampled candidates, and \(C\), \(P\), \(D\), and \(R\) are the reward terms defined below. This knowledge-guided sampling bias is applied to both cold and hot examples in the final run, so retrieval is filtered by educational plausibility as well as latent similarity.
 
-An actor-critic policy selects a learner \(a_t\) from the sampled candidates. CKG-RL then updates the course state by taking a gradient step toward a mixture of the selected learner and the initial course embedding:
+An actor-critic action distribution \(\pi_t(\cdot\mid\mathbf{s}_t)\), where \(\mathbf{s}_t\) is the simulator state, selects a learner \(a_t\) from the sampled candidates. CKG-RL then updates the course state by taking a gradient step toward a mixture of the selected learner and the initial course embedding:
 \begin{equation}
 \mathbf{h}_{t+1,c}=\mathbf{h}_{t,c}+\eta
 \nabla_{\mathbf{h}_{t,c}}
@@ -204,43 +212,45 @@ The target coefficient is adaptive:
 -\alpha_{ent}\frac{H(\pi_t)}{\log N}
 \Big).
 \end{align}
+where \(\operatorname{clip}_{[a,b]}(x)=\min\{b,\max\{a,x\}\}\) and \(H(\pi_t)\) is the entropy of the action distribution.
 Thus cold courses receive stronger target anchoring, later updates within the simulator horizon increase target guidance, and high-entropy actions reduce overconfident target drift. The simulator is not a real learner trajectory. It is a training-time mechanism for making the cold-course representation stable under plausible learner matches.
 
 \subsection{Course-Knowledge Reward Design}
-The reward terms convert educational constraints into simulator signals, reflecting the learning-resource literature's emphasis on context, sequencing, and learner-resource fit~\cite{dasilva2023educationalrs,rahayu2023learningpath}. Let \(\mathbf{s}_u\in\{0,1\}^{|\mathcal{I}|}\) represent courses already seen by learner \(u\), \(n_u=\sum_{c'\in\mathcal{I}} s_{u,c'}\), \(\mathbf{A}^{pre}\) the course-level prerequisite matrix, and \(\mathbf{A}^{con}\) the course-concept overlap matrix. The prerequisite gap estimates missing prerequisite evidence:
+The reward terms convert educational constraints into simulator signals, reflecting the learning-resource literature's emphasis on context, sequencing, and learner-resource fit~\cite{dasilva2023educationalrs,rahayu2023learningpath}. Let \(\mathbf{y}_u\in\{0,1\}^{|\mathcal{C}|}\) be the multi-hot vector of courses seen by learner \(u\), with \(n_u=\sum_{c'\in\mathcal{C}}y_{u,c'}\). For target course \(c\), \(\mathbf{a}^{\mathrm{pre}}_c\in\{0,1\}^{|\mathcal{C}|}\) marks its prerequisite courses and \(\mathbf{a}^{\mathrm{con}}_c\in[0,1]^{|\mathcal{C}|}\) gives its concept overlap with each course. The prerequisite gap estimates missing prerequisite evidence:
 \begin{equation}
 P(u,c)=
 \left[
-1-\frac{\mathbf{s}_u^\top \mathbf{A}^{pre}_{c}}
-{\max(1,\|\mathbf{A}^{pre}_{c}\|_1)}
+1-\frac{\mathbf{y}_u^\top \mathbf{a}^{\mathrm{pre}}_c}
+{\max(1,\|\mathbf{a}^{\mathrm{pre}}_c\|_1)}
 \right]_0^1.
 \end{equation}
-A prerequisite-safe gate \(S_{pre}(u,c)\) is one when this gap is below the safety threshold. The concept match and bounded concept bonus are
+Write \([x]_0^1:=\min\{1,\max\{0,x\}\}\). A prerequisite-safe gate is \(S_{\mathrm{pre}}(u,c)=\mathbb{I}[P(u,c)\le\delta_{\mathrm{pre}}]\), where \(\delta_{\mathrm{pre}}\) is the safety threshold. The concept match is
 \begin{equation}
-M(u,c)=
+\chi(u,c)=
 \left[
-\frac{\mathbf{s}_u^\top \mathbf{A}^{con}_{c}}{\max(1,n_u)}
+\frac{\mathbf{y}_u^\top \mathbf{a}^{\mathrm{con}}_c}{\max(1,n_u)}
+\right]_0^1.
+\end{equation}
+Let \(\mu_C\) and \(\mu_R\) be the lower and redundancy concept-overlap thresholds, with \(0\le\mu_C<\mu_R<1\), and let \(\gamma_R\in[0,1]\) be the redundancy attenuation.
+Course difficulty is estimated from inverse training popularity,
+\begin{equation}
+d_c=1-\frac{\log(1+p_c)}
+{\max_{c'\in\mathcal{C}} \log(1+p_{c'})}.
+\end{equation}
+with learner readiness \(r_u=[n_u/n_{\mathrm{sat}}]_0^1\), where \(n_{\mathrm{sat}}\) is the history length at which readiness saturates, and gap \(D(u,c)=\max(0,d_c-r_u)\). When concept overlap is too high, the redundancy penalty is
+\begin{equation}
+R(u,c)=
+\left[
+\frac{\chi(u,c)-\mu_R}{1-\mu_R}
 \right]_0^1.
 \end{equation}
 The bounded concept bonus is
 \begin{equation}
 C(u,c)=
 \left[
-\frac{M(u,c)-\mu_C}{\mu_R-\mu_C}
+\frac{\chi(u,c)-\mu_C}{\mu_R-\mu_C}
 \right]_0^1
-\cdot S_{pre}(u,c)\cdot (1-\gamma_R R(u,c)).
-\end{equation}
-Course difficulty is estimated from inverse training popularity,
-\begin{equation}
-d_c=1-\frac{\log(1+p_c)}
-{\max_{c'\in\mathcal{I}} \log(1+p_{c'})}.
-\end{equation}
-with learner readiness \(r_u=[n_u/n_{warm}]_0^1\) and gap \(D(u,c)=\max(0,d_c-r_u)\). When concept overlap is too high, the redundancy penalty is
-\begin{equation}
-R(u,c)=
-\left[
-\frac{M(u,c)-\mu_R}{1-\mu_R}
-\right]_0^1.
+\cdot S_{\mathrm{pre}}(u,c)\cdot (1-\gamma_R R(u,c)).
 \end{equation}
 
 The step reward combines target preservation, progress, duplicate-action control, and the four course-knowledge terms:
@@ -250,16 +260,16 @@ r_t=&-w_T\|\mathbf{h}_{t+1,c}-\mathbf{e}_c\|_2^2
 &+w_C C(a_t,c)-w_P P(a_t,c) \nonumber\\
 &-w_D D(a_t,c)-w_R R(a_t,c),
 \end{align}
-where \(G_t=\operatorname{clip}(\|\mathbf{h}_{t,c}-\mathbf{e}_c\|_2^2-\|\mathbf{h}_{t+1,c}-\mathbf{e}_c\|_2^2)\).
+where \(w_T,w_G,w_{\mathrm{dup}}\) weight target preservation, progress, and repeated-action control, respectively; \(\operatorname{Dup}_t\in\{0,1\}\) indicates a repeated action; and \(G_t=[\|\mathbf{h}_{t,c}-\mathbf{e}_c\|_2^2-\|\mathbf{h}_{t+1,c}-\mathbf{e}_c\|_2^2]_0^1\).
 
 \subsection{Optimization}
-Optimization combines policy learning with ranking supervision. The actor-critic policy is optimized with PPO and generalized advantage estimation~\cite{schulman2017ppo,schulman2015gae}:
+Optimization combines policy learning with ranking supervision. Let \(V_\phi(\mathbf{s}_t)\) be the critic, \(\gamma\in[0,1]\) the discount factor, and \(\lambda\in[0,1]\) the GAE decay. The actor-critic policy is optimized with PPO and generalized advantage estimation~\cite{schulman2017ppo,schulman2015gae}:
 \begin{equation}
-\delta_t=r_t+\gamma V(\mathbf{s}_{t+1})-V(\mathbf{s}_t),
+\delta_t=r_t+\gamma V_\phi(\mathbf{s}_{t+1})-V_\phi(\mathbf{s}_t),
 \quad
-\hat{A}_t=\sum_{l\geq 0}(\gamma\lambda)^l\delta_{t+l}.
+\hat{A}_t=\sum_{j\geq 0}(\gamma\lambda)^j\delta_{t+j}.
 \end{equation}
-With probability ratio \(\rho_t(\theta)\), the clipped actor objective is
+With \(\rho_t(\theta)=\pi_\theta(a_t\mid\mathbf{s}_t)/\pi_{\theta_{\mathrm{old}}}(a_t\mid\mathbf{s}_t)\), where \(\pi_\theta\) is the actor policy, \(\pi_{\theta_{\mathrm{old}}}=\pi_t\) is the rollout policy, and \(\epsilon_p>0\) is the PPO clipping radius, the clipped actor objective is
 \begin{equation}
 \mathcal{L}_{actor}=
 -\mathbb{E}_t\left[
@@ -269,10 +279,11 @@ With probability ratio \(\rho_t(\theta)\), the clipped actor objective is
 \end{equation}
 After the \(T\)-step simulator horizon, we denote the final course embedding as \(\mathbf{z}_{c,T}:=\mathbf{h}_{T,c}\). The ranking logit is
 \begin{equation}
-\ell(u,c)=\frac{\operatorname{norm}(\mathbf{z}_u)^\top
-\operatorname{norm}(\mathbf{z}_{c,T})}{\tau}.
+\ell(u,c)=\frac{\mathbf{z}_u^\top\mathbf{z}_{c,T}}
+{\tau\|\mathbf{z}_u\|_2\|\mathbf{z}_{c,T}\|_2},
+\label{eq:ranking-logit}
 \end{equation}
-The main ranking loss is a cross-entropy contrastive loss over the positive course and mixed hard/random in-batch negatives. Same-course and known-positive negatives are masked to reduce false negatives, a known concern in negative-sampling practice~\cite{ma2026negative}. The model also applies an auxiliary InfoNCE loss between the course ID embedding and the content embedding, plus a prerequisite auxiliary margin loss for high-violation negatives. These terms keep the ranking objective tied to observed learner-course pairs while PPO shapes the simulation policy. The final objective is
+where \(\tau>0\) is the ranking temperature. The main ranking loss is a cross-entropy contrastive loss over the positive course and mixed hard/random in-batch negatives. Same-course and known-positive negatives are masked to reduce false negatives, a known concern in negative-sampling practice~\cite{ma2026negative}. The model also applies an auxiliary InfoNCE loss between the course ID embedding and the content embedding, plus a prerequisite auxiliary margin loss for high-violation negatives. These terms keep the ranking objective tied to observed learner-course pairs while PPO shapes the simulation policy. The final objective is
 \begin{equation}
 \mathcal{L}=
 \mathcal{L}_{rank}
@@ -280,9 +291,10 @@ The main ranking loss is a cross-entropy contrastive loss over the positive cour
 +\mathcal{L}_{ppo}
 +\lambda_{pre}\mathcal{L}_{pre}.
 \end{equation}
+Here \(\mathcal{L}_{rank}\), \(\mathcal{L}_{aux}\), \(\mathcal{L}_{ppo}\), and \(\mathcal{L}_{pre}\) are the ranking, content-alignment, PPO, and prerequisite-margin losses, and \(\lambda_{aux},\lambda_{pre}\geq0\) weight the two auxiliary losses.
 
 \subsection{Implementation Details}
-The implementation uses 128-dimensional learner and course embeddings, a 256-dimensional hidden layer, and 768-dimensional course content features. The MOOCCube/MOOCCubeX and COCO content features are BERT [CLS] representations~\cite{devlin2019bert}, using Chinese and English encoders respectively; Junyi is treated as an educational course generalization setting with processed course-content features. The simulator uses horizon \(T=5\) with update rate \(\eta=0.3\). At each step, it retrieves \(M=256\) users, samples \(N=20\) candidates with \(\tau_s=0.20\) and \(\epsilon=0.10\), and reorders candidates with knowledge-sampling weight \(\beta=0.20\). The educational reward weights are \(0.08\) for prerequisite penalty, \(0.04\) for concept bonus, \(0.03\) for difficulty penalty, and \(0.02\) for redundancy penalty. The target-anchor coefficients are \(\alpha_{cold}=0.35\), \(\alpha_{hot}=0.60\), \(\alpha_{step}=0.20\), \(\alpha_{ent}=0.20\), and \([\alpha_{\min},\alpha_{\max}]=[0.15,0.85]\). PPO uses two epochs, \(\gamma=0.90\), \(\lambda=0.95\), clip ratio \(0.2\), value clipping \(0.20\), and advantage normalization. The final strict course-cold runs train for 60 epochs with batch size 2048 and select checkpoints using cold course-macro validation behavior. The reported configuration uses only the components described in this section.
+The implementation uses 128-dimensional learner and course embeddings, a 256-dimensional hidden layer, and 768-dimensional course content features. The MOOCCube/MOOCCubeX and COCO content features are BERT [CLS] representations~\cite{devlin2019bert}, using Chinese and English encoders respectively; Junyi is treated as an educational course generalization setting with processed course-content features. The simulator uses horizon \(T=5\) with update rate \(\eta=0.3\). At each step, it retrieves \(M=256\) users, samples \(N=20\) candidates with \(\tau_s=0.20\) and \(\epsilon=0.10\), and reorders candidates with knowledge-sampling weight \(\beta=0.20\). The educational reward weights are \(0.08\) for prerequisite penalty, \(0.04\) for concept bonus, \(0.03\) for difficulty penalty, and \(0.02\) for redundancy penalty. We use \(n_{\mathrm{sat}}=5\), \(\delta_{\mathrm{pre}}=0.20\), \(\mu_C=0.12\), \(\mu_R=0.70\), and \(\gamma_R=1.0\). The target-anchor coefficients are \(\alpha_{cold}=0.35\), \(\alpha_{hot}=0.60\), \(\alpha_{step}=0.20\), \(\alpha_{ent}=0.20\), and \([\alpha_{\min},\alpha_{\max}]=[0.15,0.85]\). PPO uses two epochs, \(\gamma=0.90\), \(\lambda=0.95\), clipping radius \(\epsilon_p=0.20\), value clipping \(0.20\), and advantage normalization. The final strict course-cold runs train for 60 epochs with batch size 2048 and select checkpoints using cold course-macro validation behavior. The reported configuration uses only the components described in this section.
 
 \section{Experiments}
 \subsection{Dataset and Protocol}
@@ -314,13 +326,13 @@ The split is a controlled course-cold benchmark, not a chronological launch-time
 The experiments answer four questions. \textbf{RQ1:} What strict course-cold full-ranking course-macro scores does CKG-RL obtain relative to the baselines? \textbf{RQ2:} Which exposure and pedagogical-risk patterns motivate the method components? \textbf{RQ3:} Which course-knowledge components contribute under the same protocol? \textbf{RQ4:} How stable are the gains under design variations, and what cost does CKG-RL introduce?
 
 \subsection{Baselines}
-To keep the comparison protocol-controlled, all baselines use the same course-cold splits, full-catalog candidate set, train-history masking, course-macro evaluator, and validation cold NDCG@10 checkpoint rule~\cite{sun2020rigorous,hidasi2023flaws}. We compare against four capability classes. \textbf{Interaction-only} baselines include Popularity, BPR~\cite{rendle2009bpr}, and LightGCN~\cite{he2020lightgcn}. They test whether learner-side history or graph propagation can rank target courses whose own training edges are removed. \textbf{Side-feature fallback} uses DropoutNet~\cite{volkovs2017dropoutnet}. \textbf{Content-transfer} uses CCFCRec~\cite{zhou2023ccfcrec}, ALDI~\cite{huang2023aldi}, and SEMCo~\cite{meehan2026semco}. \textbf{Graph reconstruction} uses CGRC~\cite{kim2024cgrc}, the closest baseline because it reconstructs cold-course structure from course content. DropoutNet, ALDI, and SEMCo are adapted from official implementations; CCFCRec uses a public-source static-HIN wrapper; and CGRC is reimplemented from the paper because no official code was available. For SEMCo, we replace only the data loader and final evaluator to match our strict course-cold splits and full-ranking course-macro protocol, while keeping its learner and sparse contrastive objective unchanged.
+To keep the comparison protocol-controlled, all reported cells use the same course-cold splits, full-catalog candidate set, train-history masking, course-macro evaluator, and validation cold NDCG@10 checkpoint rule~\cite{sun2020rigorous,hidasi2023flaws}. We compare against several capability classes. \textbf{Interaction-only} baselines include Popularity, BPR~\cite{rendle2009bpr}, and LightGCN~\cite{he2020lightgcn}. They test whether learner-side history or graph propagation can rank target courses whose own training edges are removed. \textbf{Side-feature fallback} uses DropoutNet~\cite{volkovs2017dropoutnet}. \textbf{Content-transfer} uses CCFCRec~\cite{zhou2023ccfcrec}, ALDI~\cite{huang2023aldi}, and SEMCo~\cite{meehan2026semco}. \textbf{Knowledge-graph and graph-reconstruction} baselines include KGRec~\cite{yang2023knowledge}, CGRC~\cite{kim2024cgrc}, and the adapted course-recommendation model PCGNN~\cite{sun2024pcgnn}; CGRC is the closest baseline because it reconstructs cold-course structure from course content. DropoutNet, ALDI, and SEMCo retain their released training objectives while using the common data interface and final evaluator. KGRec follows its original formulation and objective. CCFCRec uses a public-source static-HIN wrapper; and CGRC is reimplemented from the paper because no official code was available.
 
 \subsection{Theoretical Complexity}
 Let \(E\) be the number of training interactions, \(I\) the catalog size, \(Q\) the number of evaluation cases, and \(d\) the embedding dimension. CKG-RL adds a bounded simulator term \(O(E T(Md+Nd+H))\) during training, where \(T=5\), \(M=256\), and \(N=20\) in the reported runs. After course representations are cached, full-ranking inference uses the same dominant dot-product term \(O(QId)\) as embedding baselines. The supplement reports seed-level CIs, per-course gain diagnostics, and CGRC cost/timing coverage.
 
 \subsection{RQ1: Strict Course-Cold Accuracy}
-Table~\ref{tab:main-cold-results} reports the primary cross-dataset comparison for Recall/NDCG at @5 and @10, the early-rank cutoffs emphasized in the main text. Full @5/@10/@20 results, seed-level CIs, and per-course gain diagnostics are in the supplement. Compared with all listed baselines under the same full-catalog course-macro evaluator and matched three-seed protocol, CKG-RL has the highest mean in every @5/@10 column on MOOCCube, Junyi, and COCO. The COCO interpretation is restricted to early-rank exposure because CCFCRec remains stronger at Recall@20 in the supplementary table.
+Table~\ref{tab:main-cold-results} reports the primary cross-dataset comparison for Recall/NDCG at @5 and @10, the early-rank cutoffs emphasized in the main text. Full @5/@10/@20 results, seed-level CIs, and per-course gain diagnostics are in the supplement. Across all reported cells under the same full-catalog course-macro evaluator and matched three-seed protocol, CKG-RL has the highest mean in every @5/@10 column on MOOCCube, Junyi, and COCO. The COCO interpretation is restricted to early-rank exposure because CCFCRec remains stronger at Recall@20 in the supplementary table.
 
 \begin{table*}[t]
 \centering
@@ -336,25 +348,26 @@ Method & R@5 & R@10 & N@5 & N@10 & R@5 & R@10 & N@5 & N@10 & R@5 & R@10 & N@5 & 
 \midrule
 Popularity & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
 BPR & 0.0113 & 0.0249 & 0.0068 & 0.0111 & 0.0298 & 0.0578 & 0.0180 & 0.0270 & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
-LightGCN & 0.0833 & 0.1173 & 0.0593 & 0.0702 & 0.0187 & 0.0420 & 0.0108 & 0.0182 & 0.0067 & 0.0132 & 0.0040 & 0.0060 \\
 DropoutNet & 0.1166 & 0.1658 & 0.0791 & 0.0950 & 0.0540 & 0.0928 & 0.0336 & 0.0460 & 0.0391 & 0.0650 & 0.0243 & 0.0326 \\
+LightGCN & 0.0833 & 0.1173 & 0.0593 & 0.0702 & 0.0187 & 0.0420 & 0.0108 & 0.0182 & 0.0067 & 0.0132 & 0.0040 & 0.0060 \\
 CCFCRec & 0.1476 & 0.2033 & 0.1101 & 0.1281 & 0.0942 & 0.1462 & 0.0619 & 0.0786 & \underline{0.0393} & \underline{0.0656} & \underline{0.0248} & \underline{0.0332} \\
 ALDI & 0.1733 & 0.2258 & 0.1213 & 0.1382 & \underline{0.1331} & \underline{0.2102} & \underline{0.0859} & \underline{0.1106} & 0.0202 & 0.0383 & 0.0121 & 0.0179 \\
-SEMCo & 0.1631 & 0.2306 & 0.1198 & 0.1416 & 0.0907 & 0.1562 & 0.0563 & 0.0773 & 0.0204 & 0.0354 & 0.0126 & 0.0174 \\
+KGRec & 0.0974 & 0.1305 & 0.0764 & 0.0871 & 0.0245 & 0.0436 & 0.0149 & 0.0210 & 0.0070 & 0.0126 & 0.0042 & 0.0060 \\
 CGRC & \underline{0.2121} & \underline{0.2589} & \underline{0.1695} & \underline{0.1845} & 0.1269 & 0.1915 & 0.0833 & 0.1041 & 0.0250 & 0.0377 & 0.0168 & 0.0209 \\
-PCGNN (adapted) & 0.0241 & 0.0520 & 0.0145 & 0.0234 & 0.0453 & 0.0897 & 0.0261 & 0.0402 & 0.0135 & 0.0254 & 0.0081 & 0.0118 \\
+PCGNN & 0.0241 & 0.0520 & 0.0145 & 0.0234 & 0.0453 & 0.0897 & 0.0261 & 0.0402 & 0.0135 & 0.0254 & 0.0081 & 0.0118 \\
 USIM & 0.0377 & 0.0614 & 0.0244 & 0.0320 & 0.0536 & 0.0921 & 0.0327 & 0.0450 & 0.0069 & 0.0131 & 0.0043 & 0.0063 \\
+SEMCo & 0.1631 & 0.2306 & 0.1198 & 0.1416 & 0.0907 & 0.1562 & 0.0563 & 0.0773 & 0.0204 & 0.0354 & 0.0126 & 0.0174 \\
 \midrule
 \textbf{CKG-RL} & \textbf{0.2473}\sigmark{*} & \textbf{0.2863}\sigmark{*} & \textbf{0.1972}\sigmark{*} & \textbf{0.2098}\sigmark{*} & \textbf{0.1724}\sigmark{*} & \textbf{0.2443}\sigmark{*} & \textbf{0.1137}\sigmark{*} & \textbf{0.1370}\sigmark{*} & \textbf{0.0487}\sigmark{*} & \textbf{0.0679} & \textbf{0.0330}\sigmark{*} & \textbf{0.0392}\sigmark{*} \\
 \emph{Imp.} & +16.6\% & +10.6\% & +16.3\% & +13.7\% & +29.5\% & +16.2\% & +32.4\% & +23.9\% & +23.9\% & +3.5\% & +33.1\% & +18.1\% \\
 \bottomrule
 \end{tabular}
 }
-\caption{Performance comparison under strict course-cold ranking. Values are three-seed means; underlines mark second-best means. \(^{*}\) denotes Holm-corrected two-sided paired Wilcoxon significance against the strongest non-CKG reference baseline across the @5/@10 main-table comparisons (\(p_{\mathrm{Holm,@5/@10}}<0.01\)); Imp. is the relative gain.}
+\caption{Strict course-cold performance (three-seed means). Underlines mark second best. \(^{*}\): Holm-corrected paired Wilcoxon significance against the strongest displayed reference (MOOCCube/Junyi/COCO: CGRC/ALDI/CCFCRec; \(p_{\mathrm{Holm,@5/@10}}<0.01\)). Imp.: gain over the same reference.}
 \label{tab:main-cold-results}
 \end{table*}
 
-The ordering follows the evidence available to each method. Popularity serves as a leakage check and receives zero cold course-macro score because held-out courses have no training popularity. BPR and LightGCN recover learner-side signal but lack target-course edges. Content-transfer and graph-reconstruction baselines borrow side information or warm-course structure. CKG-RL adds protocol-aligned masking plus course knowledge in simulation and rewards. For statistical evidence, Holm-corrected tests reject the matched-pair null for all four MOOCCube @5/@10 metrics against CGRC and all four Junyi metrics against ALDI. On COCO, the tests reject for R@5, N@5, and N@10 against CCFCRec; R@10 is a descriptive mean gain without a significance mark. The supplement reports seed-level CIs, all paired \(p\)-values, and the more conservative all-metric correction.
+Baselines are ordered chronologically so that the most recent methods are closest to CKG-RL. Popularity remains first as a leakage check and receives zero cold course-macro score because held-out courses have no training popularity. BPR and LightGCN recover learner-side signal but lack target-course edges. Content-transfer and graph-reconstruction baselines borrow side information or warm-course structure. CKG-RL adds protocol-aligned masking plus course knowledge in simulation and rewards. For statistical evidence, Holm-corrected tests reject the matched-pair null for all four MOOCCube @5/@10 metrics against CGRC and all four Junyi metrics against ALDI. On COCO, the tests reject for R@5, N@5, and N@10 against CCFCRec; R@10 is a descriptive mean gain without a significance mark. The supplement reports seed-level CIs, all paired \(p\)-values, and the more conservative all-metric correction.
 
 \subsection{RQ2: Exposure and Pedagogical-Risk Diagnostics}
 The main-table ordering identifies the exposure side of the motivation. Popularity receives zero score for held-out cold courses, interaction-based representation learning lacks target-course edges, and content-transfer or graph-reconstruction methods still face warm courses with richer collaborative evidence. The diagnostic in Figure~\ref{fig:method-motivation}(a) shows that 30\% of CGRC seed-course cases have NDCG@10 no greater than 0.05, and 46\% are no greater than 0.10. Thus the strongest content-graph baseline still leaves many zero-interaction courses with little early exposure under full-catalog ranking.

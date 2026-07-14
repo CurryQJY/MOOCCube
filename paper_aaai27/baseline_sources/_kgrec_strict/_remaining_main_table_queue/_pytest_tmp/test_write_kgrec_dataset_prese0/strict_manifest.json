@@ -1,0 +1,36 @@
+{
+  "cold_item_ids": [
+    2
+  ],
+  "course_kg_degree": {
+    "0": 1,
+    "2": 2
+  },
+  "format": "KGRec atomic strict item-cold",
+  "n_entities": 6,
+  "n_items": 3,
+  "n_kg_triples": 3,
+  "n_relations": 2,
+  "n_test_pairs": 1,
+  "n_train_pairs": 2,
+  "n_users": 2,
+  "n_validation_pairs": 1,
+  "relation_to_id": {
+    "course_concept": 0,
+    "course_video": 1
+  },
+  "strict_checks": {
+    "all_cold_items_have_kg_edges": true,
+    "cold_items_absent_from_train": true,
+    "cold_items_with_kg_edges": [
+      2
+    ],
+    "item_ids_contiguous": true,
+    "kg_entity_ids_contiguous": true,
+    "relation_ids_contiguous": true
+  },
+  "warm_item_ids": [
+    0,
+    1
+  ]
+}

@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99e
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: D:\DeskTop\MOOCCube\paper_aaai27\build_kgrec_table_verify\main.aux
+Reallocating 'name_of_file' (item size: 1) to 9 items.
+The style file: aaai2027.bst
+Reallocating 'name_of_file' (item size: 1) to 11 items.
+Database file #1: references.bib
+You've used 46 entries,
+            2840 wiz_defined-function locations,
+            844 strings with 16473 characters,
+and the built_in function-call counts, 41894 in all, are:
+= -- 3266
+> -- 2605
+< -- 6
++ -- 958
+- -- 904
+* -- 3177
+:= -- 6459
+add.period$ -- 214
+call.type$ -- 46
+change.case$ -- 511
+chr.to.int$ -- 47
+cite$ -- 46
+duplicate$ -- 2736
+empty$ -- 2625
+format.name$ -- 1041
+if$ -- 8320
+int.to.chr$ -- 2
+int.to.str$ -- 1
+missing$ -- 640
+newline$ -- 234
+num.names$ -- 184
+pop$ -- 1418
+preamble$ -- 1
+purify$ -- 451
+quote$ -- 0
+skip$ -- 1288
+stack$ -- 0
+substring$ -- 1749
+swap$ -- 1622
+text.length$ -- 6
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 414
+warning$ -- 0
+while$ -- 292
+width$ -- 0
+write$ -- 631

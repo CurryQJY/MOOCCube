@@ -200,7 +200,9 @@ def write_upgpr_processed_dataset(out_dir: Path, data: TinyAdapterInput) -> dict
     def pair_rows(pairs: list[tuple[int, int]]) -> list[str]:
         return [f"{user} {item}" for user, item in pairs]
 
-    write_text(out_dir / "enrolments.txt", pair_rows(data.train_pairs + data.val_pairs + data.test_pairs))
+    # UPGPR's official preprocessor reads this file to build the training KG.
+    # Keeping held-out interactions here would leak strict cold items.
+    write_text(out_dir / "enrolments.txt", pair_rows(data.train_pairs))
     write_text(out_dir / "train.txt", pair_rows(data.train_pairs))
     write_text(out_dir / "validation.txt", pair_rows(data.val_pairs))
     write_text(out_dir / "test.txt", pair_rows(data.test_pairs))

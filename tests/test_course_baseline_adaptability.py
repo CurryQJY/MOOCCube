@@ -110,6 +110,10 @@ class CourseBaselineAdaptabilityTests(unittest.TestCase):
             self.assertEqual((tmp_path / "train.txt").read_text().splitlines(), ["0 0", "0 1", "1 1"])
             self.assertEqual((tmp_path / "validation.txt").read_text().splitlines(), ["1 2"])
             self.assertEqual((tmp_path / "test.txt").read_text().splitlines(), ["2 3"])
+            self.assertEqual(
+                (tmp_path / "enrolments.txt").read_text().splitlines(),
+                ["0 0", "0 1", "1 1"],
+            )
             self.assertEqual(len((tmp_path / "courses.txt").read_text().splitlines()), 4)
             self.assertEqual(len((tmp_path / "course_concepts.txt").read_text().splitlines()), 4)
             self.assertEqual(len((tmp_path / "course_teachers.txt").read_text().splitlines()), 4)

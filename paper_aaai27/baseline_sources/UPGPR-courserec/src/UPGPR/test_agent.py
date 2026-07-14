@@ -11,7 +11,10 @@ from functools import reduce
 from kg_env import BatchKGEnvironment
 from actor_critic import ActorCritic
 from utils import *
-import wandb
+try:
+    import wandb
+except (ImportError, AttributeError):
+    wandb = None
 
 
 def evaluate(

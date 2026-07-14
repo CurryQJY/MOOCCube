@@ -3,7 +3,10 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 import random
-import wandb
+try:
+    import wandb
+except (ImportError, AttributeError):
+    wandb = None
 import pickle
 import random
 from sklearn.model_selection import train_test_split

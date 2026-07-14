@@ -1,0 +1,24 @@
+{
+  "dataset": "gar_mfpre_mooccube_strict_item_cold_balanced_thr1_seed_2027",
+  "source_data_dir": "D:\\DeskTop\\MOOCCube\\processed_data_hin_clean_pop5",
+  "split_dir": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2027",
+  "cold_threshold": 1,
+  "train_rows": 464096,
+  "val_cold_rows": 32370,
+  "val_warm_rows": 58012,
+  "test_cold_rows": 62280,
+  "test_warm_rows": 58011,
+  "warm_user_count": 195283,
+  "warm_item_count": 596,
+  "cold_item_count": 102,
+  "note": "Adapter-generated ColdRec view; GAR source model is unchanged.",
+  "model": "GAR",
+  "candidate_mode": "full_catalog",
+  "checkpoint_metric": "validation_full_cold_item_macro.N@10",
+  "train_history_masking": true,
+  "train_only_interaction_evidence": true,
+  "strict_audit": {
+    "heldout_cold_item_count": 102,
+    "train_overlap_count": 0
+  }
+}

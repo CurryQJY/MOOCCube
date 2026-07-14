@@ -16,6 +16,35 @@ from validate import *
 logger = None
 
 
+def policy_step_budget_reached(step, max_train_steps):
+    return max_train_steps >= 0 and step >= max_train_steps
+
+
+def save_policy_progress(model, optimizer, args, epoch, step, stopped_by_step_budget):
+    tmp_policy_file = "{}/tmp_policy_model_epoch_{}.ckpt".format(args.log_dir, epoch)
+    torch.save(model.state_dict(), tmp_policy_file)
+    torch.save(
+        {
+            "epoch": epoch,
+            "step": step,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "stopped_by_step_budget": stopped_by_step_budget,
+        },
+        "{}/policy_training_state.ckpt".format(args.log_dir),
+    )
+    with open("{}/policy_training_progress.json".format(args.log_dir), "w") as handle:
+        json.dump(
+            {
+                "epoch": epoch,
+                "step": step,
+                "max_train_steps": getattr(args, "max_train_steps", -1),
+                "stopped_by_step_budget": stopped_by_step_budget,
+            },
+            handle,
+        )
+
+
 class ACDataLoader(object):
     def __init__(self, uids, batch_size):
         self.uids = np.array(uids)
@@ -78,6 +107,9 @@ def train(args, kg_args):
         [],
     )
     step = 0
+    stopped_by_step_budget = False
+    max_train_steps = getattr(args, "max_train_steps", -1)
+    checkpoint_every_steps = getattr(args, "checkpoint_every_steps", -1)
     model.train()
     for epoch in range(1, args.epochs + 1):
         ### Start epoch ###
@@ -118,6 +150,9 @@ def train(args, kg_args):
             total_entropy.append(eloss)
             step += 1
 
+            if checkpoint_every_steps > 0 and step % checkpoint_every_steps == 0:
+                save_policy_progress(model, optimizer, args, epoch, step, False)
+
             # Report performance
             if step > 0 and step % 100 == 0:
                 avg_reward = np.mean(total_rewards) / args.batch_size
@@ -140,13 +175,16 @@ def train(args, kg_args):
                     + " | entropy={:.5f}".format(avg_entropy)
                     + " | reward={:.5f}".format(avg_reward)
                 )
+
+            if policy_step_budget_reached(step, max_train_steps):
+                stopped_by_step_budget = True
+                break
         ### END of epoch ###
 
-        tmp_policy_file = "{}/tmp_policy_model_epoch_{}.ckpt".format(
-            args.log_dir, epoch
-        )
-        policy_file = "{}/policy_model_epoch_{}.ckpt".format(args.log_dir, epoch)
-        torch.save(model.state_dict(), tmp_policy_file)
+        save_policy_progress(model, optimizer, args, epoch, step, stopped_by_step_budget)
+        if stopped_by_step_budget:
+            break
+    return {"steps": step, "stopped_by_step_budget": stopped_by_step_budget}
 
 
 def main():
