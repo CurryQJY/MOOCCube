@@ -8,7 +8,9 @@ class BaseConfig:
         self.emb_dim = 128
         self.hidden_dim = 256
         self.content_dim = content_dim
-        self.use_content_delta = os.environ.get("USIM_USE_CONTENT_DELTA", "1") == "1"
+        # Optional research extensions are opt-in; formal main-table runs must
+        # not silently activate them when an environment variable is absent.
+        self.use_content_delta = os.environ.get("USIM_USE_CONTENT_DELTA", "0") == "1"
         self.content_delta_paper_style = os.environ.get("USIM_CONTENT_DELTA_PAPER_STYLE", "0") == "1"
         self.content_delta_replace_item = os.environ.get(
             "USIM_CONTENT_DELTA_REPLACE_ITEM",
@@ -132,7 +134,7 @@ class BaseConfig:
         self.use_structured_hard_neg = False
         self.mask_known_pos_neg = os.environ.get("USIM_MASK_KNOWN_POS_NEG", "0") == "1"
         self.mask_same_item_neg = os.environ.get("USIM_MASK_SAME_ITEM_NEG", "1") == "1"
-        self.use_paac = os.environ.get("USIM_USE_PAAC", "1") == "1"
+        self.use_paac = os.environ.get("USIM_USE_PAAC", "0") == "1"
         self.paac_align_weight = float(os.environ.get("USIM_PAAC_ALIGN_W", "0.0"))
         self.paac_align_max_pairs = int(os.environ.get("USIM_PAAC_ALIGN_MAX_PAIRS", "512"))
         self.paac_align_detach_hot = os.environ.get("USIM_PAAC_ALIGN_DETACH_HOT", "1") == "1"

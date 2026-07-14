@@ -4045,14 +4045,20 @@ def main():
     with open(f"{data_dir}/meta.json", "r") as f:
         meta = json.load(f)
     df = pd.read_pickle(f"{data_dir}/stream_data.pkl")
-    llm_scores, llm_score_path, _ = load_llm_scores_for_stream(
-        data_dir,
-        df,
-        cold_threshold=int(os.environ.get("USIM_COLD_THRESHOLD", "5")),
-        n_users=meta.get("n_users"),
-        n_items=meta.get("n_items"),
-        fallback_data_dirs=["processed_data"],
-    )
+    if os.environ.get("USIM_DISABLE_LLM_SCORE", "0") == "1":
+        # The formal main-table protocol disables LLM scores.  Avoid loading
+        # unused pickle files so this branch is deterministic and cheap.
+        print("   LLM scores disabled; skipping llm_scores.pkl loading.")
+        llm_scores, llm_score_path = {}, None
+    else:
+        llm_scores, llm_score_path, _ = load_llm_scores_for_stream(
+            data_dir,
+            df,
+            cold_threshold=int(os.environ.get("USIM_COLD_THRESHOLD", "5")),
+            n_users=meta.get("n_users"),
+            n_items=meta.get("n_items"),
+            fallback_data_dirs=["processed_data"],
+        )
     content_emb = torch.load(f"{data_dir}/content_emb.pt")
     if llm_score_path:
         print(f"   LLM scores loaded from {llm_score_path}")
