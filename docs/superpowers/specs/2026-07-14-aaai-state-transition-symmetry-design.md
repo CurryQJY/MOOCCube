@@ -1,27 +1,29 @@
-# AAAI State-Transition Alignment Adjustment
+# AAAI State-Transition Whole-Group Centering
 
 ## Scope
 
-Move the `h_{t+1}` representation group left and shorten the central red update arrow while keeping that red arrow horizontally centered inside the `State Transition Function` box in panel (b). Preserve the left representation, both upper curved arrows, box, title, center user node, explanatory text, colors, and line styles.
+Center the complete visual transition group inside the `State Transition Function` box in panel (b), while keeping the shortened central red arrow and the `u_j` node individually centered. Preserve representation size, representation angle, internal state spacing, box, title, explanatory text, colors, and line styles.
 
 ## Approved geometry
 
-- Keep the left `h_t` representation center at `flow_cx - 69`.
+- Keep `u_j` and the central red update arrow centered at the box center `flow_cx`.
+- Preserve the current left-to-right representation spacing of approximately `115.357` coordinate units.
+- Translate both state representations and their labels together by the same horizontal offset so their midpoint equals `flow_cx`.
+- Derive `group_shift = flow_cx - (base_left_c.x + base_right_c.x) / 2`.
+- For the production box, `group_shift` is approximately `11.321`; the moved centers are `h_t: x=982.321` and `h_{t+1}: x=1097.679`.
 - Keep both tilted representations at width `63`, height `16`, and angle `-48` degrees.
-- Keep the upper curved arrows as exact horizontal mirrors around `flow_cx`.
-- Use the shortened right curved-arrow endpoint as the moved `h_{t+1}` representation center: `right_c.x = right_arrow_end_x`, approximately `1086.357` for the production box.
-- Move the `h_{t+1}` label together with its representation by deriving both from `right_c.x`.
-- Derive the shortened red update-arrow span from the moved representation spacing while retaining the existing 34-unit endpoint margins: `update_span = right_c.x - left_c.x - 68`.
-- Place the red update-arrow endpoints symmetrically around `flow_cx`: `update_start_x = flow_cx - update_span / 2` and `update_end_x = flow_cx + update_span / 2`.
-- For the production box, the red arrow is approximately `1016.321 -> 1063.679`, has span `47.357`, and midpoint `1040`.
+- Recompute the left curved-arrow start from the moved `h_t` head and mirror the right curved arrow around `flow_cx`.
+- Keep the red update-arrow span at approximately `47.357`, with endpoints approximately `1016.321 -> 1063.679` and midpoint exactly `1040`.
+- Leave the centered title and explanatory text unchanged.
 
 ## Verification
 
-- Assert the right representation center equals the right curved-arrow endpoint.
-- Assert the `h_{t+1}` label uses the moved right representation center.
+- Assert the two representation centers have midpoint `flow_cx`.
+- Assert both labels use their moved representation-center x coordinates.
+- Assert the representation spacing remains unchanged.
 - Assert both representation sizes and angles remain unchanged.
-- Assert the upper curved arrows remain exact horizontal mirrors.
-- Assert the red update-arrow span equals `right_c.x - left_c.x - 68`.
-- Assert the red update-arrow midpoint equals `flow_cx` to numerical tolerance.
+- Assert the upper curved arrows are exact horizontal mirrors around `flow_cx`.
+- Assert the left curved arrow starts at the moved `h_t` head boundary.
+- Assert the red update-arrow midpoint equals `flow_cx` and its shortened span remains unchanged.
 - Regenerate SVG, PDF, PNG, and TIFF.
-- Inspect both the standalone PNG and the compiled AAAI page for arrow centering, clipping, and label alignment.
+- Inspect both the standalone PNG and the compiled AAAI page for whole-group centering, clipping, and label alignment.
