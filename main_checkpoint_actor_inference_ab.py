@@ -32,6 +32,28 @@ ACTIVE_ITEM_BANK = None
 ORIGINAL_EVALUATE = legacy.evaluate_usim
 ORIGINAL_BUILD_POS = eval_core.build_eval_pos_item_vecs
 ORIGINAL_GET_ACTION_VALUE = legacy.FixedSimpleAC.get_action_value
+ORIGINAL_STATIC_SPLIT = legacy._static_split_df
+
+
+def make_validation_target_split(split_fn):
+    """Route the original validation dataframe to the final evaluator slot."""
+    def validation_target(df):
+        train, val, test, info = split_fn(df)
+        del test
+        return train, val, val.copy(deep=True), info
+
+    return validation_target
+
+
+def install_evaluation_target(target):
+    """Select test or validation evaluation without changing split metadata."""
+    target = str(target).strip().lower()
+    if target == "test":
+        legacy._static_split_df = ORIGINAL_STATIC_SPLIT
+    elif target == "validation":
+        legacy._static_split_df = make_validation_target_split(ORIGINAL_STATIC_SPLIT)
+    else:
+        raise ValueError("USIM_ACTOR_EVAL_TARGET must be test or validation")
 
 
 def deterministic_get_action_value(self, item_state, time_step, candidates_emb, action_idx=None):
@@ -185,6 +207,7 @@ def write_audit(path, mode, eval_seed):
         {
             "mode": str(mode),
             "eval_seed": int(eval_seed),
+            "evaluation_target": os.environ.get("USIM_ACTOR_EVAL_TARGET", "test").strip().lower(),
             "mean_cosine": float(AUDIT.cosine_sum) / count,
             "mean_l2": float(AUDIT.l2_sum) / count,
         }
@@ -219,11 +242,13 @@ def make_read_only_torch_save(checkpoint_dir, real_save):
 def main():
     mode = os.environ.get("USIM_ACTOR_INFERENCE_MODE", "static")
     eval_seed = int(os.environ.get("USIM_ACTOR_INFERENCE_SEED", "7001"))
+    evaluation_target = os.environ.get("USIM_ACTOR_EVAL_TARGET", "test")
     checkpoint_dir = os.environ.get("USIM_FB_CKPT_DIR", "").strip()
     if not checkpoint_dir:
         raise RuntimeError("USIM_FB_CKPT_DIR is required for checkpoint replay")
 
     torch.save = make_read_only_torch_save(checkpoint_dir, real_save=torch.save)
+    install_evaluation_target(evaluation_target)
     install_mode(mode, eval_seed)
     legacy.main()
 

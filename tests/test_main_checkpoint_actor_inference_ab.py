@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+import pandas as pd
 import torch
 import torch.nn.functional as F
 
@@ -13,6 +14,24 @@ def test_wrapper_declares_static_runner_delegation_tokens():
     source = Path(ab.__file__).read_text(encoding="utf-8")
     assert "def run_static_experiment" in source
     assert "_static_split_df" in source
+
+
+def test_validation_target_routes_validation_rows_without_test_rows():
+    train = pd.DataFrame({"split": ["train"]})
+    val = pd.DataFrame({"split": ["val"]})
+    test = pd.DataFrame({"split": ["test"]})
+
+    def split_fn(_):
+        return train, val, test, {"test_rows": 1, "val_rows": 1}
+
+    wrapped = ab.make_validation_target_split(split_fn)
+    got_train, got_val, got_eval, info = wrapped(object())
+
+    assert got_train.equals(train)
+    assert got_val.equals(val)
+    assert got_eval.equals(val)
+    assert not got_eval.equals(test)
+    assert info == {"test_rows": 1, "val_rows": 1}
 
 
 def test_deterministic_action_uses_actor_argmax():
@@ -119,7 +138,8 @@ def test_positive_target_vector_comes_from_the_same_refined_bank():
     assert torch.equal(out, torch.tensor([[3.0, 4.0], [1.0, 0.0]]))
 
 
-def test_audit_export_reports_mean_displacement(tmp_path):
+def test_audit_export_reports_mean_displacement_and_target(tmp_path, monkeypatch):
+    monkeypatch.setenv("USIM_ACTOR_EVAL_TARGET", "validation")
     ab.AUDIT = ab.InferenceAudit(
         actor_calls=10,
         episode_calls=2,
@@ -134,6 +154,7 @@ def test_audit_export_reports_mean_displacement(tmp_path):
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["mean_cosine"] == pytest.approx(0.8)
     assert payload["mean_l2"] == pytest.approx(0.2)
+    assert payload["evaluation_target"] == "validation"
 
 
 def test_checkpoint_write_blocker_preserves_checkpoint(tmp_path):
