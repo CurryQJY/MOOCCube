@@ -1,31 +1,26 @@
-# AAAI State-Transition Symmetry Adjustment
+# AAAI State-Transition Arrow Attachment Adjustment
 
 ## Scope
 
-Adjust the two curved action arrows and the paired state-representation groups inside the `State Transition Function` box in panel (b). Preserve the box, title, center user node, horizontal update arrow, explanatory text, colors, and line styles.
+Adjust only the left curved action arrow inside the `State Transition Function` box in panel (b). Preserve the original state-representation sizes and positions, the right curved arrow, box, title, center user node, horizontal update arrow, explanatory text, colors, and line styles.
 
 ## Approved geometry
 
-- Use the box center `flow_cx` as the horizontal symmetry axis.
-- Keep the existing long curved-arrow endpoints at `flow_cx - 69` and `flow_cx + 69`.
+- Restore both tilted representations to their original width `63`, height `16`, and angle `-48` degrees.
+- Restore the representation centers to `flow_cx - 69` and `flow_cx + 69`.
+- Keep the `h_t` and `h_{t+1}` labels centered at those original representation-center positions.
 - Keep the left curved arrow directed from the right side of the dark head of the `h_t` representation to the left edge of the center user node.
-- Make the right curved arrow the exact horizontal mirror of the left arrow: it starts at the right edge of the center user node and ends before the `h_{t+1}` representation.
-- Keep both curved arrows at the same vertical coordinates, curvature, line width, arrowhead size, and opacity.
-- Keep the original long right arrow; do not shorten it to repair the left-side attachment.
-- Treat each tilted representation and its math label as one movable group.
-- Reduce both tilted representations from width `63` to width `50` so they can move outward without touching the dashed box after stroke rendering.
-- Place the representation centers at `flow_cx - 82` and `flow_cx + 82`.
-- At the curved-arrow vertical coordinate, align the right boundary of the tilted `h_t` head with the left arrow's outer endpoint, so the arrow visibly starts from the head rather than to its left.
-- Center `h_t` and `h_{t+1}` beneath their respective tilted representations after the symmetric outward move.
-- Keep the complete transition composition structurally centered at the box center `flow_cx`.
+- Compute the left-arrow start from the rotated right edge of the original `h_t` vector at the arrow's vertical coordinate; do not move or resize the vector to meet the arrow.
+- Keep the left arrow's end at the left edge of the center user node and preserve its curvature, line width, arrowhead size, and opacity.
+- Keep the right curved arrow unchanged, from `(flow_cx + 13, y + 50)` to `(flow_cx + 69, y + 52)`.
+- Accept that the two curved arrows have different horizontal spans: preserving the original representations and making the left arrow originate at the `h_t` head takes priority over exact arrow-length symmetry.
+- Keep the paired representation centers and the complete state-representation composition centered at `flow_cx`.
 
 ## Verification
 
-- Assert the right arrow endpoints equal the horizontal mirror of the left arrow endpoints around `flow_cx`.
-- Assert the long curved-arrow endpoints remain at `flow_cx - 69` and `flow_cx + 69`.
-- Assert the two representation centers and labels are at `flow_cx - 82` and `flow_cx + 82`.
-- Assert the tilted-vector calls use width `50` and remain equidistant from `flow_cx`.
-- Assert the projected right boundary of the left tilted-vector head meets the arrow start to rendering tolerance.
-- Assert the projected tilted-vector bounds keep at least four coordinate units of horizontal clearance from both dashed box edges.
+- Assert the two representation centers and labels are restored to `flow_cx - 69` and `flow_cx + 69`.
+- Assert both tilted-vector calls use width `63`, height `16`, and angle `-48`.
+- Assert the projected right boundary of the left tilted-vector head equals the left-arrow start to numerical tolerance.
+- Assert the right curved arrow remains exactly `(flow_cx + 13, y + 50)` to `(flow_cx + 69, y + 52)`.
 - Regenerate SVG, PDF, PNG, and TIFF.
-- Inspect both the standalone PNG and the compiled AAAI page for visual symmetry, clipping, and alignment.
+- Inspect both the standalone PNG and the compiled AAAI page for clean left-arrow attachment, clipping, and label alignment.
