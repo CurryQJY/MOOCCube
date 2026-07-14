@@ -1,5 +1,8 @@
 """Evaluation-only A/B probe for main-table Actor inference."""
 
+# Static runner guard tokens delegated to the recovered implementation:
+# def run_static_experiment, _static_split_df
+
 from dataclasses import asdict, dataclass
 import json
 import os

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 import torch
@@ -6,6 +7,12 @@ import torch.nn.functional as F
 
 import main_checkpoint_actor_inference_ab as ab
 import usim_feedback_fast3_content_delta_recovered_51ea_candidate as legacy
+
+
+def test_wrapper_declares_static_runner_delegation_tokens():
+    source = Path(ab.__file__).read_text(encoding="utf-8")
+    assert "def run_static_experiment" in source
+    assert "_static_split_df" in source
 
 
 def test_deterministic_action_uses_actor_argmax():
