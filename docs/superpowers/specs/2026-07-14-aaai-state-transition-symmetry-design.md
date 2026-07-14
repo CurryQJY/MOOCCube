@@ -2,7 +2,7 @@
 
 ## Scope
 
-Adjust only the two curved action arrows and the two state-representation labels inside the `State Transition Function` box in panel (b). Preserve the box, title, tilted vectors, center user node, horizontal update arrow, explanatory text, colors, and line styles.
+Adjust the two curved action arrows and the paired state-representation groups inside the `State Transition Function` box in panel (b). Preserve the box, title, center user node, horizontal update arrow, explanatory text, colors, and line styles.
 
 ## Approved geometry
 
@@ -10,11 +10,16 @@ Adjust only the two curved action arrows and the two state-representation labels
 - Keep the left curved arrow from the inner side of the left representation to the left edge of the center user node.
 - Make the right curved arrow the exact horizontal mirror of the left arrow: it starts at the right edge of the center user node and ends at the inner side of the right representation.
 - Keep both curved arrows at the same vertical coordinates, curvature, line width, arrowhead size, and opacity.
-- Center `h_t` at `left_c[0]` and `h_{t+1}` at `right_c[0]` so each complete math label is horizontally centered below its tilted representation.
+- Keep the original long right arrow and extend the left arrow to its exact horizontal mirror.
+- Treat each tilted representation and its math label as one movable group.
+- Align the left representation group with the outer endpoint of the left curved arrow and align the right representation group with the outer endpoint of the right curved arrow.
+- Center `h_t` and `h_{t+1}` beneath their respective tilted representations after the move.
+- Keep the complete transition composition structurally centered at the box center `flow_cx`.
 
 ## Verification
 
 - Assert the right arrow endpoints equal the horizontal mirror of the left arrow endpoints around `flow_cx`.
-- Assert both state labels use their representation-center x coordinates.
+- Assert each state label uses its moved representation-center x coordinate.
+- Assert the two representation-group centers remain equidistant from `flow_cx`.
 - Regenerate SVG, PDF, PNG, and TIFF.
 - Inspect both the standalone PNG and the compiled AAAI page for visual symmetry, clipping, and alignment.
