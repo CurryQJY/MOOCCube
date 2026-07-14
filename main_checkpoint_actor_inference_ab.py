@@ -1,6 +1,8 @@
 """Evaluation-only A/B probe for main-table Actor inference."""
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+import json
+import os
 import random
 
 import numpy as np
@@ -170,3 +172,66 @@ def install_mode(mode, eval_seed):
 
     legacy.FixedSimpleAC.get_action_value = deterministic_get_action_value
     legacy.Fast3FeedbackUSIM.infer_refined_item_vectors = infer_actor_refined_item_vectors
+
+
+def write_audit(path, mode, eval_seed):
+    """Write inference call counts and representation displacement statistics."""
+    payload = asdict(AUDIT)
+    count = max(1, int(AUDIT.refined_items))
+    payload.update(
+        {
+            "mode": str(mode),
+            "eval_seed": int(eval_seed),
+            "mean_cosine": float(AUDIT.cosine_sum) / count,
+            "mean_l2": float(AUDIT.l2_sum) / count,
+        }
+    )
+    path = os.fspath(path)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+
+
+def make_read_only_torch_save(checkpoint_dir, real_save):
+    """Block writes inside the source checkpoint tree while allowing other saves."""
+    root = os.path.normcase(os.path.abspath(os.fspath(checkpoint_dir)))
+
+    def guarded_save(obj, path, *args, **kwargs):
+        try:
+            target = os.path.normcase(os.path.abspath(os.fspath(path)))
+        except TypeError:
+            return real_save(obj, path, *args, **kwargs)
+        try:
+            inside = os.path.commonpath([root, target]) == root
+        except ValueError:
+            inside = False
+        if inside:
+            print(f">> EVAL READ-ONLY: blocked checkpoint write {target}")
+            return None
+        return real_save(obj, path, *args, **kwargs)
+
+    return guarded_save
+
+
+def main():
+    mode = os.environ.get("USIM_ACTOR_INFERENCE_MODE", "static")
+    eval_seed = int(os.environ.get("USIM_ACTOR_INFERENCE_SEED", "7001"))
+    checkpoint_dir = os.environ.get("USIM_FB_CKPT_DIR", "").strip()
+    if not checkpoint_dir:
+        raise RuntimeError("USIM_FB_CKPT_DIR is required for checkpoint replay")
+
+    torch.save = make_read_only_torch_save(checkpoint_dir, real_save=torch.save)
+    install_mode(mode, eval_seed)
+    legacy.main()
+
+    output_path = legacy._feedback_output_path("actor_inference_audit.json")
+    write_audit(output_path, mode=mode, eval_seed=eval_seed)
+    print(
+        ">> ACTOR INFERENCE AUDIT: "
+        f"mode={mode} actor_calls={AUDIT.actor_calls} "
+        f"episode_calls={AUDIT.episode_calls} refined_items={AUDIT.refined_items}"
+    )
+
+
+if __name__ == "__main__":
+    main()

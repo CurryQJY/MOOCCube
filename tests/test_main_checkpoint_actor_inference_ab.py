@@ -1,3 +1,6 @@
+import json
+
+import pytest
 import torch
 import torch.nn.functional as F
 
@@ -107,3 +110,43 @@ def test_positive_target_vector_comes_from_the_same_refined_bank():
         ab.ACTIVE_ITEM_BANK = previous
 
     assert torch.equal(out, torch.tensor([[3.0, 4.0], [1.0, 0.0]]))
+
+
+def test_audit_export_reports_mean_displacement(tmp_path):
+    ab.AUDIT = ab.InferenceAudit(
+        actor_calls=10,
+        episode_calls=2,
+        refined_items=4,
+        cosine_sum=3.2,
+        l2_sum=0.8,
+    )
+    path = tmp_path / "audit.json"
+
+    ab.write_audit(path, mode="actor", eval_seed=7001)
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["mean_cosine"] == pytest.approx(0.8)
+    assert payload["mean_l2"] == pytest.approx(0.2)
+
+
+def test_checkpoint_write_blocker_preserves_checkpoint(tmp_path):
+    checkpoint_dir = tmp_path / "checkpoint"
+    checkpoint_dir.mkdir()
+    target = checkpoint_dir / "finished.pt"
+    target.write_bytes(b"original")
+    blocker = ab.make_read_only_torch_save(checkpoint_dir, real_save=torch.save)
+
+    blocker({"changed": True}, target)
+
+    assert target.read_bytes() == b"original"
+
+
+def test_checkpoint_write_blocker_allows_non_checkpoint_output(tmp_path):
+    checkpoint_dir = tmp_path / "checkpoint"
+    checkpoint_dir.mkdir()
+    output = tmp_path / "output.pt"
+    blocker = ab.make_read_only_torch_save(checkpoint_dir, real_save=torch.save)
+
+    blocker({"value": 3}, output)
+
+    assert torch.load(output, weights_only=True) == {"value": 3}
