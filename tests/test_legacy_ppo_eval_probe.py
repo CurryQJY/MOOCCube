@@ -16,3 +16,8 @@ def test_probe_keeps_split_seed_but_sets_independent_eval_seed(monkeypatch):
 def test_probe_argmax_installs_deterministic_eval_policy():
     probe.install_probe(eval_seed=9102, action_mode="argmax")
     assert legacy.FixedSimpleAC.get_action_value is probe.deterministic_get_action_value
+
+
+def test_probe_installs_episode_call_audit():
+    probe.install_probe(eval_seed=9103, action_mode="sample")
+    assert legacy.Fast3FeedbackUSIM.run_usim_episode is probe.audited_run_usim_episode
