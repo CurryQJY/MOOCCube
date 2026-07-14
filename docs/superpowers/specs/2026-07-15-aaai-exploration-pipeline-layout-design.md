@@ -8,9 +8,9 @@ Make the exploration-set construction sequence read as a clear three-stage pipel
 
 - Rename the three stages to `Retrieve M`, `Sample N`, and `Fit Rerank`.
 - Use a common box y-coordinate of 252 and height of 34.
-- Place the boxes at x=640/730/824 with widths 70/74/68, respectively.
+- Place the boxes at x=632/728/818 with widths 80/74/80, respectively.
 - Use the same `role_scale(9.0, "symbol")` font size and bold weight for all three labels.
-- Add right-pointing micro-flow arrows from x=712 to 728 and from x=806 to 822 at y=269.
+- Add right-pointing micro-flow arrows from x=714 to 726 and from x=804 to 816 at y=269.
 - Preserve the surrounding `Exploration Set Construction` container, title, candidate-user row, and all downstream elements.
 
 ## Verification
