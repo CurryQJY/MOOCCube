@@ -93,3 +93,68 @@ def test_collect_seed_rows_covers_current_main_table_artifacts() -> None:
         detail.loc[detail.method == "KGRec", "aggregation_route"]
         == "direct_all_item_macro_validated"
     ).all()
+
+
+def test_summarize_adds_sample_std_rank_and_ckg_improvement() -> None:
+    rows = []
+    for seed, ours_value in zip((2025, 2026, 2027), (0.21, 0.22, 0.23)):
+        rows.append(
+            {
+                "dataset": "Toy",
+                "method": "Baseline",
+                "seed": seed,
+                "status": "ready",
+                **{metric: 0.2 for metric in MODULE.METRICS},
+            }
+        )
+        rows.append(
+            {
+                "dataset": "Toy",
+                "method": "CKG-RL",
+                "seed": seed,
+                "status": "ready",
+                **{metric: ours_value for metric in MODULE.METRICS},
+            }
+        )
+
+    summary = MODULE.summarize_ready(pd.DataFrame(rows))
+    ours = summary[
+        (summary.dataset == "Toy") & (summary.method == "CKG-RL")
+    ].iloc[0]
+
+    assert ours["R@10_std"] == pytest.approx(0.01)
+    assert ours["R@10_rank"] == 1
+    assert ours["R@10_strongest_baseline"] == pytest.approx(0.2)
+    assert ours["R@10_relative_improvement"] == pytest.approx(0.1)
+
+
+def test_summarize_rejects_missing_seed() -> None:
+    detail = pd.DataFrame(
+        [
+            {
+                "dataset": "Toy",
+                "method": "Baseline",
+                "seed": seed,
+                "status": "ready",
+                **{metric: 0.2 for metric in MODULE.METRICS},
+            }
+            for seed in (2025, 2026)
+        ]
+    )
+
+    with pytest.raises(ValueError, match="requires seeds 2025, 2026, 2027"):
+        MODULE.summarize_ready(detail)
+
+
+def test_build_wide_uses_main_table_metrics() -> None:
+    detail, _ = MODULE.collect_seed_rows()
+    summary = MODULE.summarize_ready(detail)
+
+    wide = MODULE.build_wide(summary)
+
+    assert list(wide.method) == [
+        method for method in MODULE.METHOD_ORDER if method != "PCGNN"
+    ]
+    assert "MOOCCube_R@5" in wide.columns
+    assert "COCO_N@10" in wide.columns
+    assert "MOOCCube_R@20" not in wide.columns

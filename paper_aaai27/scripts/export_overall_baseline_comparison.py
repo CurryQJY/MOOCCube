@@ -380,3 +380,87 @@ def collect_seed_rows() -> tuple[pd.DataFrame, pd.DataFrame]:
     )
     detail = coverage.loc[coverage["status"] == "ready"].copy()
     return detail, coverage
+
+
+def summarize_ready(detail: pd.DataFrame) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    required_seeds = set(SEEDS)
+    for (dataset, method), group in detail.groupby(
+        ["dataset", "method"], observed=True, sort=False
+    ):
+        seeds = {int(seed) for seed in group["seed"]}
+        if seeds != required_seeds:
+            raise ValueError(
+                f"{dataset}/{method} requires seeds 2025, 2026, 2027; "
+                f"found {sorted(seeds)}"
+            )
+        row: dict[str, object] = {
+            "dataset": str(dataset),
+            "method": str(method),
+            "seeds": "2025,2026,2027",
+        }
+        for metric in METRICS:
+            values = pd.to_numeric(group[metric], errors="raise")
+            row[metric] = float(values.mean())
+            row[f"{metric}_std"] = float(values.std(ddof=1))
+        rows.append(row)
+
+    summary = pd.DataFrame(rows)
+    for dataset in summary["dataset"].unique():
+        mask = summary["dataset"] == dataset
+        dataset_rows = summary.loc[mask]
+        baseline_rows = dataset_rows[dataset_rows["method"] != "CKG-RL"]
+        for metric in METRICS:
+            summary.loc[mask, f"{metric}_rank"] = dataset_rows[metric].rank(
+                method="min", ascending=False
+            )
+            best_index = baseline_rows[metric].idxmax()
+            best_value = float(summary.loc[best_index, metric])
+            best_method = str(summary.loc[best_index, "method"])
+            summary.loc[mask, f"{metric}_strongest_baseline"] = best_value
+            summary.loc[mask, f"{metric}_strongest_baseline_method"] = best_method
+            summary.loc[mask, f"{metric}_relative_improvement"] = math.nan
+            ours = mask & summary["method"].eq("CKG-RL")
+            if best_value > 0 and ours.any():
+                summary.loc[ours, f"{metric}_relative_improvement"] = (
+                    summary.loc[ours, metric] - best_value
+                ) / best_value
+
+    for metric in METRICS:
+        summary[f"{metric}_rank"] = summary[f"{metric}_rank"].astype(int)
+    dataset_order = {name: index for index, name in enumerate(DATASETS)}
+    method_order = {name: index for index, name in enumerate(METHOD_ORDER)}
+    summary["_dataset_order"] = summary["dataset"].map(
+        lambda value: dataset_order.get(str(value), len(dataset_order))
+    )
+    summary["_method_order"] = summary["method"].map(
+        lambda value: method_order.get(str(value), len(method_order))
+    )
+    return summary.sort_values(
+        ["_dataset_order", "_method_order", "method"]
+    ).drop(columns=["_dataset_order", "_method_order"]).reset_index(drop=True)
+
+
+def build_wide(summary: pd.DataFrame) -> pd.DataFrame:
+    main_metrics = ("R@5", "R@10", "N@5", "N@10")
+    methods = [
+        method
+        for method in METHOD_ORDER
+        if method != "PCGNN" and method in set(summary["method"])
+    ]
+    rows: list[dict[str, object]] = []
+    for method in methods:
+        row: dict[str, object] = {"method": method}
+        for dataset in DATASETS:
+            match = summary[
+                summary["dataset"].eq(dataset) & summary["method"].eq(method)
+            ]
+            if len(match) != 1:
+                raise ValueError(
+                    f"expected one summary row for {dataset}/{method}, found {len(match)}"
+                )
+            record = match.iloc[0]
+            for metric in main_metrics:
+                row[f"{dataset}_{metric}"] = float(record[metric])
+        rows.append(row)
+    return pd.DataFrame(rows)
