@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import openpyxl
 import pandas as pd
 import pytest
 
@@ -158,3 +159,31 @@ def test_build_wide_uses_main_table_metrics() -> None:
     assert "MOOCCube_R@5" in wide.columns
     assert "COCO_N@10" in wide.columns
     assert "MOOCCube_R@20" not in wide.columns
+
+
+def test_write_outputs_creates_required_workbook_and_csvs(
+    tmp_path: Path,
+) -> None:
+    detail, coverage = MODULE.collect_seed_rows()
+    summary = MODULE.summarize_ready(detail)
+
+    paths = MODULE.write_outputs(detail, summary, coverage, tmp_path)
+
+    assert {path.name for path in paths} == {
+        "overall_baseline_comparison.xlsx",
+        "overall_baseline_summary.csv",
+        "overall_baseline_seed_detail.csv",
+        "overall_baseline_wide.csv",
+        "overall_baseline_coverage.csv",
+    }
+    workbook = openpyxl.load_workbook(
+        tmp_path / "overall_baseline_comparison.xlsx", data_only=False
+    )
+    assert workbook.sheetnames == ["Summary", "Seed_Detail", "Coverage"]
+    assert workbook["Summary"].freeze_panes == "A2"
+    assert workbook["Seed_Detail"].auto_filter.ref is not None
+    assert workbook["Coverage"]["A1"].font.name == "Arial"
+
+    csv_summary = pd.read_csv(tmp_path / "overall_baseline_summary.csv")
+    assert len(csv_summary) == 33
+    assert set(csv_summary.method) == set(MODULE.METHOD_ORDER) - {"PCGNN"}

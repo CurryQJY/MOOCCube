@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,6 +37,7 @@ METHOD_ORDER = (
     "SEMCo",
     "CKG-RL",
 )
+OUTPUT_DIR = PAPER / "figures/overall_baseline_comparison"
 
 
 def weighted_overall(
@@ -464,3 +467,80 @@ def build_wide(summary: pd.DataFrame) -> pd.DataFrame:
                 row[f"{dataset}_{metric}"] = float(record[metric])
         rows.append(row)
     return pd.DataFrame(rows)
+
+
+def plain_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    out = frame.copy()
+    for column in out.select_dtypes(include="category").columns:
+        out[column] = out[column].astype(object)
+    return out
+
+
+def format_worksheet(worksheet) -> None:
+    header_fill = PatternFill("solid", fgColor="1F4E78")
+    header_font = Font(name="Arial", size=10, bold=True, color="FFFFFF")
+    body_font = Font(name="Arial", size=10)
+    for cell in worksheet[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    for row in worksheet.iter_rows(min_row=2):
+        for cell in row:
+            cell.font = body_font
+            if isinstance(cell.value, float):
+                cell.number_format = "0.0000"
+    worksheet.freeze_panes = "A2"
+    worksheet.auto_filter.ref = worksheet.dimensions
+    for index, column in enumerate(worksheet.iter_cols(), start=1):
+        width = max(
+            len(str(cell.value)) if cell.value is not None else 0
+            for cell in column
+        )
+        worksheet.column_dimensions[get_column_letter(index)].width = min(
+            max(width + 2, 10), 48
+        )
+
+
+def write_outputs(
+    detail: pd.DataFrame,
+    summary: pd.DataFrame,
+    coverage: pd.DataFrame,
+    output_dir: Path,
+) -> list[Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    detail_out = plain_frame(detail)
+    summary_out = plain_frame(summary)
+    coverage_out = plain_frame(coverage)
+    wide = build_wide(summary_out)
+
+    paths = {
+        "workbook": output_dir / "overall_baseline_comparison.xlsx",
+        "summary": output_dir / "overall_baseline_summary.csv",
+        "detail": output_dir / "overall_baseline_seed_detail.csv",
+        "wide": output_dir / "overall_baseline_wide.csv",
+        "coverage": output_dir / "overall_baseline_coverage.csv",
+    }
+    summary_out.to_csv(paths["summary"], index=False, float_format="%.15g")
+    detail_out.to_csv(paths["detail"], index=False, float_format="%.15g")
+    wide.to_csv(paths["wide"], index=False, float_format="%.15g")
+    coverage_out.to_csv(paths["coverage"], index=False, float_format="%.15g")
+
+    with pd.ExcelWriter(paths["workbook"], engine="openpyxl") as writer:
+        summary_out.to_excel(writer, sheet_name="Summary", index=False)
+        detail_out.to_excel(writer, sheet_name="Seed_Detail", index=False)
+        coverage_out.to_excel(writer, sheet_name="Coverage", index=False)
+        for worksheet in writer.book.worksheets:
+            format_worksheet(worksheet)
+    return list(paths.values())
+
+
+def main() -> None:
+    detail, coverage = collect_seed_rows()
+    summary = summarize_ready(detail)
+    paths = write_outputs(detail, summary, coverage, OUTPUT_DIR)
+    for path in paths:
+        print(path)
+
+
+if __name__ == "__main__":
+    main()
