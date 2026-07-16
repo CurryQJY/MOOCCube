@@ -1,9 +1,12 @@
+import importlib
 from pathlib import Path
 from types import SimpleNamespace
 
 import torch
 
 from cbi_anchor_sim import CBIAnchorFast3FeedbackUSIM
+from cbi_trust_sim import trust_build_eval_item_vecs, trust_build_eval_pos_item_vecs
+from fast3_delta.config import Fast3Config
 from usim_feedback_fast3_content_delta import Fast3FeedbackUSIM
 
 
@@ -29,3 +32,35 @@ def test_anchor_simulator_replaces_any_caller_target_with_initial_cbi(monkeypatc
         assert torch.equal(effective_target, initial_cbi)
         assert effective_target.requires_grad is False
         assert effective_target.data_ptr() == initial_cbi.data_ptr()
+
+
+def test_anchor_entrypoint_installs_model_eval_hooks_and_resume_reason_bridge():
+    entrypoint = importlib.import_module("run_cbi_anchor_sim_seed2025")
+
+    def fake_resume_decision(*args, **kwargs):
+        del args, kwargs
+        return SimpleNamespace(reason="fingerprint match")
+
+    fake_protocol = SimpleNamespace(
+        Fast3FeedbackUSIM=object,
+        checkpoint_resume_decision=fake_resume_decision,
+        build_eval_item_vecs=None,
+        build_eval_pos_item_vecs=None,
+    )
+    fake_eval = SimpleNamespace(build_eval_item_vecs=None, build_eval_pos_item_vecs=None)
+
+    entrypoint.install_protocol(fake_protocol, fake_eval)
+    decision = fake_protocol.checkpoint_resume_decision(object(), Fast3Config(2, 3, 5))
+
+    assert fake_protocol.Fast3FeedbackUSIM is CBIAnchorFast3FeedbackUSIM
+    assert fake_eval.build_eval_item_vecs is trust_build_eval_item_vecs
+    assert fake_eval.build_eval_pos_item_vecs is trust_build_eval_pos_item_vecs
+    assert decision.reason == "fingerprint match"
+    assert fake_protocol.cfg_reason == "fingerprint match"
+
+
+def test_anchor_entrypoint_declares_static_runner_delegation():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "run_cbi_anchor_sim_seed2025.py").read_text(encoding="utf-8")
+
+    assert "USIM_STATIC_DELEGATE_ENTRYPOINT = True" in source
