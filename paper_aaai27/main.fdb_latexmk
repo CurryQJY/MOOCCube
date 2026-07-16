@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex main"] 1784194360.74512 "main.aux" "main.bbl" "main" 1784200506.97994 0
+["bibtex main"] 1784207964.34981 "main.aux" "main.bbl" "main" 1784208100.13372 0
   "./aaai2027.bst" 1777882188 30207 bd248dfe461b9b2fc7481a44feafe197 ""
   "./references.bib" 1783990974 22505 50f0f1d6124da5f2c2fb36d7a5b2b891 ""
-  "main.aux" 1784200506 7404 44c0ab4dc0965ba3150d93bb15912b6e "pdflatex"
+  "main.aux" 1784208099 7405 df9a0be58cb74c82795306f67ce2b9a8 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1784200505.26593 "D:/DeskTop/MOOCCube/paper_aaai27/main.tex" "main.pdf" "main" 1784200506.98073 0
+["pdflatex"] 1784208098.4925 "D:/DeskTop/MOOCCube/paper_aaai27/main.tex" "main.pdf" "main" 1784208100.13416 0
   "C:/Users/pc/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1784180365 228176 6d9b37f7f66041b290712cf4fd077214 ""
   "C:/Users/pc/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1779804430 13332076 88fc7f4d5d39d6bfc70ee02a97d13caa ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-ec-tlf.enc" 1736607166 2914 fdbc4a54b9bc76f4551b5303f2737d33 ""
@@ -107,16 +107,16 @@
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xkeyval/xkeyval.sty" 1656236919 4937 4ce600ce9bd4ec84d0250eb6892fcf4f ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xpatch/xpatch.sty" 1585221260 8510 7803f78066c4f9d008405191a4b43073 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xstring/xstring.sty" 1693735632 123 a302f2c651a95033260db60e51527ae8 ""
-  "D:/DeskTop/MOOCCube/paper_aaai27/main.tex" 1784199736 50409 fbf906b0767e95773b386819f3b5f026 ""
+  "D:/DeskTop/MOOCCube/paper_aaai27/main.tex" 1784208088 53252 64e916ac5cb444f9d2df2679fbd2392c ""
   "aaai2027.sty" 1779092464 16915 1b1c792e2acfbbd8b672259e267b95d8 ""
   "efficiency_table_aaai.tex" 1784196676 1120 c61fdb91a3ff71aeefea1783a2685f2e ""
   "figures/ckg_rl_framework_topconf.pdf" 1784102874 112846 abc998ddbbc47bff7937b1f43fa05657 ""
   "figures/mooccube_hparam_validation_updated_default_aaai_main.pdf" 1783516993 60567 a2ba752abeb0a4d35166d30393869ff0 ""
-  "figures/mooccube_method_motivation.pdf" 1784200222 93122 4029ee0bbc9e6601ded8f124054905b8 ""
   "figures/mooccube_p1_topk_motivation.pdf" 1784183424 47117 8b986420e0abcd109fb426d1e8915fa3 ""
-  "main.aux" 1784200506 7404 44c0ab4dc0965ba3150d93bb15912b6e "pdflatex"
-  "main.bbl" 1784194361 18185 ae1cb491299e19ef717bf31c0871ff12 "bibtex main"
-  "main.tex" 1784199736 50409 fbf906b0767e95773b386819f3b5f026 ""
+  "figures/mooccube_validation_motivation.pdf" 1784207386 64812 46054575936ecb53d4b10f495df26aa2 ""
+  "main.aux" 1784208099 7405 df9a0be58cb74c82795306f67ce2b9a8 "pdflatex"
+  "main.bbl" 1784207964 18185 ae1cb491299e19ef717bf31c0871ff12 "bibtex main"
+  "main.tex" 1784208088 53252 64e916ac5cb444f9d2df2679fbd2392c ""
   (generated)
   "main.aux"
   "main.log"

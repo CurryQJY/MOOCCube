@@ -1,0 +1,19 @@
+\begin{table*}[t]
+\centering
+{
+\small
+\setlength{\tabcolsep}{5.0pt}
+\renewcommand{\arraystretch}{0.98}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
+\toprule
+Method & R@5 & R@10 & R@20 & N@5 & N@10 & N@20 \\
+\midrule
+CKG-RL & 0.2449 & 0.2449 & 0.2449 & 0.2449 & 0.2449 & 0.2449 \\
+\textbf{CKG-RL+TDInit} & \textbf{0.2479} & \textbf{0.2479} & \textbf{0.2479} & \textbf{0.2479} & \textbf{0.2479} & \textbf{0.2479} \\
+\midrule
+\emph{Imp.} & +1.2\% & +1.2\% & +1.2\% & +1.2\% & +1.2\% & +1.2\% \\
+\bottomrule
+\end{tabular*}
+}
+\caption{MOOCCube strict course-cold item-macro comparison across all reported cutoffs. Results are three-seed means. Imp. is the relative improvement of CKG-RL+TDInit over CKG-RL.}
+\label{tab:ckg-rl-tdinit-all-metrics}

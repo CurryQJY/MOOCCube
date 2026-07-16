@@ -1,12 +1,14 @@
 from pathlib import Path
 import sys
+from types import MethodType
 
 import torch
 import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from cbi_trust_sim import project_to_content_cone
+from cbi_trust_sim import CBITrustFast3FeedbackUSIM, project_to_content_cone
+from fast3_delta.config import Fast3Config
 
 
 def test_projection_keeps_in_domain_vector():
@@ -40,3 +42,81 @@ def test_projection_handles_antiparallel_input_without_nan():
     assert torch.equal(projected, anchor)
     assert stats["projected_count"] == 1
 
+
+def _build_tiny_trust_model(monkeypatch):
+    monkeypatch.setenv("USIM_USE_CONTENT_DELTA", "1")
+    monkeypatch.setenv("USIM_CONTENT_DELTA_PAPER_STYLE", "1")
+    monkeypatch.setenv("USIM_CONTENT_DELTA_REPLACE_ITEM", "1")
+    monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
+    cfg = Fast3Config(n_users=4, n_items=4, content_dim=5)
+    cfg.usim_steps = 2
+    cfg.cbi_trust_cosine_floor = 0.8660254037844386
+    model = CBITrustFast3FeedbackUSIM(cfg, torch.randn((4, 5), generator=torch.Generator().manual_seed(7)))
+    model.device = torch.device("cpu")
+    model.eval()
+
+    def fake_get_candidates(self, current_h, **kwargs):
+        del kwargs
+        candidate = torch.roll(F.normalize(current_h.detach(), dim=1), shifts=1, dims=1)
+        return candidate.unsqueeze(1), torch.zeros((current_h.size(0), 1), dtype=torch.long), {
+            "dup_rate": 0.0,
+            "topm_coverage": 1.0,
+        }
+
+    def fake_sampling(self, current_h, candidates, cand_user_idx, **kwargs):
+        del current_h, kwargs
+        return candidates, cand_user_idx, None
+
+    def fake_action(self, current_h, time_step, candidates, **kwargs):
+        del time_step, kwargs
+        batch = current_h.size(0)
+        return (
+            torch.zeros(batch, dtype=torch.long),
+            torch.zeros(batch),
+            torch.zeros(batch),
+            torch.zeros(batch),
+        )
+
+    def fake_course_terms(self, selected_user_ids, **kwargs):
+        del selected_user_ids, kwargs
+        zeros = torch.zeros((1, 1))
+        return {
+            "concept_bonus": zeros,
+            "prereq_gap": zeros,
+            "difficulty_gap": zeros,
+            "redundant": zeros,
+        }
+
+    model.get_candidates = MethodType(fake_get_candidates, model)
+    model._apply_course_sampling_bias = MethodType(fake_sampling, model)
+    model._select_rollout_action = MethodType(fake_action, model)
+    model._compute_course_reward_terms = MethodType(fake_course_terms, model)
+    return model
+
+
+def test_constrained_simulator_ignores_supplied_id_target_and_respects_floor(monkeypatch):
+    model = _build_tiny_trust_model(monkeypatch)
+    item_idx = torch.tensor([1])
+    initial = F.normalize(model._content_base_embedding(item_idx), dim=1)
+    target_a = torch.ones_like(initial)
+    target_b = -torch.ones_like(initial)
+
+    output_a, _, stats_a = model.run_usim_episode(
+        initial,
+        target_emb=target_a,
+        item_idx=item_idx,
+        target_pop=torch.zeros(1),
+        deterministic=True,
+    )
+    output_b, _, stats_b = model.run_usim_episode(
+        initial,
+        target_emb=target_b,
+        item_idx=item_idx,
+        target_pop=torch.zeros(1),
+        deterministic=True,
+    )
+
+    assert torch.allclose(output_a, output_b)
+    assert stats_a["trust_min_cosine"] >= model.cfg.cbi_trust_cosine_floor - 1e-6
+    assert stats_b["trust_min_cosine"] >= model.cfg.cbi_trust_cosine_floor - 1e-6
+    assert stats_a["trust_steps"] == model.cfg.usim_steps
