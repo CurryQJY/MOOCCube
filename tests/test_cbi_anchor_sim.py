@@ -107,3 +107,31 @@ def test_anchor_three_seed_launcher_is_serial_isolated_and_resumable():
     assert "ForceFresh = $false" in source
     assert "hard_projection = $false" in source
     assert '"paper_aaai27\\main.tex"' not in source
+
+
+def test_anchor_aux_screen_locks_three_serial_seed2025_arms():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "run_cbi_anchor_aux_screen_seed2025.ps1").read_text(encoding="utf-8")
+
+    assert 'ScriptPath = "run_cbi_anchor_sim_seed2025.py"' in source
+    assert '"outputs\\cbi_anchor_aux_screen_seed2025"' in source
+    assert '"checkpoints\\cbi_anchor_aux_screen_seed2025"' in source
+    assert "AuxWeight = 0.0" in source
+    assert "AuxWeight = 0.1" in source
+    assert "AuxWeight = 0.3" in source
+    assert "Seeds = @(2025)" in source
+    assert "Epochs = 30" in source
+    assert "Patience = 6" in source
+    assert 'execution = "serial"' in source
+
+
+def test_anchor_aux_queue_waits_for_completed_upstream_and_fails_closed():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "wait_cbi_anchor_3seed_then_aux_screen.ps1").read_text(encoding="utf-8")
+
+    assert '"outputs\\cbi_anchor_sim_3seed_serial\\run_manifest.json"' in source
+    assert 'status -eq "completed"' in source
+    assert 'status -eq "failed"' in source
+    assert '"run_cbi_anchor_aux_screen_seed2025.ps1"' in source
+    assert "Start-Sleep -Seconds $PollIntervalSec" in source
+    assert 'status = "waiting"' in source
