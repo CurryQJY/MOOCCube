@@ -236,6 +236,9 @@ def test_launcher_locks_isolated_single_seed_configuration():
     assert 'CheckpointRoot = "checkpoints\\cbi_trust_sim_single_seed2025"' in text
     assert "Seeds = @(2025)" in text
     assert "Epochs = 60" in text
+    assert "    Patience = 6\n" in text
+    assert "    AutoResume = $true\n" in text
+    assert "    ForceFresh = $false\n" in text
     assert "ContentDeltaMaxNorm = 0.5" in text
     assert 'CbiTrustCosineFloor = [Math]::Sqrt(0.75)' in text
 

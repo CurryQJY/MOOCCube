@@ -64,7 +64,7 @@ $runnerParams = [ordered]@{
     ColdThresholds = @(1)
     Seeds = @(2025)
     Epochs = 60
-    Patience = 60
+    Patience = 6
     EarlyStopAverageMode = "item_macro"
     EarlyStopScoreMode = "cold_only"
     UseContentDelta = $true
@@ -114,8 +114,8 @@ $runnerParams = [ordered]@{
     AuxHotOnly = $false
     RunSampledEval = $false
     SaveCkpt = $true
-    AutoResume = $false
-    ForceFresh = $true
+    AutoResume = $true
+    ForceFresh = $false
     SaveOptState = $true
 }
 
