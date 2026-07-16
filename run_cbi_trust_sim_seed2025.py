@@ -10,6 +10,9 @@ import usim_feedback_fast3_content_delta as protocol
 from cbi_trust_sim import CBITrustFast3FeedbackUSIM, install_trust_eval_adapter
 
 
+USIM_STATIC_DELEGATE_ENTRYPOINT = True
+
+
 def install_protocol(protocol_module=protocol, eval_module=eval_mod):
     """Patch only the current process with trust-sim model/config/evaluation."""
     base_config = protocol_module.Fast3Config

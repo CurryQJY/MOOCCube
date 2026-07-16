@@ -220,6 +220,13 @@ def test_isolated_entrypoint_installs_trust_model_config_and_eval_hooks(monkeypa
     assert fake_eval.build_eval_pos_item_vecs is trust_build_eval_pos_item_vecs
 
 
+def test_isolated_entrypoint_declares_static_runner_delegation():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "run_cbi_trust_sim_seed2025.py").read_text(encoding="utf-8")
+
+    assert "USIM_STATIC_DELEGATE_ENTRYPOINT = True" in source
+
+
 def test_launcher_locks_isolated_single_seed_configuration():
     root = Path(__file__).resolve().parents[1]
     text = (root / "run_cbi_trust_sim_seed2025.ps1").read_text(encoding="utf-8")
