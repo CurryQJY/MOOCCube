@@ -202,11 +202,16 @@ def test_trust_eval_refines_cold_and_hot_and_reuses_cached_bank():
 
 def test_isolated_entrypoint_installs_trust_model_config_and_eval_hooks(monkeypatch):
     monkeypatch.setenv("USIM_CBI_TRUST_COSINE_FLOOR", "0.9")
+
+    def fake_resume_decision(*args, **kwargs):
+        return SimpleNamespace(reason="fingerprint match")
+
     fake_protocol = SimpleNamespace(
         Fast3Config=Fast3Config,
         Fast3FeedbackUSIM=object,
         build_eval_item_vecs=None,
         build_eval_pos_item_vecs=None,
+        checkpoint_resume_decision=fake_resume_decision,
     )
     fake_eval = SimpleNamespace(build_eval_item_vecs=None, build_eval_pos_item_vecs=None)
 
@@ -218,6 +223,9 @@ def test_isolated_entrypoint_installs_trust_model_config_and_eval_hooks(monkeypa
     assert cfg.cbi_trust_cosine_floor == 0.9
     assert fake_eval.build_eval_item_vecs is trust_build_eval_item_vecs
     assert fake_eval.build_eval_pos_item_vecs is trust_build_eval_pos_item_vecs
+    decision = fake_protocol.checkpoint_resume_decision(object(), cfg)
+    assert decision.reason == "fingerprint match"
+    assert fake_protocol.cfg_reason == "fingerprint match"
 
 
 def test_isolated_entrypoint_declares_static_runner_delegation():

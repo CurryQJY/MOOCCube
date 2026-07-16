@@ -16,6 +16,12 @@ USIM_STATIC_DELEGATE_ENTRYPOINT = True
 def install_protocol(protocol_module=protocol, eval_module=eval_mod):
     """Patch only the current process with trust-sim model/config/evaluation."""
     base_config = protocol_module.Fast3Config
+    base_resume_decision = protocol_module.checkpoint_resume_decision
+
+    def checkpoint_resume_decision_with_reason(*args, **kwargs):
+        decision = base_resume_decision(*args, **kwargs)
+        protocol_module.cfg_reason = decision.reason
+        return decision
 
     class CBITrustFast3Config(base_config):
         def __init__(self, *args, **kwargs):
@@ -27,6 +33,7 @@ def install_protocol(protocol_module=protocol, eval_module=eval_mod):
     CBITrustFast3Config.__name__ = "CBITrustFast3Config"
     protocol_module.Fast3Config = CBITrustFast3Config
     protocol_module.Fast3FeedbackUSIM = CBITrustFast3FeedbackUSIM
+    protocol_module.checkpoint_resume_decision = checkpoint_resume_decision_with_reason
     install_trust_eval_adapter(protocol_module, eval_module)
     return CBITrustFast3Config
 
