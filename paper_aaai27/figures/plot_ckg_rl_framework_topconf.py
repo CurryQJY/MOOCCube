@@ -863,18 +863,86 @@ def reward_term_icon(ax, cx, cy, kind, color, accent, size=30, z=18):
         ax.add_patch(patches.Polygon(verts, closed=True, facecolor=accent, edgecolor=color, lw=1.35, zorder=z))
         ax.plot([cx - 6 * scale, cx - 1 * scale, cx + 8 * scale], [cy + 1 * scale, cy + 6 * scale, cy - 6 * scale], color=color, lw=1.6, solid_capstyle="round", zorder=z + 1)
     elif kind == "prereq":
-        steps = [(cx - 13 * scale, cy + 8 * scale), (cx - 3 * scale, cy + 1 * scale), (cx + 8 * scale, cy - 6 * scale)]
-        for px, py in steps:
-            ax.add_patch(patches.Rectangle((px - 4 * scale, py - 4 * scale), 8 * scale, 8 * scale, facecolor=accent, edgecolor=color, lw=0.95, zorder=z))
-        ax.plot([steps[0][0] + 4 * scale, steps[1][0] - 4 * scale, steps[1][0] + 4 * scale, steps[2][0] - 4 * scale], [steps[0][1], steps[1][1], steps[1][1], steps[2][1]], color=color, lw=1.35, zorder=z + 1)
-        ax.add_patch(patches.Polygon([(cx + 8 * scale, cy - 12 * scale), (cx + 3 * scale, cy - 6 * scale), (cx + 11 * scale, cy - 4 * scale)], facecolor=color, edgecolor=color, zorder=z + 2))
+        nodes = [
+            (cx - 10 * scale, cy + 7 * scale),
+            (cx, cy),
+            (cx + 10 * scale, cy - 7 * scale),
+        ]
+        node_r = 2.7 * scale
+        for (x1, y1), (x2, y2) in zip(nodes[:-1], nodes[1:]):
+            dx, dy = x2 - x1, y2 - y1
+            length = math.hypot(dx, dy)
+            ux, uy = dx / length, dy / length
+            start = (x1 + ux * (node_r + 0.9 * scale), y1 + uy * (node_r + 0.9 * scale))
+            end = (x2 - ux * (node_r + 1.1 * scale), y2 - uy * (node_r + 1.1 * scale))
+            ax.add_patch(
+                patches.FancyArrowPatch(
+                    start,
+                    end,
+                    arrowstyle="-|>",
+                    mutation_scale=7.0 * scale,
+                    facecolor=color,
+                    edgecolor=color,
+                    lw=1.3,
+                    shrinkA=0,
+                    shrinkB=0,
+                    zorder=z + 1,
+                )
+            )
+        for px, py in nodes:
+            ax.add_patch(
+                patches.Circle(
+                    (px, py),
+                    node_r,
+                    facecolor=accent,
+                    edgecolor=color,
+                    lw=1.15,
+                    zorder=z + 2,
+                )
+            )
     elif kind == "difficulty":
-        ax.add_patch(patches.Arc((cx, cy + 4 * scale), 27 * scale, 25 * scale, theta1=200, theta2=-20, color=color, lw=1.45, zorder=z))
-        for ang in [210, 250, 290, 330]:
-            rad = math.radians(ang)
-            ax.plot([cx + 10 * scale * math.cos(rad), cx + 13 * scale * math.cos(rad)], [cy + 4 * scale + 10 * scale * math.sin(rad), cy + 4 * scale + 13 * scale * math.sin(rad)], color=color, lw=1.0, zorder=z)
-        ax.plot([cx, cx + 9 * scale], [cy + 4 * scale, cy - 6 * scale], color=color, lw=1.55, zorder=z)
-        ax.add_patch(patches.Circle((cx, cy + 4 * scale), 2.7 * scale, facecolor=accent, edgecolor=color, lw=0.9, zorder=z + 1))
+        gauge_cy = cy + 4 * scale
+        ax.add_patch(
+            patches.Arc(
+                (cx, gauge_cy),
+                27 * scale,
+                21 * scale,
+                theta1=205,
+                theta2=335,
+                color=color,
+                lw=1.5,
+                zorder=z,
+            )
+        )
+        for angle in (220, 270, 320):
+            radians = math.radians(angle)
+            ax.plot(
+                [cx + 9.2 * scale * math.cos(radians), cx + 11.8 * scale * math.cos(radians)],
+                [gauge_cy + 7.2 * scale * math.sin(radians), gauge_cy + 9.6 * scale * math.sin(radians)],
+                color=color,
+                lw=1.05,
+                solid_capstyle="round",
+                zorder=z + 1,
+            )
+        needle_angle = math.radians(315)
+        ax.plot(
+            [cx, cx + 9.5 * scale * math.cos(needle_angle)],
+            [gauge_cy, gauge_cy + 7.8 * scale * math.sin(needle_angle)],
+            color=color,
+            lw=1.45,
+            solid_capstyle="round",
+            zorder=z + 2,
+        )
+        ax.add_patch(
+            patches.Circle(
+                (cx, gauge_cy),
+                1.8 * scale,
+                facecolor=accent,
+                edgecolor=color,
+                lw=0.8,
+                zorder=z + 3,
+            )
+        )
     else:
         ax.add_patch(patches.Rectangle((cx - 12 * scale, cy - 11 * scale), 17 * scale, 17 * scale, facecolor=accent, edgecolor=color, lw=1.1, zorder=z))
         ax.add_patch(patches.Rectangle((cx - 4 * scale, cy - 3 * scale), 17 * scale, 17 * scale, facecolor=COL["paper"], edgecolor=color, lw=1.1, zorder=z + 1))
@@ -1035,9 +1103,10 @@ def draw_state_transition_function(ax, x, y, w, h, z=13):
     update_span = right_c[0] - left_c[0] - 2 * update_margin
     update_start_x = flow_cx - update_span / 2
     update_end_x = flow_cx + update_span / 2
+    update_y = y + 82
     flow_arrow(
         ax,
-        [(update_start_x, y + 74), (update_end_x, y + 74)],
+        [(update_start_x, update_y), (update_end_x, update_y)],
         kind="update",
         z=z + 4,
     )
@@ -1112,12 +1181,12 @@ def alignment_reward_panel(ax, x, y, w, h, z=14):
 
 def course_info_reward_panel(ax, x, y, w, h, z=14):
     box(ax, x, y, w, h, COL["paper"], ec=COL["green"], lw=1.25, r=1, z=z)
-    ax.text(x + w / 2, y + 15, "Course-info Reward", fontsize=role_scale(9.2, "component"), fontweight="bold", color=COL["ink"], ha="center", va="center", zorder=z + 5)
+    ax.text(x + w / 2, y + 15, "Course-info Reward", fontsize=role_scale(10.0, "component"), fontweight="bold", color=COL["ink"], ha="center", va="center", zorder=z + 5)
 
     course_cx = x + 47
     course_cy = y + 70
-    book_open_icon(ax, course_cx, course_cy - 8, size=role_scale(30, "icon"), color=COL["line"], lw=1.1, z=z + 4)
-    ax.text(course_cx, course_cy + 25, "$c$", fontsize=role_scale(8.2, "symbol"), fontweight="bold", color=COL["blue"], ha="center", va="center", zorder=z + 5)
+    book_open_icon(ax, course_cx, course_cy - 8, size=role_scale(40, "icon"), color=COL["line"], lw=1.3, z=z + 4)
+    ax.text(course_cx, course_cy + 25, "$c$", fontsize=role_scale(9.0, "symbol"), fontweight="bold", color=COL["blue"], ha="center", va="center", zorder=z + 5)
 
     chips = [
         ("concept", "concept", COL["green"], COL["green_soft"]),
@@ -1125,16 +1194,16 @@ def course_info_reward_panel(ax, x, y, w, h, z=14):
         ("difficulty", "difficulty", COL["gold"], COL["gold_soft"]),
         ("repeat", "repeat", COL["muted"], "#eef2f6"),
     ]
-    chip_x = x + 88
-    chip_y = y + 35
-    chip_w = 94
-    chip_step = 108
+    chip_x = x + 80
+    chip_y = y + 32
+    chip_w = 104
+    chip_step = 116
     for idx, (label, kind, color, fill) in enumerate(chips):
         cx = chip_x + (idx % 2) * chip_step
         cy = chip_y + (idx // 2) * 43
-        box(ax, cx, cy, chip_w, 30, "#fbfaf6", ec=color, lw=1.05, r=0.8, z=z + 1)
-        reward_term_icon(ax, cx + 17, cy + 15, kind, color, fill, size=role_scale(15, "icon"), z=z + 4)
-        ax.text(cx + 36, cy + 15, label, fontsize=role_scale(7.0, "symbol"), fontweight="bold", color=COL["ink"], ha="left", va="center", zorder=z + 5)
+        box(ax, cx, cy, chip_w, 34, "#fbfaf6", ec=color, lw=1.05, r=0.8, z=z + 1)
+        reward_term_icon(ax, cx + 18, cy + 17, kind, color, fill, size=role_scale(20, "icon"), z=z + 4)
+        ax.text(cx + 42, cy + 17, label, fontsize=role_scale(8.0, "symbol"), fontweight="bold", color=COL["ink"], ha="left", va="center", zorder=z + 5)
 
 
 def learner_action_set(ax, x, y, w=226, h=24, z=14):
@@ -1386,19 +1455,20 @@ def draw_left(ax):
         z=18,
     )
 
-    q_vec_y = 552
+    q_vec_y = 510
     flow_arrow(ax, [(fusion_cx, gate_bottom_y + 2), (fusion_cx, q_vec_y)], kind="encoder", z=12)
     vector(ax, fusion_cx - 38, q_vec_y - (role_scale(18, "icon") - 18) / 2, w=76, h=role_scale(18, "icon"))
     txt(ax, fusion_cx + 50, q_vec_y + 9, "$\\mathbf{e}_c$", size=role_scale(12.0, "symbol"), weight="bold", color=COL["violet"], ha="left")
 
-    txt(ax, 213, 594, "Learner Encoder", size=role_scale(12.8, "component"), weight="bold", color=COL["orange"])
-    learner_cy = 624
+    learner_title_y = 554
+    learner_cy = 592
+    txt(ax, 213, learner_title_y, "Learner Encoder", size=role_scale(12.8, "component"), weight="bold", color=COL["orange"])
     user_icon(ax, 96, learner_cy - 22)
     vector(ax, 128, learner_cy - role_scale(17, "icon") / 2, w=66, h=role_scale(17, "icon"), colors=USER_EMB_COLORS)
-    txt(ax, 161, 654, "$\\mathbf{e}_u$", size=role_scale(11.0, "symbol"), weight="bold", color=COL["muted"])
+    txt(ax, 161, learner_cy + 30, "$\\mathbf{e}_u$", size=role_scale(11.0, "symbol"), weight="bold", color=COL["muted"])
     mlp_wedge(ax, 214, learner_cy - 19, w=58, h=38, ec=COL["orange"], label="MLP", label_size=role_scale(11.5, "symbol"))
     vector(ax, 306, learner_cy - role_scale(17, "icon") / 2, w=66, h=role_scale(17, "icon"), colors=USER_EMB_COLORS)
-    txt(ax, 339, 654, "$\\mathbf{z}_u$", size=role_scale(11.5, "symbol"), weight="bold", color=COL["orange"])
+    txt(ax, 339, learner_cy + 30, "$\\mathbf{z}_u$", size=role_scale(11.5, "symbol"), weight="bold", color=COL["orange"])
     flow_arrow(ax, [(112, learner_cy), (128, learner_cy)], kind="micro")
     flow_arrow(ax, [(194, learner_cy), (214, learner_cy)], kind="micro")
     flow_arrow(ax, [(272, learner_cy), (306, learner_cy)], kind="micro")
@@ -1421,12 +1491,15 @@ def draw_middle(ax):
     )
     box(ax, 625, 190, 280, 116, "#f8f8f2", ec=COL["aux"], lw=1.5, r=0.5, ls=(0, (6, 4)))
     txt(ax, 765, 215, "Exploration Set Construction", size=12.2 * 1.05, weight="bold")
-    box(ax, 648, 252, 58, 34, COL["card2"], ec=COL["green"], lw=1.3, r=0.5)
-    txt(ax, 677, 269, "$\\mathcal{N}_M$", size=role_scale(10.8, "symbol"), weight="bold", color=COL["green"])
-    box(ax, 738, 252, 64, 34, COL["card2"], ec=COL["gold"], lw=1.3, r=0.5)
-    txt(ax, 770, 269, "sample $N$", size=role_scale(9.4, "symbol"), weight="bold", color=COL["gold"])
-    box(ax, 830, 252, 54, 34, COL["red_soft"], ec=COL["red_dark"], lw=1.3, r=0.5)
-    txt(ax, 857, 269, "$s_{sample}$", size=role_scale(8.3, "symbol"), weight="bold", color=COL["red"])
+    stage_font_size = role_scale(9.0, "symbol")
+    box(ax, 632, 252, 80, 34, COL["card2"], ec=COL["green"], lw=1.3, r=0.5)
+    txt(ax, 672, 269, "Retrieve $M$", size=stage_font_size, weight="bold", color=COL["green"])
+    flow_arrow(ax, [(714, 269), (726, 269)], kind="micro", z=12)
+    box(ax, 728, 252, 74, 34, COL["card2"], ec=COL["gold"], lw=1.3, r=0.5)
+    txt(ax, 765, 269, "Sample $N$", size=stage_font_size, weight="bold", color=COL["gold"])
+    flow_arrow(ax, [(804, 269), (816, 269)], kind="micro", z=12)
+    box(ax, 818, 252, 80, 34, COL["red_soft"], ec=COL["red_dark"], lw=1.3, r=0.5)
+    txt(ax, 858, 269, "Fit Rerank", size=stage_font_size, weight="bold", color=COL["red"])
     learner_action_set(ax, 635, 330, w=260, h=24, z=14)
 
     box(ax, 635, 376, 260, 58, "#f8f8f2", ec=COL["line"], lw=1.55, r=0.5)

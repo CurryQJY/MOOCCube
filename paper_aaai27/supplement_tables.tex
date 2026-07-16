@@ -2,6 +2,7 @@
 \usepackage[submission]{aaai2027}
 \usepackage{booktabs}
 \usepackage{amsmath}
+\usepackage{threeparttable}
 \frenchspacing
 
 \pdfinfo{
@@ -23,8 +24,8 @@
 This supplement reports the detailed tables underlying the main-paper results:
 full strict course-cold results on all datasets, the MOOCCube component ablation,
 the MOOCCube hyperparameter sensitivity study, seed-level confidence intervals,
-per-course gain diagnostics, and the corresponding complexity and timing
-evidence.
+per-course gain diagnostics, supported motivation evidence, and the corresponding
+complexity and timing evidence.
 
 \section{Full Strict Course-Cold Results}
 
@@ -108,6 +109,8 @@ USIM & 0.0069\sd{0.0022} & 0.0131\sd{0.0036} & 0.0265\sd{0.0069} & 0.0043\sd{0.0
 \bottomrule
 \end{tabular*}
 \end{table*}
+
+\input{tables/mooccube_p1_motivation_evidence.tex}
 
 \clearpage
 
@@ -222,11 +225,15 @@ and test evaluation. The inference profiler reloads a retained checkpoint, warms
 up the evaluator, and times final cold+hot full-ranking course-macro inference;
 data loading, checkpoint loading, and metric-file writing are excluded. CKG-RL
 inference includes course-bank construction, while CGRC inference includes
-test-time graph reconstruction and graph propagation. Missing entries are left
-unavailable rather than estimated from accuracy logs. The MOOCCube CKG-RL
-training timer comes from the main-result logs; for CKG-RL latency only, we
-profile retained checkpoints from the Full-family runs on the original main
-splits with the same inference graph.
+test-time graph reconstruction and graph propagation. Measured entries come
+only from retained timers; the Junyi CGRC training entry is an explicit
+provisional projection that will be replaced after the three-seed profile completes.
+The MOOCCube CKG-RL
+training timer comes from the main-result logs; its latency uses retained
+Full-family checkpoints on the original main splits. The MOOCCube CGRC timing
+comes from a matched profiling rerun with the same split, configuration, and
+evaluator. Its inference timing covers three seeds, whereas its retained epoch
+timers cover seeds 2026 and 2027 only.
 
 \begin{table*}[t]
 \centering
@@ -241,23 +248,32 @@ splits with the same inference graph.
 Dataset & Method & Train epoch (s) & Final infer. (s) & Infer. cost & Logged coverage \\
 \midrule
 MOOCCube & CKG-RL & \(95.6\pm21.9\) & \(18.0\pm0.7\) & \(O(QId)\) & 3 seeds, 180 training epochs; 3 retained checkpoints from Full-family runs profiled on the main splits. \\
-MOOCCube & CGRC & -- & -- & \(O(LEd+Rd+QId)\) & Matched checkpoint/profile was not retained; latency is not inferred from metric logs. \\
+MOOCCube & CGRC & \(70.5\pm4.6\) & \(22.2\pm0.4\) & \(O(LEd+Rd+QId)\) & 2 retained seeds, 100 training epochs; matched 3-seed inference profiling rerun with the same split, configuration, and evaluator. \\
 Junyi & CKG-RL & \(312.2\pm67.7\) & \(56.4\pm0.3\) & \(O(QId)\) & 2 logged seeds, 120 training epochs; 2 checkpoints profiled. \\
-Junyi & CGRC & -- & \(69.2\pm0.2\) & \(O(LEd+Rd+QId)\) & 2 checkpoints profiled; epoch timers unavailable. \\
+Junyi & CGRC & \(333.0\pm45.0\) & \(69.2\pm0.2\) & \(O(LEd+Rd+QId)\) & Provisional projection pending 3-seed training timers; 2 checkpoints profiled for inference. \\
 COCO & CKG-RL & \(279.2\pm17.8\) & \(9.8\pm0.1\) & \(O(QId)\) & 3 seeds, 90 training epochs; 3 checkpoints profiled. \\
 COCO & CGRC & \(389.7\pm80.0\) & \(11.8\pm0.2\) & \(O(LEd+Rd+QId)\) & 3 seeds, 150 training epochs; 3 checkpoints profiled. \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
+\noindent\footnotesize
+Provisional projection. The mean applies the midpoint of the
+observed MOOCCube and COCO CGRC-to-CKG training-time ratios to Junyi; the spread
+uses the midpoint of their CGRC epoch coefficients of variation. The projected
+values are not presented as completed measurements.
+\normalsize
+
 These timings are training-loop and eval-only measurements rather than
-end-to-end wall-clock runtimes. On COCO, where both methods expose separable
-epoch timers, CKG-RL is faster per logged training epoch than CGRC. For retained
-CKG-RL checkpoints on MOOCCube, Junyi, and COCO, final full-ranking course-macro
-inference is dominated by the cached full-catalog dot-product scan. Where CGRC
-checkpoints are available, its inference additionally reconstructs cold-course
-edges and propagates the reconstructed graph. The table therefore supports an
-inference comparison on Junyi and COCO, and a training-loop comparison on COCO;
-other CGRC cost entries are deliberately reported as unavailable.
+end-to-end wall-clock runtimes. On COCO, where both methods expose three-seed
+epoch timers, CKG-RL is faster per logged training epoch than CGRC. MOOCCube
+also exposes separable epoch timers, but the CGRC estimate covers two retained
+seeds and is therefore descriptive. For retained CKG-RL checkpoints, final
+full-ranking course-macro inference is dominated by the cached full-catalog
+dot-product scan; CGRC additionally reconstructs cold-course edges and
+propagates the reconstructed graph. The table supports an inference comparison
+on all three datasets and measured training-loop comparisons on MOOCCube and
+COCO. The Junyi CGRC value is provisional until its prioritized
+three-seed queue completes.
 
 \end{document}

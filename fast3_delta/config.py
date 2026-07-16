@@ -5,6 +5,7 @@ class BaseConfig:
     def __init__(self, n_users, n_items, content_dim=768):
         self.n_users = n_users
         self.n_items = n_items
+        self.validation_only = os.environ.get("USIM_VALIDATION_ONLY", "0") == "1"
         self.emb_dim = 128
         self.hidden_dim = 256
         self.content_dim = content_dim
@@ -74,9 +75,9 @@ class BaseConfig:
         self.pseudo_cold_ratio = min(1.0, max(0.0, self.pseudo_cold_ratio))
         self.pseudo_cold_min_pop = int(os.environ.get("USIM_PSEUDO_COLD_MIN_POP", "5"))
         self.pseudo_cold_mode = os.environ.get("USIM_PSEUDO_COLD_MODE", "batch_random").strip().lower()
-        if self.pseudo_cold_mode not in {"batch_random", "batch_tail", "all_eligible", "none", "off"}:
+        if self.pseudo_cold_mode not in {"batch_random", "batch_tail", "item_tail", "all_eligible", "none", "off"}:
             raise ValueError(
-                "USIM_PSEUDO_COLD_MODE must be one of: batch_random, batch_tail, all_eligible, none, off"
+                "USIM_PSEUDO_COLD_MODE must be one of: batch_random, batch_tail, item_tail, all_eligible, none, off"
             )
         self.disable_llm_score = os.environ.get("USIM_DISABLE_LLM_SCORE", "0") == "1"
         self.llm_safe_mode = os.environ.get("USIM_LLM_SAFE_MODE", "0") == "1"

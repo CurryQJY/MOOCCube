@@ -65,6 +65,8 @@ class Config:
         self.ranking_neg_per_user = int(_env("RANKING_NEG_PER_USER", "32"))
         self.recon_user_chunk = int(_env("RECON_USER_CHUNK", "4096"))
         self.progress_interval = int(_env("PROGRESS_INTERVAL", "1"))
+        self.export_topk_path = _env("EXPORT_TOPK_PATH", "").strip()
+        self.export_topk_k = int(_env("EXPORT_TOPK_K", "20"))
 
         self.lr = float(_env("LR", "1e-3"))
         self.reg_weight = float(_env("REG", "1e-4"))
@@ -962,6 +964,9 @@ def main():
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
             user_seen_items=test_seen, average_mode="item_macro",
             export_item_metrics_path=static_result_path("per_item_full_cold_cgrc_paper_static.csv"),
+            export_topk_path=cfg.export_topk_path or None,
+            export_topk_k=cfg.export_topk_k,
+            export_topk_metadata={"model": "cgrc", "seed": cfg.static_seed},
         )
         _sync_device(device)
         cold_macro_t1 = time.perf_counter()
@@ -1071,6 +1076,8 @@ def main():
         "resumed_from_epoch": start_epoch,
         "per_item_full_cold_path": static_result_path("per_item_full_cold_cgrc_paper_static.csv"),
         "per_item_full_hot_path": static_result_path("per_item_full_hot_cgrc_paper_static.csv"),
+        "topk_export_path": cfg.export_topk_path or None,
+        "topk_export_k": cfg.export_topk_k,
     }
     result_path = static_result_path("cgrc_paper_static_result.json")
     pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)

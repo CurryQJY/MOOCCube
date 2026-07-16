@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1783496000.78649 "D:/DeskTop/MOOCCube/paper_aaai27/supplement_tables.tex" "supplement_tables.pdf" "supplement_tables" 1783496001.66423 0
-  "C:/Users/pc/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1783494230 228176 6d9b37f7f66041b290712cf4fd077214 ""
+["pdflatex"] 1784188022.38904 "supplement_tables.tex" "supplement_tables.pdf" "supplement_tables" 1784188023.26895 0
+  "C:/Users/pc/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1784180365 228176 6d9b37f7f66041b290712cf4fd077214 ""
   "C:/Users/pc/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1779804430 13332076 88fc7f4d5d39d6bfc70ee02a97d13caa ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-ec-tlf.enc" 1736607166 2914 fdbc4a54b9bc76f4551b5303f2737d33 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/tfm/jknappen/ec/ecrm1000.tfm" 993062122 3148 7e594c8240c71e432203f65ab5f95a51 ""
@@ -20,6 +20,7 @@
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi9.pfb" 1247596667 36094 798f80770b3b148ceedd006d487db67c ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1247596667 35752 024fb6c41858982481f6968b5fc26508 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr6.pfb" 1247596667 32734 69e00a6b65cedb993666e42eedb3d48f ""
+  "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr7.pfb" 1247596667 32762 7fee39e011c23b3589931effd97b9702 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr9.pfb" 1247596666 33993 9b89b85fd2d9df0482bd47194d1d3bf3 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1247596667 32569 5e5ddc8df908dea60932f3c484a54c0d ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy6.pfb" 1247596667 32587 65067f817f408bc71a7312f3d9828a9b ""
@@ -66,11 +67,10 @@
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xkeyval/xkeyval.sty" 1656236919 4937 4ce600ce9bd4ec84d0250eb6892fcf4f ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xpatch/xpatch.sty" 1585221260 8510 7803f78066c4f9d008405191a4b43073 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xstring/xstring.sty" 1693735632 123 a302f2c651a95033260db60e51527ae8 ""
-  "D:/DeskTop/MOOCCube/paper_aaai27/supplement_tables.tex" 1783495927 14532 e1601c1909bd7fc847c95cd21cb68638 ""
   "aaai2027.sty" 1779092464 16915 1b1c792e2acfbbd8b672259e267b95d8 ""
-  "revision_stat_cost_tables.tex" 1783490864 5493 9d76878a2d92e733ed827b7bb2eb9498 ""
-  "supplement_tables.aux" 1783496001 619 dc7e3408020e4c3f25de25eab7369c80 "pdflatex"
-  "supplement_tables.tex" 1783495927 14532 e1601c1909bd7fc847c95cd21cb68638 ""
+  "revision_stat_cost_tables.tex" 1784187984 6459 56d350d2d82b6d0fc566c7677baa1716 ""
+  "supplement_tables.aux" 1784188023 619 dc7e3408020e4c3f25de25eab7369c80 "pdflatex"
+  "supplement_tables.tex" 1784187929 16395 08d42cf6dad6d2a7966ddd5a61a48fbb ""
   (generated)
   "supplement_tables.aux"
   "supplement_tables.log"

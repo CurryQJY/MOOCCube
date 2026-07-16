@@ -1,0 +1,1 @@
+{"model": "pcgnn", "seed": 2025, "sample_index": 0, "user_id": 7, "target_item_id": 103, "target_popularity": 0, "recommended_item_ids": [101, 103, 104], "recommended_scores": [0.800000011920929, 0.699999988079071, 0.6000000238418579]}

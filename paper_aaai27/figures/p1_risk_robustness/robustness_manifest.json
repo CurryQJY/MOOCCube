@@ -1,0 +1,88 @@
+{
+  "scales": [
+    "p90",
+    "p95",
+    "max"
+  ],
+  "readiness_k": [
+    3,
+    5,
+    10
+  ],
+  "cutoff": 10,
+  "random_seed": 2027,
+  "n_bootstrap": 10000,
+  "n_permutations": 100000,
+  "input": {
+    "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_topk_motivation_analysis\\recommendation_level.csv.gz",
+    "sha256": "47044b8b977877b1dcfd563aa25a27dd7d664b4ef362f6fa77a9590b1a6ab29d",
+    "rows": 7785360
+  },
+  "primary_reproduction_max_abs_delta": 1.880440247958859e-15,
+  "artifact_stats": {
+    "prereq_source": "concept",
+    "items_with_concept": 678,
+    "items_with_prereq": 440,
+    "items_with_video": 698,
+    "redundant_family_groups": 90,
+    "hard_density": 0.7934171557426453,
+    "prereq_edges_kept": 2200,
+    "prereq_edges_raw": 66212,
+    "prereq_users": 0,
+    "prereq_min_support": 30,
+    "prereq_max_per_item": 5,
+    "prereq_max_forward": 20,
+    "concept_overlap_mode": "plain",
+    "prereq_concept_pairs": 1027,
+    "prereq_concept_score_thr": 0.1,
+    "prereq_concept_min_hits": 1,
+    "courses_with_required_concepts": 440,
+    "prereq_concept_file": "prerequisite-dependency.json",
+    "prereq_hybrid_alpha": 0.7,
+    "prereq_hybrid_strong_concept_thr": 0.35,
+    "behavior_prereq_edges_raw": 0,
+    "concept_prereq_edges_raw": 0,
+    "prereq_weighted_edges": false,
+    "course_artifact_cache_status": "hit",
+    "course_artifact_cache_path": "D:\\DeskTop\\MOOCCube\\MOOCCube\\.course_artifact_cache\\19fb56001b012ec1c568cc7ff1e86800560535914d16058c36e67a163287a6b2.pt",
+    "n_items": 698,
+    "complexity_upper_quantile": 0.95,
+    "prerequisite_count_scale": 5.0,
+    "concept_count_scale": 450.7499999999999,
+    "items_with_nonzero_complexity": 678,
+    "data_path": "D:\\DeskTop\\MOOCCube\\processed_data_hin_clean_pop5\\stream_data.pkl",
+    "relation_dir": "D:\\DeskTop\\MOOCCube\\MOOCCube\\relations"
+  },
+  "outputs": {
+    "difficulty_sensitivity_course_macro.csv": {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_risk_robustness\\difficulty_sensitivity_course_macro.csv",
+      "sha256": "b33a2b9a5faf49402ad0465ab5a77c1146a06fed176b7caee75513f6c6e50735",
+      "rows": 3672
+    },
+    "difficulty_sensitivity_paired.csv": {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_risk_robustness\\difficulty_sensitivity_paired.csv",
+      "sha256": "1152b05cdd0c8dfc32958a42541c8e5569596c673f4132dc3bc246abe5fd9899",
+      "rows": 18
+    },
+    "rank_profile_course_macro.csv": {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_risk_robustness\\rank_profile_course_macro.csv",
+      "sha256": "75897a315e3153d4818778ce7a77e8e486c3060d9b6f20d900f4d473da974dc6",
+      "rows": 4080
+    },
+    "rank_profile_paired.csv": {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_risk_robustness\\rank_profile_paired.csv",
+      "sha256": "888fb72f6205de412c3c7266415547573b982d286f3b5df4e4935d792e397a7f",
+      "rows": 50
+    },
+    "history_strata_course_macro.csv": {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_risk_robustness\\history_strata_course_macro.csv",
+      "sha256": "a093be6bef2b4b74b09e092ad80c04292777b60d7a6e98704748907fa94ff532",
+      "rows": 1584
+    },
+    "history_strata_paired.csv": {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_risk_robustness\\history_strata_paired.csv",
+      "sha256": "1fee489e8aa3f0c1149d0dc011fde2b4d8b8b2e3a8c86eef6a2e246501ee6653",
+      "rows": 36
+    }
+  }
+}

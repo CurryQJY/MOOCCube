@@ -144,6 +144,7 @@ class TinyInferenceModel:
                 "emb_dim": 2,
                 "candidate_strategy": "retrieve_sample",
                 "rollout_policy": "ppo",
+                "usim_steps": 0,
                 "feedback_course_match_exclude_target": False,
             },
         )()
@@ -171,6 +172,7 @@ class TinyInferenceModel:
             {
                 "target_emb": target_emb,
                 "exclude_target": self.cfg.feedback_course_match_exclude_target,
+                "usim_steps": self.cfg.usim_steps,
                 **kwargs,
             }
         )
@@ -239,6 +241,35 @@ def test_refinement_temporarily_overrides_target_exclusion_and_records_inputs():
 )
 def test_parse_optional_bool(raw, expected):
     assert ab.parse_optional_bool(raw) is expected
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [(None, None), ("", None), ("0", 0), ("5", 5)],
+)
+def test_parse_optional_nonnegative_int(raw, expected):
+    assert ab.parse_optional_nonnegative_int(raw) == expected
+
+
+def test_parse_optional_nonnegative_int_rejects_negative_value():
+    with pytest.raises(ValueError, match="nonnegative"):
+        ab.parse_optional_nonnegative_int("-1")
+
+
+def test_refinement_temporarily_overrides_inference_steps_and_restores_checkpoint_value():
+    model = TinyInferenceModel()
+    previous = ab.INFERENCE_STEPS_OVERRIDE
+    ab.INFERENCE_STEPS_OVERRIDE = 5
+    ab.reset_audit()
+    try:
+        ab.infer_actor_refined_item_vectors(model, torch.tensor([1, 2]))
+    finally:
+        ab.INFERENCE_STEPS_OVERRIDE = previous
+
+    assert model.calls[0]["usim_steps"] == 5
+    assert model.cfg.usim_steps == 0
+    assert ab.AUDIT.checkpoint_usim_steps_values == [0]
+    assert ab.AUDIT.effective_inference_usim_steps_values == [5]
 
 
 def test_install_static_does_not_attach_refinement(monkeypatch):

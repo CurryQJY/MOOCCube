@@ -61,7 +61,9 @@ The isolated entry point reads:
 - `USIM_SC2_CONSISTENCY_WARM_ONLY`, default `1`.
 
 The runner uses a unique output/checkpoint root and passes the existing strict
-course-cold protocol, seed 2025, one epoch, and patience one.
+course-cold protocol, seed 2025, one epoch, and patience one. It explicitly
+disables per-item `content_delta`, preventing the forced-cold student from
+solving the consistency objective through a warm-course-specific residual.
 
 ## Diagnostics
 
@@ -71,6 +73,9 @@ Every training batch reports:
 - `sc2_consistency_weighted_loss`;
 - `sc2_consistency_active_ratio`;
 - `sc2_teacher_student_cosine`.
+
+The isolated subclass aggregates these values at the train-to-eval boundary and
+writes `sc2_consistency_epoch_metrics.csv` inside its own output directory.
 
 The entry point prints an explicit banner identifying the experiment as an
 SC2Rec-style adaptation.
@@ -96,4 +101,20 @@ and all protected hashes remain unchanged.
 - No main-table row or aggregator input is changed.
 - No validation/test interaction is used to construct the consistency teacher.
 - No claim of reproducing SC2Rec is made.
-- No multi-seed or full 60-epoch run is launched at this stage.
+- The completed smoke stage does not launch a multi-seed or full 60-epoch run.
+
+## Main-Table-Aligned Formal Gate
+
+After the smoke path is verified, run one isolated seed-2025 gate for 60 epochs
+under the current minimal main-table configuration. This gate keeps
+`content_delta`, pseudo-cold training, PAAC, SAGE-lite, SAGE auxiliary loss,
+CGRC reconstruction, and SG-URInit disabled. It retains the main method's
+course feedback, educational reward, prerequisite auxiliary loss, course
+sampling, PPO policy, strict course-cold split, full-ranking item-macro
+evaluation, and cold-only early-stop score.
+
+The only new optimization term is SC2 consistency with weight `0.10` and
+temperature `0.20`. The formal gate uses a new runner and unique output and
+checkpoint roots. It does not modify the protected main-table files or invoke
+the main-table aggregator. Seed 2025 is a screening run; a direct comparison to
+the published three-seed mean requires seeds 2026 and 2027 after the gate.

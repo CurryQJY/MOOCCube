@@ -113,6 +113,7 @@ class SC2ConsistencyFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
         return base_loss + weighted, stats
 ```
 - [ ] **Step 4: Run focused tests and verify they pass.**
+- [ ] **Step 5: Verify train-to-eval writes isolated epoch diagnostics to `sc2_consistency_epoch_metrics.csv`.**
 
 ### Task 3: Isolated Smoke Runner
 
@@ -147,6 +148,7 @@ $runnerArgs = @{
     Epochs = 1
     Patience = 1
     ForceFresh = $true
+    UseContentDelta = $false
     SkipAggregate = $true
 }
 if ($DryRun) { $runnerArgs; exit 0 }
@@ -166,3 +168,116 @@ exit $LASTEXITCODE
 - [ ] **Step 3: Run the seed-2025 one-epoch smoke experiment.**
 - [ ] **Step 4: Inspect logs and result JSON for finite active consistency loss and strict cold item-macro metrics.**
 - [ ] **Step 5: Recompute protected hashes again and report exact evidence, including any failure or limitation.**
+
+### Task 5: Main-Table-Aligned Seed-2025 Formal Gate
+
+**Files:**
+- Modify: `tests/test_sc2_forced_cold_consistency.py`
+- Create: `run_sc2_forced_cold_consistency_main_table_gate.ps1`
+
+- [ ] **Step 1: Write a failing static-contract test for the formal runner.**
+
+```python
+def test_formal_gate_runner_matches_minimal_main_table_configuration():
+    text = Path("run_sc2_forced_cold_consistency_main_table_gate.ps1").read_text(
+        encoding="utf-8"
+    )
+    required = (
+        'ScriptPath = ".\\usim_feedback_fast3_sc2_consistency.py"',
+        'OutputRoot = "outputs\\sc2_forced_cold_consistency_main_table_gate"',
+        'CheckpointRoot = "checkpoints\\sc2_forced_cold_consistency_main_table_gate"',
+        'Protocol = "strict_item_cold_balanced"',
+        'Seeds = @(2025)',
+        'Epochs = 60',
+        'Patience = 60',
+        'UseContentDelta = $false',
+        'UsePseudoColdTrain = $false',
+        'UsePaac = $false',
+        'UseSageLite = $false',
+        'UseSageAuxLoss = $false',
+        'UseCgrcRecon = $false',
+        'UseSgUrinit = $false',
+        'SkipAggregate = $true',
+    )
+    assert all(token in text for token in required)
+```
+
+- [ ] **Step 2: Run the new test and verify it fails because the formal runner is absent.**
+
+Run:
+
+```powershell
+.\py.bat -m pytest tests\test_sc2_forced_cold_consistency.py::test_formal_gate_runner_matches_minimal_main_table_configuration -q
+```
+
+Expected: `FileNotFoundError` for
+`run_sc2_forced_cold_consistency_main_table_gate.ps1`.
+
+- [ ] **Step 3: Create the isolated formal runner.**
+
+```powershell
+param(
+    [switch]$DryRun,
+    [switch]$SkipGpuWait
+)
+
+$runnerArgs = @{
+    PythonRunner = ".\py.bat"
+    ScriptPath = ".\usim_feedback_fast3_sc2_consistency.py"
+    OutputRoot = "outputs\sc2_forced_cold_consistency_main_table_gate"
+    CheckpointRoot = "checkpoints\sc2_forced_cold_consistency_main_table_gate"
+    Protocol = "strict_item_cold_balanced"
+    ColdThresholds = @(1)
+    Seeds = @(2025)
+    Epochs = 60
+    Patience = 60
+    EarlyStopAverageMode = "item_macro"
+    EarlyStopScoreMode = "cold_only"
+    UseContentDelta = $false
+    UsePseudoColdTrain = $false
+    UsePaac = $false
+    UseSageLite = $false
+    UseSageAuxLoss = $false
+    UseCgrcRecon = $false
+    UseSgUrinit = $false
+    UseCourseFeedback = $true
+    UseCourseReward = $true
+    UsePrereqAux = $true
+    UseCourseSample = $true
+    UseUsimRefinedEval = $true
+    PpoLossWeight = 1.0
+    RolloutPolicy = "ppo"
+    RlResidualScale = 1.0
+    SaveCkpt = $true
+    AutoResume = $false
+    ForceFresh = $true
+    SkipAggregate = $true
+}
+```
+
+Before delegating, set `USIM_SC2_CONSISTENCY_WEIGHT=0.10`,
+`USIM_SC2_CONSISTENCY_TEMP=0.20`, and
+`USIM_SC2_CONSISTENCY_WARM_ONLY=1`. Reuse the smoke runner's numeric GPU-free
+memory query and wait until at least 9 GB is available unless `-SkipGpuWait` is
+passed. `-DryRun` prints the locked configuration and exits without training.
+
+- [ ] **Step 4: Run the focused test, full SC2 test file, PowerShell parser, and dry run.**
+
+Run:
+
+```powershell
+.\py.bat -m pytest tests\test_sc2_forced_cold_consistency.py -q
+[scriptblock]::Create((Get-Content -Raw .\run_sc2_forced_cold_consistency_main_table_gate.ps1)) | Out-Null
+.\run_sc2_forced_cold_consistency_main_table_gate.ps1 -DryRun -SkipGpuWait
+```
+
+Expected: all tests pass, PowerShell parsing succeeds, and the dry run reports
+seed 2025, 60 epochs, disabled optional extensions, and SC2 weight `0.10`.
+
+- [ ] **Step 5: Verify protected hashes, launch the runner in a hidden process, and verify the child command line and log.**
+
+Launch with `Start-Process -WindowStyle Hidden`, redirect stdout/stderr to fresh
+files under `outputs/sc2_forced_cold_consistency_main_table_gate/_launcher/`,
+and write the launcher PID to `formal_gate_launcher.pid`. Verify that either the
+launcher or its Python descendant is alive and that the log contains the SC2
+entry-point banner. Do not terminate unrelated GPU processes.

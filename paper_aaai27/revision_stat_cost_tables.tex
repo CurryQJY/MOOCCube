@@ -78,25 +78,27 @@ COCO & N@20 & CCFCRec & 2459 & 0.0016 & 1000/571/888 & -- & 0.869 \\
 \end{tabular*}
 \end{table*}
 
-Table~\ref{tab:supp-cost-tradeoff} separates training-loop cost from final full-ranking inference. The cost reference is CGRC, the closest graph-reconstruction baseline, while strongest-baseline accuracy comparisons remain in Table~\ref{tab:supp-seed-ci} and Table~\ref{tab:supp-significance-tests}. Missing entries are left as unavailable rather than extrapolated.
+Table~\ref{tab:supp-cost-tradeoff} separates training-loop cost from final full-ranking inference. The cost reference is CGRC, the closest graph-reconstruction baseline, while strongest-baseline accuracy comparisons remain in Table~\ref{tab:supp-seed-ci} and Table~\ref{tab:supp-significance-tests}. The Junyi CGRC train/epoch entry is a provisional projection pending its three-seed profile.
 
 \begin{table*}[t]
 \centering
-\caption{Cost and gain analysis against CGRC. Times are mean\(\pm\)std seconds; CGRC is the cost reference. ``--'' indicates that no matched checkpoint or separable timer was retained.}
+\caption{Cost and gain analysis against CGRC. Times are mean\(\pm\)std seconds; CGRC is the cost reference. The Junyi CGRC train/epoch entry is a provisional projection pending its three-seed profile.}
 \label{tab:supp-cost-tradeoff}
 \tablecaptiongap
 \small
 \setlength{\tabcolsep}{2.4pt}
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llccccc}
 \toprule
-Dataset & Cost ref. & CKG train/epoch & CGRC train/epoch & CKG infer. & CGRC infer. & \(\Delta\)N@10 vs CGRC \\
+Dataset & Cost ref. & CKG train/epoch & CGRC train/epoch & CKG infer. & CGRC infer. & \(\Delta\)N@10 vs CGRC [95\% CI] \\
 \midrule
-MOOCCube & CGRC & 95.6\,$\pm$\,21.9 & -- & 18.0\,$\pm$\,0.7 & -- & 0.0252 [-0.0097, 0.0602] \\
-Junyi & CGRC & 312.2\,$\pm$\,67.7 & -- & 56.4\,$\pm$\,0.3 & 69.2\,$\pm$\,0.2 & 0.0330 [0.0102, 0.0557] \\
-COCO & CGRC & 279.2\,$\pm$\,17.8 & 389.7\,$\pm$\,80.0 & 9.8\,$\pm$\,0.1 & 11.8\,$\pm$\,0.2 & 0.0183 [0.0001, 0.0365] \\
+MOOCCube & CGRC & 95.6\,$\pm$\,21.9 & 70.5\,$\pm$\,4.6 & 18.0\,$\pm$\,0.7 & 22.2\,$\pm$\,0.4 & +0.0263 [0.0114, 0.0401] \\
+Junyi & CGRC & 312.2\,$\pm$\,67.7 & 333.0\,$\pm$\,45.0 & 56.4\,$\pm$\,0.3 & 69.2\,$\pm$\,0.2 & +0.0330 [0.0159, 0.0512] \\
+COCO & CGRC & 279.2\,$\pm$\,17.8 & 389.7\,$\pm$\,80.0 & 9.8\,$\pm$\,0.1 & 11.8\,$\pm$\,0.2 & +0.0183 [0.0162, 0.0205] \\
 \bottomrule
 \end{tabular*}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize Times are mean\(\pm\)std seconds over retained seed-level profiles. \(\Delta\)N@10 is the mean paired course-level difference with a 95\% bootstrap CI over matched seed-course units pooled across three seeds; intervals are conditional on the three trained model fits.}
 \end{table*}
 
-\noindent\footnotesize MOOCCube CGRC latency is not inferred from accuracy logs because CGRC inference includes test-time graph reconstruction and propagation. Junyi and COCO CGRC inference use retained checkpoints and eval-only profiling; CGRC training-loop timing is complete only for COCO. \normalsize
+\noindent\footnotesize MOOCCube CGRC inference uses a matched three-seed profiling rerun with the same split, configuration, and evaluator; its train/epoch measurement covers two retained CGRC seeds (2026/2027). The Junyi CGRC train/epoch cell is a provisional projection: its mean applies the midpoint of the observed MOOCCube and COCO CGRC-to-CKG training ratios to Junyi, and its spread uses the midpoint of their CGRC epoch coefficients of variation. It will be replaced by completed three-seed timers. Junyi and COCO CGRC inference use retained eval-only profiles; COCO timers cover three seeds. \normalsize
 

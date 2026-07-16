@@ -1,8 +1,11 @@
 import csv
 import os
+from contextlib import nullcontext
 from typing import Callable, Dict, Optional, Tuple
 
 import torch
+
+from ranking_topk_export import TopKJsonlExporter
 
 
 def compute_ranking_metrics(
@@ -17,12 +20,18 @@ def compute_ranking_metrics(
 def compute_ranking_metric_values(
     scores: torch.Tensor,
     target_indices: torch.Tensor,
-    k_list=(5, 10, 20)
+    k_list=(5, 10, 20),
+    topk_indices: Optional[torch.Tensor] = None,
 ) -> Dict[str, torch.Tensor]:
     batch_size = scores.size(0)
     n_candidates = scores.size(1)
     max_k = min(max(k_list), n_candidates)
-    _, topk_idx = torch.topk(scores, k=max_k, dim=1)
+    if topk_indices is None:
+        _, topk_idx = torch.topk(scores, k=max_k, dim=1)
+    else:
+        if topk_indices.ndim != 2 or topk_indices.size(0) != batch_size or topk_indices.size(1) < max_k:
+            raise ValueError("topk_indices must cover max(k_list) for every score row")
+        topk_idx = topk_indices[:, :max_k]
 
     targets = target_indices.view(-1, 1)
     results = {}
@@ -76,17 +85,26 @@ def evaluate_embedding_ranker(
     normalize_user: bool = True,
     average_mode: str = "interaction",
     export_item_metrics_path: Optional[str] = None,
+    export_topk_path: Optional[str] = None,
+    export_topk_k: int = 20,
+    export_topk_metadata: Optional[Dict[str, object]] = None,
 ) -> Tuple[Optional[Dict[str, float]], int]:
     average_mode = average_mode.strip().lower()
     if average_mode not in {"interaction", "item_macro"}:
         raise ValueError("average_mode must be 'interaction' or 'item_macro'")
+    if export_topk_path and not full_ranking:
+        raise ValueError("Top-K export requires full_ranking=True")
     accum = {f"{m}@{k}": 0.0 for m in ["R", "N"] for k in k_list}
     total_samples = 0
     item_accum = {f"{m}@{k}": {} for m in ["R", "N"] for k in k_list}
     item_counts: Dict[int, int] = {}
     seen_tensor_cache: Dict[int, Optional[torch.Tensor]] = {}
 
-    with torch.no_grad():
+    export_context = (
+        TopKJsonlExporter(export_topk_path, top_k=export_topk_k, metadata=export_topk_metadata)
+        if export_topk_path else nullcontext(None)
+    )
+    with export_context as topk_exporter, torch.no_grad():
         all_item_idx = torch.arange(n_items, device=device, dtype=torch.long)
 
         for batch, pop in loader:
@@ -179,7 +197,24 @@ def evaluate_embedding_ranker(
                 uid_t = torch.tensor(user_ids, dtype=torch.long, device=device)
                 scores = score_adjust_fn(scores, uid_t, i, pop_sel, cand_idx)
 
-            batch_values = compute_ranking_metric_values(scores, target_indices, k_list=k_list)
+            metric_topk = None
+            if topk_exporter is not None:
+                shared_k = min(max(export_topk_k, max(k_list)), int(scores.size(1)))
+                shared_scores, metric_topk = torch.topk(scores, k=shared_k, dim=1)
+                topk_exporter.write_precomputed_batch(
+                    metric_topk,
+                    shared_scores,
+                    user_ids=user_ids,
+                    target_item_ids=i.detach().cpu().tolist(),
+                    target_popularity=pop_sel.detach().cpu().tolist(),
+                )
+
+            batch_values = compute_ranking_metric_values(
+                scores,
+                target_indices,
+                k_list=k_list,
+                topk_indices=metric_topk,
+            )
             if average_mode == "item_macro":
                 item_ids = [int(x) for x in i.detach().cpu().tolist()]
                 for row, item_id in enumerate(item_ids):

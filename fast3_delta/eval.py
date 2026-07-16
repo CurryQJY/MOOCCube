@@ -1,10 +1,13 @@
 import csv
 import os
 from collections import defaultdict
+from contextlib import nullcontext
 
 import numpy as np
 import torch
 import torch.nn.functional as F
+
+from ranking_topk_export import TopKJsonlExporter
 
 
 def compute_ranking_metrics(scores, target_indices, k_list=(5, 10, 20)):
@@ -12,12 +15,17 @@ def compute_ranking_metrics(scores, target_indices, k_list=(5, 10, 20)):
     return {key: float(val.mean().item()) for key, val in values.items()}
 
 
-def compute_ranking_metric_values(scores, target_indices, k_list=(5, 10, 20)):
+def compute_ranking_metric_values(scores, target_indices, k_list=(5, 10, 20), topk_indices=None):
     batch_size = scores.size(0)
     num_candidates = scores.size(1)
     targets = target_indices.view(-1, 1)
     actual_k = min(max(k_list), num_candidates)
-    _, topk_indices = torch.topk(scores, actual_k, dim=1)
+    if topk_indices is None:
+        _, topk_indices = torch.topk(scores, actual_k, dim=1)
+    elif topk_indices.ndim != 2 or topk_indices.size(0) != batch_size or topk_indices.size(1) < actual_k:
+        raise ValueError("topk_indices must cover max(k_list) for every score row")
+    else:
+        topk_indices = topk_indices[:, :actual_k]
     results = {}
     for k in k_list:
         preds = topk_indices[:, :k]
@@ -352,10 +360,15 @@ def evaluate_usim(
     all_item_vecs=None,
     average_mode="interaction",
     export_item_metrics_path=None,
+    export_topk_path=None,
+    export_topk_k=20,
+    export_topk_metadata=None,
 ):
     average_mode = average_mode.strip().lower()
     if average_mode not in {"interaction", "item_macro"}:
         raise ValueError("average_mode must be 'interaction' or 'item_macro'")
+    if export_topk_path and not full_ranking:
+        raise ValueError("Top-K export requires full_ranking=True")
     model.eval()
     accum_metrics = {}
     total_samples = 0
@@ -364,7 +377,11 @@ def evaluate_usim(
     seen_tensor_cache = {}
     seen_index = getattr(model, "user_seen_index", None)
     use_seen_index = seen_index is not None and user_seen_items is not None
-    with torch.no_grad():
+    export_context = (
+        TopKJsonlExporter(export_topk_path, top_k=export_topk_k, metadata=export_topk_metadata)
+        if export_topk_path else nullcontext(None)
+    )
+    with export_context as topk_exporter, torch.no_grad():
         n_items = model.cfg.n_items
         all_item_idx = torch.arange(n_items, device=device)
         if all_item_vecs is None:
@@ -386,7 +403,9 @@ def evaluate_usim(
             user_ids = [int(x) for x in u.detach().cpu().tolist()]
             item_ids = [int(x) for x in i.detach().cpu().tolist()]
             need_legacy_cache = (not use_seen_index) and (
-                (not full_ranking) or model.cfg.use_course_rerank
+                user_seen_items is not None
+                or (not full_ranking)
+                or model.cfg.use_course_rerank
             )
             if need_legacy_cache:
                 for uid in user_ids:
@@ -477,7 +496,23 @@ def evaluate_usim(
                     )
                 scores = model.apply_course_rerank(scores, user_ids, seen_tensor_cache, cand_idx=cand_idx, target_pop=pop_sel)
                 target_indices = torch.zeros(n_sel, dtype=torch.long, device=device)
-            batch_values = compute_ranking_metric_values(scores, target_indices=target_indices, k_list=k_list)
+            metric_topk = None
+            if topk_exporter is not None:
+                shared_k = min(max(export_topk_k, max(k_list)), int(scores.size(1)))
+                shared_scores, metric_topk = torch.topk(scores, k=shared_k, dim=1)
+                topk_exporter.write_precomputed_batch(
+                    metric_topk,
+                    shared_scores,
+                    user_ids=user_ids,
+                    target_item_ids=item_ids,
+                    target_popularity=pop_sel.detach().cpu().tolist(),
+                )
+            batch_values = compute_ranking_metric_values(
+                scores,
+                target_indices=target_indices,
+                k_list=k_list,
+                topk_indices=metric_topk,
+            )
             if average_mode == "item_macro":
                 for row, item_id in enumerate(item_ids):
                     item_counts[item_id] = item_counts.get(item_id, 0) + 1

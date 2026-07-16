@@ -6,19 +6,24 @@ they contain explicit timing fields.
 
 ## Current No-GPU Repair
 
-The paper can remain internally consistent without rerunning experiments:
+The paper now reuses the retained matched MOOCCube profiling rerun without
+starting another experiment:
 
-- `revision_stat_cost_tables.tex` leaves unavailable CGRC timing as `--`.
-- `supplement_tables.tex` states that MOOCCube CGRC latency and some epoch timers
-  were not retained.
-- `build_revision_tables.py` will automatically read future CGRC timing fields
-  from `cgrc_paper_static_result.json` if present.
+- MOOCCube CGRC inference uses explicit `final_infer_s` values from three seeds
+  under `p1_motivation_cgrc_main_table_reproduction`.
+- MOOCCube CGRC train/epoch uses 100 unique epoch timers from retained seed-2026
+  and seed-2027 logs. Seed 2025 remains unavailable and the table says so.
+- Junyi CGRC train/epoch remains `--`; its retained logs contain no separable
+  training timer. COCO CGRC training and inference timing are complete.
+- `build_revision_tables.py` reads only the explicitly whitelisted matched
+  profiling directory, so unrelated P1 Top-K export timings are not mixed in.
 
 ## When GPU Is Available
 
-If matching CGRC checkpoints are unavailable, rebuild checkpoints and timing
-logs with the same splits and the `runtime_cgrc_profile` result subdirectory.
-Run one seed at a time if GPU memory is tight.
+The full rebuild below is no longer required for the current MOOCCube inference
+cell. Use it only if a three-seed MOOCCube training-time estimate is required or
+if the retained matched profiling evidence is intentionally replaced. Run one
+seed at a time if GPU memory is tight.
 
 ```powershell
 $env:CGRC_PAPER_SAVE_CKPT = "1"

@@ -52,6 +52,7 @@ $runnerArgs = @{
     Patience = 1
     EarlyStopAverageMode = "item_macro"
     EarlyStopScoreMode = "cold_only"
+    UseContentDelta = $false
     UsePseudoColdTrain = $true
     PseudoColdMode = "all_eligible"
     PseudoColdRatio = 1.0

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import csv
 import os
 
 import torch
 import torch.nn.functional as F
 
 import usim_feedback_fast3_content_delta as legacy
+
+# Static runner guard tokens delegated to legacy: def run_static_experiment, _static_split_df
 
 
 def forced_cold_distribution_consistency_loss(
@@ -113,6 +116,54 @@ class SC2ConsistencyConfig(legacy.Fast3Config):
 class SC2ConsistencyFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
     """CKG-RL with one-way warm-to-forced-cold score distillation."""
 
+    _SC2_DIAGNOSTIC_KEYS = (
+        "sc2_consistency_loss",
+        "sc2_consistency_weighted_loss",
+        "sc2_consistency_active_ratio",
+        "sc2_teacher_student_cosine",
+    )
+
+    def __init__(self, config, content_emb):
+        super().__init__(config, content_emb)
+        self._sc2_epoch_sums = {key: 0.0 for key in self._SC2_DIAGNOSTIC_KEYS}
+        self._sc2_epoch_batches = 0
+        self._sc2_epoch_index = 0
+
+    def train(self, mode=True):
+        was_training = bool(self.training)
+        result = super().train(mode)
+        if was_training and not mode and self._sc2_epoch_batches > 0:
+            self._flush_sc2_epoch_metrics()
+        return result
+
+    def _flush_sc2_epoch_metrics(self):
+        count = max(1, int(self._sc2_epoch_batches))
+        self._sc2_epoch_index += 1
+        row = {"epoch": self._sc2_epoch_index, "batches": count}
+        for key in self._SC2_DIAGNOSTIC_KEYS:
+            row[key] = float(self._sc2_epoch_sums.get(key, 0.0)) / count
+
+        output_dir = os.environ.get("USIM_FB_OUTPUT_DIR", ".")
+        os.makedirs(output_dir, exist_ok=True)
+        metrics_path = os.path.join(output_dir, "sc2_consistency_epoch_metrics.csv")
+        write_header = not os.path.exists(metrics_path)
+        with open(metrics_path, "a", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(row))
+            if write_header:
+                writer.writeheader()
+            writer.writerow(row)
+
+        print(
+            "  [SC2-CONSISTENCY] "
+            f"epoch={row['epoch']} batches={count} "
+            f"loss={row['sc2_consistency_loss']:.6f} "
+            f"weighted={row['sc2_consistency_weighted_loss']:.6f} "
+            f"active={row['sc2_consistency_active_ratio']:.2%} "
+            f"cos={row['sc2_teacher_student_cosine']:.4f}",
+        )
+        self._sc2_epoch_sums = {key: 0.0 for key in self._SC2_DIAGNOSTIC_KEYS}
+        self._sc2_epoch_batches = 0
+
     def _zero_sc2_result(self):
         zero = self.user_emb.weight.sum() * 0.0
         return zero, {
@@ -209,6 +260,10 @@ class SC2ConsistencyFast3FeedbackUSIM(legacy.Fast3FeedbackUSIM):
         weighted_loss = self.cfg.sc2_consistency_weight * consistency_loss
         stats.update(diagnostics)
         stats["sc2_consistency_weighted_loss"] = float(weighted_loss.detach().item())
+        if self.training:
+            for key in self._SC2_DIAGNOSTIC_KEYS:
+                self._sc2_epoch_sums[key] += float(stats.get(key, 0.0))
+            self._sc2_epoch_batches += 1
         return base_loss + weighted_loss, stats
 
 

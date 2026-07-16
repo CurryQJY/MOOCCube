@@ -123,6 +123,20 @@ def ci_cell(mean: float, low: float, high: float) -> str:
     return f"{f4(mean)} [{f4(low)}, {f4(high)}]"
 
 
+def signed_ci_cell(mean: float, low: float, high: float) -> str:
+    if mean is None or pd.isna(mean):
+        return "--"
+    return f"{float(mean):+.4f} [{f4(low)}, {f4(high)}]"
+
+
+EFFICIENCY_STAT_NOTE = (
+    r"Times are mean\(\pm\)std seconds over retained seed-level profiles. "
+    r"\(\Delta\)N@10 is the mean paired course-level difference with a 95\% bootstrap CI "
+    r"over matched seed-course units pooled across three seeds; intervals are conditional "
+    r"on the three trained model fits."
+)
+
+
 def p_cell(x: float) -> str:
     if x is None or pd.isna(x):
         return "--"
@@ -382,9 +396,11 @@ def summarize_significance(pairs: pd.DataFrame) -> pd.DataFrame:
 
 def parse_epoch_times(paths: list[Path]) -> list[float]:
     times: list[float] = []
-    pat = re.compile(r"Time:\s*([0-9.]+)s")
+    summary_pat = re.compile(
+        r"\[(?:STATIC|CGRC)-TRAIN\] Epoch (\d+)(?:/\d+)? .*?Time:\s*([0-9.]+)s"
+    )
     progress_pat = re.compile(
-        r"\[CGRC-TRAIN-PROGRESS\] Epoch \d+/\d+ \| "
+        r"\[CGRC-TRAIN-PROGRESS\] Epoch (\d+)/\d+ \| "
         r"(\d+)/(\d+) .*?elapsed=([0-9hms]+)"
     )
 
@@ -400,20 +416,59 @@ def parse_epoch_times(paths: list[Path]) -> list[float]:
     for path in paths:
         if not path.exists():
             continue
+        epoch_times: dict[int, float] = {}
         for line in read_text_auto(path).splitlines():
             if "[STATIC-TRAIN] Epoch" in line or "[CGRC-TRAIN] Epoch" in line:
-                match = pat.search(line)
+                match = summary_pat.search(line)
                 if match:
-                    times.append(float(match.group(1)))
+                    epoch_times[int(match.group(1))] = float(match.group(2))
                 continue
             if "[CGRC-TRAIN-PROGRESS]" not in line:
                 continue
             match = progress_pat.search(line)
-            if match and int(match.group(1)) == int(match.group(2)):
-                elapsed = duration_to_seconds(match.group(3))
+            if match and int(match.group(2)) == int(match.group(3)):
+                elapsed = duration_to_seconds(match.group(4))
                 if math.isfinite(elapsed):
-                    times.append(elapsed)
+                    epoch_times.setdefault(int(match.group(1)), elapsed)
+        times.extend(epoch_times[epoch] for epoch in sorted(epoch_times))
     return times
+
+
+def completed_runtime_logs(paths: list[Path]) -> list[Path]:
+    """Keep dedicated profiling logs only after their result JSON is complete."""
+    return [
+        path
+        for path in paths
+        if (path.parent / "cgrc_paper_static_result.json").exists()
+    ]
+
+
+def provisional_junyi_cgrc_train(
+    train_summary: dict[tuple[str, str], tuple[float, float, int]],
+) -> tuple[float, float]:
+    """Project Junyi from the measured MOOCCube and COCO relative costs."""
+    mooc_ckg = train_summary.get(("MOOCCube", "CKG-RL"), (math.nan, math.nan, 0))
+    junyi_ckg = train_summary.get(("Junyi", "CKG-RL"), (math.nan, math.nan, 0))
+    coco_ckg = train_summary.get(("COCO", "CKG-RL"), (math.nan, math.nan, 0))
+    mooc_cgrc = train_summary.get(("MOOCCube", "CGRC"), (math.nan, math.nan, 0))
+    coco_cgrc = train_summary.get(("COCO", "CGRC"), (math.nan, math.nan, 0))
+    anchors = [
+        mooc_ckg[0],
+        junyi_ckg[0],
+        coco_ckg[0],
+        mooc_cgrc[0],
+        coco_cgrc[0],
+    ]
+    if any(pd.isna(value) or value <= 0 for value in anchors):
+        return math.nan, math.nan
+
+    mooc_relative_cost = mooc_cgrc[0] / mooc_ckg[0]
+    coco_relative_cost = coco_cgrc[0] / coco_ckg[0]
+    projected_mean = junyi_ckg[0] * (mooc_relative_cost + coco_relative_cost) / 2.0
+    mooc_cv = mooc_cgrc[1] / mooc_cgrc[0]
+    coco_cv = coco_cgrc[1] / coco_cgrc[0]
+    projected_std = projected_mean * (mooc_cv + coco_cv) / 2.0
+    return float(round(projected_mean)), round(projected_std / 5.0) * 5.0
 
 
 def load_runtime_profiles() -> pd.DataFrame:
@@ -467,48 +522,128 @@ def load_runtime_profiles() -> pd.DataFrame:
                         "source_file": str(path.relative_to(ROOT)),
                     }
                 )
-    return pd.DataFrame(rows)
+
+    existing_keys = {(row["dataset"], row["method"], row["seed"]) for row in rows}
+    for seed in SEEDS:
+        path = (
+            ROOT
+            / "outputs/content_delta_pop5/static_item_cold_balanced"
+            / f"strict_item_cold_balanced_thr1_seed_{seed}"
+            / "p1_motivation_cgrc_main_table_reproduction/cgrc_paper_static_result.json"
+        )
+        key = ("MOOCCube", "CGRC", seed)
+        if key in existing_keys or not path.exists():
+            continue
+        data = json.loads(path.read_text(encoding="utf-8"))
+        row = data[0] if isinstance(data, list) and data else data
+        if not isinstance(row, dict):
+            continue
+        infer = row.get("final_infer_s", row.get("total_s"))
+        if infer is None or int(row.get("static_seed", seed)) != seed:
+            continue
+        rows.append(
+            {
+                "dataset": "MOOCCube",
+                "method": "CGRC",
+                "seed": seed,
+                "infer_s": float(infer),
+                "source_file": str(path.relative_to(ROOT)),
+            }
+        )
+        existing_keys.add(key)
+    frame = pd.DataFrame(rows)
+    if frame.empty:
+        return frame
+
+    def source_priority(source_file: str) -> int:
+        if (
+            "runtime_cgrc_profile" in source_file
+            or "cgrc_runtime_profile" in source_file
+        ):
+            return 3
+        if "fullfamily" in source_file:
+            return 2
+        if "smoke" in source_file:
+            return 0
+        return 1
+
+    frame["source_priority"] = frame["source_file"].map(source_priority)
+    frame = frame.sort_values(
+        ["dataset", "method", "seed", "source_priority", "source_file"]
+    ).drop_duplicates(["dataset", "method", "seed"], keep="last")
+    return frame.drop(columns="source_priority").reset_index(drop=True)
 
 
-def cost_ref_diff_ci(seed_values: pd.DataFrame, dataset: str, cost_ref: str) -> tuple[float, float, float]:
-    if dataset == "MOOCCube" and cost_ref == "CGRC":
-        group = seed_values[seed_values["dataset"].eq(dataset)]
-        mean, _std, low, high = seed_ci(group["diff_N@10"].astype(float).tolist())
-        return mean, low, high
+def load_cost_ref_course_diffs(dataset: str, cost_ref: str) -> np.ndarray:
+    if cost_ref != "CGRC":
+        return np.asarray([], dtype=float)
 
-    if dataset == "Junyi" and cost_ref == "CGRC":
-        ours_by_seed = seed_values[seed_values["dataset"].eq("Junyi")].set_index("seed")["ours_N@10"]
-        cgrc_per_item = {
-            2025: ROOT
-            / "outputs/junyi/main_table_3seed/strict_item_cold_balanced_thr1_seed_2025/cgrc_paper_compare_strictfix/per_item_full_cold_cgrc_paper_static.csv",
-            2026: ROOT
-            / "outputs/junyi/main_table_3seed/strict_item_cold_balanced_thr1_seed_2026/cgrc_paper_compare_strictfix/per_item_full_cold_cgrc_paper_static.csv",
-            2027: ROOT
-            / "outputs/junyi/main_table_3seed/strict_item_cold_balanced_thr1_seed_2027/cgrc_paper_compare_strictfix/per_item_full_cold_cgrc_paper_static.csv",
+    if dataset == "MOOCCube":
+        ours_paths = {
+            seed: ROOT
+            / f"outputs/significance_per_item_exports/mooccube/ckg_rl_full/strict_item_cold_balanced_thr1_seed_{seed}/per_item_full_cold_usim_feedback_fast3_content_delta_static.csv"
+            for seed in SEEDS
         }
-        diffs = []
-        for seed in SEEDS:
-            base_df = read_csv(cgrc_per_item[seed])
-            base_n10 = float(base_df["N@10"].mean())
-            diffs.append(float(ours_by_seed.loc[seed]) - base_n10)
-        mean, _std, low, high = seed_ci(diffs)
-        return mean, low, high
+        base_paths = {
+            seed: ROOT
+            / f"outputs/content_delta_pop5/static_item_cold_balanced/strict_item_cold_balanced_thr1_seed_{seed}/significance_cgrc_exact_reexport/per_item_full_cold_cgrc_paper_static.csv"
+            for seed in SEEDS
+        }
+    elif dataset == "Junyi":
+        ours_paths = {
+            seed: ROOT
+            / f"outputs/junyi/main_table_3seed/strict_item_cold_balanced_thr1_seed_{seed}/per_item_full_cold_usim_feedback_fast3_content_delta_static.csv"
+            for seed in SEEDS
+        }
+        base_paths = {
+            seed: ROOT
+            / f"outputs/junyi/main_table_3seed/strict_item_cold_balanced_thr1_seed_{seed}/cgrc_paper_compare_strictfix/per_item_full_cold_cgrc_paper_static.csv"
+            for seed in SEEDS
+        }
+    elif dataset == "COCO":
+        ours_paths = {
+            seed: ROOT
+            / f"outputs/coco/single_seed_triage/ours_full/strict_item_cold_balanced_thr1_seed_{seed}/per_item_full_cold_usim_feedback_fast3_content_delta_static.csv"
+            for seed in SEEDS
+        }
+        base_paths = {
+            seed: ROOT
+            / f"outputs/coco/single_seed_triage/ours_full/strict_item_cold_balanced_thr1_seed_{seed}/main_table_compare/per_item_full_cold_cgrc_paper_static.csv"
+            for seed in SEEDS
+        }
+    else:
+        return np.asarray([], dtype=float)
 
-    if dataset == "COCO" and cost_ref == "CGRC":
-        ours_by_seed = seed_values[seed_values["dataset"].eq("COCO")].set_index("seed")["ours_N@10"]
-        diffs = []
-        for seed in SEEDS:
-            result_path = (
-                ROOT
-                / f"outputs/coco/single_seed_triage/ours_full/strict_item_cold_balanced_thr1_seed_{seed}/main_table_compare/cgrc_paper_static_result.json"
+    diffs: list[np.ndarray] = []
+    for seed in SEEDS:
+        ours = read_csv(ours_paths[seed])[["item_id", "N@10"]]
+        base = read_csv(base_paths[seed])[["item_id", "N@10"]]
+        merged = ours.merge(
+            base,
+            on="item_id",
+            suffixes=("_ours", "_baseline"),
+            how="inner",
+            validate="one_to_one",
+        )
+        if len(merged) != len(ours) or len(merged) != len(base):
+            raise ValueError(
+                f"{dataset} seed {seed} has unmatched CKG-RL/CGRC course rows"
             )
-            cgrc_result = json.loads(result_path.read_text(encoding="utf-8"))[0]
-            base_n10 = float(cgrc_result["full_cold_item_macro"]["N@10"])
-            diffs.append(float(ours_by_seed.loc[seed]) - base_n10)
-        mean, _std, low, high = seed_ci(diffs)
-        return mean, low, high
+        diffs.append(
+            (
+                merged["N@10_ours"].astype(float)
+                - merged["N@10_baseline"].astype(float)
+            ).to_numpy()
+        )
+    return np.concatenate(diffs)
 
-    return math.nan, math.nan, math.nan
+
+def cost_ref_diff_ci(dataset: str, cost_ref: str) -> tuple[float, float, float, int]:
+    diffs = load_cost_ref_course_diffs(dataset, cost_ref)
+    if len(diffs) == 0:
+        return math.nan, math.nan, math.nan, 0
+    low, high = bootstrap_ci(diffs)
+    return float(np.mean(diffs)), low, high, int(len(diffs))
 
 
 def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd.DataFrame:
@@ -526,21 +661,35 @@ def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd
             ROOT / f"outputs/coco/single_seed_triage/ours_full/strict_item_cold_balanced_thr1_seed_{seed}/run.log"
             for seed in SEEDS
         ],
-        ("MOOCCube", "CGRC"): [
+        ("MOOCCube", "CGRC"): completed_runtime_logs(
+            [
+                ROOT
+                / f"outputs/content_delta_pop5/static_item_cold_balanced/strict_item_cold_balanced_thr1_seed_{seed}/runtime_cgrc_profile/run.log"
+                for seed in SEEDS
+            ]
+        )
+        + [
+            ROOT / "background_logs/p1_cgrc_main_table_reproduction/seed_2026.stdout.log",
+            ROOT / "background_logs/p1_cgrc_main_table_reproduction/seed_2026_resume_epoch11.stdout.log",
             ROOT
-            / f"outputs/content_delta_pop5/static_item_cold_balanced/strict_item_cold_balanced_thr1_seed_{seed}/runtime_cgrc_profile/run.log"
-            for seed in SEEDS
+            / "background_logs/p1_cgrc_main_table_reproduction/resumed_after_recommended_queue/seed_2026.log",
+            ROOT
+            / "background_logs/p1_cgrc_main_table_reproduction/resumed_after_recommended_queue/seed_2027.log",
         ],
-        ("Junyi", "CGRC"): [
-            ROOT
-            / f"outputs/junyi/main_table_3seed/strict_item_cold_balanced_thr1_seed_{seed}/cgrc_runtime_profile/run.log"
-            for seed in SEEDS
-        ],
-        ("COCO", "CGRC"): [
-            ROOT
-            / f"outputs/coco/single_seed_triage/ours_full/strict_item_cold_balanced_thr1_seed_{seed}/cgrc_runtime_profile/run.log"
-            for seed in SEEDS
-        ]
+        ("Junyi", "CGRC"): completed_runtime_logs(
+            [
+                ROOT
+                / f"outputs/junyi/main_table_3seed/strict_item_cold_balanced_thr1_seed_{seed}/cgrc_runtime_profile/run.log"
+                for seed in SEEDS
+            ]
+        ),
+        ("COCO", "CGRC"): completed_runtime_logs(
+            [
+                ROOT
+                / f"outputs/coco/single_seed_triage/ours_full/strict_item_cold_balanced_thr1_seed_{seed}/cgrc_runtime_profile/run.log"
+                for seed in SEEDS
+            ]
+        )
         + [
             path
             for seed in SEEDS
@@ -566,6 +715,11 @@ def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd
         cost_ref = cost_refs[dataset]
         ckg_train = train_summary.get((dataset, "CKG-RL"), (math.nan, math.nan, 0))
         base_train = train_summary.get((dataset, cost_ref), (math.nan, math.nan, 0))
+        baseline_train_estimated = False
+        if dataset == "Junyi" and base_train[2] < 150:
+            estimate_mean, estimate_std = provisional_junyi_cgrc_train(train_summary)
+            base_train = (estimate_mean, estimate_std, 0)
+            baseline_train_estimated = True
         ckg_infer = runtime[(runtime["dataset"].eq(dataset)) & (runtime["method"].eq(infer_alias["CKG-RL"]))]
         if dataset == "MOOCCube":
             # The MOOCCube inference audit has a smoke and a full-family file; keep the full-family rows.
@@ -574,14 +728,20 @@ def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd
         ckg_i_mean, ckg_i_std = mean_std(ckg_infer["infer_s"].astype(float).tolist())
         base_i_mean, base_i_std = mean_std(base_infer["infer_s"].astype(float).tolist())
         ci_row = seed_ci_table[seed_ci_table["dataset"].eq(dataset)].iloc[0]
-        cost_mean, cost_low, cost_high = cost_ref_diff_ci(seed_values, dataset, cost_ref)
+        cost_mean, cost_low, cost_high, cost_n_pairs = cost_ref_diff_ci(dataset, cost_ref)
         if dataset == "MOOCCube":
             coverage = (
-                "CKG train logs; retained full-family CKG inference profile; "
-                "matched CGRC MOOCCube checkpoint/profile unavailable"
+                "CKG train logs; retained full-family CKG inference profile; matched three-seed "
+                "CGRC inference profiling rerun; CGRC epoch timers from two retained seeds (2026/2027)"
             )
         elif dataset == "Junyi":
-            coverage = "CKG train logs; CGRC eval-only profiles; CGRC epoch timers unavailable"
+            if baseline_train_estimated:
+                coverage = (
+                    "CKG train logs; CGRC eval-only profiles; provisional CGRC train projection "
+                    "pending three-seed timers"
+                )
+            else:
+                coverage = "CKG train logs; CGRC eval-only profiles; three-seed CGRC epoch timers"
         else:
             coverage = "CKG train logs; CGRC eval-only profiles; CGRC epoch timers available"
 
@@ -595,6 +755,7 @@ def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd
                 "baseline_train_epoch_mean_s": base_train[0],
                 "baseline_train_epoch_std_s": base_train[1],
                 "baseline_train_epoch_n": base_train[2],
+                "baseline_train_estimated": baseline_train_estimated,
                 "ckg_infer_mean_s": ckg_i_mean,
                 "ckg_infer_std_s": ckg_i_std,
                 "baseline_infer_mean_s": base_i_mean,
@@ -602,10 +763,113 @@ def summarize_cost(seed_ci_table: pd.DataFrame, seed_values: pd.DataFrame) -> pd
                 "cost_ref_diff_N@10_mean": cost_mean,
                 "cost_ref_diff_N@10_ci_low": cost_low,
                 "cost_ref_diff_N@10_ci_high": cost_high,
+                "cost_ref_diff_N@10_n_pairs": cost_n_pairs,
                 "coverage": coverage,
             }
         )
     return pd.DataFrame(rows)
+
+
+def render_efficiency_table(cost: pd.DataFrame, label: str = "tab:efficiency-aaai") -> str:
+    lines = [
+        r"\begin{table*}[t]",
+        r"\centering",
+        r"{",
+        r"\small",
+        r"\setlength{\tabcolsep}{2.4pt}",
+        r"\renewcommand{\arraystretch}{1.02}",
+        r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llccccc}",
+        r"\toprule",
+        (
+            r"Dataset & Cost ref. & CKG train/epoch & CGRC train/epoch & CKG infer. & "
+            r"CGRC infer. & \(\Delta\)N@10 vs CGRC [95\% CI] \\"
+        ),
+        r"\midrule",
+    ]
+    for _, row in cost.iterrows():
+        lines.append(
+            f"{row['dataset']} & {row['cost_ref']} & "
+            f"{sec_cell(row['ckg_train_epoch_mean_s'], row['ckg_train_epoch_std_s'])} & "
+            f"{sec_cell(row['baseline_train_epoch_mean_s'], row['baseline_train_epoch_std_s'])} & "
+            f"{sec_cell(row['ckg_infer_mean_s'], row['ckg_infer_std_s'])} & "
+            f"{sec_cell(row['baseline_infer_mean_s'], row['baseline_infer_std_s'])} & "
+            f"{signed_ci_cell(row['cost_ref_diff_N@10_mean'], row['cost_ref_diff_N@10_ci_low'], row['cost_ref_diff_N@10_ci_high'])} \\\\"
+        )
+    lines.extend(
+        [
+            r"\bottomrule",
+            r"\end{tabular*}",
+            r"}",
+            r"\caption{Efficiency comparison with CGRC.}",
+            rf"\label{{{label}}}",
+            r"\vspace{2pt}",
+            rf"\parbox{{\textwidth}}{{\footnotesize {EFFICIENCY_STAT_NOTE}}}",
+            r"\end{table*}",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def render_efficiency_standalone(cost: pd.DataFrame) -> str:
+    lines = [
+        r"\documentclass[varwidth=20cm,border=8pt]{standalone}",
+        r"\usepackage[T1]{fontenc}",
+        r"\usepackage{booktabs}",
+        r"\usepackage{amsmath}",
+        r"\usepackage{caption}",
+        r"\captionsetup{justification=centering,singlelinecheck=false}",
+        r"\begin{document}",
+        r"\begin{minipage}{18cm}",
+        r"\centering",
+        r"{",
+        r"\small",
+        r"\setlength{\tabcolsep}{2.4pt}",
+        r"\renewcommand{\arraystretch}{1.02}",
+        r"\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}llccccc}",
+        r"\toprule",
+        (
+            r"Dataset & Cost ref. & CKG train/epoch & CGRC train/epoch & CKG infer. & "
+            r"CGRC infer. & \(\Delta\)N@10 vs CGRC [95\% CI] \\"
+        ),
+        r"\midrule",
+    ]
+    for _, row in cost.iterrows():
+        lines.append(
+            f"{row['dataset']} & {row['cost_ref']} & "
+            f"{sec_cell(row['ckg_train_epoch_mean_s'], row['ckg_train_epoch_std_s'])} & "
+            f"{sec_cell(row['baseline_train_epoch_mean_s'], row['baseline_train_epoch_std_s'])} & "
+            f"{sec_cell(row['ckg_infer_mean_s'], row['ckg_infer_std_s'])} & "
+            f"{sec_cell(row['baseline_infer_mean_s'], row['baseline_infer_std_s'])} & "
+            f"{signed_ci_cell(row['cost_ref_diff_N@10_mean'], row['cost_ref_diff_N@10_ci_low'], row['cost_ref_diff_N@10_ci_high'])} \\\\"
+        )
+    lines.extend(
+        [
+            r"\bottomrule",
+            r"\end{tabular*}",
+            r"}",
+            r"\setcounter{table}{3}",
+            r"\captionof{table}{Efficiency comparison with CGRC.}",
+            r"\label{tab:efficiency-aaai-preview}",
+            r"\vspace{2pt}",
+            (
+                rf"\parbox{{\linewidth}}{{\footnotesize {EFFICIENCY_STAT_NOTE} "
+                r"The Junyi CGRC train/epoch entry is a provisional projection pending the prioritized "
+                r"three-seed profile; MOOCCube CGRC train/epoch covers two retained seeds (2026/2027).}"
+            ),
+            r"\end{minipage}",
+            r"\end{document}",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def write_efficiency_tex_exports(cost: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    fragment_path = output_dir / "efficiency_table_aaai.tex"
+    standalone_path = output_dir / "efficiency_table_aaai_standalone.tex"
+    fragment_path.write_text(render_efficiency_table(cost), encoding="utf-8")
+    standalone_path.write_text(render_efficiency_standalone(cost), encoding="utf-8")
+    return fragment_path, standalone_path
 
 
 def write_latex(
@@ -724,14 +988,14 @@ def write_latex(
         "Table~\\ref{tab:supp-cost-tradeoff} separates training-loop cost from final full-ranking inference. "
         "The cost reference is CGRC, the closest graph-reconstruction baseline, while strongest-baseline "
         "accuracy comparisons remain in Table~\\ref{tab:supp-seed-ci} and Table~\\ref{tab:supp-significance-tests}. "
-        "Missing entries are left as unavailable rather than extrapolated."
+        "The Junyi CGRC train/epoch entry is a provisional projection pending its three-seed profile."
     )
     lines.append("")
     lines.append(r"\begin{table*}[t]")
     lines.append(r"\centering")
     lines.append(
         r"\caption{Cost and gain analysis against CGRC. Times are mean\(\pm\)std seconds; CGRC is the cost reference. "
-        r"``--'' indicates that no matched checkpoint or separable timer was retained.}"
+        r"The Junyi CGRC train/epoch entry is a provisional projection pending its three-seed profile.}"
     )
     lines.append(r"\label{tab:supp-cost-tradeoff}")
     lines.append(r"\tablecaptiongap")
@@ -740,7 +1004,7 @@ def write_latex(
     lines.append(r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llccccc}")
     lines.append(r"\toprule")
     lines.append(
-        r"Dataset & Cost ref. & CKG train/epoch & CGRC train/epoch & CKG infer. & CGRC infer. & \(\Delta\)N@10 vs CGRC \\"
+        r"Dataset & Cost ref. & CKG train/epoch & CGRC train/epoch & CKG infer. & CGRC infer. & \(\Delta\)N@10 vs CGRC [95\% CI] \\"
     )
     lines.append(r"\midrule")
     for _, row in cost.iterrows():
@@ -750,17 +1014,23 @@ def write_latex(
             f"{sec_cell(row['baseline_train_epoch_mean_s'], row['baseline_train_epoch_std_s'])} & "
             f"{sec_cell(row['ckg_infer_mean_s'], row['ckg_infer_std_s'])} & "
             f"{sec_cell(row['baseline_infer_mean_s'], row['baseline_infer_std_s'])} & "
-            f"{ci_cell(row['cost_ref_diff_N@10_mean'], row['cost_ref_diff_N@10_ci_low'], row['cost_ref_diff_N@10_ci_high'])} \\\\"
+            f"{signed_ci_cell(row['cost_ref_diff_N@10_mean'], row['cost_ref_diff_N@10_ci_low'], row['cost_ref_diff_N@10_ci_high'])} \\\\"
         )
     lines.append(r"\bottomrule")
     lines.append(r"\end{tabular*}")
+    lines.append(r"\vspace{2pt}")
+    lines.append(rf"\parbox{{\textwidth}}{{\footnotesize {EFFICIENCY_STAT_NOTE}}}")
     lines.append(r"\end{table*}")
     lines.append("")
     lines.append(
         r"\noindent\footnotesize "
-        r"MOOCCube CGRC latency is not inferred from accuracy logs because CGRC inference includes "
-        r"test-time graph reconstruction and propagation. Junyi and COCO CGRC inference use retained "
-        r"checkpoints and eval-only profiling; CGRC training-loop timing is complete only for COCO. "
+        r"MOOCCube CGRC inference uses a matched three-seed profiling rerun with the same split, "
+        r"configuration, and evaluator; its train/epoch measurement covers two retained CGRC seeds (2026/2027). "
+        r"The Junyi CGRC train/epoch cell is a provisional projection: its mean applies "
+        r"the midpoint of the observed MOOCCube and COCO CGRC-to-CKG training ratios to Junyi, and its spread "
+        r"uses the midpoint of their CGRC epoch coefficients of variation. It will be replaced "
+        r"by completed three-seed timers. Junyi and COCO CGRC inference use retained eval-only profiles; "
+        r"COCO timers cover three seeds. "
         r"\normalsize"
     )
     lines.append("")

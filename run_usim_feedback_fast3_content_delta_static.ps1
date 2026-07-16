@@ -1,6 +1,7 @@
 param(
     [string]$PythonRunner = ".\py.bat",
     [string]$ScriptPath = "usim_feedback_fast3_content_delta.py",
+    [switch]$MinimalLiraMode,
     [string]$DataDir = "processed_data_hin_clean_pop5",
     [string]$RelationDir = "MOOCCube/relations",
     [string]$OutputRoot = "outputs\content_delta_pop5\static_item_cold",
@@ -35,7 +36,7 @@ param(
     [int]$ContentDeltaOnlyAfterEpoch = 0,
     [double]$AuxWeight = 0.3,
     [bool]$UsePseudoColdTrain = $true,
-    [ValidateSet("batch_random", "batch_tail", "all_eligible", "none", "off")]
+    [ValidateSet("batch_random", "batch_tail", "item_tail", "all_eligible", "none", "off")]
     [string]$PseudoColdMode = "all_eligible",
     [double]$PseudoColdRatio = 1.00,
     [int]$PseudoColdMinPop = 1,
@@ -304,8 +305,27 @@ $saveCkptExplicit = $PSBoundParameters.ContainsKey("SaveCkpt")
 $checkpointSaveDefaulted = $false
 
 $scriptText = Get-Content -Raw -Encoding UTF8 -LiteralPath $ScriptPath
-if ($scriptText -notmatch "def run_static_experiment" -or $scriptText -notmatch "_static_split_df") {
+$hasInlineStaticImplementation = (
+    $scriptText -match "def run_static_experiment" -and
+    $scriptText -match "_static_split_df"
+)
+$hasExplicitStaticDelegate = $scriptText -match "USIM_STATIC_DELEGATE_ENTRYPOINT\s*=\s*True"
+if (-not $hasInlineStaticImplementation -and -not $hasExplicitStaticDelegate) {
     throw "Static runner guard failed: '$ScriptPath' does not contain the static experiment implementation."
+}
+
+if ($MinimalLiraMode) {
+    $UseContentDelta = $false
+    $AuxWeight = 0.0
+    $UsePaac = $false
+    $UseCourseFeedback = $false
+    $UseCourseReward = $false
+    $UsePrereqAux = $false
+    $UseSageLite = $false
+    $UseSageAuxLoss = $false
+    $UseCgrcRecon = $false
+    $UseCourseSample = $false
+    $PpoLossWeight = 0.0
 }
 
 if ($Protocol -eq "strict_item_cold_balanced") {

@@ -93,6 +93,128 @@ from fast3_delta.static_protocol import (
 )
 
 
+def _apply_refinement_only_to_effective_cold(z_i_base, refined_h, effective_cold):
+    """Route iterative refinement only through rows trained as true/pseudo cold."""
+    if effective_cold is None:
+        return refined_h
+    cold_mask = effective_cold.to(device=z_i_base.device, dtype=torch.bool).view(-1, 1)
+    return torch.where(cold_mask, refined_h, z_i_base)
+
+
+def _batch_invariant_alignment_grad(
+    current_h,
+    selected_user,
+    target_emb=None,
+    target_alpha=None,
+    reference_batch_size=1,
+):
+    """Compute per-row alignment gradients with a fixed, batch-independent scale."""
+    h_detached = current_h.detach().requires_grad_(True)
+    user_align = (h_detached * selected_user.detach()).sum(dim=1, keepdim=True)
+    if target_emb is None:
+        score_per_row = user_align
+    else:
+        if target_alpha is None:
+            raise ValueError("target_alpha is required when target_emb is provided")
+        target_align = (h_detached * target_emb.detach()).sum(dim=1, keepdim=True)
+        score_per_row = (1.0 - target_alpha) * user_align + target_alpha * target_align
+    scale = float(max(1, int(reference_batch_size)))
+    return torch.autograd.grad(score_per_row.sum() / scale, h_detached)[0]
+
+
+def _training_episode_target(z_i_base, rollout_policy, ppo_loss_weight):
+    """Match Course-fit/no-PPO training transitions to unanchored inference."""
+    policy = str(rollout_policy or "ppo").strip().lower()
+    if policy == "course_fit" and float(ppo_loss_weight) == 0.0:
+        return None
+    return z_i_base.detach().clone()
+
+
+def _build_fixed_tail_pseudo_item_mask(item_popularity, ratio=0.30, min_pop=1):
+    """Select a deterministic tail-item set covering the requested popularity mass."""
+    pop = torch.as_tensor(item_popularity).detach().float().view(-1)
+    mask = torch.zeros(pop.numel(), dtype=torch.bool, device=pop.device)
+    eligible_idx = torch.nonzero(pop >= float(max(1, int(min_pop))), as_tuple=False).view(-1)
+    if eligible_idx.numel() < 1 or float(ratio) <= 0.0:
+        return mask
+    if float(ratio) >= 1.0:
+        mask[eligible_idx] = True
+        return mask
+
+    rows = [
+        (float(pop[idx].item()), int(idx))
+        for idx in eligible_idx.detach().cpu().tolist()
+    ]
+    rows.sort(key=lambda pair: (pair[0], pair[1]))
+    target_mass = float(ratio) * sum(value for value, _ in rows)
+    cumulative = 0.0
+    selected = []
+    for value, idx in rows:
+        selected.append(idx)
+        cumulative += value
+        if cumulative >= target_mass:
+            break
+    if selected:
+        mask[torch.tensor(selected, dtype=torch.long, device=pop.device)] = True
+    return mask
+
+
+def _remove_target_from_seen_history(seen_mat, seen_cnt_raw, item_idx):
+    """Remove each row's target item before any course-fit term is computed."""
+    if seen_mat is None or seen_cnt_raw is None:
+        return seen_mat, seen_cnt_raw
+    cleaned = seen_mat.clone()
+    target_col = item_idx.to(device=cleaned.device).view(-1, 1).long()
+    target_seen = cleaned.gather(1, target_col)
+    cleaned.scatter_(1, target_col, 0.0)
+    cleaned_counts = (seen_cnt_raw.to(cleaned.device) - target_seen).clamp_min(0.0)
+    return cleaned, cleaned_counts
+
+
+def _remove_masked_items_from_seen_history(seen_mat, item_mask):
+    if seen_mat is None or item_mask is None:
+        counts = None if seen_mat is None else seen_mat.sum(dim=1, keepdim=True)
+        return seen_mat, counts
+    cleaned = seen_mat.clone()
+    mask = item_mask.to(device=cleaned.device, dtype=torch.bool).view(-1)
+    if mask.numel() != cleaned.size(1):
+        raise ValueError("item history mask must match the item catalog size")
+    cleaned[:, mask] = 0.0
+    return cleaned, cleaned.sum(dim=1, keepdim=True)
+
+
+def _exclude_previously_selected_users(scores, candidate_user_ids, selected_user_ids):
+    if scores is None or candidate_user_ids is None or selected_user_ids is None:
+        return scores
+    if selected_user_ids.numel() == 0:
+        return scores
+    repeated = (candidate_user_ids.unsqueeze(2) == selected_user_ids.unsqueeze(1)).any(dim=2)
+    masked = scores.masked_fill(repeated, float("-inf"))
+    all_blocked = repeated.all(dim=1)
+    if all_blocked.any():
+        masked[all_blocked] = scores[all_blocked]
+    return masked
+
+
+def _coursefit_active_update_mask(fit_score, action_idx, threshold=0.0):
+    if fit_score is None:
+        return None
+    chosen = fit_score.gather(1, action_idx.view(-1, 1)).view(-1)
+    return torch.isfinite(chosen) & (chosen > float(threshold))
+
+
+def _deterministic_candidate_positions(probs, num_samples):
+    k = min(int(num_samples), int(probs.size(1)))
+    return torch.argsort(probs, dim=1, descending=True, stable=True)[:, :k]
+
+
+def _finite_tensor_mean(values):
+    finite = values[torch.isfinite(values)]
+    if finite.numel() == 0:
+        return 0.0
+    return float(finite.mean().item())
+
+
 def setup_seed(seed=2025):
     random.seed(seed)
     np.random.seed(seed)
@@ -766,7 +888,7 @@ class PAM_RL_Pure_USIM(nn.Module):
             return None
         return pop.to(device=self.device).float().view(-1) < float(self.cfg.cold_threshold)
 
-    def _effective_train_cold_mask(self, pop):
+    def _effective_train_cold_mask(self, pop, item_idx=None):
         true_cold = self._cold_mask_from_pop(pop)
         if true_cold is None:
             return None
@@ -780,6 +902,20 @@ class PAM_RL_Pure_USIM(nn.Module):
         mode = str(getattr(self.cfg, "pseudo_cold_mode", "batch_random")).strip().lower()
         if mode in {"none", "off"}:
             return true_cold
+
+        if mode == "item_tail":
+            if item_idx is None or self.item_popularity is None:
+                raise RuntimeError("item_tail pseudo-cold mode requires item indices and item popularity")
+            cache = getattr(self, "_fixed_pseudo_cold_item_mask_cache", None)
+            if cache is None:
+                cache = _build_fixed_tail_pseudo_item_mask(
+                    self.item_popularity,
+                    ratio=float(getattr(self.cfg, "pseudo_cold_ratio", 0.0)),
+                    min_pop=int(getattr(self.cfg, "pseudo_cold_min_pop", 1)),
+                ).to(self.device)
+                self._fixed_pseudo_cold_item_mask_cache = cache
+            pseudo_cold = cache.index_select(0, item_idx.to(self.device).view(-1).long())
+            return true_cold | pseudo_cold
 
         pop_f = pop.to(device=self.device).float().view(-1)
         min_pop = float(max(1, int(getattr(self.cfg, "pseudo_cold_min_pop", 1))))
@@ -1659,8 +1795,20 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         else:
             seen_mat, seen_cnt_raw = self._build_seen_mat(selected_user_ids, user_seen_items)
 
+        pseudo_item_mask = getattr(self, "_fixed_pseudo_cold_item_mask_cache", None)
+        if pseudo_item_mask is not None:
+            seen_mat, seen_cnt_raw = _remove_masked_items_from_seen_history(
+                seen_mat,
+                pseudo_item_mask,
+            )
         if seen_cnt_raw.max().item() < 1:
             return terms
+        if bool(getattr(self.cfg, "feedback_course_match_exclude_target", False)):
+            seen_mat, seen_cnt_raw = _remove_target_from_seen_history(
+                seen_mat,
+                seen_cnt_raw,
+                item_idx,
+            )
 
         active = torch.ones((batch_size, 1), dtype=torch.float32, device=self.device)
         if self.cfg.feedback_course_only_cold and target_pop is not None:
@@ -1723,7 +1871,22 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         seen_mat = seen_mat_u[inverse_map]
         seen_cnt_raw = seen_cnt_u[inverse_map]
 
+        pseudo_item_mask = getattr(self, "_fixed_pseudo_cold_item_mask_cache", None)
+        if pseudo_item_mask is not None:
+            seen_mat, seen_cnt_raw = _remove_masked_items_from_seen_history(
+                seen_mat,
+                pseudo_item_mask,
+            )
+        if seen_cnt_raw.max().item() < 1:
+            return zero
+
         flat_item_idx = item_idx.view(-1, 1).expand(-1, n_cand).reshape(-1)
+        if bool(getattr(self.cfg, "feedback_course_match_exclude_target", False)):
+            seen_mat, seen_cnt_raw = _remove_target_from_seen_history(
+                seen_mat,
+                seen_cnt_raw,
+                flat_item_idx,
+            )
         fit = torch.zeros((flat_user_idx.size(0), 1), dtype=torch.float32, device=self.device)
 
         warm_seen = max(1.0, float(self.cfg.feedback_course_warm_seen))
@@ -2187,9 +2350,13 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
                         cgrc_recon_sample_active_mean = float((recon_gate > 0).float().mean().item())
                         cgrc_recon_sample_score_mean = float((recon_logits * recon_gate).sum().item() / recon_gate.sum().clamp_min(1.0).item())
         probs = probs / probs.sum(dim=1, keepdim=True).clamp_min(1e-12)
-        nonzero_per_row = (probs > 0).sum(dim=1)
-        replacement = int(nonzero_per_row.min().detach().item()) < N_cand
-        sample_pos = torch.multinomial(probs, num_samples=N_cand, replacement=replacement)
+        deterministic_coursefit = str(getattr(self.cfg, "rollout_policy", "ppo")).strip().lower() == "course_fit"
+        if deterministic_coursefit:
+            sample_pos = _deterministic_candidate_positions(probs, N_cand)
+        else:
+            nonzero_per_row = (probs > 0).sum(dim=1)
+            replacement = int(nonzero_per_row.min().detach().item()) < N_cand
+            sample_pos = torch.multinomial(probs, num_samples=N_cand, replacement=replacement)
         cand_idx = pool_idx.gather(1, sample_pos)
         cand_emb = user_bank_raw[cand_idx].detach()
         topm_unique = max(1, int(pool_idx.unique().numel()))
@@ -2213,12 +2380,16 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
     def forward(self, batch, pop, llm_s, user_bank_raw=None, user_seen_items=None):
         u, i = batch["u"], batch["i"]
         is_cold = self._cold_mask_from_pop(pop)
-        effective_cold = self._effective_train_cold_mask(pop)
+        effective_cold = self._effective_train_cold_mask(pop, item_idx=i)
         episode_pop = self._target_pop_with_effective_cold(pop, effective_cold)
         z_u_base = self.user_proj(self.user_emb(u))
         force_cold_mask = effective_cold if self.cfg.train_force_cold else False
         z_i_base, id_e_true, content_e = self.get_item_vector(i, llm_s, force_cold=force_cold_mask)
-        target_emb = z_i_base.detach().clone()
+        target_emb = _training_episode_target(
+            z_i_base,
+            getattr(self.cfg, "rollout_policy", "ppo"),
+            getattr(self.cfg, "ppo_loss_weight", 1.0),
+        )
         final_h, trajectory, candidate_stats = self.run_usim_episode(
             z_i_base,
             target_emb,
@@ -2227,7 +2398,12 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             target_pop=episode_pop,
             user_seen_items=user_seen_items,
         )
-        final_h = self._blend_rl_episode_output(z_i_base, final_h)
+        refined_h = self._blend_rl_episode_output(z_i_base, final_h)
+        final_h = _apply_refinement_only_to_effective_cold(
+            z_i_base,
+            refined_h,
+            effective_cold,
+        )
         pseudo_cold_mask = effective_cold & (~is_cold)
         candidate_stats["pseudo_cold_count"] = int(pseudo_cold_mask.sum().detach().item())
         candidate_stats["pseudo_cold_ratio"] = (
@@ -2608,6 +2784,11 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
         elif user_bank_raw is not None and user_bank_norm is None:
             user_bank_norm = F.normalize(user_bank_raw, dim=1)
 
+        selected_user_history = torch.empty(
+            (current_h.size(0), 0),
+            dtype=torch.long,
+            device=self.device,
+        )
         for t in range(self.cfg.usim_steps):
             time_step = torch.full((current_h.size(0), 1), t, device=self.device)
             candidates, cand_user_idx, cand_stats = self.get_candidates(
@@ -2626,6 +2807,12 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 target_pop=target_pop,
                 user_seen_items=user_seen_items,
             )
+            if str(getattr(self.cfg, "rollout_policy", "ppo")).strip().lower() == "course_fit":
+                fit_score = _exclude_previously_selected_users(
+                    fit_score,
+                    cand_user_idx,
+                    selected_user_history,
+                )
             action_idx, log_prob, value, entropy = self._select_rollout_action(
                 current_h,
                 time_step,
@@ -2645,7 +2832,7 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 candidate_stats["cgrc_recon_sample_score"] += float(cand_stats.get("cgrc_recon_sample_score", 0.0))
                 candidate_stats["steps"] += 1
             if fit_score is not None:
-                candidate_stats["course_sample_fit"] += float(fit_score.mean().item())
+                candidate_stats["course_sample_fit"] += _finite_tensor_mean(fit_score)
 
             trajectory["states"].append(current_h.detach().clone())
             trajectory["time_steps"].append(time_step.detach().clone())
@@ -2658,24 +2845,34 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
             selected_user_ids = None
             if cand_user_idx is not None:
                 selected_user_ids = cand_user_idx[batch_indices, action_idx]
+                selected_user_history = torch.cat(
+                    [selected_user_history, selected_user_ids.view(-1, 1)],
+                    dim=1,
+                )
 
+            target_alpha = None
+            if target_emb is not None:
+                target_alpha = self._compute_target_alpha(
+                    target_pop=target_pop,
+                    step_idx=t,
+                    entropy=entropy,
+                    num_candidates=candidates.size(1),
+                    batch_size=current_h.size(0),
+                )
+                candidate_stats["target_alpha"] += float(target_alpha.mean().item())
             with torch.enable_grad():
-                h_detached = current_h.detach().requires_grad_(True)
-                user_align = (h_detached * selected_user.detach()).sum(dim=1, keepdim=True)
-                if target_emb is not None:
-                    target_align = (h_detached * target_emb.detach()).sum(dim=1, keepdim=True)
-                    target_alpha = self._compute_target_alpha(
-                        target_pop=target_pop,
-                        step_idx=t,
-                        entropy=entropy,
-                        num_candidates=candidates.size(1),
-                        batch_size=current_h.size(0),
-                    )
-                    candidate_stats["target_alpha"] += float(target_alpha.mean().item())
-                    score = (((1.0 - target_alpha) * user_align) + (target_alpha * target_align)).mean()
-                else:
-                    score = user_align.mean()
-                grad = torch.autograd.grad(score, h_detached)[0]
+                grad = _batch_invariant_alignment_grad(
+                    current_h,
+                    selected_user,
+                    target_emb=target_emb,
+                    target_alpha=target_alpha,
+                    reference_batch_size=getattr(self.cfg, "batch_size", current_h.size(0)),
+                )
+
+            if str(getattr(self.cfg, "rollout_policy", "ppo")).strip().lower() == "course_fit":
+                active_update = _coursefit_active_update_mask(fit_score, action_idx)
+                if active_update is not None:
+                    grad = grad * active_update.to(dtype=grad.dtype).view(-1, 1)
 
             current_h = current_h + self.cfg.usim_lr * grad
 
@@ -2747,6 +2944,74 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 candidate_stats[key] /= candidate_stats["steps"]
 
         return current_h, trajectory, candidate_stats
+
+    @torch.no_grad()
+    def infer_refined_item_vectors(
+        self,
+        item_idx,
+        llm_s=None,
+        item_batch=1024,
+        force_cold=True,
+        user_bank_raw=None,
+        user_seen_items=None,
+    ):
+        """Build reproducible cold-item vectors with the configured rollout policy."""
+        item_idx = torch.as_tensor(item_idx, dtype=torch.long, device=self.device).view(-1)
+        if item_idx.numel() < 1:
+            return torch.empty(
+                (0, self.cfg.emb_dim),
+                dtype=self.item_id_emb.weight.dtype,
+                device=self.device,
+            )
+        if llm_s is None:
+            llm_s = torch.full(
+                (item_idx.numel(),), -1.0, dtype=torch.float32, device=self.device
+            )
+        else:
+            llm_s = torch.as_tensor(llm_s, dtype=torch.float32, device=self.device).view(-1)
+            if llm_s.numel() != item_idx.numel():
+                raise ValueError("llm_s must have the same length as item_idx")
+
+        was_training = self.training
+        self.eval()
+        outputs = []
+        bank = user_bank_raw if user_bank_raw is not None else self._build_user_bank_raw()
+        history_context = user_seen_items
+        if history_context is None and self.user_seen_index is not None:
+            history_context = {}
+        eval_seed = int(os.environ.get("USIM_ACTOR_INFERENCE_SEED", "7001"))
+        cuda_devices = [self.device.index or 0] if self.device.type == "cuda" else []
+        try:
+            with torch.random.fork_rng(devices=cuda_devices):
+                torch.manual_seed(eval_seed)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed_all(eval_seed)
+                batch_size = max(1, int(item_batch))
+                for start in range(0, item_idx.numel(), batch_size):
+                    end = min(start + batch_size, item_idx.numel())
+                    idx = item_idx[start:end]
+                    score = llm_s[start:end]
+                    base, _, _ = self.get_item_vector(
+                        idx,
+                        score,
+                        force_cold=force_cold,
+                        disable_id_dropout=True,
+                    )
+                    pop = None
+                    if self.item_popularity is not None:
+                        pop = self.item_popularity.to(self.device).index_select(0, idx).float()
+                    final, _, _ = self.run_usim_episode(
+                        base,
+                        target_emb=None,
+                        user_bank_raw=bank,
+                        item_idx=idx,
+                        target_pop=pop,
+                        user_seen_items=history_context,
+                    )
+                    outputs.append(self._blend_rl_episode_output(base, final).detach())
+        finally:
+            self.train(was_training)
+        return torch.cat(outputs, dim=0)
 
     def compute_ppo_loss(self, trajectory):
         if len(trajectory["rewards"]) == 0:
@@ -3202,6 +3467,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         "Val_full_cold_N@10": [],
         "Val_full_hot_N@10": [],
     }
+    metrics_path = _feedback_output_path("mooc_metrics_usim_feedback_fast3_content_delta_static.csv")
     static_diag_keys = [
         "MainLoss",
         "AuxLoss",
@@ -3233,6 +3499,16 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         "PseudoColdRatio",
         "EffectiveColdRatio",
         "PseudoColdCount",
+        "LIRAFitP25",
+        "LIRAFitP50",
+        "LIRAFitP75",
+        "LIRAUpdateActiveRatio",
+        "LIRAStoppedRatio",
+        "LIRAStepDisplacementMean",
+        "LIRAStepDisplacementMax",
+        "LIRATotalDisplacementMean",
+        "LIRATotalDisplacementMax",
+        "LIRARepeatedUserRate",
     ]
     for key in static_diag_keys:
         history[key] = []
@@ -3466,6 +3742,16 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         pseudo_cold_ratio_sum = 0.0
         effective_cold_ratio_sum = 0.0
         pseudo_cold_count_sum = 0
+        lira_fit_p25_sum = 0.0
+        lira_fit_p50_sum = 0.0
+        lira_fit_p75_sum = 0.0
+        lira_active_sum = 0.0
+        lira_stopped_sum = 0.0
+        lira_step_mean_sum = 0.0
+        lira_step_max_sum = 0.0
+        lira_total_mean_sum = 0.0
+        lira_total_max_sum = 0.0
+        lira_repeat_sum = 0.0
         pseudo_info_batches = 0
         num_batches = len(train_loader)
         cached_user_bank = model._build_user_bank_raw() if cfg.candidate_strategy == "retrieve_sample" else None
@@ -3527,6 +3813,16 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 pseudo_cold_ratio_sum += float(cand_info.get("pseudo_cold_ratio", 0.0))
                 effective_cold_ratio_sum += float(cand_info.get("effective_cold_ratio", 0.0))
                 pseudo_cold_count_sum += int(cand_info.get("pseudo_cold_count", 0))
+                lira_fit_p25_sum += float(cand_info.get("fit_p25", 0.0))
+                lira_fit_p50_sum += float(cand_info.get("fit_p50", 0.0))
+                lira_fit_p75_sum += float(cand_info.get("fit_p75", 0.0))
+                lira_active_sum += float(cand_info.get("update_active_ratio", 0.0))
+                lira_stopped_sum += float(cand_info.get("stopped_ratio", 0.0))
+                lira_step_mean_sum += float(cand_info.get("step_displacement_mean", 0.0))
+                lira_step_max_sum += float(cand_info.get("step_displacement_max", 0.0))
+                lira_total_mean_sum += float(cand_info.get("total_displacement_mean", 0.0))
+                lira_total_max_sum += float(cand_info.get("total_displacement_max", 0.0))
+                lira_repeat_sum += float(cand_info.get("repeated_user_rate", 0.0))
                 pseudo_info_batches += 1
 
             now_ts = time.time()
@@ -3585,6 +3881,16 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 "PseudoColdRatio": pseudo_cold_ratio_sum / pseudo_info_batches,
                 "EffectiveColdRatio": effective_cold_ratio_sum / pseudo_info_batches,
                 "PseudoColdCount": pseudo_cold_count_sum,
+                "LIRAFitP25": lira_fit_p25_sum / pseudo_info_batches,
+                "LIRAFitP50": lira_fit_p50_sum / pseudo_info_batches,
+                "LIRAFitP75": lira_fit_p75_sum / pseudo_info_batches,
+                "LIRAUpdateActiveRatio": lira_active_sum / pseudo_info_batches,
+                "LIRAStoppedRatio": lira_stopped_sum / pseudo_info_batches,
+                "LIRAStepDisplacementMean": lira_step_mean_sum / pseudo_info_batches,
+                "LIRAStepDisplacementMax": lira_step_max_sum / pseudo_info_batches,
+                "LIRATotalDisplacementMean": lira_total_mean_sum / pseudo_info_batches,
+                "LIRATotalDisplacementMax": lira_total_max_sum / pseudo_info_batches,
+                "LIRARepeatedUserRate": lira_repeat_sum / pseudo_info_batches,
             })
             pseudo_suffix = (
                 f" | PseudoCold[count={pseudo_cold_count_sum}, "
@@ -3611,6 +3917,14 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 f"pos={int(epoch_diag['CGRCReconPos'])}, "
                 f"sample_active={epoch_diag['CGRCReconSampleActive']:.2f}, "
                 f"sample_score={epoch_diag['CGRCReconSampleScore']:.4f}]"
+                f" | LIRA[active={epoch_diag['LIRAUpdateActiveRatio']:.2%}, "
+                f"stopped={epoch_diag['LIRAStoppedRatio']:.2%}, "
+                f"fit_p50={epoch_diag['LIRAFitP50']:.4f}, "
+                f"step={epoch_diag['LIRAStepDisplacementMean']:.4f}/"
+                f"{epoch_diag['LIRAStepDisplacementMax']:.4f}, "
+                f"total={epoch_diag['LIRATotalDisplacementMean']:.4f}/"
+                f"{epoch_diag['LIRATotalDisplacementMax']:.4f}, "
+                f"repeat={epoch_diag['LIRARepeatedUserRate']:.2%}]"
             )
         print(
             f"  [STATIC-TRAIN] Epoch {epoch + 1}/{cfg.n_epochs} | Loss: {avg_loss:.4f} | "
@@ -3691,6 +4005,18 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 f"(score[{cfg.early_stop_score_mode}]={best_score:.4f})"
             )
 
+    if bool(getattr(cfg, "validation_only", False)):
+        pd.DataFrame(history).to_csv(metrics_path, index=False)
+        last_completed_epoch = int(history["Epoch"][-1]) if history.get("Epoch") else int(resume_start_epoch)
+        _save_static_checkpoint(
+            "validation_finished",
+            last_completed_epoch,
+            snapshot_name="validation_finished.pt",
+            write_latest=False,
+        )
+        print(f"  [STATIC-VALIDATION-ONLY] Saved {metrics_path}; final test was not evaluated.")
+        return
+
     print("  [STATIC-TEST] Build eval item bank and run test ranking...")
     test_seen = _clone_user_seen(train_seen)
     if test_history_policy == "train_val":
@@ -3732,6 +4058,12 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         export_item_metrics_path=_feedback_output_path(
             "per_item_full_cold_usim_feedback_fast3_content_delta_static.csv"
         ),
+        export_topk_path=os.environ.get("P1_TOPK_EXPORT_PATH", "").strip() or None,
+        export_topk_k=int(os.environ.get("P1_TOPK_EXPORT_K", "20")),
+        export_topk_metadata={
+            "model": os.environ.get("P1_TOPK_EXPORT_MODEL", "ckg_rl"),
+            "seed": int(os.environ.get("USIM_STATIC_SEED", os.environ.get("USIM_SEED", "2025"))),
+        },
     )
     full_hot_item_macro, full_hot_item_macro_count = evaluate_usim(
         model, test_loader, device, llm_scores, k_list=k_list,

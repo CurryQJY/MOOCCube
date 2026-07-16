@@ -1,15 +1,15 @@
 # Fdb version 4
-["bibtex main"] 1783989600.15268 "main.aux" "main.bbl" "main" 1783989603.21559 0
+["bibtex main"] 1784194360.74512 "main.aux" "main.bbl" "main" 1784200506.97994 0
   "./aaai2027.bst" 1777882188 30207 bd248dfe461b9b2fc7481a44feafe197 ""
-  "./references.bib" 1783989234.08219 23070 379fd0e725170cd07f12e7e69ccef3fe ""
-  "main.aux" 1783989601.703 7082 6fa405ade01f5c4cff18f4f9517b2414 "pdflatex"
+  "./references.bib" 1783990974 22505 50f0f1d6124da5f2c2fb36d7a5b2b891 ""
+  "main.aux" 1784200506 7404 44c0ab4dc0965ba3150d93bb15912b6e "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1783989600.72276 "main_revised.tex" "main.pdf" "main" 1783989603.21634 0
-  "C:/Users/pc/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1783511961.69298 228176 6d9b37f7f66041b290712cf4fd077214 ""
-  "C:/Users/pc/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1779804430.44865 13332076 7265fddc37ecfb89a61e48ba9bbfe65e ""
+["pdflatex"] 1784200505.26593 "D:/DeskTop/MOOCCube/paper_aaai27/main.tex" "main.pdf" "main" 1784200506.98073 0
+  "C:/Users/pc/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1784180365 228176 6d9b37f7f66041b290712cf4fd077214 ""
+  "C:/Users/pc/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1779804430 13332076 88fc7f4d5d39d6bfc70ee02a97d13caa ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-ec-tlf.enc" 1736607166 2914 fdbc4a54b9bc76f4551b5303f2737d33 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/tex-gyre/q-ts1.enc" 1525740614 3124 3813fd4c981d99822890a2861b0d274c ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/tfm/jknappen/ec/ecrm1000.tfm" 993062122 3148 7e594c8240c71e432203f65ab5f95a51 ""
@@ -45,9 +45,11 @@
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1247596667 35752 024fb6c41858982481f6968b5fc26508 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr5.pfb" 1247596667 31809 8670ca339bf94e56da1fc21c80635e2a ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr7.pfb" 1247596667 32762 7fee39e011c23b3589931effd97b9702 ""
+  "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr9.pfb" 1247596666 33993 9b89b85fd2d9df0482bd47194d1d3bf3 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1247596667 32569 5e5ddc8df908dea60932f3c484a54c0d ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy5.pfb" 1247596666 32915 7bf7720c61a5b3a7ff25b0964421c9b6 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy7.pfb" 1247596666 32716 08e384dc442464e7285e891af9f45947 ""
+  "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy9.pfb" 1247596666 32442 c975af247b6702f7ca0c299af3616b80 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msbm10.pfb" 1247596673 34694 870c211f62cb72718a00e353f14f254d ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/newtx/ztmb.pfb" 1736607166 255251 ff86dd5a515ecd222fc60cb2612549c9 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/type1/public/newtx/ztmr.pfb" 1736607166 286816 c3d030d8c7fd436565d9670f5ca64aa0 ""
@@ -105,14 +107,16 @@
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xkeyval/xkeyval.sty" 1656236919 4937 4ce600ce9bd4ec84d0250eb6892fcf4f ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xpatch/xpatch.sty" 1585221260 8510 7803f78066c4f9d008405191a4b43073 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xstring/xstring.sty" 1693735632 123 a302f2c651a95033260db60e51527ae8 ""
+  "D:/DeskTop/MOOCCube/paper_aaai27/main.tex" 1784199736 50409 fbf906b0767e95773b386819f3b5f026 ""
   "aaai2027.sty" 1779092464 16915 1b1c792e2acfbbd8b672259e267b95d8 ""
-  "figures/ckg_rl_framework_topconf.pdf" 1783989342.63048 86500 856dbc2a1405fef08373df85a61f7815 ""
-  "figures/mooccube_ablation_updated_main_table_aaai_main.pdf" 1783516987.76542 80625 8c676d6a1e7300b7f61332db9799dd17 ""
-  "figures/mooccube_hparam_validation_updated_default_aaai_main.pdf" 1783516993.00353 60567 3535757b4a10989069d2ab21e19429dc ""
-  "figures/mooccube_method_motivation.pdf" 1783151294.90185 60086 46ed9ca3b88d46e14b3907806a46d9cb ""
-  "main.aux" 1783989601.703 7082 6fa405ade01f5c4cff18f4f9517b2414 "pdflatex"
-  "main.bbl" 1783989600.60504 18655 288896c3860abac48dc972e79d620c10 "bibtex main"
-  "main_revised.tex" 1783989234.08633 43217 028485f81e8a0d1d3cd4cfcc31ca8c97 ""
+  "efficiency_table_aaai.tex" 1784196676 1120 c61fdb91a3ff71aeefea1783a2685f2e ""
+  "figures/ckg_rl_framework_topconf.pdf" 1784102874 112846 abc998ddbbc47bff7937b1f43fa05657 ""
+  "figures/mooccube_hparam_validation_updated_default_aaai_main.pdf" 1783516993 60567 a2ba752abeb0a4d35166d30393869ff0 ""
+  "figures/mooccube_method_motivation.pdf" 1784200222 93122 4029ee0bbc9e6601ded8f124054905b8 ""
+  "figures/mooccube_p1_topk_motivation.pdf" 1784183424 47117 8b986420e0abcd109fb426d1e8915fa3 ""
+  "main.aux" 1784200506 7404 44c0ab4dc0965ba3150d93bb15912b6e "pdflatex"
+  "main.bbl" 1784194361 18185 ae1cb491299e19ef717bf31c0871ff12 "bibtex main"
+  "main.tex" 1784199736 50409 fbf906b0767e95773b386819f3b5f026 ""
   (generated)
   "main.aux"
   "main.log"

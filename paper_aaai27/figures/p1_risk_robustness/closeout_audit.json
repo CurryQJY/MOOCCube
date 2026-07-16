@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "export_manifests_validated": 6,
+  "export_records": 389268,
+  "recommendation_rows": 7785360,
+  "list_rows": 778536,
+  "course_macro_pairs_per_primary_metric": 204,
+  "difficulty_sensitivity_settings": 9,
+  "cold_difficulty_settings_falsifying": 9,
+  "rank_concept_continuity_falsifying": 10,
+  "rank_redundancy_supporting": 4,
+  "primary_reproduction_max_abs_delta": 1.880440247958859e-15,
+  "figure_files": {
+    "paper_aaai27\\figures\\mooccube_p1_topk_motivation.pdf": "869275ddf845ff96ed31544cd857e4642680d55b2e9eb597bb70ec9bb81fab80",
+    "paper_aaai27\\figures\\mooccube_p1_topk_motivation.svg": "ea3c0ac94b89d504f514ae995d4ffe8a7c88f04f7ebc7a5bb935a1ff9cb14c63",
+    "paper_aaai27\\figures\\mooccube_p1_topk_motivation.png": "8c4d4571b2fe5f6f4597c1442f3b2890eee72d3c434d56775193fd889403a984",
+    "paper_aaai27\\figures\\mooccube_p1_risk_robustness.pdf": "42804090b8c32981a9ab319afed1a11e55b65ba2635df50fe1a2c71bdf43f0c7",
+    "paper_aaai27\\figures\\mooccube_p1_risk_robustness.svg": "9bc905cb74c3a1fa1712fa6013527298142ce932eb5abb6995c0888c9ce93ec5",
+    "paper_aaai27\\figures\\mooccube_p1_risk_robustness.png": "cdf3873259ddf77a9dc63e5bb5f3a79b4871ee37b8c7a9386ef11ddee58a48df"
+  },
+  "paper_pages": 11
+}

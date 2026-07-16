@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import csv
 
 import pytest
 import torch
@@ -258,6 +259,30 @@ def test_forward_adds_weighted_consistency_and_stats(monkeypatch) -> None:
     assert stats["sc2_consistency_weighted_loss"] == pytest.approx(1.0)
 
 
+def test_train_to_eval_flushes_consistency_epoch_metrics(monkeypatch, tmp_path) -> None:
+    model = _tiny_sc2_model(monkeypatch, weight="0.25")
+    monkeypatch.setenv("USIM_FB_OUTPUT_DIR", str(tmp_path))
+    model.train()
+    model._sc2_epoch_sums = {
+        "sc2_consistency_loss": 4.0,
+        "sc2_consistency_weighted_loss": 1.0,
+        "sc2_consistency_active_ratio": 2.0,
+        "sc2_teacher_student_cosine": 1.0,
+    }
+    model._sc2_epoch_batches = 2
+
+    model.train(False)
+
+    metrics_path = tmp_path / "sc2_consistency_epoch_metrics.csv"
+    assert metrics_path.exists()
+    with metrics_path.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    assert len(rows) == 1
+    assert float(rows[0]["sc2_consistency_loss"]) == pytest.approx(2.0)
+    assert float(rows[0]["sc2_consistency_weighted_loss"]) == pytest.approx(0.5)
+    assert float(rows[0]["sc2_consistency_active_ratio"]) == pytest.approx(1.0)
+
+
 def test_install_sc2_bindings_replaces_only_config_and_model(monkeypatch) -> None:
     original_main = sc2_mod.legacy.main
     original_config = sc2_mod.legacy.Fast3Config
@@ -284,6 +309,7 @@ def test_smoke_runner_is_isolated_from_main_table() -> None:
     assert "Seeds = @(2025)" in text
     assert "Epochs = 1" in text
     assert "SkipAggregate = $true" in text
+    assert "UseContentDelta = $false" in text
     assert "[int]$MinFreeGpuMiB = 9000" in text
     assert "[int]$GpuPollSeconds = 30" in text
     assert "nvidia-smi --query-gpu=memory.free" in text
@@ -291,5 +317,43 @@ def test_smoke_runner_is_isolated_from_main_table() -> None:
     assert "throw \"Unable to query free GPU memory" not in text
     assert "[int]::TryParse" in text
     assert '$LASTEXITCODE -eq 0 -and' not in text
+    assert "aggregate_fast3_static_results.py" not in text
+    assert "paper_aaai27" not in text
+
+
+def test_sc2_entrypoint_declares_delegated_static_runner_guard_tokens() -> None:
+    source = Path("usim_feedback_fast3_sc2_consistency.py").read_text(
+        encoding="utf-8",
+    )
+
+    assert "def run_static_experiment" in source
+    assert "_static_split_df" in source
+
+
+def test_formal_gate_runner_matches_minimal_main_table_configuration() -> None:
+    text = Path(
+        "run_sc2_forced_cold_consistency_main_table_gate.ps1",
+    ).read_text(encoding="utf-8")
+
+    required = (
+        'ScriptPath = ".\\usim_feedback_fast3_sc2_consistency.py"',
+        'OutputRoot = "outputs\\sc2_forced_cold_consistency_main_table_gate"',
+        'CheckpointRoot = "checkpoints\\sc2_forced_cold_consistency_main_table_gate"',
+        'Protocol = "strict_item_cold_balanced"',
+        "Seeds = @(2025)",
+        "Epochs = 60",
+        "Patience = 60",
+        'EarlyStopAverageMode = "item_macro"',
+        'EarlyStopScoreMode = "cold_only"',
+        "UseContentDelta = $false",
+        "UsePseudoColdTrain = $false",
+        "UsePaac = $false",
+        "UseSageLite = $false",
+        "UseSageAuxLoss = $false",
+        "UseCgrcRecon = $false",
+        "UseSgUrinit = $false",
+        "SkipAggregate = $true",
+    )
+    assert all(token in text for token in required)
     assert "aggregate_fast3_static_results.py" not in text
     assert "paper_aaai27" not in text

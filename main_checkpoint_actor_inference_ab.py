@@ -40,6 +40,8 @@ class InferenceAudit:
     behavior_target_none_calls: int = 0
     behavior_target_non_null_calls: int = 0
     course_match_exclude_target_values: list = field(default_factory=list)
+    checkpoint_usim_steps_values: list = field(default_factory=list)
+    effective_inference_usim_steps_values: list = field(default_factory=list)
 
 
 @dataclass
@@ -57,6 +59,7 @@ EVAL_SEED = 7001
 ACTIVE_ITEM_BANK = None
 INFERENCE_ROLLOUT_POLICY = "ppo"
 COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE = None
+INFERENCE_STEPS_OVERRIDE = None
 POLICY_MODES = {
     "actor": "ppo",
     "ppo": "ppo",
@@ -97,6 +100,16 @@ def parse_optional_bool(raw):
     if value in {"0", "false", "no", "off"}:
         return False
     raise ValueError(f"Invalid optional boolean: {raw!r}")
+
+
+def parse_optional_nonnegative_int(raw):
+    """Parse an optional nonnegative integer without inventing a default."""
+    if raw is None or str(raw).strip() == "":
+        return None
+    value = int(str(raw).strip())
+    if value < 0:
+        raise ValueError(f"Expected a nonnegative integer, got {raw!r}")
+    return value
 
 
 def classify_history_source(user_seen_items):
@@ -254,6 +267,7 @@ def infer_actor_refined_item_vectors(
 
     was_training = self.training
     previous_rollout_policy = str(getattr(self.cfg, "rollout_policy", "ppo"))
+    previous_usim_steps = int(getattr(self.cfg, "usim_steps", 0))
     previous_exclude_target = bool(
         getattr(self.cfg, "feedback_course_match_exclude_target", False)
     )
@@ -268,6 +282,13 @@ def infer_actor_refined_item_vectors(
     batch_size = max(1, int(item_batch))
     try:
         self.cfg.rollout_policy = INFERENCE_ROLLOUT_POLICY
+        if previous_usim_steps not in AUDIT.checkpoint_usim_steps_values:
+            AUDIT.checkpoint_usim_steps_values.append(previous_usim_steps)
+        if INFERENCE_STEPS_OVERRIDE is not None:
+            self.cfg.usim_steps = int(INFERENCE_STEPS_OVERRIDE)
+        effective_steps = int(getattr(self.cfg, "usim_steps", 0))
+        if effective_steps not in AUDIT.effective_inference_usim_steps_values:
+            AUDIT.effective_inference_usim_steps_values.append(effective_steps)
         if COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE is not None:
             self.cfg.feedback_course_match_exclude_target = bool(
                 COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE
@@ -315,6 +336,7 @@ def infer_actor_refined_item_vectors(
                 outputs.append(refined.detach())
     finally:
         self.cfg.rollout_policy = previous_rollout_policy
+        self.cfg.usim_steps = previous_usim_steps
         self.cfg.feedback_course_match_exclude_target = previous_exclude_target
         self.train(was_training)
     return torch.cat(outputs, dim=0)
@@ -436,7 +458,7 @@ def make_read_only_torch_save(checkpoint_dir, real_save):
 
 
 def main():
-    global COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE
+    global COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE, INFERENCE_STEPS_OVERRIDE
     mode = os.environ.get("USIM_ACTOR_INFERENCE_MODE", "static")
     eval_seed = int(os.environ.get("USIM_ACTOR_INFERENCE_SEED", "7001"))
     evaluation_target = os.environ.get("USIM_ACTOR_EVAL_TARGET", "test")
@@ -447,6 +469,9 @@ def main():
     torch.save = make_read_only_torch_save(checkpoint_dir, real_save=torch.save)
     COURSE_MATCH_EXCLUDE_TARGET_OVERRIDE = parse_optional_bool(
         os.environ.get("USIM_COURSE_MATCH_EXCLUDE_TARGET")
+    )
+    INFERENCE_STEPS_OVERRIDE = parse_optional_nonnegative_int(
+        os.environ.get("USIM_INFERENCE_STEPS_OVERRIDE")
     )
     install_evaluation_target(evaluation_target)
     install_mode(mode, eval_seed)
