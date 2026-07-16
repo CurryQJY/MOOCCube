@@ -16,6 +16,7 @@ from cbi_trust_sim import (
 )
 from fast3_delta.config import Fast3Config
 from run_cbi_trust_sim_seed2025 import install_protocol
+from summarize_cbi_trust_sim_seed2025 import parse_trust_history
 
 
 def test_projection_keeps_in_domain_vector():
@@ -57,6 +58,7 @@ def _build_tiny_trust_model(monkeypatch):
     monkeypatch.setenv("USIM_DISABLE_LLM_SCORE", "1")
     cfg = Fast3Config(n_users=4, n_items=4, content_dim=5)
     cfg.usim_steps = 2
+    cfg.candidate_strategy = "random"
     cfg.cbi_trust_cosine_floor = 0.8660254037844386
     model = CBITrustFast3FeedbackUSIM(cfg, torch.randn((4, 5), generator=torch.Generator().manual_seed(7)))
     model.device = torch.device("cpu")
@@ -127,6 +129,30 @@ def test_constrained_simulator_ignores_supplied_id_target_and_respects_floor(mon
     assert stats_a["trust_min_cosine"] >= model.cfg.cbi_trust_cosine_floor - 1e-6
     assert stats_b["trust_min_cosine"] >= model.cfg.cbi_trust_cosine_floor - 1e-6
     assert stats_a["trust_steps"] == model.cfg.usim_steps
+
+
+def test_training_epoch_emits_and_resets_trust_diagnostics(monkeypatch, capsys):
+    model = _build_tiny_trust_model(monkeypatch)
+    model.train()
+    item_idx = torch.tensor([1])
+    initial = F.normalize(model._content_base_embedding(item_idx), dim=1)
+
+    model.run_usim_episode(
+        initial,
+        target_emb=torch.randn_like(initial),
+        item_idx=item_idx,
+        target_pop=torch.zeros(1),
+        deterministic=True,
+    )
+    model.content_delta_stats()
+    first_output = capsys.readouterr().out
+    model.content_delta_stats()
+    second_output = capsys.readouterr().out
+
+    assert "[CBI-TRUST]" in first_output
+    assert "episodes=1" in first_output
+    assert f"floor={model.cfg.cbi_trust_cosine_floor:.6f}" in first_output
+    assert "episodes=0" in second_output
 
 
 class _FakeAllRefinedModel:
@@ -205,3 +231,35 @@ def test_launcher_locks_isolated_single_seed_configuration():
     assert "Epochs = 60" in text
     assert "ContentDeltaMaxNorm = 0.5" in text
     assert 'CbiTrustCosineFloor = [Math]::Sqrt(0.75)' in text
+
+
+def test_trust_log_parser_reads_each_epoch_and_enforces_floor(tmp_path):
+    log = tmp_path / "training.log"
+    log.write_text(
+        "  [CBI-TRUST] episodes=2 projected=25.00% min_cos=0.866025 "
+        "mean_cos=0.920000 floor=0.866025\n"
+        "  [CBI-TRUST] episodes=3 projected=10.00% min_cos=0.880000 "
+        "mean_cos=0.940000 floor=0.866025\n",
+        encoding="utf-8",
+    )
+
+    history = parse_trust_history(log)
+
+    assert history == [
+        {
+            "epoch": 1,
+            "episodes": 2,
+            "projected_ratio": 0.25,
+            "min_cosine": 0.866025,
+            "mean_cosine": 0.92,
+            "cosine_floor": 0.866025,
+        },
+        {
+            "epoch": 2,
+            "episodes": 3,
+            "projected_ratio": 0.1,
+            "min_cosine": 0.88,
+            "mean_cosine": 0.94,
+            "cosine_floor": 0.866025,
+        },
+    ]

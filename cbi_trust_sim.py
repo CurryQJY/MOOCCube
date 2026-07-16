@@ -273,7 +273,54 @@ class CBITrustFast3FeedbackUSIM(Fast3FeedbackUSIM):
             candidate_stats["trust_projected_ratio"] /= candidate_stats["trust_steps"]
             candidate_stats["trust_mean_cosine"] /= candidate_stats["trust_steps"]
 
+        if self.training:
+            if not hasattr(self, "_trust_epoch_episodes"):
+                self._trust_epoch_episodes = 0
+                self._trust_epoch_projected_ratio = 0.0
+                self._trust_epoch_mean_cosine = 0.0
+                self._trust_epoch_min_cosine = 1.0
+            self._trust_epoch_episodes += 1
+            self._trust_epoch_projected_ratio += candidate_stats["trust_projected_ratio"]
+            self._trust_epoch_mean_cosine += candidate_stats["trust_mean_cosine"]
+            self._trust_epoch_min_cosine = min(
+                self._trust_epoch_min_cosine,
+                candidate_stats["trust_min_cosine"],
+            )
+
         return current_h, trajectory, candidate_stats
+
+    @torch.no_grad()
+    def content_delta_stats(self):
+        delta_stats = super().content_delta_stats()
+        episodes = int(getattr(self, "_trust_epoch_episodes", 0))
+        floor = float(
+            getattr(self.cfg, "cbi_trust_cosine_floor", math.sqrt(1.0 - 0.5**2))
+        )
+        if episodes > 0:
+            projected_ratio = self._trust_epoch_projected_ratio / episodes
+            mean_cosine = self._trust_epoch_mean_cosine / episodes
+            min_cosine = self._trust_epoch_min_cosine
+        else:
+            projected_ratio = 0.0
+            mean_cosine = 1.0
+            min_cosine = 1.0
+        self.last_trust_epoch_stats = {
+            "episodes": episodes,
+            "projected_ratio": float(projected_ratio),
+            "min_cosine": float(min_cosine),
+            "mean_cosine": float(mean_cosine),
+            "cosine_floor": floor,
+        }
+        print(
+            "  [CBI-TRUST] "
+            f"episodes={episodes} projected={projected_ratio:.2%} "
+            f"min_cos={min_cosine:.6f} mean_cos={mean_cosine:.6f} floor={floor:.6f}"
+        )
+        self._trust_epoch_episodes = 0
+        self._trust_epoch_projected_ratio = 0.0
+        self._trust_epoch_mean_cosine = 0.0
+        self._trust_epoch_min_cosine = 1.0
+        return delta_stats
 
 
 def trust_build_eval_item_vecs(model, device, llm_scores, item_batch=1024):
