@@ -85,3 +85,22 @@ def test_anchor_launcher_locks_isolated_reproducible_configuration():
     assert '"cbi_anchor_sim.py"' in source
     assert '"run_cbi_anchor_sim_seed2025.py"' in source
     assert '"paper_aaai27\\main.tex"' not in source
+
+
+def test_anchor_three_seed_launcher_is_serial_isolated_and_resumable():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "run_cbi_anchor_sim_3seed_serial.ps1").read_text(encoding="utf-8")
+
+    assert 'ScriptPath = "run_cbi_anchor_sim_seed2025.py"' in source
+    assert 'OutputRoot = "outputs\\cbi_anchor_sim_3seed_serial"' in source
+    assert 'CheckpointRoot = "checkpoints\\cbi_anchor_sim_3seed_serial"' in source
+    assert '"background_logs\\cbi_anchor_sim_3seed_serial"' in source
+    assert "Seeds = @(2025, 2026, 2027)" in source
+    assert "    Epochs = 60\n" in source
+    assert "    Patience = 10\n" in source
+    assert "ContentDeltaMaxNorm = 0.5" in source
+    assert "UsimSteps = 5" in source
+    assert "AutoResume = $true" in source
+    assert "ForceFresh = $false" in source
+    assert "hard_projection = $false" in source
+    assert '"paper_aaai27\\main.tex"' not in source
