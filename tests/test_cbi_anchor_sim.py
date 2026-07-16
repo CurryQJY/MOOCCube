@@ -64,3 +64,24 @@ def test_anchor_entrypoint_declares_static_runner_delegation():
     source = (root / "run_cbi_anchor_sim_seed2025.py").read_text(encoding="utf-8")
 
     assert "USIM_STATIC_DELEGATE_ENTRYPOINT = True" in source
+
+
+def test_anchor_launcher_locks_isolated_reproducible_configuration():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "run_cbi_anchor_sim_seed2025.ps1").read_text(encoding="utf-8")
+
+    assert 'ScriptPath = "run_cbi_anchor_sim_seed2025.py"' in source
+    assert 'OutputRoot = "outputs\\cbi_anchor_sim_single_seed2025"' in source
+    assert 'CheckpointRoot = "checkpoints\\cbi_anchor_sim_single_seed2025"' in source
+    assert "Seeds = @(2025)" in source
+    assert "    Epochs = 60\n" in source
+    assert "    Patience = 10\n" in source
+    assert 'EarlyStopAverageMode = "item_macro"' in source
+    assert 'EarlyStopScoreMode = "cold_only"' in source
+    assert "ContentDeltaMaxNorm = 0.5" in source
+    assert "UsimSteps = 5" in source
+    assert "AutoResume = $true" in source
+    assert "SaveOptState = $true" in source
+    assert '"cbi_anchor_sim.py"' in source
+    assert '"run_cbi_anchor_sim_seed2025.py"' in source
+    assert '"paper_aaai27\\main.tex"' not in source
