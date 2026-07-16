@@ -15,6 +15,9 @@ $checkpointRoot = "checkpoints\cbi_anchor_sim_3seed_serial"
 $logRoot = "background_logs\cbi_anchor_sim_3seed_serial"
 $manifestPath = Join-Path $outputRoot "run_manifest.json"
 $logPath = Join-Path $logRoot "training.log"
+$seed2025SourceRoot = "outputs\cbi_anchor_sim_single_seed2025"
+$seed2025SourceManifestPath = Join-Path $seed2025SourceRoot "run_manifest.json"
+$seed2025Tag = "strict_item_cold_balanced_thr1_seed_2025"
 
 $protectedFiles = @(
     "usim_feedback_fast3_content_delta.py",
@@ -55,7 +58,7 @@ $runnerParams = [ordered]@{
     CheckpointRoot = "checkpoints\cbi_anchor_sim_3seed_serial"
     Protocol = "strict_item_cold_balanced"
     ColdThresholds = @(1)
-    Seeds = @(2025, 2026, 2027)
+    Seeds = @(2026, 2027)
     Epochs = 60
     Patience = 10
     EarlyStopAverageMode = "item_macro"
@@ -119,6 +122,10 @@ $lockedConfig = [ordered]@{
     target_anchor = "initial_cbi"
     hard_projection = $false
     inference = "all_item_deterministic_usim_shared_bank"
+    aggregate_seeds = @(2025, 2026, 2027)
+    trained_seeds = @(2026, 2027)
+    reused_seed = 2025
+    reused_seed_root = "outputs\cbi_anchor_sim_single_seed2025"
     runner_parameters = $runnerParams
 }
 
@@ -127,12 +134,54 @@ if ($DryRun) {
     Write-Host ("Repo={0}" -f $repoPath)
     Write-Host ("OutputRoot={0}" -f $outputRoot)
     Write-Host ("CheckpointRoot={0}" -f $checkpointRoot)
-    Write-Host ("Seeds={0} Epochs={1} Patience={2} Execution={3}" -f ($runnerParams.Seeds -join ","), $runnerParams.Epochs, $runnerParams.Patience, $lockedConfig.execution)
+    Write-Host ("AggregateSeeds={0} TrainedSeeds={1} ReusedSeed={2}" -f ($lockedConfig.aggregate_seeds -join ","), ($runnerParams.Seeds -join ","), $lockedConfig.reused_seed)
+    Write-Host ("Epochs={0} Patience={1} Execution={2}" -f $runnerParams.Epochs, $runnerParams.Patience, $lockedConfig.execution)
     Write-Host ("TargetAnchor={0} HardProjection={1} AllItemRefinedEval={2}" -f $lockedConfig.target_anchor, $lockedConfig.hard_projection, $runnerParams.UseUsimRefinedEval)
     exit 0
 }
 
 New-Item -ItemType Directory -Force -Path $outputRoot, $checkpointRoot, $logRoot | Out-Null
+
+if (-not (Test-Path -LiteralPath $seed2025SourceManifestPath)) {
+    throw "Completed seed-2025 source manifest is missing: $seed2025SourceManifestPath"
+}
+$seed2025SourceManifest = Get-Content -LiteralPath $seed2025SourceManifestPath -Raw | ConvertFrom-Json
+if ($seed2025SourceManifest.status -ne "completed") {
+    throw "Seed-2025 source run is not completed: status=$($seed2025SourceManifest.status)"
+}
+if (
+    $seed2025SourceManifest.locked_config.method -ne $lockedConfig.method -or
+    $seed2025SourceManifest.locked_config.target_anchor -ne $lockedConfig.target_anchor -or
+    [bool]$seed2025SourceManifest.locked_config.hard_projection -ne [bool]$lockedConfig.hard_projection
+) {
+    throw "Seed-2025 source method does not match the three-seed method."
+}
+$reusedSourceFiles = @(
+    "run_cbi_anchor_sim_seed2025.py",
+    "cbi_anchor_sim.py",
+    "cbi_trust_sim.py",
+    "evaluate_cbi_all_refined_seed2025.py",
+    "run_usim_feedback_fast3_content_delta_static.ps1"
+)
+foreach ($path in $reusedSourceFiles) {
+    $expectedHash = $seed2025SourceManifest.source_sha256.PSObject.Properties[$path].Value
+    $currentHash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+    if (-not $expectedHash -or $expectedHash -ne $currentHash) {
+        throw "Seed-2025 source hash mismatch for $path"
+    }
+}
+
+$seed2025SourceDir = Join-Path $seed2025SourceRoot $seed2025Tag
+$seed2025TargetDir = Join-Path $outputRoot $seed2025Tag
+if (-not (Test-Path -LiteralPath $seed2025SourceDir)) {
+    throw "Completed seed-2025 result directory is missing: $seed2025SourceDir"
+}
+if (-not (Test-Path -LiteralPath $seed2025TargetDir)) {
+    Copy-Item -LiteralPath $seed2025SourceDir -Destination $seed2025TargetDir -Recurse
+}
+if (-not (Test-Path -LiteralPath (Join-Path $seed2025TargetDir "final_report_usim_feedback_fast3_content_delta_static.csv"))) {
+    throw "Reused seed-2025 result is incomplete in $seed2025TargetDir"
+}
 
 if (Test-Path -LiteralPath $manifestPath) {
     $existing = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
@@ -162,7 +211,7 @@ $startedAt = (Get-Date).ToUniversalTime()
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 $seedOutputs = @()
-foreach ($seed in $runnerParams.Seeds) {
+foreach ($seed in $lockedConfig.aggregate_seeds) {
     $seedOutputs += (Resolve-RepoPath (Join-Path $outputRoot ("strict_item_cold_balanced_thr1_seed_{0}" -f $seed)))
 }
 
@@ -188,6 +237,13 @@ $manifest = [ordered]@{
         aggregate_summary = (Resolve-RepoPath (Join-Path $outputRoot "fast3_static_multiseed_summary.csv"))
     }
     source_sha256 = $sourceHashes
+    reused_seed = [ordered]@{
+        seed = 2025
+        source_manifest = (Resolve-RepoPath $seed2025SourceManifestPath)
+        source_manifest_sha256 = (Get-FileHash -LiteralPath $seed2025SourceManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        source_result = (Resolve-RepoPath $seed2025SourceDir)
+        copied_result = (Resolve-RepoPath $seed2025TargetDir)
+    }
     protected_files_before = $protectedBefore
     protected_files_after = $null
 }

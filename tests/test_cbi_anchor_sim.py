@@ -95,7 +95,10 @@ def test_anchor_three_seed_launcher_is_serial_isolated_and_resumable():
     assert 'OutputRoot = "outputs\\cbi_anchor_sim_3seed_serial"' in source
     assert 'CheckpointRoot = "checkpoints\\cbi_anchor_sim_3seed_serial"' in source
     assert '"background_logs\\cbi_anchor_sim_3seed_serial"' in source
-    assert "Seeds = @(2025, 2026, 2027)" in source
+    assert "Seeds = @(2026, 2027)" in source
+    assert 'aggregate_seeds = @(2025, 2026, 2027)' in source
+    assert 'reused_seed = 2025' in source
+    assert '"outputs\\cbi_anchor_sim_single_seed2025"' in source
     assert "    Epochs = 60\n" in source
     assert "    Patience = 10\n" in source
     assert "ContentDeltaMaxNorm = 0.5" in source
