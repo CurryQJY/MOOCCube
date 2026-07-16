@@ -234,5 +234,6 @@ def test_main_paper_describes_both_baselines_in_both_motivation_figures():
         assert "CGRC" in caption
     assert "Recall@10" not in method_caption
     assert "NDCG@10 for CKG-RL" not in method_caption
-    assert "46\\%" in method_caption
-    assert "Figure~\\ref{fig:p1-topk-motivation}" in method_caption
+    assert "Validation-only" in method_caption
+    assert "102 matched" in method_caption
+    assert "coverage/missingness" in method_caption.lower()

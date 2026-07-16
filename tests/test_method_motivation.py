@@ -236,13 +236,32 @@ def test_analysis_script_runs_directly_from_repository_root():
     assert "Analyze CGRC-only method motivation" in completed.stdout
 
 
-def test_manuscript_positions_cgrc_as_generic_transfer_not_course_model():
+def test_manuscript_separates_validation_motivation_test_audit_and_mechanisms():
     manuscript = (ROOT / "paper_aaai27" / "main.tex").read_text(encoding="utf-8")
 
     assert "CGRC as a generic cold-start transfer baseline, not a course recommender" in manuscript
     assert "PCGNN as the course-specific counterpart" in manuscript
-    assert "Why existing methods fall short" in manuscript
-    assert "46\\%" in manuscript
+    assert "Validation diagnosis of complementary baseline gaps" in manuscript
+    assert "validation-only" in manuscript.lower()
+    assert "mooccube_validation_motivation.pdf" in manuscript
+    assert "strict course-cold full-catalog" in manuscript
+    assert "102 matched $(\\text{seed},\\text{target-course})$ units per model" in manuscript
+    assert "coverage/missingness" in manuscript.lower()
+    assert "10{,}000 seed-stratified bootstrap resamples" in manuscript
+    assert "RQ2: Exposure and Objective-Aligned Structural Diagnostics" in manuscript
+    assert "post-hoc objective-aligned structural-proxy audit" in manuscript
+    assert "no causal pedagogical or learning-outcome claim" in manuscript
+    assert "The eight proxy comparisons are descriptive and are not corrected for multiplicity" in manuscript
+    assert "component-level interventions" in manuscript
+    assert "These observations motivate" not in manuscript
+    assert "model-neutral pedagogical-risk audit" not in manuscript
+    assert "model-neutral risk audit" not in manuscript
     assert "Figure~\\ref{fig:p1-topk-motivation}" in manuscript
     assert "course-specific PCGNN" in manuscript
     assert "generic cold-start CGRC" in manuscript
+
+    supplement = (ROOT / "paper_aaai27" / "supplement_tables.tex").read_text(
+        encoding="utf-8"
+    )
+    assert "mooccube_p1_risk_robustness.pdf" in supplement
+    assert "Difficulty-definition and rank-profile sensitivity" in supplement

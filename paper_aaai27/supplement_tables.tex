@@ -3,6 +3,7 @@
 \usepackage{booktabs}
 \usepackage{amsmath}
 \usepackage{threeparttable}
+\usepackage{graphicx}
 \frenchspacing
 
 \pdfinfo{
@@ -111,6 +112,41 @@ USIM & 0.0069\sd{0.0022} & 0.0131\sd{0.0036} & 0.0265\sd{0.0069} & 0.0043\sd{0.0
 \end{table*}
 
 \input{tables/mooccube_p1_motivation_evidence.tex}
+
+\clearpage
+
+\section{Cold-Only Structural Audit and Robustness}
+
+\begin{table*}[t]
+\centering
+\caption{Cold-only Top-10 structural proxies on held-out MOOCCube tests. Means condition on a recommended course having zero training interactions; lists with no recommended cold course remain missing. Effective coverage is the equal-seed course-macro fraction of lists with at least one cold recommendation, and missingness is one minus coverage. The proxies are objective-aligned diagnostics, not learning outcomes.}
+\label{tab:supp-cold-only-audit}
+\tablecaptiongap
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccccc}
+\toprule
+Model & Cold share & Coverage & Missing & Prereq. gap & Continuity & Difficulty gap & Redundancy \\
+\midrule
+CKG-RL & 0.5073 & 0.9912 & 0.0088 & 0.5994 & 0.1441 & 0.0864 & 0.0646 \\
+PCGNN & 0.4218 & 0.9731 & 0.0269 & 0.5943 & 0.1020 & 0.0825 & 0.0049 \\
+CGRC & 0.2457 & 0.9041 & 0.0959 & 0.5997 & 0.1909 & 0.0787 & 0.0925 \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/mooccube_p1_risk_robustness.pdf}
+\caption{Difficulty-definition and rank-profile sensitivity for the held-out-test structural-proxy audit. (a) CKG-RL versus CGRC difficulty effects under P90, P95, or maximum complexity scaling and readiness depths of 3, 5, or 10 historical courses. Positive oriented effects favor CKG-RL. (b) Rank-wise oriented effects for the four proxies. The cold-only difficulty disadvantage persists across all nine definitions; other effects vary by rank, so the aggregate Top-10 result is not interpreted as uniform.}
+\label{fig:supp-risk-robustness}
+\end{figure}
+
+The main audit uses P95 scaling and readiness depth 5. Across the nine alternatives,
+the raw CKG-RL-minus-CGRC cold-only difficulty difference ranges from 0.0065 to
+0.0094 (lower is better), with every 95\% bootstrap interval above zero. The
+rank profile shows adverse continuity at ranks 1--10, early-rank redundancy gains,
+and prerequisite effects that are favorable at several but not all ranks. These
+patterns rule out a single, rank-invariant pedagogical-quality interpretation.
 
 \clearpage
 
