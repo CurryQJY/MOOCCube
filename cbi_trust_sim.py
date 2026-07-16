@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 import math
+import weakref
 
 import torch
 import torch.nn.functional as F
 
 from usim_feedback_fast3_content_delta import Fast3FeedbackUSIM
+from evaluate_cbi_all_refined_seed2025 import (
+    build_all_refined_item_bank,
+    cached_bank_positive_vectors,
+)
+
+
+_EVAL_BANKS = weakref.WeakKeyDictionary()
 
 
 def project_to_content_cone(
@@ -266,3 +274,32 @@ class CBITrustFast3FeedbackUSIM(Fast3FeedbackUSIM):
             candidate_stats["trust_mean_cosine"] /= candidate_stats["trust_steps"]
 
         return current_h, trajectory, candidate_stats
+
+
+def trust_build_eval_item_vecs(model, device, llm_scores, item_batch=1024):
+    """Build one constrained, all-refined bank for every evaluation split."""
+    bank, stats = build_all_refined_item_bank(
+        model,
+        device,
+        llm_scores=llm_scores,
+        item_batch=item_batch,
+    )
+    _EVAL_BANKS[model] = bank
+    model.last_trust_bank_stats = stats
+    return {"cold": bank, "hot": bank, "all": bank}
+
+
+def trust_build_eval_pos_item_vecs(model, item_idx, llm_s, pop_sel, eval_type):
+    """Index positive vectors from the same bank used for full ranking."""
+    del llm_s, pop_sel, eval_type
+    if model not in _EVAL_BANKS:
+        raise RuntimeError("all-refined evaluation bank must be built before positive lookup")
+    return cached_bank_positive_vectors(_EVAL_BANKS[model], item_idx)
+
+
+def install_trust_eval_adapter(protocol_module, eval_module):
+    """Install all-refined evaluation hooks only in the current Python process."""
+    eval_module.build_eval_item_vecs = trust_build_eval_item_vecs
+    eval_module.build_eval_pos_item_vecs = trust_build_eval_pos_item_vecs
+    protocol_module.build_eval_item_vecs = trust_build_eval_item_vecs
+    protocol_module.build_eval_pos_item_vecs = trust_build_eval_pos_item_vecs

@@ -1,13 +1,19 @@
 from pathlib import Path
 import sys
 from types import MethodType
+from types import SimpleNamespace
 
 import torch
 import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from cbi_trust_sim import CBITrustFast3FeedbackUSIM, project_to_content_cone
+from cbi_trust_sim import (
+    CBITrustFast3FeedbackUSIM,
+    project_to_content_cone,
+    trust_build_eval_item_vecs,
+    trust_build_eval_pos_item_vecs,
+)
 from fast3_delta.config import Fast3Config
 
 
@@ -120,3 +126,48 @@ def test_constrained_simulator_ignores_supplied_id_target_and_respects_floor(mon
     assert stats_a["trust_min_cosine"] >= model.cfg.cbi_trust_cosine_floor - 1e-6
     assert stats_b["trust_min_cosine"] >= model.cfg.cbi_trust_cosine_floor - 1e-6
     assert stats_a["trust_steps"] == model.cfg.usim_steps
+
+
+class _FakeAllRefinedModel:
+    def __init__(self):
+        self.cfg = SimpleNamespace(
+            n_items=4,
+            emb_dim=2,
+            cold_threshold=1,
+            candidate_strategy="none",
+        )
+        self.item_popularity = torch.tensor([4.0, 0.0, 2.0, 0.0])
+        self.calls = []
+
+    def infer_refined_item_vectors(
+        self,
+        item_idx,
+        llm_s=None,
+        item_batch=1024,
+        force_cold=True,
+        user_bank_raw=None,
+    ):
+        del llm_s, item_batch, user_bank_raw
+        ids = item_idx.detach().cpu().tolist()
+        self.calls.append((ids, force_cold))
+        if force_cold:
+            return torch.tensor([[0.0, float(idx + 1)] for idx in ids])
+        return torch.tensor([[float(idx + 1), 0.0] for idx in ids])
+
+
+def test_trust_eval_refines_cold_and_hot_and_reuses_cached_bank():
+    model = _FakeAllRefinedModel()
+
+    banks = trust_build_eval_item_vecs(model, torch.device("cpu"), llm_scores=None, item_batch=2)
+    positives = trust_build_eval_pos_item_vecs(
+        model,
+        torch.tensor([0, 3]),
+        llm_s=torch.full((2,), -1.0),
+        pop_sel=torch.tensor([4.0, 0.0]),
+        eval_type="all",
+    )
+
+    assert model.calls == [([1, 3], True), ([0, 2], False)]
+    assert torch.equal(banks["cold"], banks["hot"])
+    assert torch.equal(banks["hot"], banks["all"])
+    assert torch.equal(positives, banks["all"][[0, 3]])
