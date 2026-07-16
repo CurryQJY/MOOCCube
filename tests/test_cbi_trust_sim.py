@@ -15,6 +15,7 @@ from cbi_trust_sim import (
     trust_build_eval_pos_item_vecs,
 )
 from fast3_delta.config import Fast3Config
+from run_cbi_trust_sim_seed2025 import install_protocol
 
 
 def test_projection_keeps_in_domain_vector():
@@ -171,3 +172,36 @@ def test_trust_eval_refines_cold_and_hot_and_reuses_cached_bank():
     assert torch.equal(banks["cold"], banks["hot"])
     assert torch.equal(banks["hot"], banks["all"])
     assert torch.equal(positives, banks["all"][[0, 3]])
+
+
+def test_isolated_entrypoint_installs_trust_model_config_and_eval_hooks(monkeypatch):
+    monkeypatch.setenv("USIM_CBI_TRUST_COSINE_FLOOR", "0.9")
+    fake_protocol = SimpleNamespace(
+        Fast3Config=Fast3Config,
+        Fast3FeedbackUSIM=object,
+        build_eval_item_vecs=None,
+        build_eval_pos_item_vecs=None,
+    )
+    fake_eval = SimpleNamespace(build_eval_item_vecs=None, build_eval_pos_item_vecs=None)
+
+    install_protocol(fake_protocol, fake_eval)
+    cfg = fake_protocol.Fast3Config(2, 3, 5)
+
+    assert fake_protocol.Fast3FeedbackUSIM is CBITrustFast3FeedbackUSIM
+    assert issubclass(fake_protocol.Fast3Config, Fast3Config)
+    assert cfg.cbi_trust_cosine_floor == 0.9
+    assert fake_eval.build_eval_item_vecs is trust_build_eval_item_vecs
+    assert fake_eval.build_eval_pos_item_vecs is trust_build_eval_pos_item_vecs
+
+
+def test_launcher_locks_isolated_single_seed_configuration():
+    root = Path(__file__).resolve().parents[1]
+    text = (root / "run_cbi_trust_sim_seed2025.ps1").read_text(encoding="utf-8")
+
+    assert 'ScriptPath = "run_cbi_trust_sim_seed2025.py"' in text
+    assert 'OutputRoot = "outputs\\cbi_trust_sim_single_seed2025"' in text
+    assert 'CheckpointRoot = "checkpoints\\cbi_trust_sim_single_seed2025"' in text
+    assert "Seeds = @(2025)" in text
+    assert "Epochs = 60" in text
+    assert "ContentDeltaMaxNorm = 0.5" in text
+    assert 'CbiTrustCosineFloor = [Math]::Sqrt(0.75)' in text
