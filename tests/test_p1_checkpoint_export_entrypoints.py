@@ -4,6 +4,7 @@ from pathlib import Path
 import torch
 import pytest
 
+from cgrc_paper_static_hin import select_final_evaluation_view
 from export_p1_ckgrl_topk import (
     build_runtime_environment,
     make_read_only_torch_save,
@@ -16,7 +17,9 @@ from export_p1_pcgnn_topk import (
     build_pcgnn_export_manifest,
     compare_checkpoint_validation_to_report,
     compare_replay_to_report,
+    parse_args as parse_pcgnn_args,
     replay_and_export_pcgnn,
+    select_pcgnn_analysis_view,
 )
 
 
@@ -125,6 +128,36 @@ def test_cgrc_runtime_environment_is_read_only_and_seed_bound(tmp_path):
     assert env["CGRC_PAPER_FORCE_FRESH"] == "0"
 
 
+def test_cgrc_validation_runtime_is_explicit(tmp_path):
+    env = build_cgrc_runtime_environment(
+        seed=2025,
+        split_dir=tmp_path / "split",
+        checkpoint_dir=tmp_path / "checkpoint",
+        output_dir=tmp_path / "output",
+        topk_output=tmp_path / "top20.jsonl",
+        analysis_split="validation",
+    )
+
+    assert env["CGRC_PAPER_EVAL_SPLIT"] == "validation"
+
+
+def test_cgrc_final_view_selects_validation_loader_and_seen_history():
+    view = select_final_evaluation_view(
+        "validation",
+        val_loader="val-loader",
+        test_loader="test-loader",
+        train_seen="train-seen",
+        test_seen="test-seen",
+        val_cold_items="val-cold",
+        test_cold_items="test-cold",
+    )
+
+    assert view.name == "validation"
+    assert view.loader == "val-loader"
+    assert view.seen_items == "train-seen"
+    assert view.cold_items == "val-cold"
+
+
 def test_cgrc_manifest_binds_checkpoint_split_scripts_and_outputs(tmp_path):
     checkpoint = tmp_path / "best.pt"
     split = tmp_path / "static_test.pkl"
@@ -230,6 +263,22 @@ def test_pcgnn_replay_exports_raw_ids_after_native_seen_masking(tmp_path):
     assert rows[0]["sample_index"] == 0
     assert result["record_count"] == 1
     assert result["metrics"]["full_cold_item_macro"]["R@3"] == pytest.approx(1.0)
+
+
+def test_pcgnn_validation_view_uses_validation_examples_only():
+    selected = select_pcgnn_analysis_view(
+        "validation",
+        validation_examples=[{"target": 11}],
+        test_examples=[{"target": 22}],
+    )
+
+    assert selected == [{"target": 11}]
+
+
+def test_pcgnn_analysis_split_parses_validation_target():
+    args = parse_pcgnn_args(["--seed", "2025", "--analysis-split", "validation"])
+
+    assert args.analysis_split == "validation"
 
 
 def test_pcgnn_replay_comparison_gates_counts_and_metric_drift():

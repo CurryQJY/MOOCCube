@@ -32,8 +32,11 @@ def build_cgrc_runtime_environment(
     output_dir,
     topk_output,
     top_k: int = 20,
+    analysis_split: str = "test",
 ) -> dict[str, str]:
     seed = int(seed)
+    if analysis_split not in {"validation", "test"}:
+        raise ValueError(f"unsupported analysis split: {analysis_split}")
     return {
         "USIM_DATA_DIR": "processed_data_hin_clean_pop5",
         "USIM_COLD_THRESHOLD": "1",
@@ -61,6 +64,7 @@ def build_cgrc_runtime_environment(
         "CGRC_PAPER_SAVE_OPT_STATE": "0",
         "CGRC_PAPER_EXPORT_TOPK_PATH": str(topk_output),
         "CGRC_PAPER_EXPORT_TOPK_K": str(int(top_k)),
+        "CGRC_PAPER_EVAL_SPLIT": analysis_split,
     }
 
 
@@ -76,7 +80,10 @@ def build_export_manifest(
     topk_output,
     native_result,
     record_count: int,
+    analysis_split: str = "test",
 ) -> dict:
+    if analysis_split not in {"validation", "test"}:
+        raise ValueError(f"unsupported analysis split: {analysis_split}")
     before = dict(checkpoint_sha256_before)
     after = dict(checkpoint_sha256_after)
     if before != after:
@@ -107,14 +114,21 @@ def build_export_manifest(
         )
     native_rows = json.loads(Path(native_result).read_text(encoding="utf-8"))
     if not native_rows or int(native_rows[0]["count_full_cold"]) != actual_count:
-        raise RuntimeError("native cold-test coverage does not match Top-K export")
+        raise RuntimeError("native cold-split coverage does not match Top-K export")
+    native_split = str(native_rows[0].get("evaluation_split", "test"))
+    if native_split != analysis_split:
+        raise RuntimeError(
+            f"native evaluation split mismatch: {native_split} != {analysis_split}"
+        )
 
     return {
         "schema_version": 1,
         "model": "cgrc",
         "seed": int(seed),
+        "analysis_split": analysis_split,
         "top_k": int(top_k),
         "record_count": actual_count,
+        "target_course_count": int(native_rows[0].get("count_full_cold_item_macro", 0)),
         "restored_state": "latest.pt:best_state",
         "checkpoints": checkpoint_bindings,
         "split_files": [_file_binding(Path(path)) for path in split_paths],
@@ -144,6 +158,7 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--topk-output", type=Path, required=True)
     parser.add_argument("--top-k", type=int, default=20)
+    parser.add_argument("--analysis-split", choices=("validation", "test"), default="test")
     parser.add_argument("--manifest-output", type=Path)
     args = parser.parse_args()
 
@@ -172,6 +187,7 @@ def main() -> None:
         output_dir=output_dir,
         topk_output=topk_output,
         top_k=args.top_k,
+        analysis_split=args.analysis_split,
     )
     os.environ.update(environment)
 
@@ -183,6 +199,12 @@ def main() -> None:
     native_result = output_dir / "cgrc_paper_static_result.json"
     if not topk_output.is_file() or not native_result.is_file():
         raise FileNotFoundError("CGRC replay did not produce required outputs")
+    native_rows = json.loads(native_result.read_text(encoding="utf-8"))
+    native_split = str(native_rows[0].get("evaluation_split", "test")) if native_rows else ""
+    if native_split != args.analysis_split:
+        raise RuntimeError(
+            f"CGRC replay evaluated {native_split!r}, expected {args.analysis_split!r}"
+        )
 
     split_names = (
         "static_protocol_manifest.json",
@@ -214,6 +236,7 @@ def main() -> None:
         topk_output=topk_output,
         native_result=native_result,
         record_count=record_count,
+        analysis_split=args.analysis_split,
     )
     _write_json_atomic(manifest_output, manifest)
     print(f"[P1-CGRC] wrote {manifest_output}", flush=True)

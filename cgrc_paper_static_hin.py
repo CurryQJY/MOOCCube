@@ -20,6 +20,7 @@ import copy
 import os
 import time
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Dict, Iterable, List, Sequence, Tuple
 
 import numpy as np
@@ -45,6 +46,31 @@ from lightgcn_static_hin import prepare_train_cache
 from baseline_checkpoint import checkpoint_config, maybe_resume_checkpoint, save_checkpoint
 
 
+@dataclass(frozen=True)
+class EvaluationView:
+    name: str
+    loader: object
+    seen_items: object
+    cold_items: object
+
+
+def select_final_evaluation_view(
+    analysis_split: str,
+    *,
+    val_loader,
+    test_loader,
+    train_seen,
+    test_seen,
+    val_cold_items,
+    test_cold_items,
+) -> EvaluationView:
+    if analysis_split == "validation":
+        return EvaluationView("validation", val_loader, train_seen, val_cold_items)
+    if analysis_split == "test":
+        return EvaluationView("test", test_loader, test_seen, test_cold_items)
+    raise ValueError(f"unsupported evaluation split: {analysis_split}")
+
+
 class Config:
     def __init__(self, n_users: int, n_items: int, content_dim: int = 768):
         self.n_users = n_users
@@ -67,6 +93,9 @@ class Config:
         self.progress_interval = int(_env("PROGRESS_INTERVAL", "1"))
         self.export_topk_path = _env("EXPORT_TOPK_PATH", "").strip()
         self.export_topk_k = int(_env("EXPORT_TOPK_K", "20"))
+        self.evaluation_split = _env("EVAL_SPLIT", "test").strip().lower()
+        if self.evaluation_split not in {"validation", "test"}:
+            raise ValueError("CGRC_PAPER_EVAL_SPLIT must be validation or test")
 
         self.lr = float(_env("LR", "1e-3"))
         self.reg_weight = float(_env("REG", "1e-4"))
@@ -714,6 +743,15 @@ def main():
     )
     val_cold_items = _cold_items_in(val_df, cfg.cold_threshold)
     test_cold_items = _cold_items_in(test_df, cfg.cold_threshold)
+    evaluation_view = select_final_evaluation_view(
+        cfg.evaluation_split,
+        val_loader=val_loader,
+        test_loader=test_loader,
+        train_seen=train_seen,
+        test_seen=test_seen,
+        val_cold_items=val_cold_items,
+        test_cold_items=test_cold_items,
+    )
 
     print(
         "Model: CGRC static (paper-faithful reimplementation) | "
@@ -721,6 +759,7 @@ def main():
         f"rho={cfg.mask_rho} | topk={cfg.recon_topk} | "
         f"best_average_mode={cfg.best_average_mode} | "
         f"sampled_eval={cfg.run_sampled_eval} | "
+        f"evaluation_split={evaluation_view.name} | "
         f"val_cold_items={val_cold_items.size} | test_cold_items={test_cold_items.size}",
         flush=True,
     )
@@ -922,13 +961,13 @@ def main():
     model.eval()
     with torch.no_grad():
         infer_t0 = time.perf_counter()
-        all_u, all_i, test_recon_edges = _build_ghat_embeddings(
+        all_u, all_i, evaluation_recon_edges = _build_ghat_embeddings(
             model,
             cfg,
             R_base,
             sparse_full,
             device,
-            test_cold_items,
+            evaluation_view.cold_items,
         )
         _sync_device(device)
         infer_t1 = time.perf_counter()
@@ -936,45 +975,54 @@ def main():
 
         if cfg.run_sampled_eval:
             sample_cold, n_sc = evaluate_embedding_ranker(
-                test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
+                evaluation_view.loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
                 k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=False,
-                user_seen_items=test_seen,
+                user_seen_items=evaluation_view.seen_items,
             )
             sample_hot, n_sh = evaluate_embedding_ranker(
-                test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
+                evaluation_view.loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
                 k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=False,
-                user_seen_items=test_seen,
+                user_seen_items=evaluation_view.seen_items,
             )
         else:
             sample_cold, n_sc = {}, 0
             sample_hot, n_sh = {}, 0
         full_cold, n_fc = evaluate_embedding_ranker(
-            test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
+            evaluation_view.loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
-            user_seen_items=test_seen,
+            user_seen_items=evaluation_view.seen_items,
         )
         full_hot, n_fh = evaluate_embedding_ranker(
-            test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
+            evaluation_view.loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
-            user_seen_items=test_seen,
+            user_seen_items=evaluation_view.seen_items,
         )
         cold_macro_t0 = time.perf_counter()
+        output_suffix = "" if evaluation_view.name == "test" else "_validation"
         full_cold_item_macro, n_fc_item_macro = evaluate_embedding_ranker(
-            test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
+            evaluation_view.loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
-            user_seen_items=test_seen, average_mode="item_macro",
-            export_item_metrics_path=static_result_path("per_item_full_cold_cgrc_paper_static.csv"),
+            user_seen_items=evaluation_view.seen_items, average_mode="item_macro",
+            export_item_metrics_path=static_result_path(
+                f"per_item_full_cold_cgrc_paper_static{output_suffix}.csv"
+            ),
             export_topk_path=cfg.export_topk_path or None,
             export_topk_k=cfg.export_topk_k,
-            export_topk_metadata={"model": "cgrc", "seed": cfg.static_seed},
+            export_topk_metadata={
+                "model": "cgrc",
+                "seed": cfg.static_seed,
+                "analysis_split": evaluation_view.name,
+            },
         )
         _sync_device(device)
         cold_macro_t1 = time.perf_counter()
         full_hot_item_macro, n_fh_item_macro = evaluate_embedding_ranker(
-            test_loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
+            evaluation_view.loader, device, cfg.n_items, cfg.cold_threshold, get_user_fn, all_i,
             k_list=k_list, n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
-            user_seen_items=test_seen, average_mode="item_macro",
-            export_item_metrics_path=static_result_path("per_item_full_hot_cgrc_paper_static.csv"),
+            user_seen_items=evaluation_view.seen_items, average_mode="item_macro",
+            export_item_metrics_path=static_result_path(
+                f"per_item_full_hot_cgrc_paper_static{output_suffix}.csv"
+            ),
         )
         _sync_device(device)
         hot_macro_t1 = time.perf_counter()
@@ -1033,6 +1081,7 @@ def main():
         "paper_venue": "SIGIR 2024",
         "paper_url": "https://www.joonseok.net/papers/cgrc.pdf",
         "protocol": "static_item_cold",
+        "evaluation_split": evaluation_view.name,
         "best_metric": f"full_cold_N@10_{cfg.best_average_mode}",
         "loss_form": "softmax_with_positive_in_denominator",
         "sample_cold": sample_cold,
@@ -1050,7 +1099,8 @@ def main():
         "best_epoch": best_epoch,
         "best_val_full_cold_n10": best_val,
         "best_val_recon_edges": best_recon_edges,
-        "test_recon_edges": test_recon_edges,
+        "evaluation_recon_edges": evaluation_recon_edges,
+        "test_recon_edges": evaluation_recon_edges if evaluation_view.name == "test" else None,
         "precompute_s": precompute_s,
         "cold_itemmacro_s": cold_itemmacro_s,
         "hot_itemmacro_s": hot_itemmacro_s,
@@ -1074,8 +1124,12 @@ def main():
         "static_seed": cfg.static_seed,
         "checkpoint_dir": cfg.ckpt.dir or None,
         "resumed_from_epoch": start_epoch,
-        "per_item_full_cold_path": static_result_path("per_item_full_cold_cgrc_paper_static.csv"),
-        "per_item_full_hot_path": static_result_path("per_item_full_hot_cgrc_paper_static.csv"),
+        "per_item_full_cold_path": static_result_path(
+            f"per_item_full_cold_cgrc_paper_static{output_suffix}.csv"
+        ),
+        "per_item_full_hot_path": static_result_path(
+            f"per_item_full_hot_cgrc_paper_static{output_suffix}.csv"
+        ),
         "topk_export_path": cfg.export_topk_path or None,
         "topk_export_k": cfg.export_topk_k,
     }

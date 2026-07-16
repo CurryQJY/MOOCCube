@@ -49,6 +49,19 @@ SPLIT_FILENAMES = (
 )
 
 
+def select_pcgnn_analysis_view(
+    analysis_split: str,
+    *,
+    validation_examples: list[dict[str, object]],
+    test_examples: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    if analysis_split == "validation":
+        return validation_examples
+    if analysis_split == "test":
+        return test_examples
+    raise ValueError(f"unsupported analysis split: {analysis_split}")
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with Path(path).open("rb") as handle:
@@ -184,21 +197,25 @@ def compare_replay_to_report(
     *,
     tolerance: float,
     raise_on_metric_drift: bool = True,
+    analysis_split: str = "test",
 ) -> dict[str, object]:
-    native_test = dict(native_report.get("test", {}))
+    if analysis_split not in {"validation", "test"}:
+        raise ValueError(f"unsupported analysis split: {analysis_split}")
+    native_evaluation = dict(native_report.get(analysis_split, {}))
     replay_metrics = dict(replay.get("metrics", {}))
+    sequence_count_key = f"{analysis_split}_sequence_examples"
     count_checks = {
-        "test_sequence_examples": (
+        sequence_count_key: (
             int(replay.get("record_count", -1)),
-            int(native_report.get("test_sequence_examples", -2)),
+            int(native_report.get(sequence_count_key, -2)),
         ),
         "rows_full_cold": (
             int(replay_metrics.get("rows_full_cold", -1)),
-            int(native_test.get("rows_full_cold", -2)),
+            int(native_evaluation.get("rows_full_cold", -2)),
         ),
         "count_full_cold_item_macro": (
             int(replay_metrics.get("count_full_cold_item_macro", -1)),
-            int(native_test.get("count_full_cold_item_macro", -2)),
+            int(native_evaluation.get("count_full_cold_item_macro", -2)),
         ),
     }
     mismatched_counts = {
@@ -209,7 +226,7 @@ def compare_replay_to_report(
     if mismatched_counts:
         raise RuntimeError(f"replay count mismatch: {mismatched_counts}")
 
-    native_ranking = dict(native_test.get("full_cold_item_macro", {}))
+    native_ranking = dict(native_evaluation.get("full_cold_item_macro", {}))
     replay_ranking = dict(replay_metrics.get("full_cold_item_macro", {}))
     drift: dict[str, float] = {}
     for metric, expected in native_ranking.items():
@@ -418,7 +435,10 @@ def build_pcgnn_export_manifest(
     topk_output: Path,
     replay_result: Path,
     record_count: int,
+    analysis_split: str = "test",
 ) -> dict[str, object]:
+    if analysis_split not in {"validation", "test"}:
+        raise ValueError(f"unsupported analysis split: {analysis_split}")
     if checkpoint_sha256_before != checkpoint_sha256_after:
         raise RuntimeError("checkpoint changed during export")
     checkpoint_path = Path(checkpoint_path).resolve()
@@ -436,10 +456,18 @@ def build_pcgnn_export_manifest(
         "schema_version": 1,
         "model": "pcgnn",
         "seed": int(seed),
+        "analysis_split": analysis_split,
         "top_k": int(top_k),
         "record_count": actual_count,
+        "target_course_count": int(
+            replay_payload.get("metrics", {}).get("count_full_cold_item_macro", 0)
+        ),
         "status": replay_payload.get("status", "checkpoint_replay_valid"),
         "native_report_test_reproduced": bool(
+            analysis_split == "test"
+            and replay_payload.get("native_report_comparison", {}).get("passed", False)
+        ),
+        "native_report_reproduced": bool(
             replay_payload.get("native_report_comparison", {}).get("passed", False)
         ),
         "restored_state": "best_model.pt:model_state_dict",
@@ -481,6 +509,7 @@ def _validate_seed_identity(seed: int, report: Mapping[str, object], split_root:
 
 def export_seed(args: argparse.Namespace) -> dict[str, object]:
     seed = int(args.seed)
+    analysis_split = str(args.analysis_split)
     run_dir = (args.run_dir or DEFAULT_RUN_ROOT / f"mooccube_seed{seed}_full_formal_kg_warm").resolve()
     report_path = (args.report or run_dir / "pcgnn_strict_adapter_report.json").resolve()
     checkpoint_path = (args.checkpoint or run_dir / "checkpoints" / "best_model.pt").resolve()
@@ -488,11 +517,19 @@ def export_seed(args: argparse.Namespace) -> dict[str, object]:
     pcgnn_root = Path(args.pcgnn_root).resolve()
     report = json.loads(report_path.read_text(encoding="utf-8"))
     split_root = (args.split_root or Path(str(report["split_root"]))).resolve()
-    output_dir = (args.output_dir or run_dir / "p1_top20_export").resolve()
+    default_output_name = (
+        "validation_motivation_export" if analysis_split == "validation" else "p1_top20_export"
+    )
+    output_dir = (args.output_dir or run_dir / default_output_name).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    topk_output = output_dir / "pcgnn_top20.jsonl"
-    replay_output = output_dir / "pcgnn_replay_result.json"
-    manifest_output = output_dir / "export_manifest.json"
+    if analysis_split == "validation":
+        topk_output = output_dir / "pcgnn_top20_validation.jsonl"
+        replay_output = output_dir / "pcgnn_validation_replay_result.json"
+        manifest_output = output_dir / "validation_export_manifest.json"
+    else:
+        topk_output = output_dir / "pcgnn_top20.jsonl"
+        replay_output = output_dir / "pcgnn_replay_result.json"
+        manifest_output = output_dir / "export_manifest.json"
 
     _validate_seed_identity(seed, report, split_root)
     if str(report.get("dataset_name")) != str(args.dataset_name or report.get("dataset_name")):
@@ -546,7 +583,12 @@ def export_seed(args: argparse.Namespace) -> dict[str, object]:
         internal_to_raw = _internal_to_raw_item_map(dataset, config["ITEM_ID_FIELD"])
         max_len = int(config["MAX_ITEM_LIST_LENGTH"])
         validation_examples = build_strict_eval_examples(train_rows, val_rows, token_map, max_len=max_len)
-        examples = build_strict_eval_examples(train_rows, test_rows, token_map, max_len=max_len)
+        test_examples = build_strict_eval_examples(train_rows, test_rows, token_map, max_len=max_len)
+        examples = select_pcgnn_analysis_view(
+            analysis_split,
+            validation_examples=validation_examples,
+            test_examples=test_examples,
+        )
         user_seen_items = build_user_seen_items(train_rows, token_map)
         model = get_model(config["model"])(config, train_data).to(device)
         checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
@@ -554,7 +596,7 @@ def export_seed(args: argparse.Namespace) -> dict[str, object]:
             raise RuntimeError("PCGNN checkpoint is missing model_state_dict")
         model.load_state_dict(checkpoint["model_state_dict"], strict=True)
 
-        # Reproduce the adapter's validation-before-test inference state before exporting test rankings.
+        # Bind the restored checkpoint to the adapter's recorded validation selection metric.
         validation_replay = evaluate_pcgnn_full_item_macro(
             model,
             Interaction,
@@ -579,6 +621,7 @@ def export_seed(args: argparse.Namespace) -> dict[str, object]:
             "protocol": str(report["protocol"]),
             "split_id": split_root.name,
             "dataset_name": dataset_name,
+            "analysis_split": analysis_split,
         }
         replay = replay_and_export_pcgnn(
             model=model,
@@ -598,6 +641,7 @@ def export_seed(args: argparse.Namespace) -> dict[str, object]:
         replay,
         report,
         tolerance=float(args.tolerance),
+        analysis_split=analysis_split,
     )
     validation = validate_pcgnn_topk_export(
         output_path=topk_output,
@@ -621,6 +665,7 @@ def export_seed(args: argparse.Namespace) -> dict[str, object]:
             "protocol": str(report["protocol"]),
             "split_root": str(split_root),
             "dataset_name": dataset_name,
+            "analysis_split": analysis_split,
             "device": str(device),
             "top_k": int(args.top_k),
             "checkpoint_epoch": int(checkpoint.get("epoch", -1)),
@@ -655,6 +700,7 @@ def export_seed(args: argparse.Namespace) -> dict[str, object]:
         topk_output=topk_output,
         replay_result=replay_output,
         record_count=int(replay["record_count"]),
+        analysis_split=analysis_split,
     )
     _write_json_atomic(manifest_output, manifest)
     print(
@@ -679,6 +725,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     parser.add_argument("--eval-batch-size", type=int)
     parser.add_argument("--top-k", type=int, default=20)
+    parser.add_argument("--analysis-split", choices=("validation", "test"), default="test")
     parser.add_argument("--tolerance", type=float, default=1e-12)
     return parser.parse_args(argv)
 
