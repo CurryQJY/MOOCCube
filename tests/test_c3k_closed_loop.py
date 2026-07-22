@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 import torch
 
 from fast3_delta.config import Fast3Config
@@ -208,6 +209,37 @@ def test_c3k_evaluator_routes_full_ranking_through_shared_catalog_score(monkeypa
     assert count == 1
     assert set(metrics) == {"R@1", "N@1"}
     assert timing["candidate_count"] == model.cfg.n_items
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA is required for the device-boundary regression")
+def test_c3k_evaluator_moves_cpu_query_indices_before_cuda_masking():
+    device = torch.device("cuda")
+    model = _model().to(device)
+    model.device = device
+    model.set_feedback_item_stats(torch.tensor([0.0, 8.0, 5.0, 3.0], device=device))
+    model.eval()
+    loader = [
+        (
+            {"u": torch.tensor([0]), "i": torch.tensor([2])},
+            torch.tensor([0.0]),
+            torch.tensor([-1.0]),
+        )
+    ]
+
+    metrics, count, timing = evaluate_c3k(
+        model,
+        loader,
+        device,
+        eval_type="cold",
+        k_list=(1,),
+        user_seen_items={0: set()},
+        query_block=1,
+        item_block=2,
+    )
+
+    assert count == 1
+    assert set(metrics) == {"R@1", "N@1"}
+    assert timing["query_count"] == 1
 
 
 def test_c3k_stable_epoch_timing_excludes_first_epoch():

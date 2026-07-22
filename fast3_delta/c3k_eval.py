@@ -169,8 +169,10 @@ def evaluate_c3k(
                 selected = _selected_rows(pop, eval_type, float(model.cfg.cold_threshold))
                 if not bool(selected.any()):
                     continue
-                user_ids = batch["u"][selected].to(device=device, dtype=torch.long).view(-1)
-                target_ids = batch["i"][selected].to(device=device, dtype=torch.long).view(-1)
+                batch_users = batch["u"].to(device=device, dtype=torch.long).view(-1)
+                batch_items = batch["i"].to(device=device, dtype=torch.long).view(-1)
+                user_ids = batch_users[selected]
+                target_ids = batch_items[selected]
                 for begin in range(0, int(user_ids.numel()), query_block):
                     end = min(int(user_ids.numel()), begin + query_block)
                     users = user_ids[begin:end]
