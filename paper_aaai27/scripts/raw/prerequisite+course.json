@@ -1,0 +1,330 @@
+{
+"result":{
+"query":"prerequisite* course*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"204.81"
+},
+"completions":{
+"@total":"3",
+"@computed":"3",
+"@sent":"3",
+"c":[
+{
+"@sc":"38",
+"@dc":"35",
+"@oc":"38",
+"@id":"69530736",
+"text":"course"
+},
+{
+"@sc":"12",
+"@dc":"12",
+"@oc":"12",
+"@id":"69530770",
+"text":"courses"
+},
+{
+"@sc":"1",
+"@dc":"1",
+"@oc":"1",
+"@id":"69530768",
+"text":"coursera"
+}
+]
+},
+"hits":{
+"@total":"47",
+"@computed":"47",
+"@sent":"47",
+"@first":"0",
+"hit":[{
+"@score":"3",
+"@id":"153651",
+"info":{"authors":{"author":[{"@pid":"438/7882","text":"Tom Breuer"},{"@pid":"185/2900","text":"René Röpke"}]},"title":"Incorporating Recommended Course Prerequisites into Similarity-Based Course Recommender Systems for Higher Education.","venue":"CSEDU","pages":"213-220","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/csedu/BreuerR26","doi":"10.5220/0014665100004021","ee":"https://doi.org/10.5220/0014665100004021","url":"https://dblp.org/rec/conf/csedu/BreuerR26"},
+"url":"URL#153651"
+},
+{
+"@score":"3",
+"@id":"1059636",
+"info":{"authors":{"author":[{"@pid":"229/7781","text":"Abdessamad Chanaa"},{"@pid":"229/7812","text":"Nour-Eddine El Faddouli"}]},"title":"Prerequisites-based course recommendation: recommending learning objects using concept prerequisites and metadata matching.","venue":"Smart Learn. Environ.","volume":"11","number":"1","pages":"16","year":"2024","type":"Journal Articles","access":"open","key":"journals/sle/ChanaaF24","doi":"10.1186/S40561-024-00301-0","ee":"https://doi.org/10.1186/s40561-024-00301-0","url":"https://dblp.org/rec/journals/sle/ChanaaF24"},
+"url":"URL#1059636"
+},
+{
+"@score":"3",
+"@id":"1285646",
+"info":{"authors":{"author":[{"@pid":"74/8609","text":"Liming Xu"},{"@pid":"126/0787","text":"Zhibo Zhao"},{"@pid":"338/0477","text":"Dingyang Liang"}]},"title":"PreKGAT: Using Course Prerequisite Relation and Knowledge Graph Attention Network for Course Recommendation.","venue":"NaNA","pages":"351-356","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/nana/XuZL24","doi":"10.1109/NANA63151.2024.00065","ee":"https://doi.org/10.1109/NaNA63151.2024.00065","url":"https://dblp.org/rec/conf/nana/XuZL24"},
+"url":"URL#1285646"
+},
+{
+"@score":"3",
+"@id":"2680436",
+"info":{"authors":{"author":[{"@pid":"04/1381-1","text":"Zhongying Zhao 0001"},{"@pid":"290/7363","text":"Yonghao Yang"},{"@pid":"66/190-22","text":"Chao Li 0022"},{"@pid":"92/8277","text":"Liqiang Nie"}]},"title":"GuessUNeed: Recommending Courses via Neural Attention Network and Course Prerequisite Relation Embeddings.","venue":"ACM Trans. Multim. Comput. Commun. Appl.","volume":"16","number":"4","pages":"132:1-132:17","year":"2021","type":"Journal Articles","access":"closed","key":"journals/tomccap/ZhaoYLN21","doi":"10.1145/3410441","ee":"https://doi.org/10.1145/3410441","url":"https://dblp.org/rec/journals/tomccap/ZhaoYLN21"},
+"url":"URL#2680436"
+},
+{
+"@score":"3",
+"@id":"7725352",
+"info":{"authors":{"author":[{"@pid":"404/0624","text":"Mohamad H. Ahmadian"},{"@pid":"404/0303","text":"Singli Garcia-Otero"}]},"title":"A prelab-lab-postlab digital electronics course as a prerequisite for the CS computer architecture course.","venue":"J. Comput. Sci. Coll.","volume":"17","number":"5","pages":"198-203","year":"2002","type":"Journal Articles","access":"closed","key":"journals/jcscoll/AhmadianG02","doi":"10.5555/775009.775043","ee":"https://dl.acm.org/doi/10.5555/775009.775043","url":"https://dblp.org/rec/journals/jcscoll/AhmadianG02"},
+"url":"URL#7725352"
+},
+{
+"@score":"2",
+"@id":"235660",
+"info":{"authors":{"author":{"@pid":"53/3810","text":"Amarda Shehu"}},"title":"From Understanding to Creation: A Prerequisite-Free AI Literacy Course with Technical Depth Across Majors.","venue":"CoRR","volume":"abs/2604.09634","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2604-09634","doi":"10.48550/ARXIV.2604.09634","ee":"https://doi.org/10.48550/arXiv.2604.09634","url":"https://dblp.org/rec/journals/corr/abs-2604-09634"},
+"url":"URL#235660"
+},
+{
+"@score":"2",
+"@id":"438614",
+"info":{"authors":{"author":[{"@pid":"424/5285","text":"Konstantin M. Zuev"},{"@pid":"330/5400","text":"Pavlos Stavrinides"}]},"title":"Breadth, depth, and flux of course-prerequisite networks.","venue":"Netw. Sci.","volume":"13","year":"2025","type":"Journal Articles","access":"closed","key":"journals/netsci/ZuevS25","doi":"10.1017/NWS.2025.10013","ee":"https://doi.org/10.1017/nws.2025.10013","url":"https://dblp.org/rec/journals/netsci/ZuevS25"},
+"url":"URL#438614"
+},
+{
+"@score":"2",
+"@id":"598914",
+"info":{"authors":{"author":[{"@pid":"420/6623","text":"Sükrü Kaan Tetik"},{"@pid":"420/6398","text":"Emirhan Toprak"},{"@pid":"97/8340","text":"Senem Kumova Metin"},{"@pid":"202/7074","text":"Hande Aka Uymaz"}]},"title":"Redefining Prerequisites Through Text Embeddings: Identifying Practical Course Dependencies.","venue":"IC3K","pages":"49-59","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/ic3k/TetikTMU25","doi":"10.5220/0013682800004000","ee":"https://doi.org/10.5220/0013682800004000","url":"https://dblp.org/rec/conf/ic3k/TetikTMU25"},
+"url":"URL#598914"
+},
+{
+"@score":"2",
+"@id":"661646",
+"info":{"authors":{"author":[{"@pid":"421/2872","text":"Marina Tawfik"},{"@pid":"27/4828-1","text":"Andrew Petersen 0001"},{"@pid":"60/5029","text":"Leo Porter 0001"},{"@pid":"z/LisaZhang-3","text":"Lisa Zhang 0003"}]},"title":"Prerequisites and Performance in a Machine Learning Course: A Quantitative Analysis.","venue":"Koli Calling","pages":"30:1-30:11","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/kolicalling/Tawfik00Z25","doi":"10.1145/3769994.3770020","ee":"https://doi.org/10.1145/3769994.3770020","url":"https://dblp.org/rec/conf/kolicalling/Tawfik00Z25"},
+"url":"URL#661646"
+},
+{
+"@score":"2",
+"@id":"796555",
+"info":{"authors":{"author":[{"@pid":"424/5285","text":"Konstantin M. Zuev"},{"@pid":"330/5400","text":"Pavlos Stavrinides"}]},"title":"Breadth, Depth, and Flux of Course-Prerequisite Networks.","venue":"CoRR","volume":"abs/2506.23510","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2506-23510","doi":"10.48550/ARXIV.2506.23510","ee":"https://doi.org/10.48550/arXiv.2506.23510","url":"https://dblp.org/rec/journals/corr/abs-2506-23510"},
+"url":"URL#796555"
+},
+{
+"@score":"2",
+"@id":"904594",
+"info":{"authors":{"author":[{"@pid":"379/2751","text":"Bonan Yang"},{"@pid":"379/2709","text":"Mahdi Gharebhaygloo"},{"@pid":"379/2392","text":"Hannah Rachel Rondi"},{"@pid":"379/3196","text":"Efrosini Hortis"},{"@pid":"379/3083","text":"Emilia Zeledon Lostalo"},{"@pid":"248/0941","text":"Xiaolan Huang"},{"@pid":"14/4085","text":"Gunes Ercal"}]},"title":"Comparative analysis of course prerequisite networks for five Midwestern public institutions.","venue":"Appl. Netw. Sci.","volume":"9","number":"1","pages":"25","year":"2024","type":"Journal Articles","access":"open","key":"journals/ans/YangGRHLHE24","doi":"10.1007/S41109-024-00637-Z","ee":"https://doi.org/10.1007/s41109-024-00637-z","url":"https://dblp.org/rec/journals/ans/YangGRHLHE24"},
+"url":"URL#904594"
+},
+{
+"@score":"2",
+"@id":"915724",
+"info":{"authors":{"author":[{"@pid":"30/7668","text":"John Jung-Woon Yoo"},{"@pid":"383/5474","text":"Preamnath Balachandranath"},{"@pid":"383/5138","text":"Saeed Saboury"}]},"title":"Prerequisite knowledge-based automated course planning with semantics consideration.","venue":"Comput. Appl. Eng. Educ.","volume":"32","number":"4","year":"2024","type":"Journal Articles","access":"closed","key":"journals/caee/YooBS24","doi":"10.1002/CAE.22748","ee":"https://doi.org/10.1002/cae.22748","url":"https://dblp.org/rec/journals/caee/YooBS24"},
+"url":"URL#915724"
+},
+{
+"@score":"2",
+"@id":"1098614",
+"info":{"authors":{"author":[{"@pid":"127/9907","text":"Jianshan Sun"},{"@pid":"375/0902","text":"Suyuan Mei"},{"@pid":"74/4607","text":"Kun Yuan"},{"@pid":"26/4715","text":"Yuanchun Jiang"},{"@pid":"39/6191-1","text":"Jie Cao 0001"}]},"title":"Prerequisite-Enhanced Category-Aware Graph Neural Networks for Course Recommendation.","venue":"ACM Trans. Knowl. Discov. Data","volume":"18","number":"5","pages":"112:1-112:21","year":"2024","type":"Journal Articles","access":"closed","key":"journals/tkdd/SunMYJC24","doi":"10.1145/3643644","ee":"https://doi.org/10.1145/3643644","url":"https://dblp.org/rec/journals/tkdd/SunMYJC24"},
+"url":"URL#1098614"
+},
+{
+"@score":"2",
+"@id":"1307657",
+"info":{"authors":{"author":[{"@pid":"176/2885","text":"Udayan Das"},{"@pid":"267/4675","text":"Chris Fulton"}]},"title":"Reducing Barriers to Entry by Removing Prerequisites for a CS1 Introductory Programming Course.","venue":"SIGCSE","pages":"1616-1617","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigcse/DasF24","doi":"10.1145/3626253.3635492","ee":"https://doi.org/10.1145/3626253.3635492","url":"https://dblp.org/rec/conf/sigcse/DasF24"},
+"url":"URL#1307657"
+},
+{
+"@score":"2",
+"@id":"1491089",
+"info":{"authors":{"author":[{"@pid":"330/5400","text":"Pavlos Stavrinides"},{"@pid":"424/5285","text":"Konstantin M. Zuev"}]},"title":"Course-prerequisite networks for analyzing and understanding academic curricula.","venue":"Appl. Netw. Sci.","volume":"8","number":"1","pages":"19","year":"2023","type":"Journal Articles","access":"open","key":"journals/ans/StavrinidesZ23","doi":"10.1007/S41109-023-00543-W","ee":"https://doi.org/10.1007/s41109-023-00543-w","url":"https://dblp.org/rec/journals/ans/StavrinidesZ23"},
+"url":"URL#1491089"
+},
+{
+"@score":"2",
+"@id":"1866393",
+"info":{"authors":{"author":[{"@pid":"259/4518","text":"Sophia Krause-Levy"},{"@pid":"272/3722","text":"Adrian Salguero"},{"@pid":"324/0523","text":"Rachel S. Lim"},{"@pid":"308/0775","text":"Hayden McTavish"},{"@pid":"58/2088","text":"Jelena Trajkovic"},{"@pid":"60/5029","text":"Leo Porter 0001"},{"@pid":"g/WilliamGGriswold","text":"William G. Griswold"}]},"title":"Instructor Perspectives on Prerequisite Courses in Computing.","venue":"SIGCSE","pages":"277-283","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigcse/Krause-LevySLMT23","doi":"10.1145/3545945.3569787","ee":"https://doi.org/10.1145/3545945.3569787","url":"https://dblp.org/rec/conf/sigcse/Krause-LevySLMT23"},
+"url":"URL#1866393"
+},
+{
+"@score":"2",
+"@id":"1882639",
+"info":{"authors":{"author":[{"@pid":"z/LisaZhang-3","text":"Lisa Zhang 0003"},{"@pid":"23/455","text":"Sonya Allin"}]},"title":"Just-In-Time Prerequisite Review for a Machine Learning Course.","venue":"WCCCE","pages":"13:1-13:2","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/wccce/ZhangA23","doi":"10.1145/3593342.3593356","ee":"https://doi.org/10.1145/3593342.3593356","url":"https://dblp.org/rec/conf/wccce/ZhangA23"},
+"url":"URL#1882639"
+},
+{
+"@score":"2",
+"@id":"2087637",
+"info":{"authors":{"author":[{"@pid":"131/9553","text":"Kui Xiao"},{"@pid":"322/8976","text":"Youheng Bai"},{"@pid":"230/3091","text":"Zesong Wang"}]},"title":"Extracting Prerequisite Relations among Concepts From the Course Descriptions (SEKEEO-RN).","venue":"Int. J. Softw. Eng. Knowl. Eng.","volume":"32","number":"4","pages":"503-523","year":"2022","type":"Journal Articles","access":"closed","key":"journals/ijseke/XiaoBW22","doi":"10.1142/S0218194022400034","ee":"https://doi.org/10.1142/S0218194022400034","url":"https://dblp.org/rec/journals/ijseke/XiaoBW22"},
+"url":"URL#2087637"
+},
+{
+"@score":"2",
+"@id":"2091599",
+"info":{"authors":{"author":[{"@pid":"259/4518","text":"Sophia Krause-Levy"},{"@pid":"236/5434","text":"Sander Valstar"},{"@pid":"60/5029","text":"Leo Porter 0001"},{"@pid":"g/WilliamGGriswold","text":"William G. Griswold"}]},"title":"A demographic analysis on prerequisite preparation in an advanced data structures course.","venue":"Inroads","volume":"13","number":"2","pages":"34-41","year":"2022","type":"Journal Articles","access":"closed","key":"journals/inroads/Krause-LevyVPG22","doi":"10.1145/3534563","ee":"https://doi.org/10.1145/3534563","url":"https://dblp.org/rec/journals/inroads/Krause-LevyVPG22"},
+"url":"URL#2091599"
+},
+{
+"@score":"2",
+"@id":"2299891",
+"info":{"authors":{"author":[{"@pid":"77/6747","text":"Tianqi Wang"},{"@pid":"85/10856","text":"Fenglong Ma"},{"@pid":"147/1393-1","text":"Yaqing Wang 0001"},{"@pid":"67/4834-4","text":"Jing Gao 0004"}]},"title":"Heterogeneous Information Enhanced Prerequisite Learning in Massive Open Online Courses.","venue":"ICDM","pages":"1203-1208","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/icdm/WangMWG22","doi":"10.1109/ICDM54844.2022.00155","ee":"https://doi.org/10.1109/ICDM54844.2022.00155","url":"https://dblp.org/rec/conf/icdm/WangMWG22"},
+"url":"URL#2299891"
+},
+{
+"@score":"2",
+"@id":"2374987",
+"info":{"authors":{"author":[{"@pid":"259/4518","text":"Sophia Krause-Levy"},{"@pid":"236/5434","text":"Sander Valstar"},{"@pid":"60/5029","text":"Leo Porter 0001"},{"@pid":"g/WilliamGGriswold","text":"William G. Griswold"}]},"title":"A Demographic Analysis on Prerequisite Preparation in an Advanced Data Structures Course.","venue":"SIGCSE","pages":"661-667","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigcse/Krause-LevyVPG21","doi":"10.1145/3478431.3499337","ee":"https://doi.org/10.1145/3478431.3499337","url":"https://dblp.org/rec/conf/sigcse/Krause-LevyVPG21"},
+"url":"URL#2374987"
+},
+{
+"@score":"2",
+"@id":"2461979",
+"info":{"authors":{"author":[{"@pid":"330/5400","text":"Pavlos Stavrinides"},{"@pid":"424/5285","text":"Konstantin M. Zuev"}]},"title":"Course-Prerequisite Networks for Analyzing and Understanding Academic Curricula.","venue":"CoRR","volume":"abs/2210.01269","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2210-01269","doi":"10.48550/ARXIV.2210.01269","ee":"https://doi.org/10.48550/arXiv.2210.01269","url":"https://dblp.org/rec/journals/corr/abs-2210-01269"},
+"url":"URL#2461979"
+},
+{
+"@score":"2",
+"@id":"2549773",
+"info":{"authors":{"author":[{"@pid":"144/1083","text":"Yiling Dai"},{"@pid":"y/MasatoshiYoshikawa","text":"Masatoshi Yoshikawa"},{"@pid":"50/7001","text":"Kazunari Sugiyama"}]},"title":"Prerequisite-aware course ordering towards getting relevant job opportunities.","venue":"Expert Syst. Appl.","volume":"183","pages":"115233","year":"2021","type":"Journal Articles","access":"open","key":"journals/eswa/DaiYS21","doi":"10.1016/J.ESWA.2021.115233","ee":"https://doi.org/10.1016/j.eswa.2021.115233","url":"https://dblp.org/rec/journals/eswa/DaiYS21"},
+"url":"URL#2549773"
+},
+{
+"@score":"2",
+"@id":"2588454",
+"info":{"authors":{"author":[{"@pid":"268/9304","text":"Raghda Fawzey Hriez"},{"@pid":"38/4682","text":"Ghazi Al-Naymat"}]},"title":"A framework to capture the dependency between prerequisite and advanced courses in higher education.","venue":"J. Comput. High. Educ.","volume":"33","number":"3","pages":"807-844","year":"2021","type":"Journal Articles","access":"closed","key":"journals/jche/HriezA21","doi":"10.1007/S12528-021-09292-0","ee":"https://doi.org/10.1007/s12528-021-09292-0","url":"https://dblp.org/rec/journals/jche/HriezA21"},
+"url":"URL#2588454"
+},
+{
+"@score":"2",
+"@id":"2749655",
+"info":{"authors":{"author":[{"@pid":"309/4850","text":"Johnathon Nash"},{"@pid":"25/819","text":"Laura E. Boucheron"},{"@pid":"237/6861","text":"Steven J. Stochaj"}]},"title":"A Correlative Analysis of Course Grades as Related to Curricular Prerequisite Structure and Inter-Class Topic Dependencies.","venue":"FIE","pages":"1-5","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/fie/NashBS21","doi":"10.1109/FIE49875.2021.9637401","ee":"https://doi.org/10.1109/FIE49875.2021.9637401","url":"https://dblp.org/rec/conf/fie/NashBS21"},
+"url":"URL#2749655"
+},
+{
+"@score":"2",
+"@id":"2847659",
+"info":{"authors":{"author":[{"@pid":"230/3091","text":"Zesong Wang"},{"@pid":"131/9553","text":"Kui Xiao"},{"@pid":"310/3779","text":"Zeqing Qin"},{"@pid":"16/6743","text":"Shihui Wang"}]},"title":"Extracting Prerequisite Relations among Concepts from the Introduction of Online Courses(SEKEEO) (S).","venue":"SEKE","pages":"375-380","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/seke/WangXQW21","doi":"10.18293/SEKE2021-172","ee":"https://doi.org/10.18293/SEKE2021-172","url":"https://dblp.org/rec/conf/seke/WangXQW21"},
+"url":"URL#2847659"
+},
+{
+"@score":"2",
+"@id":"2972680",
+"info":{"authors":{"author":[{"@pid":"31/2088","text":"Lu Liu"},{"@pid":"68/2682","text":"Fan Lin"},{"@pid":"22/3936","text":"Beizhan Wang"},{"@pid":"137/8863-1","text":"Kangkang Li 0001"},{"@pid":"25/6475","text":"Meng Xiao"},{"@pid":"54/10362","text":"Jianbing Xiahou"},{"@pid":"77/2927","text":"Pengcheng Wu"}]},"title":"Prerequisite Relation Learning for Course Concepts Based on Hyperbolic Deep Representation.","venue":"IEEE Access","volume":"8","pages":"49079-49089","year":"2020","type":"Journal Articles","access":"open","key":"journals/access/LiuLWLXXW20","doi":"10.1109/ACCESS.2020.2979555","ee":"https://doi.org/10.1109/ACCESS.2020.2979555","url":"https://dblp.org/rec/journals/access/LiuLWLXXW20"},
+"url":"URL#2972680"
+},
+{
+"@score":"2",
+"@id":"3264251",
+"info":{"authors":{"author":[{"@pid":"204/4743","text":"Greg L. Nelson"},{"@pid":"228/4860","text":"Filip Strömbäck"},{"@pid":"15/4194","text":"Ari Korhonen"},{"@pid":"66/4757","text":"Marjahan Begum"},{"@pid":"124/7612","text":"Ben Blamey"},{"@pid":"09/6476","text":"Karen H. Jin"},{"@pid":"53/221","text":"Violetta Lonati"},{"@pid":"68/1512","text":"Bonnie K. MacKellar"},{"@pid":"32/6774","text":"Mattia Monga"}]},"title":"Differentiated Assessments for Advanced Courses that Reveal Issues with Prerequisite Skills: A Design Investigation.","venue":"ITiCSE-WGR","pages":"75-129","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/iticse/NelsonSKBBJLMM20","doi":"10.1145/3437800.3439204","ee":"https://doi.org/10.1145/3437800.3439204","url":"https://dblp.org/rec/conf/iticse/NelsonSKBBJLMM20"},
+"url":"URL#3264251"
+},
+{
+"@score":"2",
+"@id":"3731929",
+"info":{"authors":{"author":[{"@pid":"b/ThomasCBressoud","text":"Thomas C. Bressoud"},{"@pid":"236/5487","text":"Gavin Thomas"}]},"title":"A Novel Course in Data Systems with Minimal Prerequisites.","venue":"SIGCSE","pages":"15-21","year":"2019","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigcse/BressoudT19","doi":"10.1145/3287324.3287425","ee":"https://doi.org/10.1145/3287324.3287425","url":"https://dblp.org/rec/conf/sigcse/BressoudT19"},
+"url":"URL#3731929"
+},
+{
+"@score":"2",
+"@id":"3732253",
+"info":{"authors":{"author":[{"@pid":"236/5434","text":"Sander Valstar"},{"@pid":"g/WilliamGGriswold","text":"William G. Griswold"},{"@pid":"60/5029","text":"Leo Porter 0001"}]},"title":"The Relationship between Prerequisite Proficiency and Student Performance in an Upper-Division Computing Course.","venue":"SIGCSE","pages":"794-800","year":"2019","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigcse/ValstarGP20","doi":"10.1145/3287324.3287419","ee":"https://doi.org/10.1145/3287324.3287419","url":"https://dblp.org/rec/conf/sigcse/ValstarGP20"},
+"url":"URL#3732253"
+},
+{
+"@score":"2",
+"@id":"3859409",
+"info":{"authors":{"author":[{"@pid":"97/6654","text":"Katarína Cechlárová"},{"@pid":"00/11122","text":"Bettina Klaus"},{"@pid":"m/DManlove","text":"David F. Manlove"}]},"title":"Pareto optimal matchings of students to courses in the presence of prerequisites.","venue":"Discret. Optim.","volume":"29","pages":"174-195","year":"2018","type":"Journal Articles","access":"open","key":"journals/disopt/CechlarovaKM18","doi":"10.1016/J.DISOPT.2018.04.004","ee":"https://doi.org/10.1016/j.disopt.2018.04.004","url":"https://dblp.org/rec/journals/disopt/CechlarovaKM18"},
+"url":"URL#3859409"
+},
+{
+"@score":"2",
+"@id":"4014957",
+"info":{"authors":{"author":[{"@pid":"73/6153","text":"Weiyu Chen"},{"@pid":"127/6503","text":"Andrew S. Lan"},{"@pid":"193/7279","text":"Da Cao"},{"@pid":"139/0747","text":"Christopher G. Brinton"},{"@pid":"61/5309","text":"Mung Chiang"}]},"title":"Behavioral Analysis at Scale: Learning Course Prerequisite Structures from Learner Clickstreams.","venue":"EDM","year":"2018","type":"Conference and Workshop Papers","access":"open","key":"conf/edm/ChenLCBC18","ee":"http://educationaldatamining.org/files/conferences/EDM2018/papers/EDM2018_paper_58.pdf","url":"https://dblp.org/rec/conf/edm/ChenLCBC18"},
+"url":"URL#4014957"
+},
+{
+"@score":"2",
+"@id":"4242400",
+"info":{"authors":{"author":[{"@pid":"292/5306","text":"John E. Wisneski"},{"@pid":"126/1401","text":"Gamze Ozogul"},{"@pid":"98/6540","text":"Barbara A. Bichelmeyer"}]},"title":"Investigating the impact of learning environments on undergraduate students&apos; academic performance in a prerequisite and post-requisite course sequence.","venue":"Internet High. Educ.","volume":"32","pages":"1-10","year":"2017","type":"Journal Articles","access":"closed","key":"journals/iahe/WisneskiOB17","doi":"10.1016/J.IHEDUC.2016.08.003","ee":"https://doi.org/10.1016/j.iheduc.2016.08.003","url":"https://dblp.org/rec/journals/iahe/WisneskiOB17"},
+"url":"URL#4242400"
+},
+{
+"@score":"2",
+"@id":"4269045",
+"info":{"authors":{"author":{"@pid":"85/5909","text":"Joe Dumas 0002"}},"title":"From introduction to operating systems to computer architecture: does an online prerequisite course prepare students better?","venue":"J. Comput. Sci. Coll.","volume":"33","number":"2","pages":"253-259","year":"2017","type":"Journal Articles","access":"closed","key":"journals/jcscoll/Dumas17","doi":"10.5555/3144645.3144683","ee":"https://dl.acm.org/doi/10.5555/3144645.3144683","url":"https://dblp.org/rec/journals/jcscoll/Dumas17"},
+"url":"URL#4269045"
+},
+{
+"@score":"2",
+"@id":"4333689",
+"info":{"authors":{"author":[{"@pid":"35/3221-1","text":"Chen Liang 0001"},{"@pid":"28/7955","text":"Jianbo Ye"},{"@pid":"54/6252-2","text":"Zhaohui Wu 0002"},{"@pid":"160/1549","text":"Bart Pursel"},{"@pid":"g/CLeeGiles","text":"C. Lee Giles"}]},"title":"Recovering Concept Prerequisite Relations from University Course Dependencies.","venue":"AAAI","pages":"4786-4791","year":"2017","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/LiangYWPG17","doi":"10.1609/AAAI.V31I1.10550","ee":"https://doi.org/10.1609/aaai.v31i1.10550","url":"https://dblp.org/rec/conf/aaai/LiangYWPG17"},
+"url":"URL#4333689"
+},
+{
+"@score":"2",
+"@id":"4750861",
+"info":{"authors":{"author":[{"@pid":"180/6841","text":"Carlo De Medio"},{"@pid":"51/5347","text":"Fabio Gasparetti"},{"@pid":"52/3376","text":"Carla Limongelli"},{"@pid":"131/2823","text":"Matteo Lombardi"},{"@pid":"130/5140","text":"Alessandro Marani"},{"@pid":"72/2015","text":"Filippo Sciarrone"},{"@pid":"81/3008","text":"Marco Temperini"}]},"title":"Discovering Prerequisite Relationships Among Learning Objects: A Coursera-Driven Approach.","venue":"ICWL","pages":"261-265","year":"2016","type":"Conference and Workshop Papers","access":"closed","key":"conf/icwl/MedioGLLMST16","doi":"10.1007/978-3-319-47440-3_29","ee":"https://doi.org/10.1007/978-3-319-47440-3_29","url":"https://dblp.org/rec/conf/icwl/MedioGLLMST16"},
+"url":"URL#4750861"
+},
+{
+"@score":"2",
+"@id":"4835127",
+"info":{"authors":{"author":[{"@pid":"97/6654","text":"Katarína Cechlárová"},{"@pid":"00/11122","text":"Bettina Klaus"},{"@pid":"m/DManlove","text":"David F. Manlove"}]},"title":"Pareto optimal matchings of students to courses in the presence of prerequisites.","venue":"CoRR","volume":"abs/1603.00858","year":"2016","type":"Informal and Other Publications","access":"open","key":"journals/corr/CechlarovaKM16","ee":"http://arxiv.org/abs/1603.00858","url":"https://dblp.org/rec/journals/corr/CechlarovaKM16"},
+"url":"URL#4835127"
+},
+{
+"@score":"2",
+"@id":"5074175",
+"info":{"authors":{"author":[{"@pid":"158/4229","text":"Sheng-syun Shen"},{"@pid":"81/8056","text":"Hung-yi Lee"},{"@pid":"35/9232-1","text":"Shang-wen Li 0001"},{"@pid":"90/628","text":"Victor Zue"},{"@pid":"40/176","text":"Lin-Shan Lee"}]},"title":"Structuring lectures in massive open online courses (MOOCs) for efficient learning by linking similar sections and predicting prerequisites.","venue":"INTERSPEECH","pages":"1363-1367","year":"2015","type":"Conference and Workshop Papers","access":"open","key":"conf/interspeech/ShenLLZL15","doi":"10.21437/INTERSPEECH.2015-49","ee":"https://doi.org/10.21437/Interspeech.2015-49","url":"https://dblp.org/rec/conf/interspeech/ShenLLZL15"},
+"url":"URL#5074175"
+},
+{
+"@score":"2",
+"@id":"5863901",
+"info":{"authors":{"author":[{"@pid":"74/2397","text":"Zhen Li"},{"@pid":"33/8692","text":"David Tinapple"},{"@pid":"s/HariSundaram","text":"Hari Sundaram"}]},"title":"Visual planner: beyond prerequisites, designing an interactive course planner for a 21st century flexible curriculum.","venue":"CHI Extended Abstracts","pages":"1613-1618","year":"2012","type":"Conference and Workshop Papers","access":"closed","key":"conf/chi/LiTS12","doi":"10.1145/2212776.2223681","ee":"https://doi.org/10.1145/2212776.2223681","url":"https://dblp.org/rec/conf/chi/LiTS12"},
+"url":"URL#5863901"
+},
+{
+"@score":"2",
+"@id":"5886775",
+"info":{"authors":{"author":[{"@pid":"62/301","text":"Steve Warren"},{"@pid":"35/5081","text":"Dwight Day"}]},"title":"The impact of a scientific computing prerequisite on student performance in a linear systems course.","venue":"FIE","pages":"1-6","year":"2012","type":"Conference and Workshop Papers","access":"closed","key":"conf/fie/WarrenD12","doi":"10.1109/FIE.2012.6462489","ee":"https://doi.org/10.1109/FIE.2012.6462489","url":"https://dblp.org/rec/conf/fie/WarrenD12"},
+"url":"URL#5886775"
+},
+{
+"@score":"2",
+"@id":"5886788",
+"info":{"authors":{"author":[{"@pid":"193/3029","text":"Ziliang Zhou"},{"@pid":"193/5247","text":"Anthony Donaldson"}]},"title":"Work in progress: Enhancing broader communication among courses linked with prerequisites.","venue":"FIE","pages":"1-2","year":"2012","type":"Conference and Workshop Papers","access":"closed","key":"conf/fie/ZhouD12","doi":"10.1109/FIE.2012.6462521","ee":"https://doi.org/10.1109/FIE.2012.6462521","url":"https://dblp.org/rec/conf/fie/ZhouD12"},
+"url":"URL#5886788"
+},
+{
+"@score":"2",
+"@id":"5907239",
+"info":{"authors":{"author":[{"@pid":"121/2378","text":"Mariana Orlandini Ferreira"},{"@pid":"82/2548","text":"Alexandre L&apos;Erário"},{"@pid":"01/4442","text":"José Augusto Fabri"}]},"title":"Prerequisites for Teaching of Distributed Software Development in Graduate Courses.","venue":"ICGSE","pages":"180","year":"2012","type":"Conference and Workshop Papers","access":"closed","key":"conf/icgse/FerreiraLF12","doi":"10.1109/ICGSE.2012.36","ee":"https://doi.org/10.1109/ICGSE.2012.36","url":"https://dblp.org/rec/conf/icgse/FerreiraLF12"},
+"url":"URL#5907239"
+},
+{
+"@score":"2",
+"@id":"5968606",
+"info":{"authors":{"author":[{"@pid":"98/3994","text":"József Gáti"},{"@pid":"51/5336","text":"Gyula Kártyás"},{"@pid":"79/6584","text":"Attila L. Bencsik"}]},"title":"Model-based definition of prerequisites in engineering course structures.","venue":"SISY","pages":"505-509","year":"2012","type":"Conference and Workshop Papers","access":"closed","key":"conf/sisy/GatiKB12","doi":"10.1109/SISY.2012.6339574","ee":"https://doi.org/10.1109/SISY.2012.6339574","url":"https://dblp.org/rec/conf/sisy/GatiKB12"},
+"url":"URL#5968606"
+},
+{
+"@score":"2",
+"@id":"6146259",
+"info":{"authors":{"author":{"@pid":"193/3029","text":"Ziliang Zhou"}},"title":"Work in progress - Enhancing communications among courses linked with prerequisites.","venue":"FIE","pages":"1","year":"2011","type":"Conference and Workshop Papers","access":"closed","key":"conf/fie/Zhou11","doi":"10.1109/FIE.2011.6142728","ee":"https://doi.org/10.1109/FIE.2011.6142728","url":"https://dblp.org/rec/conf/fie/Zhou11"},
+"url":"URL#6146259"
+},
+{
+"@score":"2",
+"@id":"6349785",
+"info":{"authors":{"author":[{"@pid":"94/4786","text":"Julian Mason"},{"@pid":"37/142","text":"Gavin Taylor"}]},"title":"An Intensive Introductory Robotics Course Without Prerequisites.","venue":"Enabling Intelligence through Middleware","year":"2010","type":"Conference and Workshop Papers","access":"unavailable","key":"conf/aaai/MasonT10","ee":"http://www.aaai.org/ocs/index.php/WS/ROBOT10/paper/view/2345","url":"https://dblp.org/rec/conf/aaai/MasonT10"},
+"url":"URL#6349785"
+},
+{
+"@score":"2",
+"@id":"7191282",
+"info":{"authors":{"author":[{"@pid":"12/6617","text":"William B. Dunbar"},{"@pid":"35/4734","text":"Jorge Cortés 0001"}]},"title":"A Crash Course in Feedback Control; A MATLAB-based introduction with one prerequisite: high school algebra.","venue":"CDC","pages":"3900-3905","year":"2006","type":"Conference and Workshop Papers","access":"closed","key":"conf/cdc/DunbarC06","doi":"10.1109/CDC.2006.376950","ee":"https://doi.org/10.1109/CDC.2006.376950","url":"https://dblp.org/rec/conf/cdc/DunbarC06"},
+"url":"URL#7191282"
+},
+{
+"@score":"2",
+"@id":"7503948",
+"info":{"authors":{"author":{"@pid":"99/5605","text":"Ronald Frank"}},"title":"A Presentation of the Prerequisite Topics and a Module for a Quantum Encryption (QE) Topic in an IS Course.","venue":"AMCIS","pages":"556","year":"2004","type":"Conference and Workshop Papers","access":"closed","key":"conf/amcis/Frank04","ee":"http://aisel.aisnet.org/amcis2004/556","url":"https://dblp.org/rec/conf/amcis/Frank04"},
+"url":"URL#7503948"
+}
+]
+}
+}
+}

@@ -84,16 +84,38 @@ def test_collect_seed_rows_covers_current_main_table_artifacts() -> None:
     detail, coverage = MODULE.collect_seed_rows()
 
     assert len(coverage) == 108
-    assert len(detail) == 99
-    assert set(coverage.loc[coverage.status != "ready", "method"]) == {"PCGNN"}
-    assert (coverage.status == "unavailable_missing_warm_targets").sum() == 9
-    assert set(detail.method) == set(MODULE.METHOD_ORDER) - {"PCGNN"}
+    assert len(detail) == 108
+    assert set(coverage.status) == {"ready"}
+    assert set(detail.method) == set(MODULE.METHOD_ORDER)
     assert set(detail.seed) == {2025, 2026, 2027}
     assert set(detail.dataset) == {"MOOCCube", "Junyi", "COCO"}
     assert (
         detail.loc[detail.method == "KGRec", "aggregation_route"]
         == "direct_all_item_macro_validated"
     ).all()
+    pcgnn = detail.loc[detail.method == "PCGNN"]
+    assert len(pcgnn) == 9
+    assert (
+        pcgnn["aggregation_route"] == "pcgnn_cold_target_only_report"
+    ).all()
+    assert (pcgnn["hot_count"] == 0).all()
+    assert pcgnn["reason"].str.contains("no warm-target PCGNN metrics").all()
+
+
+def test_mooccube_aldi_uses_clean_gpu_rerun_artifacts() -> None:
+    detail, _ = MODULE.collect_seed_rows()
+
+    aldi = detail[
+        (detail.dataset == "MOOCCube")
+        & (detail.method == "ALDI")
+        & (detail.seed == 2025)
+    ].iloc[0]
+
+    assert "outputs\\score_parity\\mooccube_seed2025" in aldi["cold_source"]
+    assert "outputs\\score_parity\\mooccube_seed2025" in aldi["hot_source"]
+    assert "content_delta_pop5" not in aldi["hot_source"]
+    assert aldi["R@10"] == pytest.approx(0.16399689943388226)
+    assert aldi["N@10"] == pytest.approx(0.10620417854331396)
 
 
 def test_summarize_adds_sample_std_rank_and_ckg_improvement() -> None:
@@ -153,9 +175,7 @@ def test_build_wide_uses_main_table_metrics() -> None:
 
     wide = MODULE.build_wide(summary)
 
-    assert list(wide.method) == [
-        method for method in MODULE.METHOD_ORDER if method != "PCGNN"
-    ]
+    assert list(wide.method) == list(MODULE.METHOD_ORDER)
     assert "MOOCCube_R@5" in wide.columns
     assert "COCO_N@10" in wide.columns
     assert "MOOCCube_R@20" not in wide.columns
@@ -171,10 +191,13 @@ def test_write_outputs_creates_required_workbook_and_csvs(
 
     assert {path.name for path in paths} == {
         "overall_baseline_comparison.xlsx",
+        "overall_main_table.xlsx",
         "overall_baseline_summary.csv",
         "overall_baseline_seed_detail.csv",
         "overall_baseline_wide.csv",
         "overall_baseline_coverage.csv",
+        "overall_main_table.tex",
+        "overall_main_table_aaai.tex",
     }
     workbook = openpyxl.load_workbook(
         tmp_path / "overall_baseline_comparison.xlsx", data_only=False
@@ -185,5 +208,55 @@ def test_write_outputs_creates_required_workbook_and_csvs(
     assert workbook["Coverage"]["A1"].font.name == "Arial"
 
     csv_summary = pd.read_csv(tmp_path / "overall_baseline_summary.csv")
-    assert len(csv_summary) == 33
-    assert set(csv_summary.method) == set(MODULE.METHOD_ORDER) - {"PCGNN"}
+    assert len(csv_summary) == 36
+    assert set(csv_summary.method) == set(MODULE.METHOD_ORDER)
+
+    main_table = openpyxl.load_workbook(
+        tmp_path / "overall_main_table.xlsx", data_only=False
+    )
+    assert main_table.sheetnames == ["Overall_Main_Table"]
+    sheet = main_table["Overall_Main_Table"]
+    assert {str(cell_range) for cell_range in sheet.merged_cells.ranges} >= {
+        "A1:A2",
+        "B1:E1",
+        "F1:I1",
+        "J1:M1",
+    }
+    assert [sheet.cell(1, column).value for column in (2, 6, 10)] == [
+        "MOOCCube",
+        "Junyi",
+        "COCO",
+    ]
+    assert [sheet.cell(2, column).value for column in range(2, 6)] == [
+        "R@5",
+        "R@10",
+        "N@5",
+        "N@10",
+    ]
+    assert [sheet.cell(row, 1).value for row in range(3, 15)] == list(
+        MODULE.METHOD_ORDER
+    )
+    assert sheet["B11"].value == pytest.approx(0.0240777247409046)
+    assert sheet["A15"].value == "Imp."
+    assert sheet["B15"].number_format == "+0.0%;-0.0%;0.0%"
+    assert sheet["C13"].font.bold is True
+    assert sheet["C10"].font.underline == "single"
+    assert sheet["A1"].font.name == "Arial"
+
+    table_tex = (tmp_path / "overall_main_table.tex").read_text(encoding="ascii")
+    assert "Overall Item-Macro performance" in table_tex
+    assert (
+        r"PCGNN\methodref{TKDD'24} & 0.0241 & 0.0520 & 0.0145 & 0.0234"
+        in table_tex
+    )
+    assert r"\emph{Imp.}" in table_tex
+
+    table_fragment = (
+        tmp_path / "overall_main_table_aaai.tex"
+    ).read_text(encoding="ascii")
+    assert r"\begin{table*}[t]" in table_fragment
+    assert r"\documentclass" not in table_fragment
+    assert (
+        r"PCGNN\methodref{TKDD'24} & 0.0241 & 0.0520 & 0.0145 & 0.0234"
+        in table_fragment
+    )

@@ -1,6 +1,6 @@
 PWD D:\DeskTop\MOOCCube\paper_aaai27
 INPUT C:\Users\pc\AppData\Local\MiKTeX\miktex\data\le\pdftex\pdflatex.fmt
-INPUT D:\DeskTop\MOOCCube\paper_aaai27\supplement_tables.tex
+INPUT supplement_tables.tex
 OUTPUT supplement_tables.log
 INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls
 INPUT C:\Users\pc\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls

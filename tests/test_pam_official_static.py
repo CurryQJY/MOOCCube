@@ -3,8 +3,10 @@ import json
 import shutil
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import pandas as pd
 
@@ -118,6 +120,185 @@ class PamOfficialStaticTests(unittest.TestCase):
 
         self.assertIn("pam_official_static_result.json", agg.RESULT_FILES)
         self.assertIn("PAM", agg.MODEL_ORDER)
+
+    def test_train_selects_earliest_best_validation_checkpoint_before_one_test_pass(self):
+        import pam_official_static as pam
+
+        output_dir = self.tmp / "output"
+        view_dir = output_dir / "pam_official_view"
+        view_dir.mkdir(parents=True)
+        pd.DataFrame(
+            {
+                "userId": [0],
+                "itemSeq": [""],
+                "itemId": [0],
+                "userSeq": [""],
+                "label": [1],
+                "vv": [0],
+                "period": [0],
+            }
+        ).to_csv(view_dir / "pam_train.csv", index=False)
+        pd.DataFrame({"itemId": [0, 1, 2, 3], "cateId": ["1", "1", "1", "1"]}).to_csv(
+            view_dir / "pam_content.csv",
+            index=False,
+        )
+        pd.DataFrame({"u_idx": [0], "i_idx": [0], "timestamp": [0], "popularity": [0]}).to_csv(
+            view_dir / "pam_train_interactions.csv",
+            index=False,
+        )
+        pd.DataFrame({"u_idx": [0], "i_idx": [1], "timestamp": [1], "popularity": [0]}).to_csv(
+            view_dir / "pam_val_targets.csv",
+            index=False,
+        )
+        pd.DataFrame(
+            {
+                "u_idx": [0, 0],
+                "i_idx": [2, 3],
+                "timestamp": [2, 3],
+                "popularity": [0, 1],
+            }
+        ).to_csv(view_dir / "pam_test_targets.csv", index=False)
+
+        pam_root = self.tmp / "PAM"
+        pam_code_dir = pam_root / "PAM-F"
+        pam_code_dir.mkdir(parents=True)
+        (pam_code_dir / "model.py").touch()
+        cfg = pam.Config(
+            data_dir="",
+            split_dir="",
+            relation_dir="",
+            output_dir=output_dir,
+            pam_root=pam_root,
+            seed=2025,
+            static_seed=2025,
+            cold_threshold=1,
+            train_ratio=0.8,
+            val_ratio=0.1,
+            epochs=3,
+            batch_size=1,
+            lr=1e-3,
+            emb_dim=8,
+            hidden_dim=16,
+            cate_dim=8,
+            neg_per_pos=1,
+            max_train_pos=0,
+            max_eval_rows=0,
+            max_cates_per_item=8,
+            eval_item_batch_size=4,
+            use_gpu=False,
+            init_checkpoint="",
+            start_epoch=0,
+        )
+        manifest = {"n_users": 1, "n_items": 4, "num_cates": 2}
+        events = []
+        holder = {}
+
+        class FakeSession:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def run(self, values, feed_dict=None):
+                return None
+
+        class FakeSaver:
+            def save(self, sess, path):
+                events.append(("save", path))
+                return path
+
+            def restore(self, sess, path):
+                events.append(("restore", path))
+
+        class FakeModel:
+            def __init__(self, *args, **kwargs):
+                self.epoch = 0
+                holder["model"] = self
+
+        class FakeEngine:
+            def __init__(self, sess, model, history):
+                self.model = model
+
+            def base_train_an_epoch(self, epoch, train_view, train_config):
+                self.model.epoch = epoch
+                events.append(("train", epoch))
+                return float(epoch)
+
+        fake_tf = types.ModuleType("tensorflow.compat.v1")
+        fake_tf.Session = FakeSession
+        fake_tf.train = types.SimpleNamespace(Saver=lambda: FakeSaver())
+        fake_tf.global_variables_initializer = lambda: "global-init"
+        fake_tf.local_variables_initializer = lambda: "local-init"
+        fake_tf.reset_default_graph = lambda: None
+        fake_tf.disable_eager_execution = lambda: None
+        fake_tf.set_random_seed = lambda seed: None
+        fake_compat = types.ModuleType("tensorflow.compat")
+        fake_compat.__path__ = []
+        fake_compat.v1 = fake_tf
+        fake_tensorflow = types.ModuleType("tensorflow")
+        fake_tensorflow.__path__ = []
+        fake_tensorflow.compat = fake_compat
+        fake_engine = types.ModuleType("engine")
+        fake_engine.Engine = FakeEngine
+        fake_model = types.ModuleType("model")
+        fake_model.EmbMLP = FakeModel
+
+        def fake_evaluate(*, targets, **kwargs):
+            target_ids = tuple(target.item_id for target in targets)
+            events.append(("evaluate", target_ids))
+            if target_ids == (1,):
+                ndcg = {1: 0.20, 2: 0.40, 3: 0.40}[holder["model"].epoch]
+                return {"N@10": ndcg}, {"N@10": ndcg}, 1, 1
+            return {"N@10": 0.10}, {"N@10": 0.10}, 1, 1
+
+        fake_modules = {
+            "tensorflow": fake_tensorflow,
+            "tensorflow.compat": fake_compat,
+            "tensorflow.compat.v1": fake_tf,
+            "engine": fake_engine,
+            "model": fake_model,
+        }
+        with mock.patch.dict(sys.modules, fake_modules), mock.patch.object(
+            pam,
+            "evaluate_pam_full_catalog",
+            side_effect=fake_evaluate,
+        ):
+            result = pam.train_and_evaluate(cfg, manifest)
+
+        selection = result.get("checkpoint_selection")
+        self.assertIsNotNone(selection)
+        self.assertEqual(selection["selected_epoch"], 2)
+        self.assertEqual(
+            [
+                event
+                for event in events
+                if event[0] == "save" and Path(event[1]).name.startswith("pam_official_epoch_")
+            ],
+            [
+                ("save", str(output_dir / "checkpoints" / "pam_official_epoch_1.ckpt")),
+                ("save", str(output_dir / "checkpoints" / "pam_official_epoch_2.ckpt")),
+                ("save", str(output_dir / "checkpoints" / "pam_official_epoch_3.ckpt")),
+            ],
+        )
+        self.assertIn(
+            ("save", str(output_dir / "checkpoints" / "pam_official_latest.ckpt")),
+            events,
+        )
+        self.assertEqual(
+            [event for event in events if event[0] == "restore"],
+            [("restore", str(output_dir / "checkpoints" / "pam_official_epoch_2.ckpt"))],
+        )
+        self.assertEqual(
+            [event for event in events if event[0] == "evaluate"],
+            [
+                ("evaluate", (1,)),
+                ("evaluate", (1,)),
+                ("evaluate", (1,)),
+                ("evaluate", (2,)),
+                ("evaluate", (3,)),
+            ],
+        )
 
 
 if __name__ == "__main__":

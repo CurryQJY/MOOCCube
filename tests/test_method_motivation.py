@@ -241,13 +241,13 @@ def test_manuscript_separates_validation_motivation_test_audit_and_mechanisms():
 
     assert "CGRC as a generic cold-start transfer baseline, not a course recommender" in manuscript
     assert "PCGNN as the course-specific counterpart" in manuscript
-    assert "Validation diagnosis of complementary baseline gaps" in manuscript
+    assert "Validation motivation evidence pack" in manuscript
     assert "validation-only" in manuscript.lower()
     assert "mooccube_validation_motivation.pdf" in manuscript
     assert "strict course-cold full-catalog" in manuscript
-    assert "102 matched $(\\text{seed},\\text{target-course})$ units per model" in manuscript
+    assert "102 $(\\text{seed},\\text{target-course})$ units per baseline" in manuscript
     assert "coverage/missingness" in manuscript.lower()
-    assert "10{,}000 seed-stratified bootstrap resamples" in manuscript
+    assert "whiskers show the range across three seeds" in manuscript
     assert "RQ2: Exposure and Objective-Aligned Structural Diagnostics" in manuscript
     assert "post-hoc objective-aligned structural-proxy audit" in manuscript
     assert "no causal pedagogical or learning-outcome claim" in manuscript

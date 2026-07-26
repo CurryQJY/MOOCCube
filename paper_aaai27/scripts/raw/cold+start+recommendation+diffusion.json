@@ -1,0 +1,74 @@
+{
+"result":{
+"query":"cold* start* recommendation* diffusion*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"38.95"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"7",
+"@dc":"7",
+"@oc":"7",
+"@id":"69605306",
+"text":"diffusion"
+}
+},
+"hits":{
+"@total":"7",
+"@computed":"7",
+"@sent":"7",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"183768",
+"info":{"authors":{"author":[{"@pid":"279/9890","text":"Hongsheng Dong"},{"@pid":"194/6883","text":"Haolong Xiang"},{"@pid":"10/137-1","text":"Xiaolong Xu 0001"},{"@pid":"54/8558","text":"Xuyun Zhang"}]},"title":"Enhanced Cold-Start Sequential Recommendation with Causal Diffusion Preference Modeling.","venue":"WSDM","pages":"132-141","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/DongX0Z26","doi":"10.1145/3773966.3778026","ee":"https://doi.org/10.1145/3773966.3778026","url":"https://dblp.org/rec/conf/wsdm/DongX0Z26"},
+"url":"URL#183768"
+},
+{
+"@score":"4",
+"@id":"271974",
+"info":{"authors":{"author":[{"@pid":"266/4362","text":"Kangning Zhang"},{"@pid":"258/6919","text":"Yingjie Qin"},{"@pid":"28/10261-1","text":"Weinan Zhang 0001"},{"@pid":"43/5685-1","text":"Yong Yu 0001"},{"@pid":"188/7862","text":"Jianghao Lin"}]},"title":"DiffCold: A Diffusion-based Generative Model for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2606.12245","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2606-12245","doi":"10.48550/ARXIV.2606.12245","ee":"https://doi.org/10.48550/arXiv.2606.12245","url":"https://dblp.org/rec/journals/corr/abs-2606-12245"},
+"url":"URL#271974"
+},
+{
+"@score":"4",
+"@id":"712805",
+"info":{"authors":{"author":[{"@pid":"360/7278","text":"Tuan-Nghia Bui"},{"@pid":"295/7510","text":"Huy-Son Nguyen"},{"@pid":"191/0595","text":"Cam-Van Thi Nguyen"},{"@pid":"73/8938","text":"Hoang-Quynh Le"},{"@pid":"155/5277","text":"Duc-Trong Le"}]},"title":"Personalized Diffusion Model Reshapes Cold-Start Bundle Recommendation.","venue":"WWW","pages":"3088-3091","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/BuiNNLL25","doi":"10.1145/3701716.3735081","ee":"https://doi.org/10.1145/3701716.3735081","url":"https://dblp.org/rec/conf/www/BuiNNLL25"},
+"url":"URL#712805"
+},
+{
+"@score":"4",
+"@id":"771574",
+"info":{"authors":{"author":[{"@pid":"181/2821-72","text":"Ming Li 0072"},{"@pid":"73/2252-1","text":"Lin Li 0001"},{"@pid":"58/3976","text":"Xiaohui Tao 0001"},{"@pid":"68/3245","text":"Dong Zhang"},{"@pid":"h/XiangjiHuang","text":"Jimmy Xiangji Huang"}]},"title":"Divide-and-Conquer: Cold-Start Bundle Recommendation via Mixture of Diffusion Experts.","venue":"CoRR","volume":"abs/2505.05035","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2505-05035","doi":"10.48550/ARXIV.2505.05035","ee":"https://doi.org/10.48550/arXiv.2505.05035","url":"https://dblp.org/rec/journals/corr/abs-2505-05035"},
+"url":"URL#771574"
+},
+{
+"@score":"4",
+"@id":"777016",
+"info":{"authors":{"author":[{"@pid":"360/7278","text":"Tuan-Nghia Bui"},{"@pid":"295/7510","text":"Huy-Son Nguyen"},{"@pid":"191/0595","text":"Cam-Van Thi Nguyen"},{"@pid":"73/8938","text":"Hoang-Quynh Le"},{"@pid":"155/5277","text":"Duc-Trong Le"}]},"title":"Personalized Diffusion Model Reshapes Cold-Start Bundle Recommendation.","venue":"CoRR","volume":"abs/2505.14901","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2505-14901","doi":"10.48550/ARXIV.2505.14901","ee":"https://doi.org/10.48550/arXiv.2505.14901","url":"https://dblp.org/rec/journals/corr/abs-2505-14901"},
+"url":"URL#777016"
+},
+{
+"@score":"4",
+"@id":"874120",
+"info":{"authors":{"author":[{"@pid":"166/0413","text":"Kang Fu"},{"@pid":"40/2812-2","text":"Honglei Zhang 0002"},{"@pid":"341/8058","text":"Xuechao Zou"},{"@pid":"40/7652","text":"Yidong Li"}]},"title":"MDiffFR: Modality-Guided Diffusion Generation for Cold-start Items in Federated Recommendation.","venue":"CoRR","volume":"abs/2512.24715","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2512-24715","doi":"10.48550/ARXIV.2512.24715","ee":"https://doi.org/10.48550/arXiv.2512.24715","url":"https://dblp.org/rec/journals/corr/abs-2512-24715"},
+"url":"URL#874120"
+},
+{
+"@score":"4",
+"@id":"1329357",
+"info":{"authors":{"author":[{"@pid":"54/518-6","text":"Yuhao Wang 0006"},{"@pid":"252/5416","text":"Ziru Liu"},{"@pid":"79/10448-2","text":"Yichao Wang 0002"},{"@pid":"08/890-1","text":"Xiangyu Zhao 0001"},{"@pid":"89/5615-23","text":"Bo Chen 0023"},{"@pid":"152/3785","text":"Huifeng Guo"},{"@pid":"24/10003","text":"Ruiming Tang"}]},"title":"Diff-MSR: A Diffusion Model Enhanced Paradigm for Cold-Start Multi-Scenario Recommendation.","venue":"WSDM","pages":"779-787","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/WangL0Z0GT24","doi":"10.1145/3616855.3635807","ee":"https://doi.org/10.1145/3616855.3635807","url":"https://dblp.org/rec/conf/wsdm/WangL0Z0GT24"},
+"url":"URL#1329357"
+}
+]
+}
+}
+}

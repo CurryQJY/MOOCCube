@@ -29,11 +29,12 @@ BPR\methodref{UAI'09} & 0.0113 & 0.0249 & 0.0068 & 0.0111 & 0.0298 & 0.0578 & 0.
 DropoutNet\methodref{NeurIPS'17} & 0.1166 & 0.1658 & 0.0791 & 0.0950 & 0.0540 & 0.0928 & 0.0336 & 0.0460 & 0.0391 & 0.0650 & 0.0243 & 0.0326 \\
 LightGCN\methodref{SIGIR'20} & 0.0833 & 0.1173 & 0.0593 & 0.0702 & 0.0187 & 0.0420 & 0.0108 & 0.0182 & 0.0067 & 0.0132 & 0.0040 & 0.0060 \\
 CCFCRec\methodref{WWW'23} & 0.1476 & 0.2033 & 0.1101 & 0.1281 & 0.0942 & 0.1462 & 0.0619 & 0.0786 & \underline{0.0393} & \underline{0.0656} & \underline{0.0248} & \underline{0.0332} \\
-ALDI\methodref{SIGIR'23} & 0.1733 & 0.2258 & 0.1213 & 0.1382 & \underline{0.1331} & \underline{0.2102} & \underline{0.0859} & \underline{0.1106} & 0.0202 & 0.0383 & 0.0121 & 0.0179 \\
+ALDI\methodref{SIGIR'23} & 0.1753 & 0.2189 & 0.1381 & 0.1521 & \underline{0.1331} & \underline{0.2102} & \underline{0.0859} & \underline{0.1106} & 0.0202 & 0.0383 & 0.0121 & 0.0179 \\
 KGRec\methodref{KDD'23} & 0.0974 & 0.1305 & 0.0764 & 0.0871 & 0.0245 & 0.0436 & 0.0149 & 0.0210 & 0.0070 & 0.0126 & 0.0042 & 0.0060 \\
 CGRC\methodref{SIGIR'24} & \underline{0.2121} & \underline{0.2589} & \underline{0.1695} & \underline{0.1845} & 0.1269 & 0.1915 & 0.0833 & 0.1041 & 0.0250 & 0.0377 & 0.0168 & 0.0209 \\
 PCGNN\methodref{TKDD'24} & 0.0241 & 0.0520 & 0.0145 & 0.0234 & 0.0453 & 0.0897 & 0.0261 & 0.0402 & 0.0135 & 0.0254 & 0.0081 & 0.0118 \\
 USIM\methodref{NeurIPS'24} & 0.0377 & 0.0614 & 0.0244 & 0.0320 & 0.0536 & 0.0921 & 0.0327 & 0.0450 & 0.0069 & 0.0131 & 0.0043 & 0.0063 \\
+PAM\methodref{KDD'25} & 0.0232 & 0.0424 & 0.0138 & 0.0199 & 0.0124 & 0.0220 & 0.0076 & 0.0107 & 0.0030 & 0.0052 & 0.0017 & 0.0024 \\
 SEMCo\methodref{SIGIR'26} & 0.1631 & 0.2306 & 0.1198 & 0.1416 & 0.0907 & 0.1562 & 0.0563 & 0.0773 & 0.0204 & 0.0354 & 0.0126 & 0.0174 \\
 \midrule
 \textbf{CKG-RL} & \textbf{0.2473}\sigmark{*} & \textbf{0.2863}\sigmark{*} & \textbf{0.1972}\sigmark{*} & \textbf{0.2098}\sigmark{*} & \textbf{0.1724}\sigmark{*} & \textbf{0.2443}\sigmark{*} & \textbf{0.1137}\sigmark{*} & \textbf{0.1370}\sigmark{*} & \textbf{0.0487}\sigmark{*} & \textbf{0.0679} & \textbf{0.0330}\sigmark{*} & \textbf{0.0392}\sigmark{*} \\
@@ -41,10 +42,10 @@ SEMCo\methodref{SIGIR'26} & 0.1631 & 0.2306 & 0.1198 & 0.1416 & 0.0907 & 0.1562 
 \bottomrule
 \end{tabular}
 }
-\caption{Overall performance comparison under strict course-cold evaluation. Results are three-seed means; bold and underlined values denote the best and second-best results, respectively. \(^{*}\): starred cells pass a Holm-corrected paired Wilcoxon test against the strongest displayed reference (MOOCCube/Junyi/COCO: CGRC/ALDI/CCFCRec), all with \(p_{\mathrm{Holm}}<0.01\). Imp.: gain over the same reference.}
+\caption{Overall performance comparison under strict course-cold evaluation. Results are three-seed means; bold and underlined values denote the best and second-best results, respectively. Each method uses its native ranking score under the common splits and evaluator. \(^{*}\): starred cells pass a Holm-corrected paired Wilcoxon test against the strongest displayed reference (MOOCCube/Junyi/COCO: CGRC/ALDI/CCFCRec), all with \(p_{\mathrm{Holm}}<0.01\). Imp.: gain over the same reference.}
 \vspace{0.2em}
 \begin{minipage}{\textwidth}
-\scriptsize\emph{Venue tags:} UAI'09=BPR; NeurIPS'17=DropoutNet; SIGIR'20=LightGCN; WWW'23=CCFCRec; SIGIR'23=ALDI; KDD'23=KGRec; SIGIR'24=CGRC; TKDD'24=PCGNN; NeurIPS'24=USIM; SIGIR'26=SEMCo.
+\scriptsize\emph{Venue tags:} UAI'09=BPR; NeurIPS'17=DropoutNet; SIGIR'20=LightGCN; WWW'23=CCFCRec; SIGIR'23=ALDI; KDD'23=KGRec; SIGIR'24=CGRC; TKDD'24=PCGNN; NeurIPS'24=USIM; KDD'25=PAM; SIGIR'26=SEMCo.
 \end{minipage}
 \end{table}
 \end{document}

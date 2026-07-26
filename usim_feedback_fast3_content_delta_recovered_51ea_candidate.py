@@ -130,6 +130,18 @@ def _training_episode_target(z_i_base, rollout_policy, ppo_loss_weight):
     return z_i_base.detach().clone()
 
 
+def _original_usim_v2_enabled():
+    """Return whether the isolated content-to-behaviour repair route is active."""
+    return os.environ.get("USIM_ORIGINAL_V2", "0") == "1"
+
+
+def _original_usim_v2_step_size():
+    step_size = float(os.environ.get("USIM_ORIGINAL_V2_STEP_SIZE", "0.05"))
+    if step_size <= 0.0:
+        raise ValueError("USIM_ORIGINAL_V2_STEP_SIZE must be positive")
+    return step_size
+
+
 def _build_fixed_tail_pseudo_item_mask(item_popularity, ratio=0.30, min_pop=1):
     """Select a deterministic tail-item set covering the requested popularity mass."""
     pop = torch.as_tensor(item_popularity).detach().float().view(-1)
@@ -1203,6 +1215,22 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         self.item_popularity_max = None
         self.item_difficulty = None
         self.course_term_ema_scales = {}
+        self._original_v2_teacher_item_emb = None
+        self._original_v2_teacher_user_emb = None
+
+    @torch.no_grad()
+    def initialize_original_v2_teacher_(self):
+        """Snapshot and freeze the pretrained IV space used as the V2 oracle."""
+        self._original_v2_teacher_item_emb = self.item_id_emb.weight.detach().clone()
+        self._original_v2_teacher_user_emb = self.user_proj(
+            self.user_emb.weight.detach()
+        ).detach().clone()
+        for parameter in self.item_id_emb.parameters():
+            parameter.requires_grad_(False)
+        for parameter in self.user_emb.parameters():
+            parameter.requires_grad_(False)
+        for parameter in self.user_proj.parameters():
+            parameter.requires_grad_(False)
 
     def set_feedback_item_stats(self, item_popularity):
         if item_popularity is None:
@@ -2385,25 +2413,76 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         z_u_base = self.user_proj(self.user_emb(u))
         force_cold_mask = effective_cold if self.cfg.train_force_cold else False
         z_i_base, id_e_true, content_e = self.get_item_vector(i, llm_s, force_cold=force_cold_mask)
-        target_emb = _training_episode_target(
-            z_i_base,
-            getattr(self.cfg, "rollout_policy", "ppo"),
-            getattr(self.cfg, "ppo_loss_weight", 1.0),
-        )
-        final_h, trajectory, candidate_stats = self.run_usim_episode(
-            z_i_base,
-            target_emb,
-            user_bank_raw=user_bank_raw,
-            item_idx=i,
-            target_pop=episode_pop,
-            user_seen_items=user_seen_items,
-        )
-        refined_h = self._blend_rl_episode_output(z_i_base, final_h)
-        final_h = _apply_refinement_only_to_effective_cold(
-            z_i_base,
-            refined_h,
-            effective_cold,
-        )
+        original_v2 = _original_usim_v2_enabled() and self.training
+        if original_v2:
+            episode_rows = effective_cold.nonzero(as_tuple=False).view(-1)
+            final_h = z_i_base
+            trajectory = {"rewards": []}
+            candidate_stats = {
+                "steps": 0,
+                "v2_active": 1.0,
+                "v2_initial_target_l2": 0.0,
+                "v2_rollout_delta_l2": 0.0,
+            }
+            if episode_rows.numel() > 0:
+                teacher_item_emb = self._original_v2_teacher_item_emb
+                teacher_user_emb = self._original_v2_teacher_user_emb
+                if teacher_item_emb is None or teacher_user_emb is None:
+                    raise RuntimeError(
+                        "USIM_ORIGINAL_V2 requires a pretrained frozen IV teacher; "
+                        "set USIM_FB_INIT_CKPT_DIR through the V2 launcher."
+                    )
+                episode_base = z_i_base.index_select(0, episode_rows)
+                episode_item_idx = i.index_select(0, episode_rows)
+                episode_target = teacher_item_emb.to(device=self.device).index_select(
+                    0, episode_item_idx
+                )
+                episode_target_pop = (
+                    episode_pop.index_select(0, episode_rows)
+                    if episode_pop is not None
+                    else None
+                )
+                episode_final, trajectory, candidate_stats = self.run_usim_episode(
+                    episode_base,
+                    episode_target,
+                    user_bank_raw=user_bank_raw,
+                    item_idx=episode_item_idx,
+                    target_pop=episode_target_pop,
+                    user_seen_items=user_seen_items,
+                    oracle_user_idx=u.index_select(0, episode_rows),
+                    oracle_user_emb=teacher_user_emb.to(device=self.device).index_select(
+                        0, u.index_select(0, episode_rows)
+                    ),
+                )
+                refined_episode = self._blend_rl_episode_output(episode_base, episode_final)
+                final_h = z_i_base.index_copy(0, episode_rows, refined_episode)
+                candidate_stats["v2_active"] = 1.0
+                candidate_stats["v2_initial_target_l2"] = float(
+                    (episode_base.detach() - episode_target).norm(dim=1).mean().item()
+                )
+                candidate_stats["v2_rollout_delta_l2"] = float(
+                    (refined_episode.detach() - episode_base.detach()).norm(dim=1).mean().item()
+                )
+        else:
+            target_emb = _training_episode_target(
+                z_i_base,
+                getattr(self.cfg, "rollout_policy", "ppo"),
+                getattr(self.cfg, "ppo_loss_weight", 1.0),
+            )
+            final_h, trajectory, candidate_stats = self.run_usim_episode(
+                z_i_base,
+                target_emb,
+                user_bank_raw=user_bank_raw,
+                item_idx=i,
+                target_pop=episode_pop,
+                user_seen_items=user_seen_items,
+            )
+            refined_h = self._blend_rl_episode_output(z_i_base, final_h)
+            final_h = _apply_refinement_only_to_effective_cold(
+                z_i_base,
+                refined_h,
+                effective_cold,
+            )
         pseudo_cold_mask = effective_cold & (~is_cold)
         candidate_stats["pseudo_cold_count"] = int(pseudo_cold_mask.sum().detach().item())
         candidate_stats["pseudo_cold_ratio"] = (
@@ -2415,7 +2494,14 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         candidate_stats["rl_residual_scale"] = float(getattr(self.cfg, "rl_residual_scale", 1.0))
         ppo_loss_raw = self.compute_ppo_loss(trajectory)
         ppo_loss = float(getattr(self.cfg, "ppo_loss_weight", 1.0)) * ppo_loss_raw
-        z_u = F.normalize(z_u_base, dim=1)
+        z_u_for_main = z_u_base
+        if original_v2 and bool(pseudo_cold_mask.any().item()):
+            z_u_for_main = torch.where(
+                pseudo_cold_mask.view(-1, 1),
+                z_u_base.detach(),
+                z_u_base,
+            )
+        z_u = F.normalize(z_u_for_main, dim=1)
         z_i = F.normalize(final_h, dim=1)
         logits = torch.matmul(z_u, z_i.t()) / self.cfg.temp
         labels = torch.arange(logits.size(0), device=self.device)
@@ -2743,8 +2829,28 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
         item_idx=None,
         target_pop=None,
         user_seen_items=None,
+        oracle_user_idx=None,
+        oracle_user_emb=None,
     ):
         current_h = init_item_emb.clone()
+        original_v2_training = (
+            _original_usim_v2_enabled() and self.training and target_emb is not None
+        )
+        if original_v2_training:
+            if oracle_user_idx is None or oracle_user_emb is None:
+                raise ValueError(
+                    "USIM_ORIGINAL_V2 training requires oracle_user_idx and oracle_user_emb"
+                )
+            oracle_user_idx = torch.as_tensor(
+                oracle_user_idx, dtype=torch.long, device=self.device
+            ).view(-1)
+            oracle_user_emb = torch.as_tensor(
+                oracle_user_emb, dtype=current_h.dtype, device=self.device
+            )
+            if oracle_user_idx.numel() != current_h.size(0):
+                raise ValueError("oracle_user_idx must contain one user per episode row")
+            if tuple(oracle_user_emb.shape) != tuple(current_h.shape):
+                raise ValueError("oracle_user_emb must match the item-state shape")
         trajectory = {
             "log_probs": [],
             "values": [],
@@ -2774,6 +2880,8 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
             "course_difficulty_gap": 0.0,
             "course_redundant": 0.0,
             "target_alpha": 0.0,
+            "v2_embedding_reward": 0.0,
+            "v2_recommendation_reward": 0.0,
         }
 
         user_bank_norm = None
@@ -2791,22 +2899,47 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
         )
         for t in range(self.cfg.usim_steps):
             time_step = torch.full((current_h.size(0), 1), t, device=self.device)
+            candidate_query = (
+                target_emb.detach() - current_h
+                if original_v2_training
+                else current_h
+            )
             candidates, cand_user_idx, cand_stats = self.get_candidates(
-                current_h,
+                candidate_query,
                 user_bank_raw=user_bank_raw,
                 user_bank_norm=user_bank_norm,
                 item_idx=item_idx,
                 target_pop=target_pop,
                 user_seen_items=user_seen_items,
             )
-            candidates, cand_user_idx, fit_score = self._apply_course_sampling_bias(
-                current_h,
-                candidates,
-                cand_user_idx,
-                item_idx=item_idx,
-                target_pop=target_pop,
-                user_seen_items=user_seen_items,
-            )
+            if original_v2_training:
+                # The isolated repair first evaluates the USIM mechanism by
+                # itself; CKG sampling is neither a candidate source nor a
+                # reward term on this route.
+                fit_score = None
+            else:
+                candidates, cand_user_idx, fit_score = self._apply_course_sampling_bias(
+                    current_h,
+                    candidates,
+                    cand_user_idx,
+                    item_idx=item_idx,
+                    target_pop=target_pop,
+                    user_seen_items=user_seen_items,
+                )
+            if original_v2_training:
+                candidates = candidates.clone()
+                cand_user_idx = cand_user_idx.clone()
+                candidates[:, 0] = user_bank_raw.index_select(0, oracle_user_idx).detach()
+                cand_user_idx[:, 0] = oracle_user_idx
+                if candidates.size(1) > 1:
+                    random_user_idx = torch.randint(
+                        0,
+                        int(user_bank_raw.size(0)),
+                        (current_h.size(0),),
+                        device=self.device,
+                    )
+                    candidates[:, 1] = user_bank_raw.index_select(0, random_user_idx).detach()
+                    cand_user_idx[:, 1] = random_user_idx
             if str(getattr(self.cfg, "rollout_policy", "ppo")).strip().lower() == "course_fit":
                 fit_score = _exclude_previously_selected_users(
                     fit_score,
@@ -2851,7 +2984,7 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 )
 
             target_alpha = None
-            if target_emb is not None:
+            if target_emb is not None and not original_v2_training:
                 target_alpha = self._compute_target_alpha(
                     target_pop=target_pop,
                     step_idx=t,
@@ -2861,47 +2994,86 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 )
                 candidate_stats["target_alpha"] += float(target_alpha.mean().item())
             with torch.enable_grad():
-                grad = _batch_invariant_alignment_grad(
-                    current_h,
-                    selected_user,
-                    target_emb=target_emb,
-                    target_alpha=target_alpha,
-                    reference_batch_size=getattr(self.cfg, "batch_size", current_h.size(0)),
-                )
+                if original_v2_training:
+                    # USIM Eq. (6): an imagined user alone defines the update;
+                    # the behavioural oracle is used only to score the update.
+                    grad = selected_user.detach()
+                else:
+                    grad = _batch_invariant_alignment_grad(
+                        current_h,
+                        selected_user,
+                        target_emb=target_emb,
+                        target_alpha=target_alpha,
+                        reference_batch_size=getattr(self.cfg, "batch_size", current_h.size(0)),
+                    )
 
             if str(getattr(self.cfg, "rollout_policy", "ppo")).strip().lower() == "course_fit":
                 active_update = _coursefit_active_update_mask(fit_score, action_idx)
                 if active_update is not None:
                     grad = grad * active_update.to(dtype=grad.dtype).view(-1, 1)
 
-            current_h = current_h + self.cfg.usim_lr * grad
+            step_size = (
+                _original_usim_v2_step_size()
+                if original_v2_training
+                else self.cfg.usim_lr
+            )
+            current_h = current_h + step_size * grad
 
             reward = torch.zeros(current_h.size(0), 1, device=self.device)
             step_gain_mean = 0.0
             collapse_penalty = 0.0
             if target_emb is not None:
-                prev_dist = F.mse_loss(prev_h, target_emb, reduction="none").mean(dim=1, keepdim=True)
-                new_dist = F.mse_loss(current_h, target_emb, reduction="none").mean(dim=1, keepdim=True)
-                terminal_reward = -new_dist * float(self.cfg.reward_terminal_weight)
-                step_gain = (prev_dist - new_dist).clamp(
-                    min=-float(self.cfg.reward_gain_clip),
-                    max=float(self.cfg.reward_gain_clip),
-                )
-                reward = terminal_reward + float(self.cfg.reward_gain_weight) * step_gain
-                step_gain_mean = float(step_gain.mean().item())
-                if cand_stats is not None:
-                    collapse_penalty = float(self.cfg.reward_dup_penalty_weight) * float(cand_stats["dup_rate"])
-                    reward = reward - collapse_penalty
-                    if float(self.cfg.reward_cov_bonus_weight) > 0.0:
-                        reward = reward + float(self.cfg.reward_cov_bonus_weight) * float(cand_stats["topm_coverage"])
+                if original_v2_training:
+                    previous_embedding_error = (prev_h - target_emb.detach()).norm(dim=1, keepdim=True)
+                    current_embedding_error = (current_h - target_emb.detach()).norm(dim=1, keepdim=True)
+                    embedding_reward = previous_embedding_error - current_embedding_error
+                    previous_prediction_error = torch.abs(
+                        (prev_h * oracle_user_emb.detach()).sum(dim=1, keepdim=True)
+                        - (target_emb.detach() * oracle_user_emb.detach()).sum(dim=1, keepdim=True)
+                    )
+                    current_prediction_error = torch.abs(
+                        (current_h * oracle_user_emb.detach()).sum(dim=1, keepdim=True)
+                        - (target_emb.detach() * oracle_user_emb.detach()).sum(dim=1, keepdim=True)
+                    )
+                    recommendation_reward = previous_prediction_error - current_prediction_error
+                    step_penalty = float(os.environ.get("USIM_ORIGINAL_V2_STEP_PENALTY", "0.01"))
+                    reward = embedding_reward + recommendation_reward - step_penalty
+                    step_gain_mean = float(embedding_reward.mean().item())
+                    candidate_stats["v2_embedding_reward"] += float(embedding_reward.mean().item())
+                    candidate_stats["v2_recommendation_reward"] += float(
+                        recommendation_reward.mean().item()
+                    )
+                else:
+                    prev_dist = F.mse_loss(prev_h, target_emb, reduction="none").mean(dim=1, keepdim=True)
+                    new_dist = F.mse_loss(current_h, target_emb, reduction="none").mean(dim=1, keepdim=True)
+                    terminal_reward = -new_dist * float(self.cfg.reward_terminal_weight)
+                    step_gain = (prev_dist - new_dist).clamp(
+                        min=-float(self.cfg.reward_gain_clip),
+                        max=float(self.cfg.reward_gain_clip),
+                    )
+                    reward = terminal_reward + float(self.cfg.reward_gain_weight) * step_gain
+                    step_gain_mean = float(step_gain.mean().item())
+                    if cand_stats is not None:
+                        collapse_penalty = float(self.cfg.reward_dup_penalty_weight) * float(cand_stats["dup_rate"])
+                        reward = reward - collapse_penalty
+                        if float(self.cfg.reward_cov_bonus_weight) > 0.0:
+                            reward = reward + float(self.cfg.reward_cov_bonus_weight) * float(cand_stats["topm_coverage"])
 
-            course_terms = self._compute_course_reward_terms(
-                selected_user_ids,
-                item_idx=item_idx,
-                target_pop=target_pop,
-                user_seen_items=user_seen_items,
-            )
-            if getattr(self.cfg, "use_course_reward", True):
+            if original_v2_training:
+                course_terms = {
+                    "prereq_gap": torch.zeros_like(reward),
+                    "concept_bonus": torch.zeros_like(reward),
+                    "difficulty_gap": torch.zeros_like(reward),
+                    "redundant": torch.zeros_like(reward),
+                }
+            else:
+                course_terms = self._compute_course_reward_terms(
+                    selected_user_ids,
+                    item_idx=item_idx,
+                    target_pop=target_pop,
+                    user_seen_items=user_seen_items,
+                )
+            if (not original_v2_training) and getattr(self.cfg, "use_course_reward", True):
                 reward = (
                     reward
                     + float(self.cfg.feedback_course_concept_weight) * course_terms["concept_bonus"]
@@ -2940,6 +3112,8 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 "course_difficulty_gap",
                 "course_redundant",
                 "target_alpha",
+                "v2_embedding_reward",
+                "v2_recommendation_reward",
             ]:
                 candidate_stats[key] /= candidate_stats["steps"]
 
@@ -3018,8 +3192,11 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
             return next(self.parameters()).sum() * 0.0
 
         rewards = torch.stack(trajectory["rewards"]).squeeze(-1)
-        old_log_probs = torch.stack(trajectory["log_probs"])
-        old_values = torch.stack(trajectory["values"]).squeeze(-1)
+        # PPO compares the current policy against the fixed rollout policy.
+        # Keeping either tensor attached makes the shared-policy gradients
+        # cancel at the first update (and leaks the old critic into clipping).
+        old_log_probs = torch.stack(trajectory["log_probs"]).detach()
+        old_values = torch.stack(trajectory["values"]).squeeze(-1).detach()
         states = trajectory["states"]
         time_steps = trajectory["time_steps"]
         candidates = trajectory["candidates"]
@@ -3140,6 +3317,16 @@ def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df)
             "cold_threshold": int(cfg.cold_threshold),
             "eval_n_neg": int(cfg.eval_n_neg),
             "run_sampled_eval": bool(cfg.run_sampled_eval),
+            "original_usim_v2": _original_usim_v2_enabled(),
+            "original_usim_v2_step_size": float(
+                os.environ.get("USIM_ORIGINAL_V2_STEP_SIZE", "0.05")
+            ),
+            "original_usim_v2_step_penalty": float(
+                os.environ.get("USIM_ORIGINAL_V2_STEP_PENALTY", "0.01")
+            ),
+            "original_usim_v2_teacher_checkpoint": os.environ.get(
+                "USIM_FB_INIT_CKPT_DIR", ""
+            ),
             "use_content_delta": bool(cfg.use_content_delta),
             "content_delta_mode": str(cfg.content_delta_mode),
             "content_delta_paper_style": bool(cfg.content_delta_paper_style),
@@ -3278,6 +3465,40 @@ def _load_init_model_state_from_checkpoint_dir(init_dir):
     return None, None
 
 
+def _validate_original_v2_teacher_state(model, state_dict):
+    """Fail fast when the frozen V2 IV teacher cannot be reconstructed exactly."""
+    if not isinstance(state_dict, dict):
+        raise RuntimeError("USIM_ORIGINAL_V2 teacher checkpoint model_state must be a dictionary")
+
+    expected_state = model.state_dict()
+    required_keys = ["item_id_emb.weight", "user_emb.weight"]
+    required_keys.extend(
+        key for key in expected_state if key.startswith("user_proj.")
+    )
+    for key in required_keys:
+        if key not in state_dict:
+            raise RuntimeError(
+                f"USIM_ORIGINAL_V2 teacher checkpoint is missing required state: {key}"
+            )
+        checkpoint_value = state_dict[key]
+        expected_value = expected_state[key]
+        if not torch.is_tensor(checkpoint_value):
+            raise RuntimeError(
+                f"USIM_ORIGINAL_V2 teacher checkpoint has non-tensor state: {key}"
+            )
+        if tuple(checkpoint_value.shape) != tuple(expected_value.shape):
+            raise RuntimeError(
+                "USIM_ORIGINAL_V2 teacher checkpoint has incompatible shape for "
+                f"{key}: checkpoint={tuple(checkpoint_value.shape)} "
+                f"model={tuple(expected_value.shape)}"
+            )
+
+
+def _restore_original_v2_fresh_agent_state(model, fresh_agent_state):
+    """Keep the V2 policy/critic independent from the legacy warm checkpoint."""
+    model.agent.load_state_dict(fresh_agent_state, strict=True)
+
+
 def _apply_static_sg_urinit(model, train_df, content_emb, cfg):
     stats = apply_sg_urinit_(model, train_df, content_emb, cfg)
     cfg.sg_urinit_stats = stats
@@ -3359,6 +3580,11 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         course_artifacts, course_stats = None, _empty_course_stats(cfg.n_items)
 
     model = Fast3FeedbackUSIM(cfg, content_emb).to(device)
+    original_v2_fresh_agent_state = None
+    if _original_usim_v2_enabled():
+        original_v2_fresh_agent_state = {
+            key: value.detach().clone() for key, value in model.agent.state_dict().items()
+        }
     model.device = device
     if course_artifacts is not None:
         model.set_course_artifacts(course_artifacts)
@@ -3499,6 +3725,21 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         "PseudoColdRatio",
         "EffectiveColdRatio",
         "PseudoColdCount",
+        "V2InitialTargetL2",
+        "V2RolloutDeltaL2",
+        "V2EmbeddingReward",
+        "V2RecommendationReward",
+        "V3EndRate",
+        "V3ActiveSteps",
+        "V3EmbeddingReward",
+        "V3RecommendationReward",
+        "V3CourseReward",
+        "V3RolloutDeltaL2",
+        "V3CourseLogitBiasAbs",
+        "V3TrainResidualShare",
+        "V3TrainPositiveShare",
+        "V3TrainStateShare",
+        "V3TrainRandomShare",
         "LIRAFitP25",
         "LIRAFitP50",
         "LIRAFitP75",
@@ -3673,14 +3914,35 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 f"best_epoch={best_epoch} | best_score={best_score:.4f}"
             )
 
+    init_path = None
+    init_model_state = None
     if not resumed_from_ckpt:
         init_ckpt_dir = os.environ.get("USIM_FB_INIT_CKPT_DIR", "").strip()
         init_path, init_model_state = _load_init_model_state_from_checkpoint_dir(init_ckpt_dir)
         if init_model_state is not None:
+            if _original_usim_v2_enabled():
+                _validate_original_v2_teacher_state(model, init_model_state)
             _load_static_model_state_compat(init_model_state, "init_model_state")
+            if _original_usim_v2_enabled():
+                _restore_original_v2_fresh_agent_state(model, original_v2_fresh_agent_state)
+                print(">> USIM V2 Policy: restored fresh actor/critic after warm-teacher loading")
             print(f">> Static Init: loaded model_state from {init_path}")
         elif init_ckpt_dir:
             print(f">> Static Init: no finished/latest checkpoint found in {init_ckpt_dir}; starting from scratch.")
+
+    if _original_usim_v2_enabled():
+        if resumed_from_ckpt:
+            raise RuntimeError(
+                "USIM_ORIGINAL_V2 does not support resume because its frozen IV teacher "
+                "must be reconstructed from the explicit initialization checkpoint."
+            )
+        if init_model_state is None:
+            raise RuntimeError(
+                "USIM_ORIGINAL_V2 requires USIM_FB_INIT_CKPT_DIR with a finished.pt or latest.pt "
+                "from the matching warm-teacher run."
+            )
+        model.initialize_original_v2_teacher_()
+        print(f">> USIM V2 Teacher: frozen IV user/item space loaded from {init_path}")
 
     print(
         f"\n>>> Start STATIC train/eval | target_split={split_info['train_ratio']:.2f}/"
@@ -3742,6 +4004,21 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         pseudo_cold_ratio_sum = 0.0
         effective_cold_ratio_sum = 0.0
         pseudo_cold_count_sum = 0
+        v2_initial_target_l2_sum = 0.0
+        v2_rollout_delta_l2_sum = 0.0
+        v2_embedding_reward_sum = 0.0
+        v2_recommendation_reward_sum = 0.0
+        v3_end_rate_sum = 0.0
+        v3_active_steps_sum = 0.0
+        v3_embedding_reward_sum = 0.0
+        v3_recommendation_reward_sum = 0.0
+        v3_course_reward_sum = 0.0
+        v3_rollout_delta_l2_sum = 0.0
+        v3_course_logit_bias_abs_sum = 0.0
+        v3_train_residual_share_sum = 0.0
+        v3_train_positive_share_sum = 0.0
+        v3_train_state_share_sum = 0.0
+        v3_train_random_share_sum = 0.0
         lira_fit_p25_sum = 0.0
         lira_fit_p50_sum = 0.0
         lira_fit_p75_sum = 0.0
@@ -3813,6 +4090,35 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 pseudo_cold_ratio_sum += float(cand_info.get("pseudo_cold_ratio", 0.0))
                 effective_cold_ratio_sum += float(cand_info.get("effective_cold_ratio", 0.0))
                 pseudo_cold_count_sum += int(cand_info.get("pseudo_cold_count", 0))
+                v2_initial_target_l2_sum += float(cand_info.get("v2_initial_target_l2", 0.0))
+                v2_rollout_delta_l2_sum += float(cand_info.get("v2_rollout_delta_l2", 0.0))
+                v2_embedding_reward_sum += float(cand_info.get("v2_embedding_reward", 0.0))
+                v2_recommendation_reward_sum += float(
+                    cand_info.get("v2_recommendation_reward", 0.0)
+                )
+                v3_end_rate_sum += float(cand_info.get("v3_end_rate", 0.0))
+                v3_active_steps_sum += float(cand_info.get("v3_active_steps", 0.0))
+                v3_embedding_reward_sum += float(cand_info.get("v3_embedding_reward", 0.0))
+                v3_recommendation_reward_sum += float(
+                    cand_info.get("v3_recommendation_reward", 0.0)
+                )
+                v3_course_reward_sum += float(cand_info.get("v3_course_reward", 0.0))
+                v3_rollout_delta_l2_sum += float(cand_info.get("v3_rollout_delta_l2", 0.0))
+                v3_course_logit_bias_abs_sum += float(
+                    cand_info.get("v3_course_logit_bias_abs", 0.0)
+                )
+                v3_train_residual_share_sum += float(
+                    cand_info.get("v3_train_residual_share", 0.0)
+                )
+                v3_train_positive_share_sum += float(
+                    cand_info.get("v3_train_positive_share", 0.0)
+                )
+                v3_train_state_share_sum += float(
+                    cand_info.get("v3_train_state_share", 0.0)
+                )
+                v3_train_random_share_sum += float(
+                    cand_info.get("v3_train_random_share", 0.0)
+                )
                 lira_fit_p25_sum += float(cand_info.get("fit_p25", 0.0))
                 lira_fit_p50_sum += float(cand_info.get("fit_p50", 0.0))
                 lira_fit_p75_sum += float(cand_info.get("fit_p75", 0.0))
@@ -3881,6 +4187,21 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 "PseudoColdRatio": pseudo_cold_ratio_sum / pseudo_info_batches,
                 "EffectiveColdRatio": effective_cold_ratio_sum / pseudo_info_batches,
                 "PseudoColdCount": pseudo_cold_count_sum,
+                "V2InitialTargetL2": v2_initial_target_l2_sum / pseudo_info_batches,
+                "V2RolloutDeltaL2": v2_rollout_delta_l2_sum / pseudo_info_batches,
+                "V2EmbeddingReward": v2_embedding_reward_sum / pseudo_info_batches,
+                "V2RecommendationReward": v2_recommendation_reward_sum / pseudo_info_batches,
+                "V3EndRate": v3_end_rate_sum / pseudo_info_batches,
+                "V3ActiveSteps": v3_active_steps_sum / pseudo_info_batches,
+                "V3EmbeddingReward": v3_embedding_reward_sum / pseudo_info_batches,
+                "V3RecommendationReward": v3_recommendation_reward_sum / pseudo_info_batches,
+                "V3CourseReward": v3_course_reward_sum / pseudo_info_batches,
+                "V3RolloutDeltaL2": v3_rollout_delta_l2_sum / pseudo_info_batches,
+                "V3CourseLogitBiasAbs": v3_course_logit_bias_abs_sum / pseudo_info_batches,
+                "V3TrainResidualShare": v3_train_residual_share_sum / pseudo_info_batches,
+                "V3TrainPositiveShare": v3_train_positive_share_sum / pseudo_info_batches,
+                "V3TrainStateShare": v3_train_state_share_sum / pseudo_info_batches,
+                "V3TrainRandomShare": v3_train_random_share_sum / pseudo_info_batches,
                 "LIRAFitP25": lira_fit_p25_sum / pseudo_info_batches,
                 "LIRAFitP50": lira_fit_p50_sum / pseudo_info_batches,
                 "LIRAFitP75": lira_fit_p75_sum / pseudo_info_batches,
@@ -3905,6 +4226,21 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 f"c={epoch_diag['CourseConceptBonus']:.4f}, "
                 f"d={epoch_diag['CourseDifficultyGap']:.4f}, "
                 f"r={epoch_diag['CourseRedundant']:.4f}]"
+                f" | V2[target_l2={epoch_diag['V2InitialTargetL2']:.4f}, "
+                f"delta_l2={epoch_diag['V2RolloutDeltaL2']:.4f}, "
+                f"emb_r={epoch_diag['V2EmbeddingReward']:.4f}, "
+                f"rec_r={epoch_diag['V2RecommendationReward']:.4f}]"
+                f" | V3[end_rate={epoch_diag['V3EndRate']:.2%}, "
+                f"active_steps={epoch_diag['V3ActiveSteps']:.3f}, "
+                f"delta_l2={epoch_diag['V3RolloutDeltaL2']:.4f}, "
+                f"emb_r={epoch_diag['V3EmbeddingReward']:.4f}, "
+                f"rec_r={epoch_diag['V3RecommendationReward']:.4f}, "
+                f"ckg_r={epoch_diag['V3CourseReward']:.4f}, "
+                f"bias={epoch_diag['V3CourseLogitBiasAbs']:.4f}, "
+                f"mix={epoch_diag['V3TrainResidualShare']:.2%}/"
+                f"{epoch_diag['V3TrainPositiveShare']:.2%}/"
+                f"{epoch_diag['V3TrainStateShare']:.2%}/"
+                f"{epoch_diag['V3TrainRandomShare']:.2%}]"
                 f" | SAGE[active={epoch_diag['SageActive']:.2f}, "
                 f"gate={epoch_diag['SageGate']:.3f}, "
                 f"tail_active={epoch_diag['SageTailActive']:.2f}, "

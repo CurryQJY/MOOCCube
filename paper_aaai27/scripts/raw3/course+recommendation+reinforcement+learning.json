@@ -1,0 +1,68 @@
+{
+"result":{
+"query":"course* recommendation* reinforcement* learning*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"19.95"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"6",
+"@dc":"6",
+"@oc":"6",
+"@id":"70164624",
+"text":"learning"
+}
+},
+"hits":{
+"@total":"6",
+"@computed":"6",
+"@sent":"6",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"437981",
+"info":{"authors":{"author":[{"@pid":"130/0979","text":"Jian-Wei Tzeng"},{"@pid":"31/7003","text":"Nen-Fu Huang"},{"@pid":"408/2503","text":"An-Chi Chuang"},{"@pid":"249/6353","text":"Ting-Wei Huang"},{"@pid":"95/5494","text":"Hong-Yi Chang"}]},"title":"Massive open online course recommendation system based on a reinforcement learning algorithm.","venue":"Neural Comput. Appl.","volume":"37","number":"18","pages":"11607-11618","year":"2025","type":"Journal Articles","access":"closed","key":"journals/nca/TzengHCHC25","doi":"10.1007/S00521-023-08686-8","ee":"https://doi.org/10.1007/s00521-023-08686-8","url":"https://dblp.org/rec/journals/nca/TzengHCHC25"},
+"url":"URL#437981"
+},
+{
+"@score":"4",
+"@id":"1248959",
+"info":{"authors":{"author":[{"@pid":"22/752-7","text":"Lu Jiang 0007"},{"@pid":"126/7981","text":"Yanan Xiao"},{"@pid":"56/2656","text":"Xinxin Zhao"},{"@pid":"184/4944","text":"Yuanbo Xu"},{"@pid":"193/7015","text":"Shuli Hu"},{"@pid":"219/1752","text":"Pengyang Wang"},{"@pid":"13/3656","text":"Minghao Yin"}]},"title":"Hierarchical Reinforcement Learning on Multi-Channel Hypergraph Neural Network for Course Recommendation.","venue":"IJCAI","pages":"2099-2107","year":"2024","type":"Conference and Workshop Papers","access":"open","key":"conf/ijcai/0007XZXHWY24","ee":"https://www.ijcai.org/proceedings/2024/232","url":"https://dblp.org/rec/conf/ijcai/0007XZXHWY24"},
+"url":"URL#1248959"
+},
+{
+"@score":"4",
+"@id":"1576120",
+"info":{"authors":{"author":{"@pid":"350/2733","text":"Honglei Guan"}},"title":"An Online Education Course Recommendation Method Based on Knowledge Graphs and Reinforcement Learning.","venue":"J. Circuits Syst. Comput.","volume":"32","number":"6","pages":"2350099:1-2350099:20","year":"2023","type":"Journal Articles","access":"closed","key":"journals/jcsc/Guan23","doi":"10.1142/S0218126623500998","ee":"https://doi.org/10.1142/S0218126623500998","url":"https://dblp.org/rec/journals/jcsc/Guan23"},
+"url":"URL#1576120"
+},
+{
+"@score":"4",
+"@id":"2023735",
+"info":{"authors":{"author":[{"@pid":"293/1207","text":"Yuanguo Lin"},{"@pid":"68/2682","text":"Fan Lin"},{"@pid":"147/7775","text":"Lvqing Yang"},{"@pid":"48/419","text":"Wenhua Zeng"},{"@pid":"29/4867-20","text":"Yong Liu 0020"},{"@pid":"77/2927","text":"Pengcheng Wu"}]},"title":"Context-aware reinforcement learning for course recommendation.","venue":"Appl. Soft Comput.","volume":"125","pages":"109189","year":"2022","type":"Journal Articles","access":"closed","key":"journals/asc/LinLYZLW22","doi":"10.1016/J.ASOC.2022.109189","ee":"https://doi.org/10.1016/j.asoc.2022.109189","url":"https://dblp.org/rec/journals/asc/LinLYZLW22"},
+"url":"URL#2023735"
+},
+{
+"@score":"4",
+"@id":"2120148",
+"info":{"authors":{"author":[{"@pid":"293/1207","text":"Yuanguo Lin"},{"@pid":"68/2682","text":"Fan Lin"},{"@pid":"48/419","text":"Wenhua Zeng"},{"@pid":"54/10362","text":"Jianbing Xiahou"},{"@pid":"53/2189-122","text":"Li Li 0122"},{"@pid":"77/2927","text":"Pengcheng Wu"},{"@pid":"29/4867-20","text":"Yong Liu 0020"},{"@pid":"m/ChunyanMiao","text":"Chunyan Miao"}]},"title":"Hierarchical reinforcement learning with dynamic recurrent mechanism for course recommendation.","venue":"Knowl. Based Syst.","volume":"244","pages":"108546","year":"2022","type":"Journal Articles","access":"closed","key":"journals/kbs/LinLZXLWLM22","doi":"10.1016/J.KNOSYS.2022.108546","ee":"https://doi.org/10.1016/j.knosys.2022.108546","url":"https://dblp.org/rec/journals/kbs/LinLZXLWLM22"},
+"url":"URL#2120148"
+},
+{
+"@score":"4",
+"@id":"3567839",
+"info":{"authors":{"author":[{"@pid":"05/3499-1","text":"Jing Zhang 0001"},{"@pid":"245/3282","text":"Bowen Hao"},{"@pid":"89/5615-26","text":"Bo Chen 0026"},{"@pid":"03/6827-1","text":"Cuiping Li 0001"},{"@pid":"52/4150-1","text":"Hong Chen 0001"},{"@pid":"54/4948","text":"Jimeng Sun 0001"}]},"title":"Hierarchical Reinforcement Learning for Course Recommendation in MOOCs.","venue":"AAAI","pages":"435-442","year":"2019","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/ZhangHCL0S19","doi":"10.1609/AAAI.V33I01.3301435","ee":"https://doi.org/10.1609/aaai.v33i01.3301435","url":"https://dblp.org/rec/conf/aaai/ZhangHCL0S19"},
+"url":"URL#3567839"
+}
+]
+}
+}
+}

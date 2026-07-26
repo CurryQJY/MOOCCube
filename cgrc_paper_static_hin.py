@@ -17,7 +17,11 @@ contrastive formulation and preventing negative unbounded losses.
 """
 
 import copy
+import hashlib
 import os
+import platform
+import struct
+import sys
 import time
 from collections import defaultdict
 from dataclasses import dataclass
@@ -91,6 +95,10 @@ class Config:
         self.ranking_neg_per_user = int(_env("RANKING_NEG_PER_USER", "32"))
         self.recon_user_chunk = int(_env("RECON_USER_CHUNK", "4096"))
         self.progress_interval = int(_env("PROGRESS_INTERVAL", "1"))
+        self.timing_only = _bool_env("TIMING_ONLY", "0")
+        self.timing_protocol = _env("TIMING_PROTOCOL", "timing_only").strip()
+        if not self.timing_protocol:
+            raise ValueError("CGRC_PAPER_TIMING_PROTOCOL must be nonempty")
         self.export_topk_path = _env("EXPORT_TOPK_PATH", "").strip()
         self.export_topk_k = int(_env("EXPORT_TOPK_K", "20"))
         self.evaluation_split = _env("EVAL_SPLIT", "test").strip().lower()
@@ -113,6 +121,12 @@ class Config:
             _env("STATIC_SEED", os.environ.get("USIM_STATIC_SEED", "2025"))
         )
         self.seed = int(_env("SEED", str(self.static_seed)))
+        self.timing_seed = int(_env("TIMING_SEED", str(self.seed)))
+        self.timing_measure_start_epoch = int(
+            _env("TIMING_MEASURE_START_EPOCH", "0")
+        )
+        if self.timing_measure_start_epoch < 0:
+            raise ValueError("CGRC_PAPER_TIMING_MEASURE_START_EPOCH must be nonnegative")
         self.train_ratio = float(_env("STATIC_TRAIN_RATIO", "0.8"))
         self.val_ratio = float(_env("STATIC_VAL_RATIO", "0.1"))
         self.best_average_mode = os.environ.get(
@@ -150,6 +164,132 @@ def _resolve_device() -> torch.device:
 def _sync_device(device: torch.device) -> None:
     if device.type == "cuda":
         torch.cuda.synchronize(device)
+
+
+def collect_timing_environment(device: torch.device) -> dict[str, object]:
+    environment: dict[str, object] = {
+        "python_version": platform.python_version(),
+        "torch_version": torch.__version__,
+        "cuda_version": torch.version.cuda,
+        "device": str(device),
+        "platform": platform.platform(),
+        "python_executable": sys.executable,
+    }
+    if device.type == "cuda" and torch.cuda.is_available():
+        device_index = device.index
+        if device_index is None:
+            device_index = torch.cuda.current_device()
+        environment["cuda_device_name"] = torch.cuda.get_device_name(device_index)
+        environment["cuda_device_capability"] = list(
+            torch.cuda.get_device_capability(device_index)
+        )
+    return environment
+
+
+class TimingWorkloadSummary:
+    def __init__(self) -> None:
+        self.batch_count = 0
+        self.sampled_cold_item_total = 0
+        self.sampled_cold_item_max = 0
+        self.masked_edge_count_raw_total = 0
+        self.reconstruction_edge_count_total = 0
+        self.reconstruction_active_batch_count = 0
+        self.reconstruction_user_count_total = 0
+        self._signature = hashlib.sha256()
+
+    def record_batch(
+        self,
+        *,
+        cold_item_ids: np.ndarray,
+        raw_edge_count: int,
+        reconstruction_edge_count: int,
+        reconstruction_user_count: int,
+    ) -> None:
+        if min(raw_edge_count, reconstruction_edge_count, reconstruction_user_count) < 0:
+            raise ValueError("Timing workload counts must be nonnegative")
+        ids = np.asarray(cold_item_ids, dtype="<i8").reshape(-1)
+        self.batch_count += 1
+        self.sampled_cold_item_total += int(ids.size)
+        self.sampled_cold_item_max = max(self.sampled_cold_item_max, int(ids.size))
+        self.masked_edge_count_raw_total += int(raw_edge_count)
+        self.reconstruction_edge_count_total += int(reconstruction_edge_count)
+        self.reconstruction_user_count_total += int(reconstruction_user_count)
+        if reconstruction_edge_count:
+            self.reconstruction_active_batch_count += 1
+        self._signature.update(
+            struct.pack(
+                "<QQQQ",
+                int(ids.size),
+                int(raw_edge_count),
+                int(reconstruction_edge_count),
+                int(reconstruction_user_count),
+            )
+        )
+        self._signature.update(ids.tobytes())
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "batch_count": self.batch_count,
+            "sampled_cold_item_total": self.sampled_cold_item_total,
+            "sampled_cold_item_max": self.sampled_cold_item_max,
+            "masked_edge_count_raw_total": self.masked_edge_count_raw_total,
+            "reconstruction_edge_count_total": self.reconstruction_edge_count_total,
+            "reconstruction_active_batch_count": self.reconstruction_active_batch_count,
+            "reconstruction_user_count_total": self.reconstruction_user_count_total,
+            "workload_signature": self._signature.hexdigest(),
+        }
+
+
+def build_timing_profile(
+    *,
+    static_seed: int,
+    start_epoch: int,
+    n_epochs: int,
+    device: str,
+    epoch_times: Sequence[tuple[int, float]] | None = None,
+    model_seed: int | None = None,
+    timing_seed: int | None = None,
+    measurement_start_epoch: int | None = None,
+    epoch_records: Sequence[dict[str, object]] | None = None,
+    peak_memory_allocated_bytes: int | None = None,
+    peak_memory_reserved_bytes: int | None = None,
+    environment: dict[str, object] | None = None,
+    timing_protocol: str = "timing_only",
+) -> dict[str, object]:
+    if epoch_records is None:
+        epoch_records = [
+            {"epoch": epoch, "time_s": elapsed}
+            for epoch, elapsed in (epoch_times or ())
+        ]
+    if epoch_times is None:
+        epoch_times = [
+            (int(record["epoch"]), float(record["time_s"]))
+            for record in epoch_records
+        ]
+    return {
+        "model": "CGRC-paper",
+        "protocol": timing_protocol,
+        "timing_only": True,
+        "static_seed": static_seed,
+        "model_seed": static_seed if model_seed is None else model_seed,
+        "timing_seed": static_seed if timing_seed is None else timing_seed,
+        "resumed_from_epoch": start_epoch,
+        "target_epoch": n_epochs,
+        "measurement_start_epoch": (
+            start_epoch + 1
+            if measurement_start_epoch is None
+            else measurement_start_epoch
+        ),
+        "device": device,
+        "train_epoch_times": [
+            {"epoch": epoch, "time_s": elapsed}
+            for epoch, elapsed in epoch_times
+        ],
+        "train_epoch_profiles": list(epoch_records),
+        "peak_memory_allocated_bytes": peak_memory_allocated_bytes,
+        "peak_memory_reserved_bytes": peak_memory_reserved_bytes,
+        "environment": dict(environment or {}),
+    }
 
 
 def _configure_cuda_memory(device: torch.device) -> None:
@@ -759,6 +899,7 @@ def main():
         f"rho={cfg.mask_rho} | topk={cfg.recon_topk} | "
         f"best_average_mode={cfg.best_average_mode} | "
         f"sampled_eval={cfg.run_sampled_eval} | "
+        f"timing_only={cfg.timing_only} | "
         f"evaluation_split={evaluation_view.name} | "
         f"val_cold_items={val_cold_items.size} | test_cold_items={test_cold_items.size}",
         flush=True,
@@ -769,20 +910,39 @@ def main():
     best_state = None
     best_recon_edges = 0
     k_list = [5, 10, 20]
+    timing_epoch_times: list[tuple[int, float]] = []
+    timing_epoch_records: list[dict[str, object]] = []
+    timing_peak_memory_allocated_bytes: int | None = None
+    timing_peak_memory_reserved_bytes: int | None = None
     start_epoch, ckpt_state = maybe_resume_checkpoint(cfg.ckpt, model, optimizer, device)
     best_val = float(ckpt_state.get("best_val", best_val))
     best_epoch = int(ckpt_state.get("best_epoch", best_epoch))
     best_state = ckpt_state.get("best_state", best_state)
     best_recon_edges = int(ckpt_state.get("best_recon_edges", best_recon_edges))
+    if cfg.timing_only:
+        # Keep the checkpoint and static split fixed while varying only training sampling.
+        setup_seed(cfg.timing_seed)
+        print(f"Timing seed fixed: {cfg.timing_seed}", flush=True)
 
     for epoch in range(start_epoch, cfg.n_epochs):
+        epoch_number = epoch + 1
+        if (
+            cfg.timing_only
+            and cfg.timing_measure_start_epoch
+            and epoch_number == cfg.timing_measure_start_epoch
+            and device.type == "cuda"
+        ):
+            _sync_device(device)
+            torch.cuda.reset_peak_memory_stats(device)
         model.train()
         loss_sum = 0.0
         loss_e_sum = 0.0
         loss_r_sum = 0.0
         n_batches = 0
         n_batches_est = max(1, int(np.ceil(train_users_np.size / max(1, cfg.batch_size))))
-        epoch_start = time.time()
+        timing_workload = TimingWorkloadSummary() if cfg.timing_only else None
+        _sync_device(device)
+        epoch_start = time.perf_counter()
 
         for u_idx, i_idx, B_list in _iter_cgrc_batches(
             train_users_np,
@@ -796,13 +956,19 @@ def main():
             x_all = model.item_x()
             cold_ids = _sample_cold_items(train_item_pool, cfg.mask_rho, device)
             loss_e = torch.zeros((), device=device, dtype=torch.float32)
+            cold_cpu = np.empty(0, dtype=np.int64)
+            raw_edge_count = 0
+            reconstruction_edge_count = 0
+            reconstruction_user_count = 0
 
             if cold_ids.numel() > 0:
                 cold_cpu = cold_ids.detach().cpu().numpy()
                 edges = _masked_edges(R_coo_row, R_coo_col, cold_cpu)
+                raw_edge_count = len(edges)
                 if len(edges) > cfg.le_max_edges:
                     keep_idx = np.random.choice(len(edges), size=cfg.le_max_edges, replace=False)
                     edges = [edges[int(pos)] for pos in keep_idx]
+                reconstruction_edge_count = len(edges)
 
                 if edges:
                     R_masked = _drop_edges_to_items(R_base, set(int(x) for x in cold_cpu.tolist()))
@@ -820,6 +986,7 @@ def main():
                     )
                     h_u_bar = _user_mean_layers_1_to_L(layers, cfg.n_users, cfg.layers_gprime)
                     needed_users = sorted({int(uid) for uid, _ in edges})
+                    reconstruction_user_count = len(needed_users)
                     needed_t = torch.tensor(needed_users, dtype=torch.long, device=device)
                     logits = _edge_logits_broadcast_chunked(
                         model,
@@ -829,6 +996,14 @@ def main():
                         cfg.recon_user_chunk,
                     )
                     loss_e = _reconstruction_loss(logits, cold_ids, edges, needed_t, user_rated)
+
+            if timing_workload is not None:
+                timing_workload.record_batch(
+                    cold_item_ids=cold_cpu,
+                    raw_edge_count=raw_edge_count,
+                    reconstruction_edge_count=reconstruction_edge_count,
+                    reconstruction_user_count=reconstruction_user_count,
+                )
 
             z_u, z_i = _lightgcn_mean_all_layers(
                 sparse_full,
@@ -864,18 +1039,42 @@ def main():
                         batch_idx=n_batches,
                         n_batches=n_batches_est,
                         avg_loss=loss_sum / max(1, n_batches),
-                        elapsed_s=time.time() - epoch_start,
+                        elapsed_s=time.perf_counter() - epoch_start,
                     ),
                     flush=True,
                 )
 
         _sync_device(device)
-        train_epoch_elapsed_s = time.time() - epoch_start
+        train_epoch_elapsed_s = time.perf_counter() - epoch_start
+        timing_epoch_times.append((epoch_number, train_epoch_elapsed_s))
+        if timing_workload is not None:
+            timing_epoch_records.append(
+                {
+                    "epoch": epoch_number,
+                    "time_s": train_epoch_elapsed_s,
+                    **timing_workload.as_dict(),
+                }
+            )
+        if cfg.timing_only and (
+            not cfg.timing_measure_start_epoch
+            or epoch_number >= cfg.timing_measure_start_epoch
+        ) and device.type == "cuda":
+            timing_peak_memory_allocated_bytes = max(
+                timing_peak_memory_allocated_bytes or 0,
+                int(torch.cuda.max_memory_allocated(device)),
+            )
+            timing_peak_memory_reserved_bytes = max(
+                timing_peak_memory_reserved_bytes or 0,
+                int(torch.cuda.max_memory_reserved(device)),
+            )
         print(
-            f"[CGRC-TRAIN] Epoch {epoch + 1}/{cfg.n_epochs} "
+            f"[CGRC-TRAIN] Epoch {epoch_number}/{cfg.n_epochs} "
             f"Time: {train_epoch_elapsed_s:.2f}s",
             flush=True,
         )
+
+        if cfg.timing_only:
+            continue
 
         model.eval()
         improved = False
@@ -948,6 +1147,31 @@ def main():
                     "best_recon_edges": best_recon_edges,
                 },
             )
+
+    if cfg.timing_only:
+        timing_profile = build_timing_profile(
+            static_seed=cfg.static_seed,
+            model_seed=cfg.seed,
+            timing_seed=cfg.timing_seed,
+            start_epoch=start_epoch,
+            n_epochs=cfg.n_epochs,
+            measurement_start_epoch=cfg.timing_measure_start_epoch,
+            device=str(device),
+            epoch_times=timing_epoch_times,
+            epoch_records=timing_epoch_records,
+            peak_memory_allocated_bytes=timing_peak_memory_allocated_bytes,
+            peak_memory_reserved_bytes=timing_peak_memory_reserved_bytes,
+            environment=collect_timing_environment(device),
+            timing_protocol=cfg.timing_protocol,
+        )
+        timing_profile_path = static_result_path("cgrc_timing_profile.json")
+        pd.DataFrame([timing_profile]).to_json(
+            timing_profile_path,
+            orient="records",
+            force_ascii=False,
+        )
+        print(f"Saved timing profile: {timing_profile_path}", flush=True)
+        return
 
     if best_state is not None:
         model.load_state_dict({k: v.to(device) for k, v in best_state.items()})

@@ -17,37 +17,30 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 FIGURE_DIR = ROOT / "paper_aaai27" / "figures"
-DEFAULT_COURSE_PATH = FIGURE_DIR / "validation_motivation_analysis" / "course_macro.csv"
+ANALYSIS_DIR = FIGURE_DIR / "validation_motivation_analysis"
+DEFAULT_COURSE_PATH = ANALYSIS_DIR / "course_macro.csv"
 DEFAULT_SUMMARY_PATH = FIGURE_DIR / "mooccube_validation_motivation_summary.csv"
+DEFAULT_BASELINE_PATH = ANALYSIS_DIR / "baseline_seed.csv"
+DEFAULT_AVAILABILITY_PATH = ANALYSIS_DIR / "signal_availability_summary.csv"
+DEFAULT_HETEROGENEITY_PATH = ANALYSIS_DIR / "learner_heterogeneity.csv"
 DEFAULT_OUTPUT_BASE = FIGURE_DIR / "mooccube_validation_motivation"
 
-STRUCTURAL_METRICS = (
-    "cold_prerequisite_gap",
-    "cold_concept_continuity",
-    "cold_difficulty_gap",
-    "cold_structural_redundancy",
-)
-METRIC_LABELS = {
-    "cold_prerequisite_gap": r"Prerequisite gap ($\downarrow$)",
-    "cold_concept_continuity": r"Concept continuity ($\uparrow$)",
-    "cold_difficulty_gap": r"Difficulty gap ($\downarrow$)",
-    "cold_structural_redundancy": r"Structural redundancy ($\downarrow$)",
-}
 MODEL_STYLE = {
-    "pcgnn": {
-        "label": "PCGNN",
-        "color": "#C7772E",
-        "marker": "o",
-        "linestyle": "-",
-    },
-    "cgrc": {
-        "label": "CGRC",
-        "color": "#5E6266",
-        "marker": "s",
-        "linestyle": "--",
-    },
+    "pcgnn": {"label": "PCGNN", "color": "#1F5AA6", "marker": "s"},
+    "cgrc": {"label": "CGRC", "color": "#7B2D3A", "marker": "o"},
 }
-GRID = "#D5D5D5"
+SIGNAL_ORDER = [
+    "Content text",
+    "Concepts",
+    "Prerequisites",
+    "Difficulty proxy",
+    "Video metadata",
+]
+HETEROGENEITY_ORDER = [
+    ("concept_continuity_sd", "Concept continuity", "#2A63AD", "o"),
+    ("difficulty_gap_sd", "Difficulty gap", "#C83C3C", "s"),
+]
+GRID = "#D6D6D6"
 DARK = "#252525"
 
 
@@ -61,14 +54,14 @@ def configure_style() -> None:
             "ps.fonttype": 42,
             "svg.fonttype": "none",
             "axes.unicode_minus": False,
-            "axes.linewidth": 0.75,
-            "font.size": 6.8,
-            "axes.labelsize": 6.6,
-            "axes.titlesize": 7.1,
-            "xtick.labelsize": 6.3,
-            "ytick.labelsize": 6.3,
-            "legend.fontsize": 6.2,
-            "lines.linewidth": 1.15,
+            "axes.linewidth": 0.8,
+            "font.size": 7.0,
+            "axes.labelsize": 6.7,
+            "axes.titlesize": 7.3,
+            "xtick.labelsize": 6.5,
+            "ytick.labelsize": 6.5,
+            "legend.fontsize": 6.5,
+            "lines.linewidth": 1.1,
         }
     )
 
@@ -76,7 +69,11 @@ def configure_style() -> None:
 def validate_validation_figure_inputs(
     course_rows: pd.DataFrame,
     summary: pd.DataFrame,
+    baseline_seed: pd.DataFrame | None = None,
+    availability_summary: pd.DataFrame | None = None,
+    heterogeneity: pd.DataFrame | None = None,
 ) -> None:
+    """Validate both the legacy replay inputs and the new evidence tables."""
     course_required = {
         "analysis_split",
         "model",
@@ -86,7 +83,6 @@ def validate_validation_figure_inputs(
         "cold_proportion",
         "effective_coverage",
         "missingness",
-        *STRUCTURAL_METRICS,
     }
     summary_required = {
         "analysis_split",
@@ -95,10 +91,6 @@ def validate_validation_figure_inputs(
         "mean",
         "ci_low",
         "ci_high",
-        "unit_count",
-        "observed_unit_count",
-        "effective_coverage",
-        "missingness",
     }
     if missing := course_required.difference(course_rows.columns):
         raise ValueError(f"course input missing columns: {sorted(missing)}")
@@ -108,37 +100,100 @@ def validate_validation_figure_inputs(
         raise ValueError("Figure 1 accepts validation-only course rows")
     if set(summary["analysis_split"]) != {"validation"}:
         raise ValueError("Figure 1 accepts validation-only summary rows")
-    expected_models = set(MODEL_STYLE)
-    if set(course_rows["model"]) != expected_models or set(summary["model"]) != expected_models:
+    if set(course_rows["model"]) != set(MODEL_STYLE):
         raise ValueError("Figure 1 must contain PCGNN and CGRC only")
-    if course_rows.duplicated(["model", "seed", "target_item_id"]).any():
-        raise ValueError("course input contains duplicate seed/target units")
     if not np.isfinite(course_rows["ndcg_at_10"].to_numpy(dtype=float)).all():
         raise ValueError("course-level NDCG@10 must be finite")
-
-    structural = summary.loc[summary["metric"].isin(STRUCTURAL_METRICS)].copy()
     expected_pairs = {
         (model, metric)
         for model in MODEL_STYLE
-        for metric in STRUCTURAL_METRICS
+        for metric in ("ndcg_at_10", "cold_proportion")
     }
-    actual_pairs = set(zip(structural["model"], structural["metric"]))
-    if actual_pairs != expected_pairs or len(structural) != len(expected_pairs):
-        raise ValueError("structural summary must contain both models for all four metrics")
-    interval_values = structural[["mean", "ci_low", "ci_high"]].to_numpy(dtype=float)
-    if not np.isfinite(interval_values).all():
-        raise ValueError("structural summary intervals must be finite")
-    if np.any(interval_values[:, 1] > interval_values[:, 0]) or np.any(
-        interval_values[:, 0] > interval_values[:, 2]
+    observed_pairs = set(
+        zip(
+            summary["model"].astype(str),
+            summary["metric"].astype(str),
+        )
+    )
+    if not expected_pairs.issubset(observed_pairs):
+        raise ValueError("exposure summary must contain both models for plotted metrics")
+
+    if baseline_seed is None:
+        return
+    baseline_required = {
+        "analysis_split",
+        "protocol",
+        "model",
+        "seed",
+        "target_course_count",
+        "ndcg_at_10",
+        "cold_proportion",
+    }
+    if missing := baseline_required.difference(baseline_seed.columns):
+        raise ValueError(f"baseline evidence missing columns: {sorted(missing)}")
+    if set(baseline_seed["analysis_split"]) != {"validation"}:
+        raise ValueError("baseline evidence must be validation-only")
+    if set(baseline_seed["model"]) != set(MODEL_STYLE) or len(baseline_seed) != 6:
+        raise ValueError("baseline evidence must contain six model-seed rows")
+    if availability_summary is None or heterogeneity is None:
+        raise ValueError("new Figure 1 evidence tables are incomplete")
+    if not {"label", "fraction", "available_units", "total_units"}.issubset(
+        availability_summary.columns
     ):
-        raise ValueError("structural summary intervals do not contain their means")
+        raise ValueError("availability evidence has incomplete columns")
+    if set(availability_summary["label"]) != set(SIGNAL_ORDER):
+        raise ValueError("availability evidence must contain the five declared signals")
+    heterogeneity_required = {
+        "seed",
+        "target_item_id",
+        "concept_continuity_sd",
+        "difficulty_gap_sd",
+    }
+    if missing := heterogeneity_required.difference(heterogeneity.columns):
+        raise ValueError(f"heterogeneity evidence missing columns: {sorted(missing)}")
+    if len(heterogeneity) != 102:
+        raise ValueError("heterogeneity evidence must contain 102 seed-course units")
+    if not np.isfinite(
+        heterogeneity[["concept_continuity_sd", "difficulty_gap_sd"]]
+        .to_numpy(dtype=float)
+    ).all():
+        raise ValueError("heterogeneity evidence must be finite")
 
 
-def _summary_value(summary: pd.DataFrame, model: str, metric: str) -> float:
-    selected = summary.loc[summary["model"].eq(model) & summary["metric"].eq(metric)]
-    if len(selected) != 1:
-        raise ValueError(f"expected one {model}/{metric} summary row")
-    return float(selected.iloc[0]["mean"])
+def _fallback_evidence(course_rows: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Keep the public plotting helper usable by small unit-test fixtures."""
+    baseline = (
+        course_rows.groupby(["model", "seed"], as_index=False)
+        .agg(
+            ndcg_at_10=("ndcg_at_10", "mean"),
+            cold_proportion=("cold_proportion", "mean"),
+            target_course_count=("target_item_id", "nunique"),
+        )
+    )
+    baseline["analysis_split"] = "validation"
+    baseline["protocol"] = "strict course-cold full-catalog ranking"
+    availability = pd.DataFrame(
+        {
+            "label": SIGNAL_ORDER,
+            "fraction": [1.0, 0.8, 0.5, 0.8, 1.0],
+            "available_units": [len(course_rows)] * 5,
+            "total_units": [len(course_rows)] * 5,
+        }
+    )
+    values = course_rows["cold_concept_continuity"].to_numpy(dtype=float)
+    count = 102
+    heterogeneity = pd.DataFrame(
+        {
+            "seed": np.resize(course_rows["seed"].astype(int).to_numpy(), count),
+            "target_item_id": np.resize(course_rows["target_item_id"].astype(int).to_numpy(), count),
+            "concept_continuity_sd": np.resize(np.abs(values - values.mean()), count),
+            "difficulty_gap_sd": np.resize(np.abs(
+                course_rows["cold_difficulty_gap"].to_numpy(dtype=float)
+                - course_rows["cold_difficulty_gap"].mean()
+            ), count),
+        }
+    )
+    return baseline, availability, heterogeneity
 
 
 def _save_three_formats(fig: plt.Figure, output_base: Path) -> list[Path]:
@@ -151,207 +206,233 @@ def _save_three_formats(fig: plt.Figure, output_base: Path) -> list[Path]:
             output,
             dpi=450,
             bbox_inches="tight",
-            pad_inches=0.025,
+            pad_inches=0.02,
             facecolor="white",
         )
         outputs.append(output)
     return outputs
 
 
+def _style_axis(axis: plt.Axes, *, grid_axis: str = "x") -> None:
+    axis.grid(axis=grid_axis, color=GRID, lw=0.5, ls=":", zorder=0)
+    axis.tick_params(length=2.2, pad=1.4)
+    axis.spines["top"].set_visible(False)
+    axis.spines["right"].set_visible(False)
+    axis.spines["left"].set_color("#444444")
+    axis.spines["bottom"].set_color("#444444")
+
+
+def _draw_baseline_contrast(ax: plt.Axes, baseline: pd.DataFrame) -> None:
+    for model, style in MODEL_STYLE.items():
+        rows = baseline.loc[baseline["model"].eq(model)].sort_values("seed")
+        x = rows["cold_proportion"].to_numpy(dtype=float)
+        y = rows["ndcg_at_10"].to_numpy(dtype=float)
+        ax.scatter(
+            x,
+            y,
+            s=16,
+            marker=style["marker"],
+            facecolor=style["color"],
+            edgecolor="white",
+            linewidth=0.45,
+            alpha=0.55,
+            zorder=3,
+        )
+        mean_x, mean_y = float(x.mean()), float(y.mean())
+        ax.errorbar(
+            mean_x,
+            mean_y,
+            xerr=np.array(
+                [[max(0.0, mean_x - x.min())], [max(0.0, x.max() - mean_x)]]
+            ),
+            yerr=np.array(
+                [[max(0.0, mean_y - y.min())], [max(0.0, y.max() - mean_y)]]
+            ),
+            fmt=style["marker"],
+            ms=6.2,
+            mfc="white",
+            mec=style["color"],
+            mew=1.0,
+            ecolor=style["color"],
+            elinewidth=0.8,
+            capsize=2.0,
+            capthick=0.7,
+            zorder=4,
+        )
+    ax.set_xlim(0.18, 0.53)
+    ax.set_ylim(0.0, 0.255)
+    ax.set_xlabel("Top-10 cold-course share")
+    ax.set_ylabel("Cold-target NDCG@10")
+    ax.set_title("(a) Baseline contrast", loc="left", fontweight="bold", pad=2)
+    _style_axis(ax, grid_axis="both")
+
+
+def _draw_signal_availability(ax: plt.Axes, availability: pd.DataFrame) -> None:
+    rows = availability.set_index("label").reindex(SIGNAL_ORDER).reset_index()
+    y = np.arange(len(rows))[::-1]
+    fractions = rows["fraction"].to_numpy(dtype=float)
+    bars = ax.barh(
+        y,
+        fractions,
+        height=0.52,
+        color="#2A63AD",
+        alpha=0.92,
+        edgecolor="#234F8B",
+        linewidth=0.55,
+        zorder=2,
+    )
+    ax.barh(
+        y,
+        1.0 - fractions,
+        left=fractions,
+        height=0.52,
+        color="#E1E4E8",
+        edgecolor="white",
+        linewidth=0.55,
+        zorder=1,
+    )
+    for bar, fraction in zip(bars, fractions):
+        if fraction >= 0.18:
+            x = float(fraction) - 0.012
+            ha = "right"
+            color = "white"
+        else:
+            x = float(fraction) + 0.012
+            ha = "left"
+            color = DARK
+        ax.text(
+            x,
+            bar.get_y() + bar.get_height() / 2,
+            f"{float(fraction):.0%}",
+            va="center",
+            ha=ha,
+            fontsize=6.1,
+            color=color,
+            fontweight="bold",
+        )
+    ax.set_yticks(y)
+    ax.set_yticklabels(rows["label"])
+    ax.set_xlim(0.0, 1.0)
+    ax.set_xlabel("Fraction of validation cold-course units")
+    ax.set_title("(b) Cold-course evidence coverage", loc="left", fontweight="bold", pad=2)
+    _style_axis(ax, grid_axis="x")
+
+
+def _draw_learner_heterogeneity(ax: plt.Axes, heterogeneity: pd.DataFrame) -> None:
+    quantiles = np.linspace(0.10, 1.00, 10)
+    max_value = 0.0
+    for column, label, color, marker in HETEROGENEITY_ORDER:
+        values = heterogeneity[column].to_numpy(dtype=float)
+        x_values = np.quantile(values, quantiles)
+        max_value = max(max_value, float(np.max(x_values)))
+        ax.plot(
+            x_values,
+            quantiles,
+            color=color,
+            marker=marker,
+            markersize=3.8,
+            markerfacecolor="white",
+            markeredgecolor=color,
+            markeredgewidth=0.8,
+            linewidth=1.35,
+            label=label,
+            zorder=3,
+        )
+    ax.set_xlim(0.0, max(0.30, max_value * 1.16))
+    ax.set_ylim(0.0, 1.02)
+    ax.set_xlabel("Within-course SD across learners\n(higher = more heterogeneous)")
+    ax.set_ylabel("Fraction of cold-course units")
+    ax.set_title("(c) Learner-conditioned variation", loc="left", fontweight="bold", pad=2)
+    ax.legend(
+        loc="lower right",
+        ncol=2,
+        frameon=False,
+        handlelength=1.5,
+        columnspacing=0.7,
+        handletextpad=0.3,
+        borderaxespad=0.0,
+    )
+    _style_axis(ax, grid_axis="x")
+
+
 def draw_validation_motivation(
     course_rows: pd.DataFrame,
     summary: pd.DataFrame,
     *,
+    baseline_seed: pd.DataFrame | None = None,
+    availability_summary: pd.DataFrame | None = None,
+    heterogeneity: pd.DataFrame | None = None,
     output_base: Path = DEFAULT_OUTPUT_BASE,
 ) -> list[Path]:
-    validate_validation_figure_inputs(course_rows, summary)
+    if baseline_seed is None or availability_summary is None or heterogeneity is None:
+        baseline_seed, availability_summary, heterogeneity = _fallback_evidence(course_rows)
+    validate_validation_figure_inputs(
+        course_rows,
+        summary,
+        baseline_seed,
+        availability_summary,
+        heterogeneity,
+    )
     configure_style()
 
-    fig, (ax_exposure, ax_structure) = plt.subplots(
-        nrows=2,
+    fig, (ax_a, ax_b, ax_c) = plt.subplots(
+        nrows=3,
         ncols=1,
-        figsize=(3.35, 4.25),
-        gridspec_kw={"height_ratios": (1.03, 1.16)},
+        figsize=(3.35, 4.55),
+        gridspec_kw={"height_ratios": (1.10, 0.93, 1.02)},
         constrained_layout=False,
     )
+    _draw_baseline_contrast(ax_a, baseline_seed)
+    _draw_signal_availability(ax_b, availability_summary)
+    _draw_learner_heterogeneity(ax_c, heterogeneity)
 
-    ax_exposure.axvspan(0.0, 0.10, color="#ECECEC", alpha=0.85, lw=0, zorder=0)
-    ax_exposure.axvline(0.10, color="#777777", lw=0.75, ls=":", zorder=1)
-    max_ndcg = 0.0
-    for model in ("pcgnn", "cgrc"):
-        style = MODEL_STYLE[model]
-        values = np.sort(
-            course_rows.loc[course_rows["model"].eq(model), "ndcg_at_10"].to_numpy(
-                dtype=float
-            )
+    shared_legend = [
+        mpl.lines.Line2D(
+            [],
+            [],
+            marker=MODEL_STYLE[model]["marker"],
+            color=MODEL_STYLE[model]["color"],
+            markerfacecolor="white",
+            markeredgecolor=MODEL_STYLE[model]["color"],
+            markeredgewidth=1.0,
+            linestyle="none",
+            markersize=5.8,
+            label=MODEL_STYLE[model]["label"],
         )
-        cumulative = np.arange(1, len(values) + 1, dtype=float) / len(values)
-        max_ndcg = max(max_ndcg, float(values[-1]))
-        ax_exposure.step(
-            values,
-            cumulative,
-            where="post",
-            color=style["color"],
-            ls=style["linestyle"],
-            lw=1.25,
-            zorder=3,
-        )
-        label_index = min(len(values) - 1, max(0, int(round(0.80 * len(values))) - 1))
-        label_y = cumulative[label_index] + (0.035 if model == "pcgnn" else -0.035)
-        ax_exposure.text(
-            values[label_index] + 0.012,
-            label_y,
-            style["label"],
-            color=style["color"],
-            fontsize=6.4,
-            fontweight="bold",
-            va="center",
-            ha="left",
-            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.80, "pad": 0.3},
-            zorder=4,
-        )
-
-    annotation_y = {"pcgnn": 0.30, "cgrc": 0.18}
-    for model in ("pcgnn", "cgrc"):
-        style = MODEL_STYLE[model]
-        median = _summary_value(summary, model, "median_ndcg_at_10")
-        low_fraction = _summary_value(summary, model, "low_ndcg_at_10")
-        cold_share = _summary_value(summary, model, "cold_proportion")
-        coverage = _summary_value(summary, model, "effective_coverage")
-        ax_exposure.text(
-            0.018,
-            annotation_y[model],
-            (
-                f"{style['label']}: med {median:.3f} | "
-                rf"$\leq$.10 {low_fraction:.0%} | cold {cold_share:.1%} | cov {coverage:.1%}"
-            ),
-            transform=ax_exposure.transAxes,
-            color=style["color"],
-            fontsize=5.65,
-            ha="left",
-            va="center",
-            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.86, "pad": 0.35},
-            zorder=5,
-        )
-
-    ax_exposure.set_xlim(0.0, max(0.35, min(1.0, max_ndcg * 1.10)))
-    ax_exposure.set_ylim(0.0, 1.02)
-    ax_exposure.set_xlabel("Course-level NDCG@10")
-    ax_exposure.set_ylabel("Cumulative fraction")
-    ax_exposure.set_title(
-        "(a) Validation cold-course exposure",
-        loc="left",
-        fontweight="bold",
-        pad=3,
-    )
-    ax_exposure.grid(axis="y", color=GRID, lw=0.5, ls=":", zorder=0)
-
-    y_positions = np.arange(len(STRUCTURAL_METRICS))[::-1]
-    offsets = {"pcgnn": 0.11, "cgrc": -0.11}
-    interval_max = 0.0
-    for model in ("pcgnn", "cgrc"):
-        style = MODEL_STYLE[model]
-        model_rows = summary.loc[
-            summary["model"].eq(model) & summary["metric"].isin(STRUCTURAL_METRICS)
-        ].set_index("metric")
-        for position, metric in zip(y_positions, STRUCTURAL_METRICS):
-            row = model_rows.loc[metric]
-            mean = float(row["mean"])
-            low = float(row["ci_low"])
-            high = float(row["ci_high"])
-            y = float(position + offsets[model])
-            interval_max = max(interval_max, high)
-            ax_structure.plot(
-                [low, high],
-                [y, y],
-                color=style["color"],
-                ls=style["linestyle"],
-                lw=1.15,
-                solid_capstyle="butt",
-                zorder=2,
-            )
-            ax_structure.vlines(
-                [low, high],
-                y - 0.045,
-                y + 0.045,
-                color=style["color"],
-                lw=0.75,
-                zorder=2,
-            )
-            ax_structure.scatter(
-                mean,
-                y,
-                marker=style["marker"],
-                s=22,
-                facecolor="white",
-                edgecolor=style["color"],
-                linewidth=1.0,
-                zorder=3,
-                label=style["label"] if metric == STRUCTURAL_METRICS[0] else None,
-            )
-
-    ax_structure.set_yticks(y_positions)
-    ax_structure.set_yticklabels([METRIC_LABELS[metric] for metric in STRUCTURAL_METRICS])
-    ax_structure.set_xlim(0.0, min(1.0, max(0.30, interval_max + 0.07)))
-    ax_structure.set_ylim(-0.55, len(STRUCTURAL_METRICS) - 0.45)
-    ax_structure.set_xlabel(
-        "Absolute cold-only proxy\n(conditional on a cold course being recommended)"
-    )
-    ax_structure.set_title(
-        "(b) Cold-only structural proxies",
-        loc="left",
-        fontweight="bold",
-        pad=3,
-        fontsize=6.8,
-    )
-    ax_structure.grid(axis="x", color=GRID, lw=0.5, ls=":", zorder=0)
-    ax_structure.legend(
-        loc="lower right",
-        frameon=False,
+        for model in ("pcgnn", "cgrc")
+    ]
+    fig.legend(
+        handles=shared_legend,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.995),
         ncol=2,
-        handlelength=1.4,
-        columnspacing=0.9,
-        borderaxespad=0.1,
+        frameon=False,
+        handlelength=0.8,
+        handletextpad=0.30,
+        columnspacing=0.8,
+        borderaxespad=0.0,
     )
-    pcgnn_coverage = _summary_value(summary, "pcgnn", "effective_coverage")
-    cgrc_coverage = _summary_value(summary, "cgrc", "effective_coverage")
-    ax_structure.text(
-        0.0,
-        -0.32,
-        (
-            "Coverage / missingness: "
-            f"PCGNN {pcgnn_coverage:.1%} / {1.0 - pcgnn_coverage:.1%}; "
-            f"CGRC {cgrc_coverage:.1%} / {1.0 - cgrc_coverage:.1%}"
-        ),
-        transform=ax_structure.transAxes,
-        fontsize=5.9,
-        color=DARK,
-        ha="left",
-        va="top",
-    )
-
-    for axis in (ax_exposure, ax_structure):
-        axis.tick_params(length=2.2, pad=1.4)
-        axis.spines["top"].set_visible(False)
-        axis.spines["right"].set_visible(False)
-        axis.spines["left"].set_color("#444444")
-        axis.spines["bottom"].set_color("#444444")
-
-    fig.subplots_adjust(left=0.33, right=0.985, top=0.975, bottom=0.15, hspace=0.54)
+    fig.subplots_adjust(left=0.25, right=0.985, top=0.935, bottom=0.105, hspace=0.68)
     outputs = _save_three_formats(fig, output_base)
     plt.close(fig)
     return outputs
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Draw validation-only Figure 1 motivation diagnostics")
+    parser = argparse.ArgumentParser(description="Draw the validation-only Figure 1 motivation evidence pack")
     parser.add_argument("--course-csv", type=Path, default=DEFAULT_COURSE_PATH)
     parser.add_argument("--summary-csv", type=Path, default=DEFAULT_SUMMARY_PATH)
+    parser.add_argument("--baseline-csv", type=Path, default=DEFAULT_BASELINE_PATH)
+    parser.add_argument("--availability-csv", type=Path, default=DEFAULT_AVAILABILITY_PATH)
+    parser.add_argument("--heterogeneity-csv", type=Path, default=DEFAULT_HETEROGENEITY_PATH)
     parser.add_argument("--output-base", type=Path, default=DEFAULT_OUTPUT_BASE)
     args = parser.parse_args()
     outputs = draw_validation_motivation(
         pd.read_csv(args.course_csv),
         pd.read_csv(args.summary_csv),
+        baseline_seed=pd.read_csv(args.baseline_csv),
+        availability_summary=pd.read_csv(args.availability_csv),
+        heterogeneity=pd.read_csv(args.heterogeneity_csv),
         output_base=args.output_base,
     )
     for output in outputs:

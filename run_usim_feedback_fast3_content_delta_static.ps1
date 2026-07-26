@@ -36,7 +36,7 @@ param(
     [int]$ContentDeltaOnlyAfterEpoch = 0,
     [double]$AuxWeight = 0.3,
     [bool]$UsePseudoColdTrain = $true,
-    [ValidateSet("batch_random", "batch_tail", "item_tail", "all_eligible", "none", "off")]
+    [ValidateSet("batch_random", "batch_tail", "item_tail", "all_eligible", "fixed_item_stratified", "none", "off")]
     [string]$PseudoColdMode = "all_eligible",
     [double]$PseudoColdRatio = 1.00,
     [int]$PseudoColdMinPop = 1,
@@ -117,12 +117,33 @@ param(
     [int]$SgUrinitMaxIter = 20,
     [bool]$TrainForceCold = $true,
     [int]$UsimSteps = 5,
+    [int]$PpoEpochs = 2,
     [bool]$UseUsimRefinedEval = $true,
     [double]$PpoLossWeight = 1.0,
     [string]$InitCheckpointDir = "",
     [double]$RlResidualScale = 1.0,
     [ValidateSet("ppo", "random", "greedy_similarity", "course_fit")]
     [string]$RolloutPolicy = "ppo",
+    [ValidateSet("legacy_id", "initial_state")]
+    [string]$SimulatorTargetMode = "legacy_id",
+    [bool]$DeterministicEvalCandidates = $false,
+    [bool]$EvalReuseItemBank = $false,
+    [int]$DeterministicEvalSeed = 0,
+    [bool]$CkgRlV1 = $false,
+    [int]$V1PseudoColdPlanCount = 0,
+    [int]$V1PseudoColdPlanSeed = 0,
+    [ValidateSet("popularity_stratified")]
+    [string]$V1PseudoColdPlanStrategy = "popularity_stratified",
+    [int]$V1ReferenceBatchSize = 0,
+    [bool]$V1TargetHistoryExclusion = $false,
+    [ValidateSet("all_course_terms", "concept_only")]
+    [string]$V1TargetHistoryExclusionScope = "all_course_terms",
+    [double]$V1SelectorHotTolerance = 0.003,
+    [double]$V1SelectorOverallTolerance = 0.003,
+    [ValidateSet("cold_ndcg_then_recall_with_retention", "cold_ndcg_running_retention")]
+    [string]$V1SelectorMode = "cold_ndcg_then_recall_with_retention",
+    [double]$RewardDupW = 0.50,
+    [string]$CourseMatchExcludeTarget = "",
     # Cold-start patch (2026-05-19) flags. Legacy defaults preserved when the
     # caller doesn't pass them; see docs/COLD_START_PATCH_2026_05_19.md.
     [bool]$AuxHotOnly = $false,
@@ -135,6 +156,7 @@ param(
     [bool]$ForceFresh = $false,
     [bool]$SaveOptState = $true,
     [bool]$AllowLegacyCheckpoint = $false,
+    [switch]$DryRun,
     [switch]$SkipAggregate
 )
 
@@ -182,6 +204,22 @@ $trackedEnv = @(
     "USIM_PPO_LOSS_WEIGHT",
     "USIM_RL_RESIDUAL_SCALE",
     "USIM_ROLLOUT_POLICY",
+    "USIM_SIMULATOR_TARGET_MODE",
+    "USIM_DETERMINISTIC_EVAL_CANDIDATES",
+    "USIM_EVAL_REUSE_ITEM_BANK",
+    "USIM_DETERMINISTIC_EVAL_SEED",
+    "USIM_CKG_RL_V1",
+    "USIM_V1_PSEUDO_COLD_PLAN_COUNT",
+    "USIM_V1_PSEUDO_COLD_PLAN_SEED",
+    "USIM_V1_PSEUDO_COLD_PLAN_STRATEGY",
+    "USIM_V1_REFERENCE_BATCH_SIZE",
+    "USIM_V1_TARGET_HISTORY_EXCLUSION",
+    "USIM_V1_TARGET_HISTORY_EXCLUSION_SCOPE",
+    "USIM_V1_SELECTOR_HOT_TOL",
+    "USIM_V1_SELECTOR_OVERALL_TOL",
+    "USIM_V1_SELECTOR_MODE",
+    "USIM_FB_REWARD_DUP_W",
+    "USIM_FB_COURSE_MATCH_EXCLUDE_TARGET",
     "USIM_FAST3_TGT_ALPHA_COLD",
     "USIM_FAST3_TGT_ALPHA_HOT",
     "USIM_FAST3_TGT_ALPHA_STEP",
@@ -378,7 +416,7 @@ $base = @{
     "USIM_RUN_SAMPLED_EVAL" = if ($RunSampledEval) { "1" } else { "0" }
     "USIM_TRAIN_FORCE_COLD" = if ($TrainForceCold) { "1" } else { "0" }
     "USIM_STEPS" = [string]$UsimSteps
-    "USIM_PPO_EPOCHS" = "2"
+    "USIM_PPO_EPOCHS" = [string]$PpoEpochs
     "USIM_PPO_LAMBDA" = "0.95"
     "USIM_PPO_VALUE_CLIP" = "0.20"
     "USIM_PPO_ADV_NORM" = "1"
@@ -386,6 +424,18 @@ $base = @{
     "USIM_FB_INIT_CKPT_DIR" = $InitCheckpointDir
     "USIM_RL_RESIDUAL_SCALE" = [string]$RlResidualScale
     "USIM_ROLLOUT_POLICY" = $RolloutPolicy
+    "USIM_SIMULATOR_TARGET_MODE" = $SimulatorTargetMode
+    "USIM_DETERMINISTIC_EVAL_CANDIDATES" = if ($DeterministicEvalCandidates) { "1" } else { "0" }
+    "USIM_EVAL_REUSE_ITEM_BANK" = if ($EvalReuseItemBank) { "1" } else { "0" }
+    "USIM_CKG_RL_V1" = if ($CkgRlV1) { "1" } else { "0" }
+    "USIM_V1_PSEUDO_COLD_PLAN_COUNT" = [string]$V1PseudoColdPlanCount
+    "USIM_V1_PSEUDO_COLD_PLAN_STRATEGY" = $V1PseudoColdPlanStrategy
+    "USIM_V1_REFERENCE_BATCH_SIZE" = [string]$V1ReferenceBatchSize
+    "USIM_V1_TARGET_HISTORY_EXCLUSION" = if ($V1TargetHistoryExclusion) { "1" } else { "0" }
+    "USIM_V1_TARGET_HISTORY_EXCLUSION_SCOPE" = $V1TargetHistoryExclusionScope
+    "USIM_V1_SELECTOR_HOT_TOL" = [string]$V1SelectorHotTolerance
+    "USIM_V1_SELECTOR_OVERALL_TOL" = [string]$V1SelectorOverallTolerance
+    "USIM_V1_SELECTOR_MODE" = $V1SelectorMode
 
     "USIM_FAST3_TGT_ALPHA_COLD" = "0.35"
     "USIM_FAST3_TGT_ALPHA_HOT" = "0.60"
@@ -435,6 +485,7 @@ $base = @{
     "USIM_FB_LOAD_COURSE_ARTIFACTS" = "1"
     "USIM_PREREQ_GRAPH_SOURCE" = $PrereqGraphSource
     "USIM_USE_COURSE_REWARD" = if ($UseCourseReward) { "1" } else { "0" }
+    "USIM_FB_REWARD_DUP_W" = [string]$RewardDupW
     "USIM_USE_PREREQ_AUX_LOSS" = if ($UsePrereqAux) { "1" } else { "0" }
     "USIM_PREREQ_AUX_ONLY_COLD" = if ($PrereqAuxOnlyCold) { "1" } else { "0" }
     "USIM_FB_COURSE_ONLY_COLD" = if ($CourseFeedbackOnlyCold) { "1" } else { "0" }
@@ -504,6 +555,13 @@ $base = @{
     "USIM_SG_URINIT_MAX_ITER" = [string]$SgUrinitMaxIter
 }
 
+if ($DryRun) {
+    Write-Host "FAST3 static runner dry run"
+    Write-Host ("Protocol={0} Seeds={1} Epochs={2} UsimSteps={3} V1={4} PseudoMode={5} SelectorMode={6}" -f $Protocol, ($Seeds -join ","), $Epochs, $UsimSteps, $CkgRlV1, $PseudoColdMode, $V1SelectorMode)
+    Write-Host ("OutputRoot={0} CheckpointRoot={1}" -f $OutputRoot, $CheckpointRoot)
+    return
+}
+
 try {
     New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
     New-Item -ItemType Directory -Force -Path $CheckpointRoot | Out-Null
@@ -524,10 +582,23 @@ try {
             foreach ($key in $base.Keys) {
                 Set-Item "Env:$key" ([string]$base[$key])
             }
+            if (-not [string]::IsNullOrWhiteSpace($CourseMatchExcludeTarget)) {
+                $env:USIM_FB_COURSE_MATCH_EXCLUDE_TARGET = $CourseMatchExcludeTarget
+            }
             $env:USIM_COLD_THRESHOLD = [string]$coldThreshold
             $env:USIM_STATIC_SEED = [string]$seed
             $env:USIM_SEED = [string]$seed
             $env:USIM_SG_URINIT_SEED = [string]$seed
+            $env:USIM_DETERMINISTIC_EVAL_SEED = if ($DeterministicEvalSeed -gt 0) {
+                [string]$DeterministicEvalSeed
+            } else {
+                [string]$seed
+            }
+            $env:USIM_V1_PSEUDO_COLD_PLAN_SEED = if ($V1PseudoColdPlanSeed -gt 0) {
+                [string]$V1PseudoColdPlanSeed
+            } else {
+                [string]$seed
+            }
             $env:USIM_FB_OUTPUT_TAG = $tag
             $env:USIM_FB_OUTPUT_DIR = $out
             $env:USIM_FB_CKPT_DIR = $ckpt
@@ -541,6 +612,7 @@ try {
             Write-Host ("PPO controls: loss_weight={0}" -f $PpoLossWeight)
             Write-Host ("RL rescue: init_checkpoint={0} residual_scale={1}" -f $InitCheckpointDir, $RlResidualScale)
             Write-Host ("Rollout policy: {0}" -f $RolloutPolicy)
+            Write-Host ("Semantic repair: target_mode={0} deterministic_candidates={1} reuse_item_bank={2} eval_seed={3}" -f $SimulatorTargetMode, $DeterministicEvalCandidates, $EvalReuseItemBank, $env:USIM_DETERMINISTIC_EVAL_SEED)
             Write-Host ("Course match: mode={0} topk={1} exclude_target={2}" -f $CourseMatchMode, $CourseMatchTopK, $matchExcludeTarget)
             Write-Host ("Course redundancy: mode={0} struct_chunk={1}" -f $CourseRedundantMode, $CourseStructChunk)
             Write-Host ("Course term norm: mode={0} clip={1} eps={2} ema_decay={3}" -f $CourseTermNorm, $CourseTermNormClip, $CourseTermNormEps, $CourseTermNormEmaDecay)

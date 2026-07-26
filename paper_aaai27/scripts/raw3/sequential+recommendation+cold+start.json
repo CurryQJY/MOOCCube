@@ -1,0 +1,140 @@
+{
+"result":{
+"query":"sequential* recommendation* cold* start*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"18.43"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"18",
+"@dc":"18",
+"@oc":"18",
+"@id":"70854898",
+"text":"start"
+}
+},
+"hits":{
+"@total":"18",
+"@computed":"18",
+"@sent":"18",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"122550",
+"info":{"authors":{"author":[{"@pid":"00/6131","text":"Xinyang Li"},{"@pid":"25/8709-6","text":"Yanmin Zhu 0006"},{"@pid":"69/1950-1","text":"Chunyang Wang 0001"},{"@pid":"85/3615","text":"Jiadi Yu"},{"@pid":"59/2249-1","text":"Feilong Tang 0001"}]},"title":"MESA: Plugin Meta-Modulation for Transformer-Based Cold-Start Sequential Recommendation.","venue":"ACM Trans. Knowl. Discov. Data","volume":"20","number":"2","pages":"35:1-35:19","year":"2026","type":"Journal Articles","access":"closed","key":"journals/tkdd/LiZWYT26","doi":"10.1145/3788282","ee":"https://doi.org/10.1145/3788282","url":"https://dblp.org/rec/journals/tkdd/LiZWYT26"},
+"url":"URL#122550"
+},
+{
+"@score":"4",
+"@id":"125012",
+"info":{"authors":{"author":[{"@pid":"49/3800","text":"Lu Wang"},{"@pid":"12/53","text":"Wenyu Zhang"},{"@pid":"135/8506","text":"Chengke Wang"},{"@pid":"59/3378","text":"Guimei Liu"},{"@pid":"69/8389","text":"Ye Luo"}]},"title":"Domain Adaptation for Cold-Start Users in Sequential Recommendation.","venue":"Trans. Mach. Learn. Res.","volume":"2026","year":"2026","type":"Journal Articles","access":"open","key":"journals/tmlr/WangZWLL26","ee":"https://openreview.net/forum?id=jrVmW6LfMa","url":"https://dblp.org/rec/journals/tmlr/WangZWLL26"},
+"url":"URL#125012"
+},
+{
+"@score":"4",
+"@id":"165410",
+"info":{"authors":{"author":[{"@pid":"405/3120","text":"Wanna Cui"},{"@pid":"l/HKLam","text":"Hak-Keung Lam"}]},"title":"Enhancing Cold-Start Sequential Recommendation with Large Language Model-derived Semantic Graph and Semantic Distribution Alignment.","venue":"ICSIM","pages":"127-133","year":"2026","type":"Conference and Workshop Papers","access":"open","key":"conf/icsim/CuiL26","doi":"10.1145/3796315.3796333","ee":"https://doi.org/10.1145/3796315.3796333","url":"https://dblp.org/rec/conf/icsim/CuiL26"},
+"url":"URL#165410"
+},
+{
+"@score":"4",
+"@id":"183768",
+"info":{"authors":{"author":[{"@pid":"279/9890","text":"Hongsheng Dong"},{"@pid":"194/6883","text":"Haolong Xiang"},{"@pid":"10/137-1","text":"Xiaolong Xu 0001"},{"@pid":"54/8558","text":"Xuyun Zhang"}]},"title":"Enhanced Cold-Start Sequential Recommendation with Causal Diffusion Preference Modeling.","venue":"WSDM","pages":"132-141","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/DongX0Z26","doi":"10.1145/3773966.3778026","ee":"https://doi.org/10.1145/3773966.3778026","url":"https://dblp.org/rec/conf/wsdm/DongX0Z26"},
+"url":"URL#183768"
+},
+{
+"@score":"4",
+"@id":"526737",
+"info":{"authors":{"author":[{"@pid":"67/187-5","text":"Zhiqiang Wang 0005"},{"@pid":"39/6476-6","text":"Jiayi Pan 0006"},{"@pid":"03/9261-1","text":"Xingwang Zhao 0001"},{"@pid":"128/2639","text":"Jianqing Liang"},{"@pid":"262/0544","text":"Chenjiao Feng"},{"@pid":"278/7453","text":"Kaixuan Yao"}]},"title":"Counterfactual Task-augmented Meta-learning for Cold-start Sequential Recommendation.","venue":"AAAI","pages":"12801-12809","year":"2025","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/00050ZLFY25","doi":"10.1609/AAAI.V39I12.33396","ee":"https://doi.org/10.1609/aaai.v39i12.33396","url":"https://dblp.org/rec/conf/aaai/00050ZLFY25"},
+"url":"URL#526737"
+},
+{
+"@score":"4",
+"@id":"575591",
+"info":{"authors":{"author":[{"@pid":"282/7319","text":"Keigo Sakurai"},{"@pid":"187/0069","text":"Ren Togo"},{"@pid":"45/6528","text":"Takahiro Ogawa 0001"},{"@pid":"29/5984","text":"Miki Haseyama"}]},"title":"LLM is Knowledge Graph Reasoner: LLM&apos;s Intuition-Aware Knowledge Graph Reasoning for Cold-Start Sequential Recommendation.","venue":"ECIR","pages":"263-278","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/ecir/SakuraiTOH25","doi":"10.1007/978-3-031-88711-6_17","ee":"https://doi.org/10.1007/978-3-031-88711-6_17","url":"https://dblp.org/rec/conf/ecir/SakuraiTOH25"},
+"url":"URL#575591"
+},
+{
+"@score":"4",
+"@id":"687007",
+"info":{"authors":{"author":[{"@pid":"386/2380","text":"Anton Pembek"},{"@pid":"413/6778","text":"Artem Fatkulin"},{"@pid":"356/8420","text":"Anton Klenitskiy"},{"@pid":"301/8431","text":"Alexey Vasilev"}]},"title":"Let It Go? Not Quite: Addressing Item Cold Start in Sequential Recommendations with Content-Based Initialization.","venue":"RecSys","pages":"626-631","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/recsys/PembekFKV25","doi":"10.1145/3705328.3748038","ee":"https://doi.org/10.1145/3705328.3748038","url":"https://dblp.org/rec/conf/recsys/PembekFKV25"},
+"url":"URL#687007"
+},
+{
+"@score":"4",
+"@id":"806824",
+"info":{"authors":{"author":[{"@pid":"386/2380","text":"Anton Pembek"},{"@pid":"413/6778","text":"Artem Fatkulin"},{"@pid":"356/8420","text":"Anton Klenitskiy"},{"@pid":"301/8431","text":"Alexey Vasilev"}]},"title":"Let It Go? Not Quite: Addressing Item Cold Start in Sequential Recommendations with Content-Based Initialization.","venue":"CoRR","volume":"abs/2507.19473","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2507-19473","doi":"10.48550/ARXIV.2507.19473","ee":"https://doi.org/10.48550/arXiv.2507.19473","url":"https://dblp.org/rec/journals/corr/abs-2507-19473"},
+"url":"URL#806824"
+},
+{
+"@score":"4",
+"@id":"1309272",
+"info":{"authors":{"author":[{"@pid":"10/137-1","text":"Xiaolong Xu 0001"},{"@pid":"279/9890","text":"Hongsheng Dong"},{"@pid":"01/8326","text":"Lianyong Qi"},{"@pid":"54/8558","text":"Xuyun Zhang"},{"@pid":"194/6883","text":"Haolong Xiang"},{"@pid":"207/5756-1","text":"Xiaoyu Xia 0001"},{"@pid":"72/7268-3","text":"Yanwei Xu 0003"},{"@pid":"57/5595","text":"Wanchun Dou"}]},"title":"CMCLRec: Cross-modal Contrastive Learning for User Cold-start Sequential Recommendation.","venue":"SIGIR","pages":"1589-1598","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/0001DQZXXXD24","doi":"10.1145/3626772.3657839","ee":"https://doi.org/10.1145/3626772.3657839","url":"https://dblp.org/rec/conf/sigir/0001DQZXXXD24"},
+"url":"URL#1309272"
+},
+{
+"@score":"4",
+"@id":"1442151",
+"info":{"authors":{"author":[{"@pid":"245/4818","text":"Shaked Brody"},{"@pid":"335/1652","text":"Shoval Lagziel"}]},"title":"SimRec: Mitigating the Cold-Start Problem in Sequential Recommendation by Integrating Item Similarity.","venue":"CoRR","volume":"abs/2410.22136","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2410-22136","doi":"10.48550/ARXIV.2410.22136","ee":"https://doi.org/10.48550/arXiv.2410.22136","url":"https://dblp.org/rec/journals/corr/abs-2410-22136"},
+"url":"URL#1442151"
+},
+{
+"@score":"4",
+"@id":"1459423",
+"info":{"authors":{"author":[{"@pid":"282/7319","text":"Keigo Sakurai"},{"@pid":"187/0069","text":"Ren Togo"},{"@pid":"45/6528","text":"Takahiro Ogawa 0001"},{"@pid":"29/5984","text":"Miki Haseyama"}]},"title":"LLM is Knowledge Graph Reasoner: LLM&apos;s Intuition-aware Knowledge Graph Reasoning for Cold-start Sequential Recommendation.","venue":"CoRR","volume":"abs/2412.12464","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2412-12464","doi":"10.48550/ARXIV.2412.12464","ee":"https://doi.org/10.48550/arXiv.2412.12464","url":"https://dblp.org/rec/journals/corr/abs-2412-12464"},
+"url":"URL#1459423"
+},
+{
+"@score":"4",
+"@id":"2245538",
+"info":{"authors":{"author":[{"@pid":"148/2871","text":"Xingyu Pan"},{"@pid":"45/4693","text":"Yushuo Chen"},{"@pid":"277/9239","text":"Changxin Tian"},{"@pid":"248/8419","text":"Zihan Lin"},{"@pid":"74/113-1","text":"Jinpeng Wang 0001"},{"@pid":"h/HeHu","text":"He Hu 0001"},{"@pid":"52/8700","text":"Wayne Xin Zhao"}]},"title":"Multimodal Meta-Learning for Cold-Start Sequential Recommendation.","venue":"CIKM","pages":"3421-3430","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/PanCTLW0Z22","doi":"10.1145/3511808.3557101","ee":"https://doi.org/10.1145/3511808.3557101","url":"https://dblp.org/rec/conf/cikm/PanCTLW0Z22"},
+"url":"URL#2245538"
+},
+{
+"@score":"4",
+"@id":"2261467",
+"info":{"authors":{"author":[{"@pid":"59/9431","text":"Guoan Wang"},{"@pid":"82/3752","text":"Xingjun Wang"}]},"title":"Cold-Start Sequential Recommendation with Collaborative Boosted Meta Transitional Learning.","venue":"DSIT","pages":"1-5","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/dsit/WangW22a","doi":"10.1109/DSIT55514.2022.9943897","ee":"https://doi.org/10.1109/DSIT55514.2022.9943897","url":"https://dblp.org/rec/conf/dsit/WangW22a"},
+"url":"URL#2261467"
+},
+{
+"@score":"4",
+"@id":"2693800",
+"info":{"authors":{"author":[{"@pid":"245/6109-1","text":"Yujia Zheng 0001"},{"@pid":"81/10554","text":"Siyi Liu"},{"@pid":"150/2008-1","text":"Zekun Li 0001"},{"@pid":"06/3577","text":"Shu Wu"}]},"title":"Cold-start Sequential Recommendation via Meta Learner.","venue":"AAAI","pages":"4706-4713","year":"2021","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/ZhengLLW21","doi":"10.1609/AAAI.V35I5.16601","ee":"https://doi.org/10.1609/aaai.v35i5.16601","url":"https://dblp.org/rec/conf/aaai/ZhengLLW21"},
+"url":"URL#2693800"
+},
+{
+"@score":"4",
+"@id":"2850480",
+"info":{"authors":{"author":[{"@pid":"50/8201","text":"Jianling Wang"},{"@pid":"234/6878","text":"Kaize Ding"},{"@pid":"55/3697","text":"James Caverlee"}]},"title":"Sequential Recommendation for Cold-start Users with Meta Transitional Learning.","venue":"SIGIR","pages":"1783-1787","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/WangDC21","doi":"10.1145/3404835.3463089","ee":"https://doi.org/10.1145/3404835.3463089","url":"https://dblp.org/rec/conf/sigir/WangDC21"},
+"url":"URL#2850480"
+},
+{
+"@score":"4",
+"@id":"2916223",
+"info":{"authors":{"author":[{"@pid":"50/8201","text":"Jianling Wang"},{"@pid":"234/6878","text":"Kaize Ding"},{"@pid":"55/3697","text":"James Caverlee"}]},"title":"Sequential Recommendation for Cold-start Users with Meta Transitional Learning.","venue":"CoRR","volume":"abs/2107.06427","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2107-06427","ee":"https://arxiv.org/abs/2107.06427","url":"https://dblp.org/rec/journals/corr/abs-2107-06427"},
+"url":"URL#2916223"
+},
+{
+"@score":"4",
+"@id":"3388927",
+"info":{"authors":{"author":[{"@pid":"245/6109-1","text":"Yujia Zheng 0001"},{"@pid":"81/10554","text":"Siyi Liu"},{"@pid":"150/2008-1","text":"Zekun Li 0001"},{"@pid":"06/3577","text":"Shu Wu"}]},"title":"Cold-start Sequential Recommendation via Meta Learner.","venue":"CoRR","volume":"abs/2012.05462","year":"2020","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2012-05462","ee":"https://arxiv.org/abs/2012.05462","url":"https://dblp.org/rec/journals/corr/abs-2012-05462"},
+"url":"URL#3388927"
+},
+{
+"@score":"4",
+"@id":"3702441",
+"info":{"authors":{"author":[{"@pid":"227/2808","text":"Kexin Huang"},{"@pid":"96/5464","text":"Yukun Cao"},{"@pid":"02/1764","text":"Ye Du"},{"@pid":"53/2189-6","text":"Li Li 0006"},{"@pid":"33/4528-1","text":"Li Liu 0001"},{"@pid":"88/3619-1","text":"Jun Liao 0001"}]},"title":"Social-Aware and Sequential Embedding for Cold-Start Recommendation.","venue":"KSEM","pages":"60-71","year":"2019","type":"Conference and Workshop Papers","access":"closed","key":"conf/ksem/HuangCDLLL19","doi":"10.1007/978-3-030-29551-6_6","ee":"https://doi.org/10.1007/978-3-030-29551-6_6","url":"https://dblp.org/rec/conf/ksem/HuangCDLLL19"},
+"url":"URL#3702441"
+}
+]
+}
+}
+}

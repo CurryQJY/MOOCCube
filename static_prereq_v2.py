@@ -90,6 +90,13 @@ class ScorerConfig:
         self.epochs = 60
         self.patience = 60                # early-stop on cold item-macro N@10
         self.min_delta = 1e-4
+        # Model-selection criterion. "cold" = legacy pure cold_N@10 (default,
+        # keeps existing control runs bit-reproducible). "cold_hot" = cold with
+        # a hot-floor hinge so hot/overall can't collapse:
+        #   score = cold_N@10 - select_hot_lambda * max(0, hot_floor - hot_N@10)
+        self.select_mode = "cold"
+        self.select_hot_floor = 0.0
+        self.select_hot_lambda = 0.0
 
 
 # --------------------------------------------------------------------------- #
@@ -507,16 +514,26 @@ def train(cfg: ScorerConfig, train_df, val_df, test_df, content_emb, device, out
             total_prereq += float(parts["prereq"].detach())
             nb += 1
         val = evaluate_clean(model, val_df, device, train_pop, user_seen)
-        score = val["cold_N@10"]  # early-stop on cold item-macro N@10
+        cold_score = val["cold_N@10"]  # cold item-macro N@10
+        if cfg.select_mode == "cold_hot":
+            # cold-primary with a hot-floor hinge: hot below the floor is
+            # penalised, hot at/above the floor is free -> hot can't collapse.
+            hot_pen = cfg.select_hot_lambda * max(
+                0.0, cfg.select_hot_floor - val["hot_N@10"]
+            )
+            score = cold_score - hot_pen
+        else:
+            score = cold_score  # legacy pure cold_N@10 early stop
         denom = max(1, nb)
         val_history.append({"epoch": epoch, "loss": total_loss / denom,
                             "main_loss": total_main / denom,
                             "aux_loss": total_aux / denom,
                             "prereq_loss": total_prereq / denom,
-                            "cold_N@10": score,
+                            "cold_N@10": cold_score,
                             "cold_R@10": val["cold_R@10"],
                             "hot_N@10": val["hot_N@10"],
-                            "hot_R@10": val["hot_R@10"]})
+                            "hot_R@10": val["hot_R@10"],
+                            "select_score": score})
         print(f"[epoch {epoch}/{cfg.epochs}] loss={total_loss/denom:.4f} "
               f"main={total_main/denom:.4f} aux={total_aux/denom:.4f} "
               f"prereq={total_prereq/denom:.4f} "
@@ -532,7 +549,7 @@ def train(cfg: ScorerConfig, train_df, val_df, test_df, content_emb, device, out
             epochs_no_improve += 1
             if epochs_no_improve >= cfg.patience:
                 print(f"Early stop at epoch {epoch} (best {best_epoch}, "
-                      f"cold N@10={best_score:.4f})", flush=True)
+                      f"select_mode={cfg.select_mode} score={best_score:.4f})", flush=True)
                 break
 
     if best_state is not None:
@@ -569,6 +586,14 @@ def main():
                     help="override ID-dropout prob (default 0.35 from config)")
     ap.add_argument("--prereq-weight", type=float, default=1.0)
     ap.add_argument("--aux-weight", type=float, default=0.3)
+    ap.add_argument("--select-mode", choices=["cold", "cold_hot"], default="cold",
+                    help="model-selection criterion: 'cold' = legacy pure "
+                         "cold_N@10 (default); 'cold_hot' = cold with a hot-floor "
+                         "hinge so hot/overall can't collapse")
+    ap.add_argument("--select-hot-floor", type=float, default=0.0,
+                    help="hot_N@10 floor for cold_hot mode; hot below it is penalised")
+    ap.add_argument("--select-hot-lambda", type=float, default=0.0,
+                    help="penalty strength for hot below floor in cold_hot mode")
     ap.add_argument("--prereq-path",
                     default="outputs/prereq_target/prereq_index_topk10.pt")
     ap.add_argument("--dry-run", action="store_true")
@@ -593,6 +618,13 @@ def main():
     cfg.prereq_aux_weight = float(args.prereq_weight)
     cfg.aux_weight = float(args.aux_weight)
     cfg.prereq_path = str(args.prereq_path)
+    cfg.select_mode = str(args.select_mode)
+    cfg.select_hot_floor = float(args.select_hot_floor)
+    cfg.select_hot_lambda = float(args.select_hot_lambda)
+    if cfg.select_mode == "cold_hot":
+        print(f"[clean-static] select_mode=cold_hot "
+              f"hot_floor={cfg.select_hot_floor} hot_lambda={cfg.select_hot_lambda}",
+              flush=True)
     if args.dropout_prob is not None:
         cfg.dropout_prob = float(args.dropout_prob)
         print(f"[clean-static] dropout_prob overridden to {cfg.dropout_prob}", flush=True)

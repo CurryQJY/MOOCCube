@@ -194,18 +194,37 @@ def item_llm_score_batch(llm_scores, item_idx, device):
     return torch.tensor(values, dtype=torch.float, device=device)
 
 
-def refined_item_vectors(model, item_idx, llm_s=None, item_batch=1024, force_cold=True):
+def refined_item_vectors(
+    model,
+    item_idx,
+    llm_s=None,
+    item_batch=1024,
+    force_cold=True,
+    user_seen_items=None,
+):
     if llm_s is None:
         llm_s = torch.full((item_idx.numel(),), -1.0, dtype=torch.float, device=item_idx.device)
+    kwargs = {
+        "llm_s": llm_s,
+        "item_batch": item_batch,
+        "force_cold": force_cold,
+    }
+    if user_seen_items is not None:
+        kwargs["user_seen_items"] = user_seen_items
     return model.infer_refined_item_vectors(
         item_idx,
-        llm_s=llm_s,
-        item_batch=item_batch,
-        force_cold=force_cold,
+        **kwargs,
     )
 
 
-def replace_strict_cold_with_refined(model, base_bank, device, llm_scores, item_batch=1024):
+def replace_strict_cold_with_refined(
+    model,
+    base_bank,
+    device,
+    llm_scores,
+    item_batch=1024,
+    user_seen_items=None,
+):
     if not refined_eval_enabled(model):
         return base_bank
     cold_mask = strict_cold_item_mask(model, device)
@@ -224,6 +243,7 @@ def replace_strict_cold_with_refined(model, base_bank, device, llm_scores, item_
                 llm_s=llm_batch,
                 item_batch=item_batch,
                 force_cold=True,
+                user_seen_items=user_seen_items,
             )
             out[idx_batch] = F.normalize(refined, dim=1)
     return out
@@ -256,7 +276,7 @@ def build_all_item_vecs(model, device, llm_scores, item_batch=1024, force_cold=T
     return torch.cat(all_item_vecs, dim=0)
 
 
-def build_eval_item_vecs(model, device, llm_scores, item_batch=1024):
+def build_eval_item_vecs(model, device, llm_scores, item_batch=1024, user_seen_items=None):
     hot_force_cold = False
     cold_force_cold = True
     if getattr(model.cfg, "content_delta_cold_only", False):
@@ -280,12 +300,18 @@ def build_eval_item_vecs(model, device, llm_scores, item_batch=1024):
         hot_bank = build_all_item_vecs(model, device, llm_scores, item_batch=item_batch, force_cold=hot_force_cold)
         cold_bank = build_all_item_vecs(model, device, llm_scores, item_batch=item_batch, force_cold=cold_force_cold)
         if refined_eval_enabled(model):
+            # Historical runs refined without an explicit interaction-history
+            # argument.  V1 alone owns the train-only history contract.
+            refinement_history = (
+                user_seen_items if bool(getattr(model.cfg, "v1_enabled", False)) else None
+            )
             mixed_bank = replace_strict_cold_with_refined(
                 model,
                 hot_bank,
                 device,
                 llm_scores,
                 item_batch=item_batch,
+                user_seen_items=refinement_history,
             )
             return {"cold": mixed_bank, "hot": mixed_bank, "all": mixed_bank}
         return {"cold": cold_bank, "hot": hot_bank, "all": hot_bank}
@@ -304,7 +330,14 @@ def select_eval_item_bank(all_item_vecs, eval_type):
     return all_item_vecs
 
 
-def build_eval_pos_item_vecs(model, item_idx, llm_s, pop_sel, eval_type):
+def build_eval_pos_item_vecs(
+    model,
+    item_idx,
+    llm_s,
+    pop_sel,
+    eval_type,
+    user_seen_items=None,
+):
     if item_idx.numel() < 1:
         return torch.empty((0, model.cfg.emb_dim), device=item_idx.device)
     if refined_eval_enabled(model):
@@ -322,6 +355,7 @@ def build_eval_pos_item_vecs(model, item_idx, llm_s, pop_sel, eval_type):
                 llm_s=llm_s[cold_mask],
                 item_batch=max(1, int(item_idx.numel())),
                 force_cold=True,
+                user_seen_items=user_seen_items,
             )
             pos_vec[cold_mask] = cold_vec
         hot_mask = ~cold_mask
@@ -377,6 +411,9 @@ def evaluate_usim(
     seen_tensor_cache = {}
     seen_index = getattr(model, "user_seen_index", None)
     use_seen_index = seen_index is not None and user_seen_items is not None
+    refinement_history = (
+        user_seen_items if bool(getattr(model.cfg, "v1_enabled", False)) else None
+    )
     export_context = (
         TopKJsonlExporter(export_topk_path, top_k=export_topk_k, metadata=export_topk_metadata)
         if export_topk_path else nullcontext(None)
@@ -385,7 +422,13 @@ def evaluate_usim(
         n_items = model.cfg.n_items
         all_item_idx = torch.arange(n_items, device=device)
         if all_item_vecs is None:
-            all_item_vecs = build_eval_item_vecs(model, device, llm_scores, item_batch=1024)
+            all_item_vecs = build_eval_item_vecs(
+                model,
+                device,
+                llm_scores,
+                item_batch=1024,
+                user_seen_items=refinement_history,
+            )
         item_bank = select_eval_item_bank(all_item_vecs, eval_type)
         for batch, pop, llm in loader:
             if eval_type == "cold":
@@ -421,13 +464,22 @@ def evaluate_usim(
                     else:
                         seen_tensor_cache[uid] = None
             z_u = F.normalize(model.user_proj(model.user_emb(u)), dim=1)
-            pos_llm = build_llm_score_tensor(llm_scores, user_ids, item_ids, device=device)
-            pos_vec = build_eval_pos_item_vecs(model, i, pos_llm, pop_sel, eval_type)
-            pos_scores = (z_u * pos_vec).sum(dim=1)
             if full_ranking:
                 scores = torch.mm(z_u, item_bank.t())
                 row_idx = torch.arange(n_sel, device=device)
-                target_scores = pos_scores.clone()
+                if bool(getattr(model.cfg, "eval_reuse_item_bank", False)):
+                    target_scores = scores[row_idx, i].clone()
+                else:
+                    pos_llm = build_llm_score_tensor(llm_scores, user_ids, item_ids, device=device)
+                    pos_vec = build_eval_pos_item_vecs(
+                        model,
+                        i,
+                        pos_llm,
+                        pop_sel,
+                        eval_type,
+                        user_seen_items=refinement_history,
+                    )
+                    target_scores = (z_u * pos_vec).sum(dim=1)
                 if use_seen_index:
                     seen_mask_full = seen_index.index_select(0, u)
                     scores = scores.masked_fill(seen_mask_full, -1e9)
@@ -451,6 +503,15 @@ def evaluate_usim(
                 scores = model.apply_course_rerank(scores, user_ids, seen_tensor_cache, cand_idx=None, target_pop=pop_sel)
                 target_indices = i
             else:
+                pos_llm = build_llm_score_tensor(llm_scores, user_ids, item_ids, device=device)
+                pos_vec = build_eval_pos_item_vecs(
+                    model,
+                    i,
+                    pos_llm,
+                    pop_sel,
+                    eval_type,
+                    user_seen_items=refinement_history,
+                )
                 n_neg_eff = min(n_neg, max(1, n_items - 1))
                 if use_seen_index:
                     forbidden_full = seen_index.index_select(0, u).clone()

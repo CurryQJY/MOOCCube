@@ -36,6 +36,15 @@ def mooccube_split(seed: int) -> Path:
     return p("outputs", "content_delta_pop5", "static_item_cold_balanced", f"strict_item_cold_balanced_thr1_seed_{seed}")
 
 
+def mooccube_aldi_gpu_rerun(seed: int) -> Path:
+    reruns = {
+        2025: "aldi_official_wsl_gpu_rerun_gate_20260717_192714",
+        2026: "aldi_official_wsl_gpu_rerun_gate_20260717_203453",
+        2027: "aldi_official_wsl_gpu_rerun_gate_20260717_205646",
+    }
+    return p("outputs", "score_parity", f"mooccube_seed{seed}", reruns[seed])
+
+
 def junyi_split(seed: int) -> Path:
     if seed == 2025:
         return p("outputs", "junyi", "official_prereq_seed2025", "strict_item_cold_balanced_thr1_seed_2025")
@@ -95,7 +104,17 @@ def build_specs() -> list[ArtifactSpec]:
             note="Primary table uses the official-protocol teacher80/student120 run.",
         )
         add_specs(specs, "MOOCCube", seed, "CCFCRec", v1, "ccfcrec_static_result.json", "per_item_full_cold_ccfcrec_static.csv")
-        add_specs(specs, "MOOCCube", seed, "ALDI", v1, "aldi_official_static_result.json", "per_item_full_cold_aldi_official_static.csv")
+        add_specs(
+            specs,
+            "MOOCCube",
+            seed,
+            "ALDI",
+            mooccube_aldi_gpu_rerun(seed),
+            "aldi_official_static_result.json",
+            "per_item_full_cold_aldi_official_static.csv",
+            alt_dirs=(v1,),
+            note="Clean WSL GPU rerun replaces the archived hot/overall artifact flagged by score-parity audit.",
+        )
         add_specs(
             specs,
             "MOOCCube",

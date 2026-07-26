@@ -1,0 +1,432 @@
+{
+"result":{
+"query":"cold* start* recommendation* graph*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"27.96"
+},
+"completions":{
+"@total":"3",
+"@computed":"3",
+"@sent":"3",
+"c":[
+{
+"@sc":"60",
+"@dc":"57",
+"@oc":"60",
+"@id":"69849491",
+"text":"graph"
+},
+{
+"@sc":"6",
+"@dc":"6",
+"@oc":"6",
+"@id":"69850418",
+"text":"graphs"
+},
+{
+"@sc":"1",
+"@dc":"1",
+"@oc":"1",
+"@id":"69849976",
+"text":"graphical"
+}
+]
+},
+"hits":{
+"@total":"64",
+"@computed":"64",
+"@sent":"64",
+"@first":"0",
+"hit":[{
+"@score":"5",
+"@id":"414090",
+"info":{"authors":{"author":[{"@pid":"55/7775","text":"Qian Hu"},{"@pid":"30/5594","text":"Lei Tan"},{"@pid":"43/2674","text":"Daofu Gong"},{"@pid":"87/660-163","text":"Yan Li 0163"},{"@pid":"304/9668","text":"Wenjuan Bu"}]},"title":"Graph attention networks with adaptive neighbor graph aggregation for cold-start recommendation.","venue":"J. Intell. Inf. Syst.","volume":"63","number":"1","pages":"293-312","year":"2025","type":"Journal Articles","access":"closed","key":"journals/jiis/HuTGLB25","doi":"10.1007/S10844-024-00888-3","ee":"https://doi.org/10.1007/s10844-024-00888-3","url":"https://dblp.org/rec/journals/jiis/HuTGLB25"},
+"url":"URL#414090"
+},
+{
+"@score":"5",
+"@id":"575591",
+"info":{"authors":{"author":[{"@pid":"282/7319","text":"Keigo Sakurai"},{"@pid":"187/0069","text":"Ren Togo"},{"@pid":"45/6528","text":"Takahiro Ogawa 0001"},{"@pid":"29/5984","text":"Miki Haseyama"}]},"title":"LLM is Knowledge Graph Reasoner: LLM&apos;s Intuition-Aware Knowledge Graph Reasoning for Cold-Start Sequential Recommendation.","venue":"ECIR","pages":"263-278","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/ecir/SakuraiTOH25","doi":"10.1007/978-3-031-88711-6_17","ee":"https://doi.org/10.1007/978-3-031-88711-6_17","url":"https://dblp.org/rec/conf/ecir/SakuraiTOH25"},
+"url":"URL#575591"
+},
+{
+"@score":"5",
+"@id":"1459423",
+"info":{"authors":{"author":[{"@pid":"282/7319","text":"Keigo Sakurai"},{"@pid":"187/0069","text":"Ren Togo"},{"@pid":"45/6528","text":"Takahiro Ogawa 0001"},{"@pid":"29/5984","text":"Miki Haseyama"}]},"title":"LLM is Knowledge Graph Reasoner: LLM&apos;s Intuition-aware Knowledge Graph Reasoning for Cold-start Sequential Recommendation.","venue":"CoRR","volume":"abs/2412.12464","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2412-12464","doi":"10.48550/ARXIV.2412.12464","ee":"https://doi.org/10.48550/arXiv.2412.12464","url":"https://dblp.org/rec/journals/corr/abs-2412-12464"},
+"url":"URL#1459423"
+},
+{
+"@score":"4",
+"@id":"81337",
+"info":{"authors":{"author":[{"@pid":"73/2498","text":"Li Zou"},{"@pid":"66/6320-17","text":"Qi Chen 0017"},{"@pid":"123/9163","text":"Zhiying Deng"},{"@pid":"05/10612-1","text":"Guohui Li 0001"}]},"title":"Enhancing user cold-start recommendation with graph structures and semantic dependencies.","venue":"Knowl. Based Syst.","volume":"336","pages":"115280","year":"2026","type":"Journal Articles","access":"closed","key":"journals/kbs/ZouCDL26","doi":"10.1016/J.KNOSYS.2026.115280","ee":"https://doi.org/10.1016/j.knosys.2026.115280","url":"https://dblp.org/rec/journals/kbs/ZouCDL26"},
+"url":"URL#81337"
+},
+{
+"@score":"4",
+"@id":"165410",
+"info":{"authors":{"author":[{"@pid":"405/3120","text":"Wanna Cui"},{"@pid":"l/HKLam","text":"Hak-Keung Lam"}]},"title":"Enhancing Cold-Start Sequential Recommendation with Large Language Model-derived Semantic Graph and Semantic Distribution Alignment.","venue":"ICSIM","pages":"127-133","year":"2026","type":"Conference and Workshop Papers","access":"open","key":"conf/icsim/CuiL26","doi":"10.1145/3796315.3796333","ee":"https://doi.org/10.1145/3796315.3796333","url":"https://dblp.org/rec/conf/icsim/CuiL26"},
+"url":"URL#165410"
+},
+{
+"@score":"4",
+"@id":"183744",
+"info":{"authors":{"author":[{"@pid":"192/6443","text":"Li-Yang Chang"},{"@pid":"22/981-1","text":"Yuan Fang 0001"},{"@pid":"16/3313","text":"Ming-Feng Tsai"},{"@pid":"03/5904","text":"Chuan-Ju Wang"}]},"title":"G-TRAC: Graph-textual Representations Alignment for Cold-start Recommendations.","venue":"WSDM","pages":"1089-1093","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/Chang0TW26","doi":"10.1145/3773966.3779358","ee":"https://doi.org/10.1145/3773966.3779358","url":"https://dblp.org/rec/conf/wsdm/Chang0TW26"},
+"url":"URL#183744"
+},
+{
+"@score":"4",
+"@id":"202851",
+"info":{"authors":{"author":{"@pid":"413/7102","text":"Parsa Vares"}},"title":"Autodiscover: A reinforcement learning recommendation system for the cold-start imbalance challenge in active learning, powered by graph-aware thompson sampling.","venue":"CoRR","volume":"abs/2602.05087","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2602-05087","doi":"10.48550/ARXIV.2602.05087","ee":"https://doi.org/10.48550/arXiv.2602.05087","url":"https://dblp.org/rec/journals/corr/abs-2602-05087"},
+"url":"URL#202851"
+},
+{
+"@score":"4",
+"@id":"268500",
+"info":{"authors":{"author":[{"@pid":"04/8266","text":"Anh Truong"},{"@pid":"356/8105","text":"John Trenkle"},{"@pid":"91/10844","text":"Yuanbo Chen"},{"@pid":"276/6257","text":"Honghong Zhao"},{"@pid":"205/2940","text":"Abdullah Alchihabi"},{"@pid":"439/6883","text":"Effy Fang"},{"@pid":"438/1161","text":"Michael Tamir"}]},"title":"Bridging the Semantic-Collaborative Gap: An Asymmetric Graph Architecture for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2606.06225","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2606-06225","doi":"10.48550/ARXIV.2606.06225","ee":"https://doi.org/10.48550/arXiv.2606.06225","url":"https://dblp.org/rec/journals/corr/abs-2606-06225"},
+"url":"URL#268500"
+},
+{
+"@score":"4",
+"@id":"311453",
+"info":{"authors":{"author":[{"@pid":"63/563","text":"Kwang Hee Lee"},{"@pid":"124/2794","text":"Hyun Ji Jeong"},{"@pid":"178/0924","text":"Myoung Ho Kim"}]},"title":"A cold-start aware group recommendation method based on an augmented graph and knowledge distillation.","venue":"Appl. Soft Comput.","volume":"180","pages":"113341","year":"2025","type":"Journal Articles","access":"closed","key":"journals/asc/LeeJK25","doi":"10.1016/J.ASOC.2025.113341","ee":"https://doi.org/10.1016/j.asoc.2025.113341","url":"https://dblp.org/rec/journals/asc/LeeJK25"},
+"url":"URL#311453"
+},
+{
+"@score":"4",
+"@id":"399711",
+"info":{"authors":{"author":[{"@pid":"156/7403","text":"Mengmeng Sun"},{"@pid":"117/2762","text":"Yueshen Xu"},{"@pid":"392/6312","text":"Zeyu Tan"},{"@pid":"87/10304","text":"Dianlong You"},{"@pid":"11/1266-7","text":"Zhen Chen 0007"}]},"title":"Multi-level graph contrastive learning for cold-start recommendation in mashup development.","venue":"Inf. Sci.","volume":"717","pages":"122319","year":"2025","type":"Journal Articles","access":"closed","key":"journals/isci/SunXTYC25","doi":"10.1016/J.INS.2025.122319","ee":"https://doi.org/10.1016/j.ins.2025.122319","url":"https://dblp.org/rec/journals/isci/SunXTYC25"},
+"url":"URL#399711"
+},
+{
+"@score":"4",
+"@id":"478853",
+"info":{"authors":{"author":[{"@pid":"386/7218","text":"Simon Nandwa Anjiri"},{"@pid":"25/11278","text":"Derui Ding"},{"@pid":"09/1398-2","text":"Yan Song 0002"},{"@pid":"10/5415-4","text":"Ying Sun 0004"}]},"title":"A Multiplex Hypergraph Attribute-Based Graph Collaborative Filtering for Cold-Start POI Recommendation.","venue":"IEEE Trans. Big Data","volume":"11","number":"5","pages":"2401-2416","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tbd/AnjiriDSS25","doi":"10.1109/TBDATA.2025.3533908","ee":"https://doi.org/10.1109/TBDATA.2025.3533908","url":"https://dblp.org/rec/journals/tbd/AnjiriDSS25"},
+"url":"URL#478853"
+},
+{
+"@score":"4",
+"@id":"489156",
+"info":{"authors":{"author":[{"@pid":"49/4941","text":"Zhipeng Zhang"},{"@pid":"416/8962","text":"Youfu Zhu"},{"@pid":"62/6234","text":"Mianxiong Dong"},{"@pid":"18/4822","text":"Kaoru Ota"},{"@pid":"57/3892-5","text":"Yao Zhang 0005"},{"@pid":"06/3200","text":"Yonggong Ren"}]},"title":"Embedding Guarantor: Knowledge-Enhanced Graph Learning for New Item Cold-Start Recommendation.","venue":"IEEE Trans. Emerg. Top. Comput. Intell.","volume":"9","number":"5","pages":"3311-3324","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tetci/ZhangZDOZR25","doi":"10.1109/TETCI.2024.3516087","ee":"https://doi.org/10.1109/TETCI.2024.3516087","url":"https://dblp.org/rec/journals/tetci/ZhangZDOZR25"},
+"url":"URL#489156"
+},
+{
+"@score":"4",
+"@id":"505707",
+"info":{"authors":{"author":[{"@pid":"97/5351-1","text":"Huiting Liu 0001"},{"@pid":"147/9092","text":"Wei Zhang 0098"},{"@pid":"60/3675-1","text":"Pei-Pei Li 0001"},{"@pid":"93/4324-10","text":"Peng Zhao 0010"},{"@pid":"59/4107","text":"Xindong Wu 0001"}]},"title":"Causal Meta-learning with Multi-view Graphs for Cold-start Recommendation.","venue":"ACM Trans. Knowl. Discov. Data","volume":"19","number":"7","pages":"138:1-138:29","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tkdd/LiuZLZW25","doi":"10.1145/3732943","ee":"https://doi.org/10.1145/3732943","url":"https://dblp.org/rec/journals/tkdd/LiuZLZW25"},
+"url":"URL#505707"
+},
+{
+"@score":"4",
+"@id":"513964",
+"info":{"authors":{"author":[{"@pid":"94/9625-2","text":"Di Han 0002"},{"@pid":"318/6366","text":"Xiaotian Jing"},{"@pid":"01/6801","text":"Yijun Chen"},{"@pid":"12/6911","text":"Junmin Liu"},{"@pid":"133/2874","text":"Kai Liao"},{"@pid":"29/4801","text":"Wenting Li"}]},"title":"Cold-Start Recommendation based on Knowledge Graph and Meta-Learning under Positive and Negative sampling.","venue":"Trans. Recomm. Syst.","volume":"3","number":"3","pages":"33:1-33:24","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tors/HanJCLLL25","doi":"10.1145/3654804","ee":"https://doi.org/10.1145/3654804","url":"https://dblp.org/rec/journals/tors/HanJCLLL25"},
+"url":"URL#513964"
+},
+{
+"@score":"4",
+"@id":"527981",
+"info":{"authors":{"author":[{"@pid":"402/0739","text":"Songyuan Lei"},{"@pid":"345/2029","text":"Xinglong Chang"},{"@pid":"228/2618","text":"Zhizhi Yu"},{"@pid":"48/8875","text":"Dongxiao He"},{"@pid":"294/0972","text":"Cuiying Huo"},{"@pid":"49/5065","text":"Jianrong Wang"},{"@pid":"67/1861-1","text":"Di Jin 0001"}]},"title":"Feature-Structure Adaptive Completion Graph Neural Network for Cold-start Recommendation.","venue":"AAAI","pages":"12022-12030","year":"2025","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/LeiCYHHW025","doi":"10.1609/AAAI.V39I11.33309","ee":"https://doi.org/10.1609/aaai.v39i11.33309","url":"https://dblp.org/rec/conf/aaai/LeiCYHHW025"},
+"url":"URL#527981"
+},
+{
+"@score":"4",
+"@id":"527999",
+"info":{"authors":{"author":[{"@pid":"303/8026","text":"Hourun Li"},{"@pid":"47/6959-14","text":"Yifan Wang 0014"},{"@pid":"176/5397-1","text":"Zhiping Xiao 0001"},{"@pid":"22/667","text":"Jia Yang"},{"@pid":"04/4203","text":"Changling Zhou"},{"@pid":"73/1844-4","text":"Ming Zhang 0004"},{"@pid":"171/4781-1","text":"Wei Ju 0001"}]},"title":"DisCo: Graph-Based Disentangled Contrastive Learning for Cold-Start Cross-Domain Recommendation.","venue":"AAAI","pages":"12049-12057","year":"2025","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/Li00YZZJ25","doi":"10.1609/AAAI.V39I11.33312","ee":"https://doi.org/10.1609/aaai.v39i11.33312","url":"https://dblp.org/rec/conf/aaai/Li00YZZJ25"},
+"url":"URL#527999"
+},
+{
+"@score":"4",
+"@id":"602803",
+"info":{"authors":{"author":[{"@pid":"18/4944","text":"Zhenglong Li"},{"@pid":"12/6794","text":"Ruiqi Luo"},{"@pid":"191/1107","text":"Bangchao Wang"},{"@pid":"73/2252","text":"Lin Li"},{"@pid":"87/6023","text":"Xian Zhong"}]},"title":"LGNet: Linear Graph Representation for Efficient Cold-Start Recommendations.","venue":"ICASSP","pages":"1-5","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/icassp/LiLWLZ25","doi":"10.1109/ICASSP49660.2025.10888290","ee":"https://doi.org/10.1109/ICASSP49660.2025.10888290","url":"https://dblp.org/rec/conf/icassp/LiLWLZ25"},
+"url":"URL#602803"
+},
+{
+"@score":"4",
+"@id":"618730",
+"info":{"authors":{"author":[{"@pid":"434/4088","text":"M. L. Rathnayaka"},{"@pid":"434/4114","text":"K. L. P. P. Liyanaarachchi"}]},"title":"Enhancing Fashion Recommendations Through Multimodal Graph Neural Networks with Cold-Start User Handling.","venue":"ICIIS","pages":"7-12","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/iciis/RathnayakaL25","doi":"10.1109/ICIIS69028.2026.11450909","ee":"https://doi.org/10.1109/ICIIS69028.2026.11450909","url":"https://dblp.org/rec/conf/iciis/RathnayakaL25"},
+"url":"URL#618730"
+},
+{
+"@score":"4",
+"@id":"839288",
+"info":{"authors":{"author":[{"@pid":"321/8096","text":"Jinze Wang"},{"@pid":"82/10609-63","text":"Lu Zhang 0063"},{"@pid":"419/7237","text":"Yiyang Cui"},{"@pid":"213/0861","text":"Zhishu Shen"},{"@pid":"195/8270","text":"Xingjun Ma"},{"@pid":"20/4460","text":"Jiong Jin"},{"@pid":"213/9816","text":"Tiehua Zhang"}]},"title":"Do We Really Need SFT? Prompt-as-Policy over Knowledge Graphs for Cold-start Next POI Recommendation.","venue":"CoRR","volume":"abs/2510.08012","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2510-08012","doi":"10.48550/ARXIV.2510.08012","ee":"https://doi.org/10.48550/arXiv.2510.08012","url":"https://dblp.org/rec/journals/corr/abs-2510-08012"},
+"url":"URL#839288"
+},
+{
+"@score":"4",
+"@id":"868752",
+"info":{"authors":{"author":[{"@pid":"384/4208","text":"Mabiao Long"},{"@pid":"197/1757","text":"Jiaxi Liu"},{"@pid":"72/1022","text":"Yufeng Li"},{"@pid":"46/5036-3","text":"Hao Xiong 0003"},{"@pid":"60/7949","text":"Junchi Yan"},{"@pid":"291/6630","text":"Kefan Wang"},{"@pid":"00/3090","text":"Yi Cao"},{"@pid":"72/9660","text":"Jiandong Ding"}]},"title":"Towards Practical Large-scale Dynamical Heterogeneous Graph Embedding: Cold-start Resilient Recommendation.","venue":"CoRR","volume":"abs/2512.13120","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2512-13120","doi":"10.48550/ARXIV.2512.13120","ee":"https://doi.org/10.48550/arXiv.2512.13120","url":"https://dblp.org/rec/journals/corr/abs-2512-13120"},
+"url":"URL#868752"
+},
+{
+"@score":"4",
+"@id":"974176",
+"info":{"authors":{"author":[{"@pid":"62/1272","text":"Hui Pan"},{"@pid":"97/6043","text":"Senlin Luo"},{"@pid":"328/7149","text":"Xinshuai Li"},{"@pid":"21/1355","text":"Limin Pan"},{"@pid":"196/7939","text":"Zhouting Wu"}]},"title":"Meta-learning on dynamic node clustering knowledge graph for cold-start recommendation.","venue":"Neurocomputing","volume":"602","pages":"128192","year":"2024","type":"Journal Articles","access":"closed","key":"journals/ijon/PanLLPW24","doi":"10.1016/J.NEUCOM.2024.128192","ee":"https://doi.org/10.1016/j.neucom.2024.128192","url":"https://dblp.org/rec/journals/ijon/PanLLPW24"},
+"url":"URL#974176"
+},
+{
+"@score":"4",
+"@id":"1011235",
+"info":{"authors":{"author":[{"@pid":"261/8164","text":"Yuanzhen Xie"},{"@pid":"131/9590","text":"Chenyun Yu"},{"@pid":"368/1756","text":"Xinzhou Jin"},{"@pid":"48/2700-5","text":"Lei Cheng 0005"},{"@pid":"04/2380-21","text":"Bo Hu 0021"},{"@pid":"06/6214","text":"Zang Li"}]},"title":"Heterogeneous graph contrastive learning for cold start cross-domain recommendation.","venue":"Knowl. Based Syst.","volume":"299","pages":"112054","year":"2024","type":"Journal Articles","access":"closed","key":"journals/kbs/XieYJCHL24","doi":"10.1016/J.KNOSYS.2024.112054","ee":"https://doi.org/10.1016/j.knosys.2024.112054","url":"https://dblp.org/rec/journals/kbs/XieYJCHL24"},
+"url":"URL#1011235"
+},
+{
+"@score":"4",
+"@id":"1127657",
+"info":{"authors":{"author":[{"@pid":"175/3324-62","text":"Hao Chen 0062"},{"@pid":"16/4505-12","text":"Yu Yang 0012"},{"@pid":"331/2167","text":"Yuanchen Bei"},{"@pid":"246/2190","text":"Zefan Wang"},{"@pid":"29/3925","text":"Yue Xu"},{"@pid":"163/3996","text":"Feiran Huang"}]},"title":"Graph Neural Patching for Cold-Start Recommendations.","venue":"ADC","pages":"334-346","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/adc/ChenYBWXH24","doi":"10.1007/978-981-96-1242-0_25","ee":"https://doi.org/10.1007/978-981-96-1242-0_25","url":"https://dblp.org/rec/conf/adc/ChenYBWXH24"},
+"url":"URL#1127657"
+},
+{
+"@score":"4",
+"@id":"1158292",
+"info":{"authors":{"author":[{"@pid":"74/3301","text":"Yejin Kim"},{"@pid":"300/9568","text":"Scott Rome"},{"@pid":"02/440","text":"Kevin Foley"},{"@pid":"372/7392","text":"Mayur Nankani"},{"@pid":"360/6550","text":"Rimon Melamed"},{"@pid":"65/3097","text":"Javier Morales"},{"@pid":"372/7079","text":"Abhay Yadav"},{"@pid":"236/4134","text":"Maria Peifer"},{"@pid":"185/6506","text":"Sardar Hamidian"},{"@pid":"39/560","text":"H. Howie Huang"}]},"title":"Improving Content Recommendation: Knowledge Graph-Based Semantic Contrastive Learning for Diversity and Cold-Start Users.","venue":"LREC/COLING","pages":"8743-8755","year":"2024","type":"Conference and Workshop Papers","access":"open","key":"conf/coling/KimRFNMMYPHH24","ee":"https://aclanthology.org/2024.lrec-main.766","url":"https://dblp.org/rec/conf/coling/KimRFNMMYPHH24"},
+"url":"URL#1158292"
+},
+{
+"@score":"4",
+"@id":"1207509",
+"info":{"authors":{"author":[{"@pid":"132/5158","text":"Wenbo Wang"},{"@pid":"94/4500","text":"Ben Chen"},{"@pid":"33/4882","text":"Bingquan Liu"},{"@pid":"24/3969","text":"Xinxin Wang"},{"@pid":"156/1159","text":"Luwei Yang"},{"@pid":"37/6235","text":"Wen Jiang"},{"@pid":"06/4621","text":"Wei Ning"},{"@pid":"58/2489","text":"Jian Guan"}]},"title":"Mutual Information Assisted Graph Convolution Network for Cold-Start Recommendation.","venue":"ICASSP","pages":"6785-6789","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/icassp/WangCLWYJNG24","doi":"10.1109/ICASSP48485.2024.10447656","ee":"https://doi.org/10.1109/ICASSP48485.2024.10447656","url":"https://dblp.org/rec/conf/icassp/WangCLWYJNG24"},
+"url":"URL#1207509"
+},
+{
+"@score":"4",
+"@id":"1218826",
+"info":{"authors":{"author":[{"@pid":"359/0820","text":"Hulingxiao He"},{"@pid":"195/8195","text":"Xiangteng He"},{"@pid":"13/3073-1","text":"Yuxin Peng 0001"},{"@pid":"117/7973","text":"Zifei Shan"},{"@pid":"54/3643","text":"Xin Su"}]},"title":"Firzen: Firing Strict Cold-Start Items with Frozen Heterogeneous and Homogeneous Graphs for Recommendation.","venue":"ICDE","pages":"4657-4670","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/icde/HeHPSS24","doi":"10.1109/ICDE60146.2024.00354","ee":"https://doi.org/10.1109/ICDE60146.2024.00354","url":"https://dblp.org/rec/conf/icde/HeHPSS24"},
+"url":"URL#1218826"
+},
+{
+"@score":"4",
+"@id":"1219481",
+"info":{"authors":{"author":[{"@pid":"74/2397","text":"Zhen Li"},{"@pid":"76/2086","text":"Jibin Wang"},{"@pid":"29/6497","text":"Zhuo Chen"},{"@pid":"60/1724","text":"Kun Wu"},{"@pid":"398/2114","text":"Yuanzhen Wei"},{"@pid":"51/944","text":"Hai Huang"}]},"title":"Adaptive Graph Neural Networks for Cold-Start Multimedia Recommendation.","venue":"ICDM","pages":"201-210","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/icdm/LiWCWWH24","doi":"10.1109/ICDM59182.2024.00027","ee":"https://doi.org/10.1109/ICDM59182.2024.00027","url":"https://dblp.org/rec/conf/icdm/LiWCWWH24"},
+"url":"URL#1219481"
+},
+{
+"@score":"4",
+"@id":"1309397",
+"info":{"authors":{"author":[{"@pid":"376/1086","text":"Jinri Kim"},{"@pid":"268/5707","text":"Eungi Kim"},{"@pid":"376/0911","text":"Kwangeun Yeo"},{"@pid":"342/8426","text":"Yujin Jeon"},{"@pid":"62/79","text":"Chanwoo Kim"},{"@pid":"124/8683","text":"Sewon Lee"},{"@pid":"77/1319","text":"Joonseok Lee"}]},"title":"Content-based Graph Reconstruction for Cold-start Item Recommendation.","venue":"SIGIR","pages":"1263-1273","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/KimKYJKLL24","doi":"10.1145/3626772.3657801","ee":"https://doi.org/10.1145/3626772.3657801","url":"https://dblp.org/rec/conf/sigir/KimKYJKLL24"},
+"url":"URL#1309397"
+},
+{
+"@score":"4",
+"@id":"1367277",
+"info":{"authors":{"author":[{"@pid":"74/3301","text":"Yejin Kim"},{"@pid":"300/9568","text":"Scott Rome"},{"@pid":"02/440","text":"Kevin Foley"},{"@pid":"372/7392","text":"Mayur Nankani"},{"@pid":"360/6550","text":"Rimon Melamed"},{"@pid":"65/3097","text":"Javier Morales"},{"@pid":"372/7079","text":"Abhay Yadav"},{"@pid":"236/4134","text":"Maria Peifer"},{"@pid":"185/6506","text":"Sardar Hamidian"},{"@pid":"39/560","text":"H. Howie Huang"}]},"title":"Improving Content Recommendation: Knowledge Graph-Based Semantic Contrastive Learning for Diversity and Cold-Start Users.","venue":"CoRR","volume":"abs/2403.18667","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2403-18667","doi":"10.48550/ARXIV.2403.18667","ee":"https://doi.org/10.48550/arXiv.2403.18667","url":"https://dblp.org/rec/journals/corr/abs-2403-18667"},
+"url":"URL#1367277"
+},
+{
+"@score":"4",
+"@id":"1392991",
+"info":{"authors":{"author":[{"@pid":"213/7412","text":"Jibril Frej"},{"@pid":"365/3493","text":"Marta Knezevic"},{"@pid":"95/11458","text":"Tanja Käser"}]},"title":"Graph Reasoning for Explainable Cold Start Recommendation.","venue":"CoRR","volume":"abs/2406.07420","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2406-07420","doi":"10.48550/ARXIV.2406.07420","ee":"https://doi.org/10.48550/arXiv.2406.07420","url":"https://dblp.org/rec/journals/corr/abs-2406-07420"},
+"url":"URL#1392991"
+},
+{
+"@score":"4",
+"@id":"1434177",
+"info":{"authors":{"author":[{"@pid":"359/0820","text":"Hulingxiao He"},{"@pid":"195/8195","text":"Xiangteng He"},{"@pid":"13/3073-1","text":"Yuxin Peng 0001"},{"@pid":"117/7973","text":"Zifei Shan"},{"@pid":"54/3643","text":"Xin Su"}]},"title":"Firzen: Firing Strict Cold-Start Items with Frozen Heterogeneous and Homogeneous Graphs for Recommendation.","venue":"CoRR","volume":"abs/2410.07654","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2410-07654","doi":"10.48550/ARXIV.2410.07654","ee":"https://doi.org/10.48550/arXiv.2410.07654","url":"https://dblp.org/rec/journals/corr/abs-2410-07654"},
+"url":"URL#1434177"
+},
+{
+"@score":"4",
+"@id":"1437955",
+"info":{"authors":{"author":[{"@pid":"175/3324-62","text":"Hao Chen 0062"},{"@pid":"16/4505-12","text":"Yu Yang 0012"},{"@pid":"331/2167","text":"Yuanchen Bei"},{"@pid":"246/2190","text":"Zefan Wang"},{"@pid":"29/3925","text":"Yue Xu"},{"@pid":"163/3996","text":"Feiran Huang"}]},"title":"Graph Neural Patching for Cold-Start Recommendations.","venue":"CoRR","volume":"abs/2410.14241","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2410-14241","doi":"10.48550/ARXIV.2410.14241","ee":"https://doi.org/10.48550/arXiv.2410.14241","url":"https://dblp.org/rec/journals/corr/abs-2410-14241"},
+"url":"URL#1437955"
+},
+{
+"@score":"4",
+"@id":"1460673",
+"info":{"authors":{"author":[{"@pid":"303/8026","text":"Hourun Li"},{"@pid":"47/6959-14","text":"Yifan Wang 0014"},{"@pid":"176/5397-1","text":"Zhiping Xiao 0001"},{"@pid":"22/667","text":"Jia Yang"},{"@pid":"04/4203","text":"Changling Zhou"},{"@pid":"73/1844-4","text":"Ming Zhang 0004"},{"@pid":"171/4781-1","text":"Wei Ju 0001"}]},"title":"DisCo: Graph-Based Disentangled Contrastive Learning for Cold-Start Cross-Domain Recommendation.","venue":"CoRR","volume":"abs/2412.15005","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2412-15005","doi":"10.48550/ARXIV.2412.15005","ee":"https://doi.org/10.48550/arXiv.2412.15005","url":"https://dblp.org/rec/journals/corr/abs-2412-15005"},
+"url":"URL#1460673"
+},
+{
+"@score":"4",
+"@id":"1566130",
+"info":{"authors":{"author":[{"@pid":"340/7859","text":"Honglin Shu"},{"@pid":"c/KFLChung","text":"Fu-Lai Chung"},{"@pid":"48/8628","text":"Da Lin"}]},"title":"MetaGC-MC: A graph-based meta-learning approach to cold-start recommendation with/without auxiliary information.","venue":"Inf. Sci.","volume":"623","pages":"791-811","year":"2023","type":"Journal Articles","access":"closed","key":"journals/isci/ShuCL23","doi":"10.1016/J.INS.2022.12.030","ee":"https://doi.org/10.1016/j.ins.2022.12.030","url":"https://dblp.org/rec/journals/isci/ShuCL23"},
+"url":"URL#1566130"
+},
+{
+"@score":"4",
+"@id":"1590278",
+"info":{"authors":{"author":[{"@pid":"97/5351-1","text":"Huiting Liu 0001"},{"@pid":"181/2817-121","text":"Lei Wang 0121"},{"@pid":"60/3675-1","text":"Peipei Li 0001"},{"@pid":"12/654","text":"Cheng Qian"},{"@pid":"93/4324-10","text":"Peng Zhao 0010"},{"@pid":"59/4107","text":"Xindong Wu 0001"}]},"title":"Relation-propagation meta-learning on an explicit preference graph for cold-start recommendation.","venue":"Knowl. Based Syst.","volume":"272","pages":"110579","year":"2023","type":"Journal Articles","access":"closed","key":"journals/kbs/LiuW0QZ023","doi":"10.1016/J.KNOSYS.2023.110579","ee":"https://doi.org/10.1016/j.knosys.2023.110579","url":"https://dblp.org/rec/journals/kbs/LiuW0QZ023"},
+"url":"URL#1590278"
+},
+{
+"@score":"4",
+"@id":"1670159",
+"info":{"authors":{"author":[{"@pid":"231/8856-2","text":"Yuntao Du 0002"},{"@pid":"227/4791","text":"Xinjun Zhu"},{"@pid":"69/157-1","text":"Lu Chen 0001"},{"@pid":"241/7962","text":"Ziquan Fang"},{"@pid":"80/2651","text":"Yunjun Gao"}]},"title":"MetaKG: Meta-Learning on Knowledge Graph for Cold-Start Recommendation.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"35","number":"10","pages":"9850-9863","year":"2023","type":"Journal Articles","access":"closed","key":"journals/tkde/DuZCFG23","doi":"10.1109/TKDE.2022.3168775","ee":"https://doi.org/10.1109/TKDE.2022.3168775","url":"https://dblp.org/rec/journals/tkde/DuZCFG23"},
+"url":"URL#1670159"
+},
+{
+"@score":"4",
+"@id":"1675610",
+"info":{"authors":{"author":[{"@pid":"205/7620","text":"Desheng Cai"},{"@pid":"138/4249","text":"Shengsheng Qian"},{"@pid":"119/0328","text":"Quan Fang"},{"@pid":"28/441-16","text":"Jun Hu 0016"},{"@pid":"85/1301","text":"Changsheng Xu"}]},"title":"User Cold-Start Recommendation via Inductive Heterogeneous Graph Neural Network.","venue":"ACM Trans. Inf. Syst.","volume":"41","number":"3","pages":"64:1-64:27","year":"2023","type":"Journal Articles","access":"closed","key":"journals/tois/CaiQFHX23","doi":"10.1145/3560487","ee":"https://doi.org/10.1145/3560487","url":"https://dblp.org/rec/journals/tois/CaiQFHX23"},
+"url":"URL#1675610"
+},
+{
+"@score":"4",
+"@id":"1689951",
+"info":{"authors":{"author":[{"@pid":"356/2084","text":"Tran-Ngoc-Linh Nguyen"},{"@pid":"356/2133","text":"Chi-Dung Vu"},{"@pid":"356/1977","text":"Hoang-Ngan Le"},{"@pid":"356/2160","text":"Anh-Dung Hoang"},{"@pid":"119/2170","text":"Xuan Hieu Phan"},{"@pid":"01/1849","text":"Quang-Thuy Ha"},{"@pid":"73/8938","text":"Hoang-Quynh Le"},{"@pid":"58/8938","text":"Mai-Vu Tran"}]},"title":"GIFT4Rec: An Effective Side Information Fusion Technique Apply to Graph Neural Network for Cold-Start Recommendation.","venue":"ACIIDS","pages":"334-345","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/aciids/NguyenVLHPHLT23","doi":"10.1007/978-981-99-5834-4_27","ee":"https://doi.org/10.1007/978-981-99-5834-4_27","url":"https://dblp.org/rec/conf/aciids/NguyenVLHPHLT23"},
+"url":"URL#1689951"
+},
+{
+"@score":"4",
+"@id":"1693922",
+"info":{"authors":{"author":[{"@pid":"165/2025","text":"Stanislav Kuznetsov"},{"@pid":"00/3917","text":"Pavel Kordík"}]},"title":"Overcoming the Cold-Start Problem in Recommendation Systems with Ontologies and Knowledge Graphs.","venue":"ADBIS","pages":"591-603","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/adbis/KuznetsovK23","doi":"10.1007/978-3-031-42941-5_52","ee":"https://doi.org/10.1007/978-3-031-42941-5_52","url":"https://dblp.org/rec/conf/adbis/KuznetsovK23"},
+"url":"URL#1693922"
+},
+{
+"@score":"4",
+"@id":"1718743",
+"info":{"authors":{"author":[{"@pid":"35/2899-8","text":"Han Liu 0008"},{"@pid":"226/3955","text":"Hongxiang Lin"},{"@pid":"31/2303-3","text":"Xiaotong Zhang 0003"},{"@pid":"85/10856","text":"Fenglong Ma"},{"@pid":"13/3715","text":"Hongyang Chen 0001"},{"@pid":"w/LeiWang5","text":"Lei Wang 0005"},{"@pid":"55/6749-5","text":"Hong Yu 0005"},{"@pid":"40/4372","text":"Xianchao Zhang 0001"}]},"title":"Boosting Meta-Learning Cold-Start Recommendation with Graph Neural Network.","venue":"CIKM","pages":"4105-4109","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/LiuLZMCWYZ23","doi":"10.1145/3583780.3615283","ee":"https://doi.org/10.1145/3583780.3615283","url":"https://dblp.org/rec/conf/cikm/LiuLZMCWYZ23"},
+"url":"URL#1718743"
+},
+{
+"@score":"4",
+"@id":"1761245",
+"info":{"authors":{"author":[{"@pid":"357/4070","text":"Eric Behar"},{"@pid":"241/9678","text":"Julien Romero"},{"@pid":"88/5898","text":"Amel Bouzeghoub"},{"@pid":"47/222","text":"Katarzyna Wegrzyn-Wolska"}]},"title":"Tackling Cold Start for Job Recommendation with Heterogeneous Graphs.","venue":"HR@RecSys","year":"2023","type":"Conference and Workshop Papers","access":"open","key":"conf/hr-recsys/BeharRBW23","ee":"https://ceur-ws.org/Vol-3490/RecSysHR2023-paper_9.pdf","url":"https://dblp.org/rec/conf/hr-recsys/BeharRBW23"},
+"url":"URL#1761245"
+},
+{
+"@score":"4",
+"@id":"1782153",
+"info":{"authors":{"author":[{"@pid":"17/5583","text":"Tieyun Qian"},{"@pid":"225/6908","text":"Yile Liang"},{"@pid":"181/2689-1","text":"Qing Li 0001"},{"@pid":"262/1686-1","text":"Hui Xiong 0001"}]},"title":"Attribute Graph Neural Networks for Strict Cold Start Recommendation : Extended Abstract.","venue":"ICDE","pages":"3783-3784","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/icde/QianL0023","doi":"10.1109/ICDE55515.2023.00318","ee":"https://doi.org/10.1109/ICDE55515.2023.00318","url":"https://dblp.org/rec/conf/icde/QianL0023"},
+"url":"URL#1782153"
+},
+{
+"@score":"4",
+"@id":"1782988",
+"info":{"authors":{"author":[{"@pid":"80/920-5","text":"Shen Wang 0005"},{"@pid":"165/2097-1","text":"Ziwei Fan 0001"},{"@pid":"76/7727","text":"Jibing Gong"},{"@pid":"160/5948","text":"Xiaokai Wei"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"}]},"title":"IGCN: Item Influence Enhanced Graph Convolution Networks for Recommendation of Cold-Start Items.","venue":"ICDM","pages":"1516-1525","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/icdm/WangFGWY23","doi":"10.1109/ICDMW60847.2023.00193","ee":"https://doi.org/10.1109/ICDMW60847.2023.00193","url":"https://dblp.org/rec/conf/icdm/WangFGWY23"},
+"url":"URL#1782988"
+},
+{
+"@score":"4",
+"@id":"1858846",
+"info":{"authors":{"author":[{"@pid":"256/8286","text":"Yuwei Cao"},{"@pid":"260/5064","text":"Liangwei Yang"},{"@pid":"82/4206-52","text":"Chen Wang 0052"},{"@pid":"90/9499-1","text":"Zhiwei Liu 0001"},{"@pid":"69/7742-1","text":"Hao Peng 0001"},{"@pid":"191/9432","text":"Chenyu You"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"}]},"title":"Multi-task Item-attribute Graph Pre-training for Strict Cold-start Item Recommendation.","venue":"RecSys","pages":"322-333","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/recsys/CaoYWLPYY23","doi":"10.1145/3604915.3608806","ee":"https://doi.org/10.1145/3604915.3608806","url":"https://dblp.org/rec/conf/recsys/CaoYWLPYY23"},
+"url":"URL#1858846"
+},
+{
+"@score":"4",
+"@id":"1941003",
+"info":{"authors":{"author":[{"@pid":"256/8286","text":"Yuwei Cao"},{"@pid":"260/5064","text":"Liangwei Yang"},{"@pid":"82/4206-18","text":"Chen Wang 0018"},{"@pid":"90/9499-1","text":"Zhiwei Liu 0001"},{"@pid":"69/7742-1","text":"Hao Peng 0001"},{"@pid":"191/9432","text":"Chenyu You"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"}]},"title":"Multi-task Item-attribute Graph Pre-training for Strict Cold-start Item Recommendation.","venue":"CoRR","volume":"abs/2306.14462","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2306-14462","doi":"10.48550/ARXIV.2306.14462","ee":"https://doi.org/10.48550/arXiv.2306.14462","url":"https://dblp.org/rec/journals/corr/abs-2306-14462"},
+"url":"URL#1941003"
+},
+{
+"@score":"4",
+"@id":"2202006",
+"info":{"authors":{"author":[{"@pid":"17/5583","text":"Tieyun Qian"},{"@pid":"225/6908","text":"Yile Liang"},{"@pid":"181/2689-1","text":"Qing Li 0001"},{"@pid":"262/1686-1","text":"Hui Xiong 0001"}]},"title":"Attribute Graph Neural Networks for Strict Cold Start Recommendation.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"34","number":"8","pages":"3597-3610","year":"2022","type":"Journal Articles","access":"closed","key":"journals/tkde/QianLLX22","doi":"10.1109/TKDE.2020.3038234","ee":"https://doi.org/10.1109/TKDE.2020.3038234","url":"https://dblp.org/rec/journals/tkde/QianLLX22"},
+"url":"URL#2202006"
+},
+{
+"@score":"4",
+"@id":"2229302",
+"info":{"authors":{"author":[{"@pid":"340/0718","text":"Wenzheng Sui"},{"@pid":"38/10412","text":"Xiaoxia Jiang"},{"@pid":"94/255","text":"Weiyi Ge"},{"@pid":"52/173","text":"Wei Hu"}]},"title":"Mixed-Order Heterogeneous Graph Pre-training for Cold-Start Recommendation.","venue":"APWeb/WAIM","pages":"182-190","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/apweb/SuiJGH22","doi":"10.1007/978-3-031-25201-3_14","ee":"https://doi.org/10.1007/978-3-031-25201-3_14","url":"https://dblp.org/rec/conf/apweb/SuiJGH22"},
+"url":"URL#2229302"
+},
+{
+"@score":"4",
+"@id":"2409462",
+"info":{"authors":{"author":[{"@pid":"231/8856-2","text":"Yuntao Du 0002"},{"@pid":"227/4791","text":"Xinjun Zhu"},{"@pid":"69/157-1","text":"Lu Chen 0001"},{"@pid":"241/7962","text":"Ziquan Fang"},{"@pid":"80/2651","text":"Yunjun Gao"}]},"title":"MetaKG: Meta-learning on Knowledge Graph for Cold-start Recommendation.","venue":"CoRR","volume":"abs/2202.03851","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2202-03851","ee":"https://arxiv.org/abs/2202.03851","url":"https://dblp.org/rec/journals/corr/abs-2202-03851"},
+"url":"URL#2409462"
+},
+{
+"@score":"4",
+"@id":"2450920",
+"info":{"authors":{"author":[{"@pid":"44/1219","text":"Yuxiang Shi"},{"@pid":"39/10049-1","text":"Yue Ding 0001"},{"@pid":"89/5615-23","text":"Bo Chen 0023"},{"@pid":"185/6021","text":"Yuyang Huang"},{"@pid":"24/10003","text":"Ruiming Tang"},{"@pid":"40/3934-24","text":"Dong Wang 0024"}]},"title":"Task Aligned Meta-learning based Augmented Graph for Cold-Start Recommendation.","venue":"CoRR","volume":"abs/2208.05716","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2208-05716","doi":"10.48550/ARXIV.2208.05716","ee":"https://doi.org/10.48550/arXiv.2208.05716","url":"https://dblp.org/rec/journals/corr/abs-2208-05716"},
+"url":"URL#2450920"
+},
+{
+"@score":"4",
+"@id":"2459868",
+"info":{"authors":{"author":[{"@pid":"175/3324-62","text":"Hao Chen 0062"},{"@pid":"246/2190","text":"Zefan Wang"},{"@pid":"29/3925","text":"Yue Xu"},{"@pid":"25/692-1","text":"Xiao Huang 0001"},{"@pid":"163/3996","text":"Feiran Huang"}]},"title":"GPatch: Patching Graph Neural Networks for Cold-Start Recommendations.","venue":"CoRR","volume":"abs/2209.12215","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2209-12215","doi":"10.48550/ARXIV.2209.12215","ee":"https://doi.org/10.48550/arXiv.2209.12215","url":"https://dblp.org/rec/journals/corr/abs-2209-12215"},
+"url":"URL#2459868"
+},
+{
+"@score":"4",
+"@id":"2820386",
+"info":{"authors":{"author":[{"@pid":"181/7420","text":"Jiawei Zheng"},{"@pid":"57/8221-1","text":"Qianli Ma 0001"},{"@pid":"27/8664","text":"Hao Gu"},{"@pid":"269/4097","text":"Zhenjing Zheng"}]},"title":"Multi-view Denoising Graph Auto-Encoders on Heterogeneous Information Networks for Cold-start Recommendation.","venue":"KDD","pages":"2338-2348","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/kdd/ZhengMGZ21","doi":"10.1145/3447548.3467427","ee":"https://doi.org/10.1145/3447548.3467427","url":"https://dblp.org/rec/conf/kdd/ZhengMGZ21"},
+"url":"URL#2820386"
+},
+{
+"@score":"4",
+"@id":"2850491",
+"info":{"authors":{"author":[{"@pid":"42/1503-20","text":"Shuai Wang 0020"},{"@pid":"96/3115-15","text":"Kun Zhang 0015"},{"@pid":"121/4234","text":"Le Wu"},{"@pid":"83/8129","text":"Haiping Ma"},{"@pid":"59/1501","text":"Richang Hong"},{"@pid":"93/6765-1","text":"Meng Wang 0001"}]},"title":"Privileged Graph Distillation for Cold Start Recommendation.","venue":"SIGIR","pages":"1187-1196","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/WangZWMHW21","doi":"10.1145/3404835.3462929","ee":"https://doi.org/10.1145/3404835.3462929","url":"https://dblp.org/rec/conf/sigir/WangZWMHW21"},
+"url":"URL#2850491"
+},
+{
+"@score":"4",
+"@id":"2867735",
+"info":{"authors":{"author":[{"@pid":"198/5462","text":"Riku Togashi"},{"@pid":"72/11482","text":"Mayu Otani"},{"@pid":"50/290","text":"Shin&apos;ichi Satoh 0001"}]},"title":"Alleviating Cold-Start Problems in Recommendation through Pseudo-Labelling over Knowledge Graph.","venue":"WSDM","pages":"931-939","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/TogashiOS21","doi":"10.1145/3437963.3441773","ee":"https://doi.org/10.1145/3437963.3441773","url":"https://dblp.org/rec/conf/wsdm/TogashiOS21"},
+"url":"URL#2867735"
+},
+{
+"@score":"4",
+"@id":"2905883",
+"info":{"authors":{"author":[{"@pid":"42/1503-20","text":"Shuai Wang 0020"},{"@pid":"96/3115-15","text":"Kun Zhang 0015"},{"@pid":"121/4234","text":"Le Wu"},{"@pid":"83/8129","text":"Haiping Ma"},{"@pid":"59/1501","text":"Richang Hong"},{"@pid":"93/6765-1","text":"Meng Wang 0001"}]},"title":"Privileged Graph Distillation for Cold Start Recommendation.","venue":"CoRR","volume":"abs/2105.14975","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2105-14975","ee":"https://arxiv.org/abs/2105.14975","url":"https://dblp.org/rec/journals/corr/abs-2105-14975"},
+"url":"URL#2905883"
+},
+{
+"@score":"4",
+"@id":"3036367",
+"info":{"authors":{"author":[{"@pid":"66/10565","text":"Manju G."},{"@pid":"263/8901","text":"Abhinaya P."},{"@pid":"263/8498","text":"Hemalatha M. R."},{"@pid":"263/9100","text":"Manju Ganesh G."},{"@pid":"263/8709","text":"Manju G. G."}]},"title":"Cold Start Problem Alleviation in a Research Paper Recommendation System Using the Random Walk Approach on a Heterogeneous User-Paper Graph.","venue":"Int. J. Intell. Inf. Technol.","volume":"16","number":"2","pages":"24-48","year":"2020","type":"Journal Articles","access":"closed","key":"journals/ijiit/GPRGG20","doi":"10.4018/IJIIT.2020040102","ee":"https://doi.org/10.4018/IJIIT.2020040102","url":"https://dblp.org/rec/journals/ijiit/GPRGG20"},
+"url":"URL#3036367"
+},
+{
+"@score":"4",
+"@id":"3296798",
+"info":{"authors":{"author":[{"@pid":"149/3914-1","text":"Siwei Liu 0001"},{"@pid":"21/141","text":"Iadh Ounis"},{"@pid":"02/2224","text":"Craig Macdonald"},{"@pid":"185/0748","text":"Zaiqiao Meng"}]},"title":"A Heterogeneous Graph Neural Model for Cold-start Recommendation.","venue":"SIGIR","pages":"2029-2032","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/LiuOMM20","doi":"10.1145/3397271.3401252","ee":"https://doi.org/10.1145/3397271.3401252","url":"https://dblp.org/rec/conf/sigir/LiuOMM20"},
+"url":"URL#3296798"
+},
+{
+"@score":"4",
+"@id":"3382575",
+"info":{"authors":{"author":[{"@pid":"198/5462","text":"Riku Togashi"},{"@pid":"72/11482","text":"Mayu Otani"},{"@pid":"50/290","text":"Shin&apos;ichi Satoh 0001"}]},"title":"Alleviating Cold-Start Problems in Recommendation through Pseudo-Labelling over Knowledge Graph.","venue":"CoRR","volume":"abs/2011.05061","year":"2020","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2011-05061","ee":"https://arxiv.org/abs/2011.05061","url":"https://dblp.org/rec/journals/corr/abs-2011-05061"},
+"url":"URL#3382575"
+},
+{
+"@score":"4",
+"@id":"3467564",
+"info":{"authors":{"author":[{"@pid":"20/8874","text":"Yanan Zhang"},{"@pid":"25/2295","text":"Guisheng Yin"},{"@pid":"18/3949","text":"Deyun Chen"}]},"title":"A dynamic cold-start recommendation method based on incremental graph pattern matching.","venue":"Int. J. Comput. Sci. Eng.","volume":"18","number":"1","pages":"89-100","year":"2019","type":"Journal Articles","access":"closed","key":"journals/ijcse/ZhangYC19","doi":"10.1504/IJCSE.2019.096948","ee":"https://doi.org/10.1504/IJCSE.2019.096948","url":"https://dblp.org/rec/journals/ijcse/ZhangYC19"},
+"url":"URL#3467564"
+},
+{
+"@score":"4",
+"@id":"3814933",
+"info":{"authors":{"author":[{"@pid":"17/5583","text":"Tieyun Qian"},{"@pid":"225/6908","text":"Yile Liang"},{"@pid":"181/2689-1","text":"Qing Li 0001"}]},"title":"Solving Cold Start Problem in Recommendation with Attribute Graph Neural Networks.","venue":"CoRR","volume":"abs/1912.12398","year":"2019","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-1912-12398","ee":"http://arxiv.org/abs/1912.12398","url":"https://dblp.org/rec/journals/corr/abs-1912-12398"},
+"url":"URL#3814933"
+},
+{
+"@score":"4",
+"@id":"4179736",
+"info":{"authors":{"author":[{"@pid":"225/7700","text":"Cesare Bernardis"},{"@pid":"225/7792","text":"Maurizio Ferrari Dacrema"},{"@pid":"03/3233","text":"Paolo Cremonesi"}]},"title":"A novel graph-based model for hybrid recommendations in cold-start scenarios.","venue":"CoRR","volume":"abs/1808.10664","year":"2018","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-1808-10664","ee":"http://arxiv.org/abs/1808.10664","url":"https://dblp.org/rec/journals/corr/abs-1808-10664"},
+"url":"URL#4179736"
+},
+{
+"@score":"4",
+"@id":"4709848",
+"info":{"authors":{"author":[{"@pid":"188/9754","text":"Tengyuan Cai"},{"@pid":"84/8126","text":"Hongrong Cheng"},{"@pid":"64/3983","text":"Jiaqing Luo"},{"@pid":"06/3625-2","text":"Shijie Zhou 0002"}]},"title":"An Efficient and Simple Graph Model for Scientific Article Cold Start Recommendation.","venue":"ER","pages":"248-259","year":"2016","type":"Conference and Workshop Papers","access":"closed","key":"conf/er/CaiCLZ16","doi":"10.1007/978-3-319-46397-1_19","ee":"https://doi.org/10.1007/978-3-319-46397-1_19","url":"https://dblp.org/rec/conf/er/CaiCLZ16"},
+"url":"URL#4709848"
+},
+{
+"@score":"4",
+"@id":"4751243",
+"info":{"authors":{"author":[{"@pid":"20/8874","text":"Yanan Zhang"},{"@pid":"25/2295","text":"Guisheng Yin"},{"@pid":"26/2408","text":"Qiushi Zhao"}]},"title":"An Incremental Graph Pattern Matching Based Dynamic Cold-Start Recommendation Method.","venue":"ICYCSEE","pages":"182-195","year":"2016","type":"Conference and Workshop Papers","access":"closed","key":"conf/icycsee/ZhangYZ16","doi":"10.1007/978-981-10-2053-7_17","ee":"https://doi.org/10.1007/978-981-10-2053-7_17","url":"https://dblp.org/rec/conf/icycsee/ZhangYZ16"},
+"url":"URL#4751243"
+},
+{
+"@score":"4",
+"@id":"4905447",
+"info":{"authors":{"author":[{"@pid":"45/6145","text":"Qian Xiao"},{"@pid":"40/8550","text":"Haitao Xie"}]},"title":"A social tag recommendation method alleviating cold start based on probabilistic graphical model.","venue":"Int. J. Embed. Syst.","volume":"7","number":"2","pages":"162-169","year":"2015","type":"Journal Articles","access":"closed","key":"journals/ijes/XiaoX15","doi":"10.1504/IJES.2015.069994","ee":"https://doi.org/10.1504/IJES.2015.069994","url":"https://dblp.org/rec/journals/ijes/XiaoX15"},
+"url":"URL#4905447"
+},
+{
+"@score":"4",
+"@id":"5404205",
+"info":{"authors":{"author":[{"@pid":"27/9997","text":"Michele Trevisiol"},{"@pid":"61/5674","text":"Luca Maria Aiello"},{"@pid":"25/2473","text":"Rossano Schifanella"},{"@pid":"45/956","text":"Alejandro Jaimes"}]},"title":"Cold-start news recommendation with domain-dependent browse graph.","venue":"RecSys","pages":"81-88","year":"2014","type":"Conference and Workshop Papers","access":"closed","key":"conf/recsys/TrevisiolASJ14","doi":"10.1145/2645710.2645726","ee":"https://doi.org/10.1145/2645710.2645726","url":"https://dblp.org/rec/conf/recsys/TrevisiolASJ14"},
+"url":"URL#5404205"
+}
+]
+}
+}
+}

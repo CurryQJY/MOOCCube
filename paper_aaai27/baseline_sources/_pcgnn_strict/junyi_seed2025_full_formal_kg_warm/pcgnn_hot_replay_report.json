@@ -1,0 +1,56 @@
+{
+  "model": "PCGNN",
+  "protocol": "strict_item_cold_full_catalog_item_macro_hot_replay",
+  "dataset": "junyi",
+  "seed": 2025,
+  "split": "all",
+  "source_report_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\junyi_seed2025_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+  "checkpoint_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\junyi_seed2025_full_formal_kg_warm\\checkpoints\\best_model.pt",
+  "best_epoch": 16,
+  "best_validation_score": 0.047609105457880836,
+  "dataset_name": "junyi_strict_full",
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\junyi\\mask_ablation\\mask_tt\\strict_item_cold_balanced_thr1_seed_2025",
+  "config_file": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\recbole_junyi_strict_full.yaml",
+  "requested_device": "cuda",
+  "device": "cuda",
+  "eval_batch_size": 64,
+  "max_examples": -1,
+  "selected_test_rows": 405265,
+  "sequence_examples": 405265,
+  "test": {
+    "full_cold_item_macro": {
+      "R@5": 0.016044056390360713,
+      "R@10": 0.03943296611145596,
+      "R@20": 0.08638046059043789,
+      "N@5": 0.008622525522925988,
+      "N@10": 0.016053116513452665,
+      "N@20": 0.0277723204527704
+    },
+    "full_hot_item_macro": {
+      "R@5": 0.06790902378166583,
+      "R@10": 0.10019293151812093,
+      "R@20": 0.14690475595721322,
+      "N@5": 0.0477906600399869,
+      "N@10": 0.058169855366522964,
+      "N@20": 0.06988306435610496
+    },
+    "count_full_cold_item_macro": 71,
+    "count_full_hot_item_macro": 596,
+    "rows_full_cold": 218398,
+    "rows_full_hot": 186867,
+    "full_all_item_macro": {
+      "R@5": 0.06238816518379077,
+      "R@10": 0.0937252290535434,
+      "R@20": 0.14046213980872588,
+      "N@5": 0.04362133837475253,
+      "N@10": 0.05368666427421713,
+      "N@20": 0.06540051140687445
+    },
+    "count_full_all_item_macro": 667
+  },
+  "notes": [
+    "Replay loads the retained PCGNN best checkpoint and evaluates strict test targets without retraining.",
+    "The original formal PCGNN report selected only strict_item_cold_test rows; this replay includes strict_item_cold_warm_test rows when split=hot/all.",
+    "Full-catalog scores are produced by PCGNN full_sort_predict and train-history items are masked by the same external evaluator as the original adapter."
+  ]
+}

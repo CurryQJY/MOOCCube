@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1784208101.6284 "D:/DeskTop/MOOCCube/paper_aaai27/supplement_tables.tex" "supplement_tables.pdf" "supplement_tables" 1784208102.64546 0
+["pdflatex"] 1784216323.475 "supplement_tables.tex" "supplement_tables.pdf" "supplement_tables" 1784216324.24527 0
   "C:/Users/pc/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1784180365 228176 6d9b37f7f66041b290712cf4fd077214 ""
   "C:/Users/pc/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1779804430 13332076 88fc7f4d5d39d6bfc70ee02a97d13caa ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-ec-tlf.enc" 1736607166 2914 fdbc4a54b9bc76f4551b5303f2737d33 ""
@@ -76,11 +76,10 @@
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xkeyval/xkeyval.sty" 1656236919 4937 4ce600ce9bd4ec84d0250eb6892fcf4f ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xpatch/xpatch.sty" 1585221260 8510 7803f78066c4f9d008405191a4b43073 ""
   "C:/Users/pc/AppData/Local/Programs/MiKTeX/tex/latex/xstring/xstring.sty" 1693735632 123 a302f2c651a95033260db60e51527ae8 ""
-  "D:/DeskTop/MOOCCube/paper_aaai27/supplement_tables.tex" 1784208088 18683 13f05d52c7a8d8ab36ce8cfd32eddbd1 ""
   "aaai2027.sty" 1779092464 16915 1b1c792e2acfbbd8b672259e267b95d8 ""
   "figures/mooccube_p1_risk_robustness.pdf" 1784183425 52493 7a766c23ac7e69479c7876f00085b55a ""
   "revision_stat_cost_tables.tex" 1784196673 6789 31c8a157455716e443d1b8eaccabe05c ""
-  "supplement_tables.aux" 1784208102 800 6a00a60f0f1cc0230bb6d5f84b9d36ab "pdflatex"
+  "supplement_tables.aux" 1784216324 800 6a00a60f0f1cc0230bb6d5f84b9d36ab "pdflatex"
   "supplement_tables.tex" 1784208088 18683 13f05d52c7a8d8ab36ce8cfd32eddbd1 ""
   "tables/mooccube_p1_motivation_evidence.tex" 1784195004 2190 ac5be2528b492c2ba25cfd58ecceef26 ""
   (generated)

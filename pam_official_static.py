@@ -687,6 +687,35 @@ def evaluate_pam_full_catalog(
     return _aggregate_metrics(rows)
 
 
+def checkpoint_prefix_for_epoch(checkpoint_dir: Path, epoch: int) -> Path:
+    if int(epoch) < 1:
+        raise ValueError(f"PAM checkpoint epoch must be positive, got {epoch}")
+    return checkpoint_dir / f"pam_official_epoch_{int(epoch)}.ckpt"
+
+
+def select_best_validation_checkpoint(validation_history: Sequence[Dict[str, object]]) -> Dict[str, object]:
+    if not validation_history:
+        raise ValueError("PAM checkpoint selection requires at least one validation epoch record.")
+
+    def validation_ndcg10(record: Dict[str, object]) -> float:
+        item_macro = record.get("full_cold_item_macro")
+        if not isinstance(item_macro, dict) or "N@10" not in item_macro:
+            raise ValueError("PAM validation record is missing full_cold_item_macro.N@10.")
+        score = float(item_macro["N@10"])
+        if not np.isfinite(score):
+            raise ValueError(f"PAM validation N@10 must be finite, got {score}")
+        return score
+
+    selected = validation_history[0]
+    selected_score = validation_ndcg10(selected)
+    for record in validation_history[1:]:
+        score = validation_ndcg10(record)
+        if score > selected_score:
+            selected = record
+            selected_score = score
+    return selected
+
+
 @dataclass
 class Config:
     data_dir: str
@@ -809,6 +838,7 @@ def train_and_evaluate(cfg: Config, manifest: Dict[str, object]):
     view_dir = cfg.output_dir / "pam_official_view"
     train_view, content_view = _load_pam_csv(view_dir)
     train_df = _load_required_interaction_csv(view_dir / "pam_train_interactions.csv")
+    val_df = _load_required_interaction_csv(view_dir / "pam_val_targets.csv")
     test_df = _load_required_interaction_csv(view_dir / "pam_test_targets.csv")
     cates, cate_lens = _process_cates(content_view)
     n_users = int(manifest["n_users"])
@@ -832,6 +862,9 @@ def train_and_evaluate(cfg: Config, manifest: Dict[str, object]):
     }
 
     user_hist, item_user_hist, user_seen, item_counts = _build_eval_histories(train_df, n_items)
+    val_cold_targets, _ = build_eval_targets(val_df, cfg.cold_threshold)
+    if not val_cold_targets:
+        raise ValueError("PAM validation selection requires at least one cold validation target.")
     cold_targets, hot_targets = build_eval_targets(test_df, cfg.cold_threshold)
 
     tf.reset_default_graph()
@@ -865,11 +898,66 @@ def train_and_evaluate(cfg: Config, manifest: Dict[str, object]):
         engine = Engine(sess, model, {})
         start = time.time()
         last_loss = None
+        validation_epoch_history: List[Dict[str, object]] = []
+
+        def evaluate_validation_epoch(
+            epoch: int,
+            checkpoint_prefix: str,
+            train_loss: Optional[float],
+        ) -> Dict[str, object]:
+            print(f"Evaluating validation cold targets after epoch {epoch} ...", flush=True)
+            full_cold, full_cold_item, count_cold, count_cold_item = evaluate_pam_full_catalog(
+                sess=sess,
+                model=model,
+                targets=val_cold_targets,
+                n_items=n_items,
+                user_hist=user_hist,
+                item_user_hist=item_user_hist,
+                user_seen=user_seen,
+                item_counts=item_counts,
+                item_batch_size=cfg.eval_item_batch_size,
+            )
+            if count_cold_item < 1 or "N@10" not in full_cold_item:
+                raise ValueError(
+                    f"PAM validation after epoch {epoch} did not produce cold item-macro N@10."
+                )
+            return {
+                "epoch": int(epoch),
+                "checkpoint_prefix": str(checkpoint_prefix),
+                "last_train_loss": float(train_loss) if train_loss is not None else None,
+                "full_cold": full_cold,
+                "full_cold_item_macro": full_cold_item,
+                "count_full_cold": int(count_cold),
+                "count_full_cold_item_macro": int(count_cold_item),
+            }
+
+        if cfg.init_checkpoint and cfg.start_epoch > 0:
+            validation_epoch_history.append(
+                evaluate_validation_epoch(
+                    cfg.start_epoch,
+                    cfg.init_checkpoint,
+                    None,
+                )
+            )
         for epoch in range(cfg.start_epoch + 1, cfg.epochs + 1):
             print(f"Training official PAM epoch {epoch}/{cfg.epochs} ...", flush=True)
             last_loss = engine.base_train_an_epoch(epoch, train_view, train_config)
             print(f"Epoch {epoch} loss={last_loss:.6f}", flush=True)
-            saver.save(sess, str(latest_ckpt))
+            epoch_ckpt = checkpoint_prefix_for_epoch(ckpt_dir, epoch)
+            saver.save(sess, str(epoch_ckpt))
+            validation_epoch_history.append(
+                evaluate_validation_epoch(epoch, str(epoch_ckpt), float(last_loss))
+            )
+
+        selected_validation = select_best_validation_checkpoint(validation_epoch_history)
+        selected_checkpoint = str(selected_validation["checkpoint_prefix"])
+        saver.save(sess, str(latest_ckpt))
+        print(
+            "Selected PAM checkpoint from validation cold item-macro N@10: "
+            f"epoch={selected_validation['epoch']} checkpoint={selected_checkpoint}",
+            flush=True,
+        )
+        saver.restore(sess, selected_checkpoint)
 
         print("Evaluating full-catalog cold targets ...", flush=True)
         full_cold, full_cold_item, n_fc, n_fc_item = evaluate_pam_full_catalog(
@@ -899,7 +987,22 @@ def train_and_evaluate(cfg: Config, manifest: Dict[str, object]):
     return {
         "last_train_loss": float(last_loss) if last_loss is not None else None,
         "training_seconds": float(time.time() - start),
-        "checkpoint_prefix": str(latest_ckpt),
+        "checkpoint_prefix": selected_checkpoint,
+        "latest_checkpoint_prefix": str(latest_ckpt),
+        "checkpoint_selection": {
+            "selection_split": "validation",
+            "selection_metric": "full_cold_item_macro.N@10",
+            "selection_rule": "maximize validation metric; ties select the earliest epoch",
+            "selected_epoch": int(selected_validation["epoch"]),
+            "selected_checkpoint_prefix": selected_checkpoint,
+            "selected_validation_full_cold": selected_validation["full_cold"],
+            "selected_validation_full_cold_item_macro": selected_validation["full_cold_item_macro"],
+            "selected_validation_count_full_cold": int(selected_validation["count_full_cold"]),
+            "selected_validation_count_full_cold_item_macro": int(
+                selected_validation["count_full_cold_item_macro"]
+            ),
+        },
+        "validation_epoch_history": validation_epoch_history,
         "init_checkpoint": cfg.init_checkpoint,
         "start_epoch": int(cfg.start_epoch),
         "trained_epoch_count": int(max(0, cfg.epochs - cfg.start_epoch)),

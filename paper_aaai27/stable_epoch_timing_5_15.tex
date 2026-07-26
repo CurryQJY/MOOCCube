@@ -1,0 +1,22 @@
+\begin{table*}[t]
+\centering
+\caption{Fixed-window training time per epoch.}
+\label{tab:stable-epoch-timing}
+\tablecaptiongap
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llccc}
+\toprule
+Dataset & Method & Epoch window & Seeds & Train/epoch (s) \\
+\midrule
+MOOCCube & CKG-RL & 5--15 & 3 & 95.1\,$\pm$\,22.4 \\
+MOOCCube & CGRC & 5--15 & 2 & 73.3\,$\pm$\,6.2 \\
+Junyi & CKG-RL & 5--15 & 2 & 269.4\,$\pm$\,3.7 \\
+Junyi & CGRC & 5--15 & -- & -- \\
+COCO & CKG-RL & 5--15 & 3 & 284.4\,$\pm$\,25.5 \\
+COCO & CGRC & 5--15 & 3 & 366.7\,$\pm$\,31.7 \\
+\bottomrule
+\end{tabular*}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize Each seed contributes its mean training-loop time over epochs 5--15; values are mean\(\pm\) sample std across retained seed means. This is a fixed post-warm-up diagnostic, not total training time. Post-epoch validation is excluded. Incomplete CGRC profiles are excluded; Junyi CGRC has no completed training profile and is not projected.}
+\end{table*}

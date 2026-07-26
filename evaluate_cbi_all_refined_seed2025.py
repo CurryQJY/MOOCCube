@@ -119,8 +119,8 @@ def build_all_refined_item_bank(
 def _cached_positive_bank(item_bank: torch.Tensor):
     original = eval_mod.build_eval_pos_item_vecs
 
-    def from_cache(model, item_idx, llm_s, pop_sel, eval_type):
-        del model, llm_s, pop_sel, eval_type
+    def from_cache(model, item_idx, llm_s, pop_sel, eval_type, **kwargs):
+        del model, llm_s, pop_sel, eval_type, kwargs
         return cached_bank_positive_vectors(item_bank, item_idx)
 
     eval_mod.build_eval_pos_item_vecs = from_cache
@@ -215,7 +215,14 @@ def _write_comparison(path: Path, original: dict, current: dict) -> None:
 def run_evaluation(manifest_path: Path, checkpoint_path: Path, output_dir: Path) -> dict:
     started = time.perf_counter()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+    # 先保存先修开关（_reset_usim_env 会清掉所有 USIM_ 变量，需在其后恢复）
+    _prereq_target = os.environ.get("USIM_PREREQ_TARGET", "0")
+    _prereq_path = os.environ.get("USIM_PREREQ_TARGET_PATH", "")
     _reset_usim_env(manifest.get("env", {}))
+    # 恢复先修开关（本实验的唯一变量，主表manifest里没有此键）
+    os.environ["USIM_PREREQ_TARGET"] = _prereq_target
+    if _prereq_path:
+        os.environ["USIM_PREREQ_TARGET_PATH"] = _prereq_path
     seed = int(manifest["split"]["seed"])
     _set_seed(seed)
 

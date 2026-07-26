@@ -1,0 +1,36 @@
+\begin{table*}[t]
+\centering
+{
+\small
+\setlength{\tabcolsep}{1.35pt}
+\renewcommand{\arraystretch}{0.98}
+\begin{tabular}{lcccccccccccc}
+\toprule
+& \multicolumn{4}{c}{MOOCCube} & \multicolumn{4}{c}{Junyi} & \multicolumn{4}{c}{COCO} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}\cmidrule(lr){10-13}
+Method & R@5 & R@10 & N@5 & N@10 & R@5 & R@10 & N@5 & N@10 & R@5 & R@10 & N@5 & N@10 \\
+\midrule
+Popularity & 0.0093 & 0.0175 & 0.0056 & 0.0082 & 0.0164 & 0.0286 & 0.0101 & 0.0140 & 0.0008 & 0.0016 & 0.0005 & 0.0008 \\
+BPR\methodref{UAI'09} & 0.1760 & 0.2191 & \underline{0.1359} & 0.1497 & 0.1292 & 0.1831 & \underline{0.0894} & 0.1067 & 0.0358 & 0.0507 & 0.0243 & 0.0291 \\
+DropoutNet\methodref{NeurIPS'17} & 0.1505 & 0.2072 & 0.1062 & 0.1245 & 0.0745 & 0.1272 & 0.0464 & 0.0633 & \textbf{0.0605} & \textbf{0.0926} & \textbf{0.0396} & \textbf{0.0499} \\
+LightGCN\methodref{SIGIR'20} & 0.1313 & 0.1866 & 0.0912 & 0.1090 & \underline{0.1338} & 0.2113 & 0.0879 & \underline{0.1128} & 0.0118 & 0.0207 & 0.0074 & 0.0103 \\
+CCFCRec\methodref{WWW'23} & 0.0589 & 0.0902 & 0.0422 & 0.0523 & 0.0165 & 0.0281 & 0.0106 & 0.0143 & 0.0190 & 0.0320 & 0.0118 & 0.0159 \\
+ALDI\methodref{SIGIR'23} & 0.1383 & 0.1767 & 0.1043 & 0.1166 & 0.1157 & 0.1855 & 0.0749 & 0.0972 & 0.0217 & 0.0329 & 0.0142 & 0.0178 \\
+KGRec\methodref{KDD'23} & 0.1083 & 0.1433 & 0.0847 & 0.0959 & 0.0316 & 0.0558 & 0.0192 & 0.0270 & 0.0068 & 0.0128 & 0.0041 & 0.0060 \\
+CGRC\methodref{SIGIR'24} & \underline{0.1856} & \underline{0.2397} & \textbf{0.1411} & \textbf{0.1586} & \textbf{0.1482} & \textbf{0.2170} & \textbf{0.0998} & \textbf{0.1219} & 0.0416 & \underline{0.0648} & 0.0264 & \underline{0.0339} \\
+PCGNN\methodref{TKDD'24} & 0.0241 & 0.0520 & 0.0145 & 0.0234 & 0.0453 & 0.0897 & 0.0261 & 0.0402 & 0.0135 & 0.0254 & 0.0081 & 0.0118 \\
+USIM\methodref{NeurIPS'24} & 0.1136 & 0.1551 & 0.0821 & 0.0955 & 0.1221 & 0.1943 & 0.0796 & 0.1028 & 0.0302 & 0.0448 & 0.0198 & 0.0245 \\
+SEMCo\methodref{SIGIR'26} & \textbf{0.1880} & \textbf{0.2502} & 0.1347 & \underline{0.1548} & 0.1326 & \underline{0.2114} & 0.0844 & 0.1096 & 0.0248 & 0.0423 & 0.0156 & 0.0212 \\
+\midrule
+\textbf{CKG-RL} & 0.1043 & 0.1568 & 0.0711 & 0.0879 & 0.0930 & 0.1676 & 0.0556 & 0.0795 & \underline{0.0416} & 0.0626 & \underline{0.0271} & 0.0339 \\
+\emph{Imp.} & -44.5\% & -37.3\% & -49.6\% & -44.6\% & -37.3\% & -22.8\% & -44.3\% & -34.8\% & -31.2\% & -32.4\% & -31.4\% & -32.1\% \\
+\bottomrule
+\end{tabular}
+}
+\caption{Overall Item-Macro performance across cold and warm target courses under the strict course-cold split. Values are three-seed means reconstructed per seed by weighting cold and hot course-macro metrics by their evaluated target-course counts. Bold and underlined values denote the best and second-best available means. Each method uses its native ranking score under the common splits and evaluator. PCGNN uses retained cold-target strict reports from the formal KG-warm runs because no warm-target PCGNN metrics were retained. Imp.: CKG-RL relative change against the strongest available baseline; this descriptive overall table does not add significance markers.}
+\label{tab:overall-item-macro-main}
+\vspace{0.2em}
+\begin{minipage}{\textwidth}
+\scriptsize\emph{Venue tags:} UAI'09=BPR; NeurIPS'17=DropoutNet; SIGIR'20=LightGCN; WWW'23=CCFCRec; SIGIR'23=ALDI; KDD'23=KGRec; SIGIR'24=CGRC; TKDD'24=PCGNN; NeurIPS'24=USIM; SIGIR'26=SEMCo.
+\end{minipage}
+\end{table*}

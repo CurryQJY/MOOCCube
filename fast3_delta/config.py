@@ -2,6 +2,82 @@ import os
 
 
 class BaseConfig:
+    @property
+    def v1_enabled(self):
+        return self.ckg_rl_v1_enabled
+
+    @property
+    def v1_reference_batch_size(self):
+        return self.reference_batch_size
+
+    @v1_reference_batch_size.setter
+    def v1_reference_batch_size(self, value):
+        self.reference_batch_size = int(value)
+
+    @property
+    def v1_target_history_exclusion(self):
+        return self.target_history_exclusion
+
+    @v1_target_history_exclusion.setter
+    def v1_target_history_exclusion(self, value):
+        self.target_history_exclusion = bool(value)
+
+    @property
+    def v1_target_history_exclusion_scope(self):
+        return self.target_history_exclusion_scope
+
+    @v1_target_history_exclusion_scope.setter
+    def v1_target_history_exclusion_scope(self, value):
+        self.target_history_exclusion_scope = str(value)
+
+    @property
+    def v1_pseudo_cold_plan_hash(self):
+        return self.pseudo_cold_plan_hash
+
+    @v1_pseudo_cold_plan_hash.setter
+    def v1_pseudo_cold_plan_hash(self, value):
+        self.pseudo_cold_plan_hash = str(value)
+
+    @property
+    def v1_pseudo_cold_plan_count(self):
+        return self.pseudo_cold_plan_count
+
+    @v1_pseudo_cold_plan_count.setter
+    def v1_pseudo_cold_plan_count(self, value):
+        self.pseudo_cold_plan_count = int(value)
+
+    @property
+    def v1_pseudo_cold_plan_seed(self):
+        return self.pseudo_cold_plan_seed
+
+    @v1_pseudo_cold_plan_seed.setter
+    def v1_pseudo_cold_plan_seed(self, value):
+        self.pseudo_cold_plan_seed = int(value)
+
+    @property
+    def v1_selector_mode(self):
+        return self.selector_mode
+
+    @v1_selector_mode.setter
+    def v1_selector_mode(self, value):
+        self.selector_mode = str(value)
+
+    @property
+    def v1_selector_hot_tolerance(self):
+        return self.selector_hot_tolerance
+
+    @v1_selector_hot_tolerance.setter
+    def v1_selector_hot_tolerance(self, value):
+        self.selector_hot_tolerance = float(value)
+
+    @property
+    def v1_selector_overall_tolerance(self):
+        return self.selector_overall_tolerance
+
+    @v1_selector_overall_tolerance.setter
+    def v1_selector_overall_tolerance(self, value):
+        self.selector_overall_tolerance = float(value)
+
     def __init__(self, n_users, n_items, content_dim=768):
         self.n_users = n_users
         self.n_items = n_items
@@ -9,6 +85,8 @@ class BaseConfig:
         self.emb_dim = 128
         self.hidden_dim = 256
         self.content_dim = content_dim
+        self.ckg_rl_v1_enabled = os.environ.get("USIM_CKG_RL_V1", "0") == "1"
+        self.v1_contract_version = 1
         # Optional research extensions are opt-in; formal main-table runs must
         # not silently activate them when an environment variable is absent.
         self.use_content_delta = os.environ.get("USIM_USE_CONTENT_DELTA", "0") == "1"
@@ -75,10 +153,21 @@ class BaseConfig:
         self.pseudo_cold_ratio = min(1.0, max(0.0, self.pseudo_cold_ratio))
         self.pseudo_cold_min_pop = int(os.environ.get("USIM_PSEUDO_COLD_MIN_POP", "5"))
         self.pseudo_cold_mode = os.environ.get("USIM_PSEUDO_COLD_MODE", "batch_random").strip().lower()
-        if self.pseudo_cold_mode not in {"batch_random", "batch_tail", "item_tail", "all_eligible", "none", "off"}:
+        if self.pseudo_cold_mode not in {
+            "batch_random",
+            "batch_tail",
+            "item_tail",
+            "all_eligible",
+            "fixed_item_stratified",
+            "none",
+            "off",
+        }:
             raise ValueError(
-                "USIM_PSEUDO_COLD_MODE must be one of: batch_random, batch_tail, item_tail, all_eligible, none, off"
+                "USIM_PSEUDO_COLD_MODE must be one of: batch_random, batch_tail, item_tail, "
+                "all_eligible, fixed_item_stratified, none, off"
             )
+        if self.pseudo_cold_mode == "fixed_item_stratified" and not self.ckg_rl_v1_enabled:
+            raise ValueError("fixed_item_stratified pseudo-cold mode requires USIM_CKG_RL_V1=1")
         self.disable_llm_score = os.environ.get("USIM_DISABLE_LLM_SCORE", "0") == "1"
         self.llm_safe_mode = os.environ.get("USIM_LLM_SAFE_MODE", "0") == "1"
         self.llm_weight = float(
@@ -93,10 +182,29 @@ class BaseConfig:
             "USIM_LLM_BANK_MODE",
             "none" if self.llm_safe_mode else "item",
         ).strip().lower()
-        self.ppo_clip = 0.2
-        self.ppo_gamma = 0.90
+        self.ppo_clip = float(
+            os.environ.get("USIM_PPO_CLIP", "0.20")
+            if self.ckg_rl_v1_enabled
+            else "0.20"
+        )
+        self.ppo_gamma = float(
+            os.environ.get("USIM_PPO_GAMMA", "0.90")
+            if self.ckg_rl_v1_enabled
+            else "0.90"
+        )
         self.ppo_epochs = 5
-        self.ppo_coeffs = {"value": 0.5, "entropy": 0.01}
+        self.ppo_coeffs = {
+            "value": float(
+                os.environ.get("USIM_PPO_VALUE_COEFF", "0.50")
+                if self.ckg_rl_v1_enabled
+                else "0.50"
+            ),
+            "entropy": float(
+                os.environ.get("USIM_PPO_ENTROPY_COEFF", "0.01")
+                if self.ckg_rl_v1_enabled
+                else "0.01"
+            ),
+        }
         self.ppo_loss_weight = float(os.environ.get("USIM_PPO_LOSS_WEIGHT", "1.0"))
         self.rl_residual_scale = float(os.environ.get("USIM_RL_RESIDUAL_SCALE", "1.0"))
         self.rl_residual_scale = min(1.0, max(0.0, self.rl_residual_scale))
@@ -114,15 +222,92 @@ class BaseConfig:
         self.usim_steps = int(os.environ.get("USIM_STEPS", "5"))
         self.n_candidates = int(os.environ.get("USIM_N_CANDIDATES", "20"))
         self.usim_lr = 0.3
-        self.candidate_strategy = "retrieve_sample"
+        self.candidate_strategy = (
+            os.environ.get("USIM_CANDIDATE_STRATEGY", "retrieve_sample").strip().lower()
+            if self.ckg_rl_v1_enabled
+            else "retrieve_sample"
+        )
         self.retrieve_top_m = int(os.environ.get("USIM_RETRIEVE_TOP_M", "256"))
-        self.candidate_temp = 0.20
-        self.candidate_epsilon = 0.10
+        self.candidate_temp = float(
+            os.environ.get("USIM_CANDIDATE_TEMP", "0.20")
+            if self.ckg_rl_v1_enabled
+            else "0.20"
+        )
+        self.candidate_epsilon = float(
+            os.environ.get("USIM_CANDIDATE_EPSILON", "0.10")
+            if self.ckg_rl_v1_enabled
+            else "0.10"
+        )
+        target_history_default = "1" if self.ckg_rl_v1_enabled else "0"
+        self.target_history_exclusion = os.environ.get(
+            "USIM_V1_TARGET_HISTORY_EXCLUSION", target_history_default
+        ) == "1"
+        self.target_history_exclusion_scope = os.environ.get(
+            "USIM_V1_TARGET_HISTORY_EXCLUSION_SCOPE", "all_course_terms"
+        ).strip().lower()
+        if self.target_history_exclusion_scope not in {"all_course_terms", "concept_only"}:
+            raise ValueError(
+                "USIM_V1_TARGET_HISTORY_EXCLUSION_SCOPE must be all_course_terms or concept_only"
+            )
+
+        # The rest of the V1 contract remains opt-in. Ignore its inherited
+        # pseudo-cold controls on the historical path.
+        if self.ckg_rl_v1_enabled:
+            self.pseudo_cold_plan_hash = os.environ.get(
+                "USIM_V1_PSEUDO_COLD_PLAN_HASH", ""
+            ).strip()
+            self.pseudo_cold_plan_count = int(
+                os.environ.get("USIM_V1_PSEUDO_COLD_PLAN_COUNT", "0")
+            )
+            self.pseudo_cold_plan_seed = int(
+                os.environ.get(
+                    "USIM_V1_PSEUDO_COLD_PLAN_SEED",
+                    os.environ.get("USIM_STATIC_SEED", os.environ.get("USIM_SEED", "2025")),
+                )
+            )
+            self.pseudo_cold_plan_strategy = os.environ.get(
+                "USIM_V1_PSEUDO_COLD_PLAN_STRATEGY", "popularity_stratified"
+            ).strip().lower()
+            if self.pseudo_cold_plan_count < 0:
+                raise ValueError("USIM_V1_PSEUDO_COLD_PLAN_COUNT must be non-negative")
+        else:
+            self.pseudo_cold_plan_hash = ""
+            self.pseudo_cold_plan_count = 0
+            self.pseudo_cold_plan_seed = int(
+                os.environ.get("USIM_STATIC_SEED", os.environ.get("USIM_SEED", "2025"))
+            )
+            self.pseudo_cold_plan_strategy = "popularity_stratified"
+        # Semantic-repair controls are opt-in so historical main-table runs can
+        # still be replayed with their original stochastic evaluation behavior.
+        self.deterministic_eval_candidates = os.environ.get(
+            "USIM_DETERMINISTIC_EVAL_CANDIDATES", "0"
+        ) == "1"
+        self.deterministic_eval_seed = int(
+            os.environ.get(
+                "USIM_DETERMINISTIC_EVAL_SEED",
+                os.environ.get("USIM_STATIC_SEED", os.environ.get("USIM_SEED", "2025")),
+            )
+        )
+        self.eval_reuse_item_bank = os.environ.get("USIM_EVAL_REUSE_ITEM_BANK", "0") == "1"
+        self.simulator_target_mode = os.environ.get(
+            "USIM_SIMULATOR_TARGET_MODE", "legacy_id"
+        ).strip().lower()
+        if self.simulator_target_mode not in {"legacy_id", "initial_state"}:
+            raise ValueError(
+                "USIM_SIMULATOR_TARGET_MODE must be one of: legacy_id, initial_state"
+            )
         self.retrieval_user_chunk = 16384
         self.retrieval_query_chunk = 256
         self.user_bank_refresh_steps = 200
         self.n_epochs = int(os.environ.get("USIM_N_EPOCHS", "3"))
         self.batch_size = int(os.environ.get("USIM_BATCH_SIZE", "2048"))
+        self.reference_batch_size = int(
+            os.environ.get("USIM_V1_REFERENCE_BATCH_SIZE", str(self.batch_size))
+            if self.ckg_rl_v1_enabled
+            else self.batch_size
+        )
+        if self.ckg_rl_v1_enabled and self.reference_batch_size <= 0:
+            raise ValueError("USIM_V1_REFERENCE_BATCH_SIZE must be positive")
         self.accum_steps = 1
         self.eval_n_neg = int(os.environ.get("USIM_EVAL_N_NEG", "200"))
         # Sampled (1+N_neg) eval is no longer the headline metric; final tables
@@ -195,6 +380,35 @@ class BaseConfig:
                 "cold_only, geometric, harmonic, sum, cold_rn, balanced_rn"
             )
         self.early_stop_hot_r10_drop_tol = 0.03
+        self.selector_mode = (
+            os.environ.get("USIM_V1_SELECTOR_MODE", "cold_ndcg_then_recall_with_retention")
+            .strip()
+            .lower()
+            if self.ckg_rl_v1_enabled
+            else "cold_ndcg_then_recall_with_retention"
+        )
+        if self.ckg_rl_v1_enabled and self.selector_mode not in {
+            "cold_ndcg_then_recall_with_retention",
+            "cold_ndcg_running_retention",
+        }:
+            raise ValueError(
+                "USIM_V1_SELECTOR_MODE must be one of: "
+                "cold_ndcg_then_recall_with_retention, cold_ndcg_running_retention"
+            )
+        self.selector_hot_tolerance = float(
+            os.environ.get("USIM_V1_SELECTOR_HOT_TOL", "0.003")
+            if self.ckg_rl_v1_enabled
+            else "0.003"
+        )
+        self.selector_overall_tolerance = float(
+            os.environ.get("USIM_V1_SELECTOR_OVERALL_TOL", "0.003")
+            if self.ckg_rl_v1_enabled
+            else "0.003"
+        )
+        if self.ckg_rl_v1_enabled and (
+            self.selector_hot_tolerance < 0.0 or self.selector_overall_tolerance < 0.0
+        ):
+            raise ValueError("V1 selector tolerances must be non-negative")
         self.legacy_train_protocol = os.environ.get("USIM_LEGACY_TRAIN_PROTOCOL", "0") == "1"
         self.use_usim_refined_eval = os.environ.get("USIM_USE_REFINED_EVAL", "1") == "1"
 
@@ -223,6 +437,8 @@ class FeedbackConfig(BaseConfig):
             "USIM_FB_COURSE_MATCH_EXCLUDE_TARGET",
             default_match_exclude,
         ) == "1"
+        if self.ckg_rl_v1_enabled:
+            self.feedback_course_match_exclude_target = self.target_history_exclusion
         self.feedback_course_redundant_mode = os.environ.get(
             "USIM_FB_COURSE_REDUNDANT_MODE",
             "concept",

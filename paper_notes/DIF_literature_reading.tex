@@ -1,0 +1,671 @@
+\documentclass[11pt,a4paper]{ctexart}
+
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs,longtable,array,tabularx,multirow}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{setspace}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!60!black,
+  citecolor=blue!50!black
+}
+
+\tcbuselibrary{skins,breakable}
+\newtcolorbox{keybox}[1][]{
+  colback=blue!3!white,
+  colframe=blue!45!black,
+  fonttitle=\bfseries,
+  breakable,
+  title={#1}
+}
+\newtcolorbox{warnbox}[1][]{
+  colback=orange!5!white,
+  colframe=orange!60!black,
+  fonttitle=\bfseries,
+  breakable,
+  title={#1}
+}
+\newtcolorbox{tipbox}[1][]{
+  colback=green!4!white,
+  colframe=green!40!black,
+  fonttitle=\bfseries,
+  breakable,
+  title={#1}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small DIF 文献解读笔记}
+\fancyhead[R]{\small KDD'26 / arXiv:2606.19658}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setstretch{1.15}
+\setlist[itemize]{leftmargin=1.6em,itemsep=0.2em,topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.8em,itemsep=0.2em,topsep=0.3em}
+
+\title{\textbf{文献精读笔记}\\[0.4em]
+\large Denoising Implicit Feedback for Cold-start Recommendation\\[0.2em]
+\large （DIF：面向冷启动推荐的隐式反馈去噪）}
+\author{解读整理（面向研一·课程推荐冷启动）\\
+基于 arXiv:2606.19658v1 / KDD '26}
+\date{整理日期：2026-07-24}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+本文对 Chen 等人 KDD'26 论文
+\textit{Denoising Implicit Feedback for Cold-start Recommendation}
+（方法名 \textbf{DIF}）做结构化精读。内容覆盖：作者与问题背景、方法与公式、
+图/表逐项释义、数值演算示例、Theorem~2.1 逐步注释、实验批判、以及对
+\textbf{课程推荐冷启动}方向的启发。阅读对象默认具备机器学习与推荐系统基础。
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{论文元信息}
+% ============================================================
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{题目} & Denoising Implicit Feedback for Cold-start Recommendation \\
+\textbf{方法名} & DIF（Denoising Implicit Feedback） \\
+\textbf{会议} & KDD '26（ACM SIGKDD 2026） \\
+\textbf{预印本} & arXiv:2606.19658v1 [cs.AI], 17 Jun 2026 \\
+\textbf{DOI} & 10.1145/3770855.3818367 \\
+\textbf{关键词} & Recommender System, Noisy Implicit Feedback, Cold-start \\
+\textbf{场景} & 短视频推荐；物品冷启动 + 隐式反馈噪声 \\
+\textbf{部署} & 快手（Kuaishou）亿级用户规模线上系统 \\
+\bottomrule
+\end{tabularx}
+
+\begin{keybox}[一句话概括]
+冷启动物品比热门物品更容易出现隐式反馈噪声（假正例/假负例），而传统按 loss/分数/梯度去噪的方法在冷启动上失效。
+DIF 用\textbf{内容相似的热门物品}的协同表示给冷启动样本造伪标签，再按\textbf{相对熵 $\times$ 冷启动状态}自适应校正标签；
+方法 model-agnostic，离线与线上均有效。
+\end{keybox}
+
+% ============================================================
+\section{作者背景（据论文署名与可核对信息）}
+% ============================================================
+
+\begin{warnbox}[说明]
+以下以 PDF 署名与参考文献中的可核对信息为主。个别作者是否仍为学生、具体职称，
+公开网页未在整理时逐条联网核实者，已标注“尚未完全确认”。
+\end{warnbox}
+
+\begin{center}
+\small
+\begin{tabular}{p{2.6cm}p{4.2cm}p{8cm}}
+\toprule
+\textbf{作者} & \textbf{单位（署名）} & \textbf{角色/背景线索} \\
+\midrule
+Gaode Chen（陈高德） & 快手科技 & 共同一作。近年持续做短视频冷启动、多模态推荐、跨域推荐（RecSys 2024 冷启动短视频框架等），产业研究/算法工程师画像。 \\
+Shicheng Wang & 快手科技 & 共同一作。产业侧推荐系统。 \\
+Shikun Li（李仕坤） & 香港浸会大学（HKBU） & \textbf{通讯作者}。偏 noisy label / 鲁棒学习 / 数据选择，与本文“去噪+伪标签”高度契合。在读身份尚未完全确认。 \\
+Rui Huang & 快手科技 & 产业推荐。 \\
+Xinghua Zhang & Independent Researcher & 独立研究者；此前多与陈高德等合作推荐相关工作。 \\
+Yunze Luo & 北京大学 & 学生/研究助理可能性较大。年级/学位尚未完全确认。 \\
+Shipeng Li & 南京大学 & 与 Shikun Li 等有 noisy/数据选择合作。学生/教职尚未完全确认。 \\
+Shiming Ge（葛仕明） & 中科院信息工程研究所 & 通常为研究员/导师侧；计算机视觉与智能系统方向（机构层面）。 \\
+Ruina Sun & 快手科技 & 与 Gaode Chen 有冷启动短视频合作。 \\
+Yinjie Jiang, Jun Zhang & 快手科技 & 产业推荐系统落地侧。 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{tipbox}[团队画像]
+快手工业推荐主力 + 学界 noisy-label/理论分析协作（HKBU、南大、中科院、北大），
+典型“工业问题 + 理论证明 + 在线部署”的 KDD 范式。
+\end{tipbox}
+
+% ============================================================
+\section{核心贡献速览}
+% ============================================================
+
+\subsection{解决什么问题}
+工业推荐中，\textbf{物品冷启动}与\textbf{隐式反馈噪声}往往同时出现，且互相放大：
+\begin{itemize}
+  \item 假正例：封面党/点击诱饵（clickbait）导致“点了但不喜欢”；
+  \item 假负例：位置偏差、滑动过快导致“该看的没曝光/被当负样本”；
+  \item 冷启动 embedding 未训好 $\Rightarrow$ 更易被脏标签带偏 $\Rightarrow$ 曝光更不准 $\Rightarrow$ 负反馈环。
+\end{itemize}
+
+\subsection{提出什么方法}
+\textbf{DIF}（model-agnostic）：
+\begin{enumerate}
+  \item 用多模态内容相似的 warm 物品协同表示，为 cold 样本生成伪标签；
+  \item 按内容相似度做置信度加权聚合；
+  \item 用相对熵 + 冷启动状态估计标签不确定性，样本级校正 soft label；
+  \item 用校正标签做标准交叉熵训练。
+\end{enumerate}
+
+\subsection{与主流路线对比}
+\begin{center}
+\small
+\begin{tabular}{p{2.4cm}p{3.2cm}p{4.2cm}p{4.5cm}}
+\toprule
+\textbf{路线} & \textbf{代表} & \textbf{思路} & \textbf{相对 DIF} \\
+\midrule
+样本选择去噪 & T-CE 等 & 丢高 loss 样本 & 冷启动天然高 loss，易误删 \\
+样本重加权 & 多篇 denoising & 低权噪声 & 依赖启发式，冷启动适配差 \\
+通用鲁棒迁入 & DECL, RINCE & 不确定度/鲁棒对比 & 有提升但未专为 cold 设计 \\
+冷启动迁移 & MWUF 等 & meta 初始化 cold emb & 改善表征，不显式处理标签噪声 \\
+内容/多模态冷启动 & MM 框架等 & 用内容补协同 & 补表征；DIF 用内容去\textbf{改标签} \\
+\textbf{DIF} & 本文 & warm 伪标签 + 不确定校正 & 专打 cold$\times$noise；依赖强多模态与工业 ANN \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ============================================================
+\section{背景与问题形式化}
+% ============================================================
+
+\subsection{研究动机}
+三层递进：
+\begin{enumerate}
+  \item 隐式反馈（点击/观看）量大易得，但脏；
+  \item 冷启动是工业硬伤（每日海量上新 + 马太效应）；
+  \item \textbf{被忽视的耦合}：冷启动更易带噪。平台观察（非严格因果）：
+  \begin{itemize}
+    \item 点击诱饵指标 top 10\% 的冷启动视频，比 bottom 10\% 多 \textbf{37.7\%}；
+    \item 约 100 万 session 中，冷启动落在后三位比例比前三位高 \textbf{28.3\%}。
+  \end{itemize}
+\end{enumerate}
+
+传统去噪依赖 loss 大 / 分低 / 梯度大，但冷启动\textbf{本身}就呈现这些特征，启发式会系统性误伤。
+
+\subsection{形式化定义}
+\begin{itemize}
+  \item 用户 $u\in\mathcal{U}$，物品 $i\in\mathcal{I}$；
+  \item 观测隐式反馈 $\tilde{y}_{ui}\in\{0,1\}$；
+  \item 真实兴趣被噪声污染（假正/假负）；
+  \item \textbf{目标}：从带噪 $\tilde{Y}$ 学去噪表示，尤其针对冷启动物品；
+  \item \textbf{冷启动定义（快手）}：上线 $\le 24$ 小时且播放 $<50{,}000$。
+\end{itemize}
+理论适用多阶段漏斗；实践部署在\textbf{召回双塔}（user/item tower + ANN）。
+
+% ============================================================
+\section{方法总览与图解}
+% ============================================================
+
+\subsection{Figure 1：DIF + 双塔总览}
+\textbf{位置}：§2.2。\textbf{标题}：\textit{The overview of our proposed DIF integrated with a dual-tower model.}
+
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+符号 & 文中名称 & 含义 \\
+\midrule
+$\tilde{y}_{ui}$ & Sample Label & 观测隐式反馈（可能噪声） \\
+$y^{p}_{ui}$ & Pseudo Label & 内容相似 warm 造的伪标签 \\
+$y^{c}_{ui}$ & Corrected Label & 校正后的软标签（训练用） \\
+$\hat{y}_{ui}$ & Predicted Value & 双塔当前预测 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{流程}：双塔编码 $\to$ Pseudo-labeling $\to$ Confidence 聚合 $\to$ Uncertainty 估计 $\to$ 标签校正 $\to$ 用 $y^{c}$ 优化。
+
+\textbf{作用}：算法地图；强调 DIF \textbf{不改网络结构，只改训练标签}，故 model-agnostic。
+
+\subsection{Figure 2：工业伪标签链路}
+\textbf{位置}：§2.3.1。\textbf{标题}：\textit{The industrial practice for pseudo-labeling in online streaming training.}
+
+\begin{center}
+\small
+\begin{tabular}{clp{9cm}}
+\toprule
+步骤 & 服务 & 做什么 \\
+\midrule
+1 & Multi-modal Infer + Embedding & 新视频 $\to$ 多模态内容向量缓存 \\
+2 & Runner + ANN & 维护 warm 池；查 top-$k$ 相似 warm ID 与相似度 $S_i$ \\
+3 & Embedding（协同侧） & 用 warm ID 取已训好的协同 embedding \\
+4 & Online Rec Model & 样本流中用 warm 协同表示造伪标签 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{作用}：回答“相似 warm 怎么实时找、协同向量怎么实时拿”。伪标签靠的是 warm 协同，不是 cold 自己未训好的 embedding。
+
+\subsection{数据流串讲}
+\begin{keybox}[记忆用数据流]
+观测 $\tilde{y}$
+\;$\xrightarrow{\text{Fig.2}}$\;
+Eq.(1) $k$ 个伪标签
+\;$\xrightarrow{\text{Eq.(2)(3)}}$\;
+$y^{p}$
+\;$\xrightarrow{\text{Eq.(4)(5)(6)}}$\;
+$t=r\cdot\gamma$
+\;$\xrightarrow{\text{Eq.(7)(8)}}$\;
+$y^{c}$
+\;$\xrightarrow{\text{Eq.(9)}}$\;
+训练更新 $\mathbf{e}_u,\mathbf{e}_i$
+\end{keybox}
+
+% ============================================================
+\section{核心公式逐项讲解}
+% ============================================================
+
+\subsection{Eq.(1)：伪标签生成}
+\[
+\bigl[y^{p}_{ui,1},\ldots,y^{p}_{ui,k}\bigr]
+=
+\bigl[
+\mathbf{e}_u\cdot\mathbf{e}_i^{1},\;\ldots,\;
+\mathbf{e}_u\cdot\mathbf{e}_i^{k}
+\bigr]
+\tag{1}
+\]
+\textbf{含义}：用户对 $k$ 个内容相似 warm 的兴趣分 $\approx$ 对 cold 的兴趣分。\\
+\textbf{作用}：绕开 cold 表示不足；与双塔预测同构（内积），便于后续混合。
+
+\subsection{Eq.(2)(3)：置信度聚合}
+\[
+c_i^{j}
+=
+\frac{\exp(s_i^{j}/\tau)}{\sum_{z=1}^{k}\exp(s_i^{z}/\tau)},
+\qquad
+y^{p}_{ui}
+=
+\sum_{j=1}^{k} c_i^{j}\, y^{p}_{ui,j}
+\tag{2,3}
+\]
+\textbf{含义}：相似度越高权重越大；$\tau$ 温度（默认 0.3）。\\
+\textbf{作用}：比简单平均更合理；消融 w/o CM 即改为等权平均。
+
+\subsection{Eq.(4)(5)(6)：不确定性}
+\[
+r_{ui}
+=
+-\tilde{y}_{ui}\log\hat{y}_{ui}
+-(1-\tilde{y}_{ui})\log(1-\hat{y}_{ui})
+\tag{4}
+\]
+\[
+\gamma_i = e^{-\alpha g_i}
+\tag{5}
+\]
+\[
+t_{ui} = r_{ui}\cdot\gamma_i
+\tag{6}
+\]
+\begin{itemize}
+  \item $r$：原标签与预测不一致程度（大 $\Rightarrow$ 更像标错）；
+  \item $\gamma$：交互 $g_i$ 越少越冷、越接近 1；热门 $\gamma\to 0$，\textbf{保护 warm}；
+  \item $t$：又冷又像噪声时才高。
+\end{itemize}
+
+\subsection{Eq.(7)(8)(9)：校正与训练}
+\[
+w=\frac{t_{ui}}{t_{ui}+1},
+\qquad
+y^{c}_{ui}=w\,y^{p}_{ui}+(1-w)\,\tilde{y}_{ui}
+\tag{7,8}
+\]
+\[
+\mathcal{L}
+=
+-\sum_{(u,i)\in\mathcal{D}_{\mathrm{train}}}
+\Bigl[
+y^{c}_{ui}\log\hat{y}_{ui}
++(1-y^{c}_{ui})\log(1-\hat{y}_{ui})
+\Bigr]
+\tag{9}
+\]
+\textbf{含义}：$t$ 大更信伪标签；$t$ 小更信原标签；真正进入 loss 的是 soft label $y^{c}$。
+
+% ============================================================
+\section{理论：假设、定理与证明注释}
+% ============================================================
+
+\subsection{符号}
+$\mathbf{e}_i$：cold 的归一化多模态内容向量；
+$\mathcal{N}(i)$：$k$ 近邻 warm；
+$\eta^*_{ui}$：真实交互概率；
+$y^{p}_{ui}$：置信加权伪标签；
+$N_{\mathrm{warm}}$：warm 池大小。
+
+\subsection{四个假设}
+\begin{enumerate}
+  \item \textbf{Assum.\ 2.1}：观测 $\tilde{y}$ 有偏（系统偏差 $b$ + 较大方差）——解释为何要去噪。
+  \item \textbf{Assum.\ 2.2}：伪标签对 warm 真实兴趣近似无偏、方差更小——伪标签更“干净”。
+  \item \textbf{Assum.\ 2.3}：内容空间密度下界——保证 k-NN 邻居存在。
+  \item \textbf{Assum.\ 2.4}：$\eta^*_u(\mathbf{e})$ Hölder 连续——内容近 $\Rightarrow$ 兴趣近。
+\end{enumerate}
+
+\subsection{Theorem 2.1（伪标签误差界）}
+在 Assum.\ 2.2--2.4 下：
+\[
+\bigl|y^{p}_{ui}-\eta^*_{ui}\bigr|
+\le
+O\!\left(
+L\Bigl(\frac{k}{N_{\mathrm{warm}}}\Bigr)^{\alpha/d}
+\right)
++
+O\!\left(\frac{\sigma'}{\sqrt{k}}\right).
+\]
+\textbf{人话}：偏差由“邻居不够近”控制，方差由“$k$ 个噪声平均”控制；
+warm 够多、$k$ 合适时伪标签可靠——\textbf{不要求内容完全相同}。
+
+\subsubsection{证明逐步注释}
+\paragraph{Step A：误差拆分（对应 Eq.(10)）}
+\[
+y^{p}_{ui}-\eta^*_{ui}
+=
+\sum_{j}c_i^{j}(\eta^*_{uj}-\eta^*_{ui})
++\sum_{j}c_i^{j}\epsilon'_{ui,j}.
+\]
+绝对值 + 三角不等式 $\Rightarrow$ Bias + Variance。
+
+\paragraph{Step B：压偏差（Eq.(11)(12)）}
+Hölder：
+$|\eta^*_{uj}-\eta^*_{ui}|\le L\|\mathbf{e}_j-\mathbf{e}_i\|^{\alpha}$；
+加权和 $\le L\cdot\max_j\|\mathbf{e}_j-\mathbf{e}_i\|^{\alpha}$。\\
+k-NN 距离阶（密度下界）：
+$\max\|\cdot\|=O((k/N_{\mathrm{warm}})^{1/d})$，
+故 Bias $=O(L(k/N)^{\alpha/d})$。
+
+\paragraph{Step C：压方差（Eq.(13)）}
+零均值独立噪声 + Hoeffding / 方差计算：
+$\mathrm{Var}(\sum c_j\epsilon'_j)\sim\sigma'^2\sum c_j^2$，
+有效邻居数 $k_{\mathrm{eff}}=(\sum c_j^2)^{-1}\approx k$ 时，
+Variance $=O(\sigma'/\sqrt{k})$。
+
+\paragraph{Step D：合并（Eq.(14)）}
+Bias + Variance 即定理结论。
+
+\subsubsection{设计原则表}
+\begin{center}
+\small
+\begin{tabular}{ccccp{5.5cm}}
+\toprule
+旋钮 & 变大 & 偏差 & 方差 & 工程含义 \\
+\midrule
+$N_{\mathrm{warm}}$ & $\uparrow$ & $\downarrow$ & — & warm 池要大、持续更新 \\
+$k$ & $\uparrow$ & $\uparrow$ & $\downarrow$ & 取 $k=5$ 折中 \\
+$d$ & $\uparrow$ & $\uparrow$ & — & 维度灾难；需好度量/降维 \\
+$\sigma'$ & $\uparrow$ & — & $\uparrow$ & warm 协同要训稳 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Theorem 2.2（最优混合权重）}
+最小化 $R(y^{c})=\mathbb{E}[(y^{c}-\eta^*)^2]$，在噪声不相关时：
+\[
+w^*=\frac{\lambda}{\lambda+1},\quad
+\lambda=\frac{R(\tilde{y})}{R(y^{p})}.
+\]
+展开（Eq.(15)）：
+$R(y^{c})=w^2 R(y^{p})+(1-w)^2 R(\tilde{y})$，
+对 $w$ 求导得上式。\\
+\textbf{与 Eq.(7) 对齐}：$\lambda$ 未知，用 $t=r\gamma$ 估计噪声比，写成 $w=t/(t+1)$。
+
+\begin{center}
+\small
+\begin{tabular}{p{3cm}p{5.5cm}p{5.5cm}}
+\toprule
+ & \textbf{Theorem 2.1} & \textbf{Theorem 2.2} \\
+\midrule
+问题 & $y^{p}$ 准不准？ & $\tilde{y}$ 与 $y^{p}$ 怎么混最优？ \\
+结论 & 误差界 & $w^*=\lambda/(\lambda+1)$ \\
+实践 & 为何用内容相似 warm & 为何 $w=t/(t+1)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ============================================================
+\section{数值演算示例（$k=2$）}
+% ============================================================
+
+\subsection{设定}
+用户协同 $\mathbf{e}_u=(1.0,0.5)$；
+warm 协同 $\mathbf{e}_i^{1}=(0.8,0.4)$，$\mathbf{e}_i^{2}=(0.2,0.1)$；
+内容相似度 $s=(0.95,0.85)$；$\tau=0.3$；
+$\tilde{y}_{ui}=1$；$\hat{y}_{ui}=0.35$；
+$g_i=10$，$\alpha=0.05$。\\
+（内积映射到概率尺度后取 $y^{p}_{ui,1}=0.90$，$y^{p}_{ui,2}=0.40$，便于 CE 手算。）
+
+\subsection{逐步计算}
+\begin{enumerate}
+  \item \textbf{Eq.(1)}：伪标签概率尺度 $[0.90,\,0.40]$。
+  \item \textbf{Eq.(2)}：
+  $s/\tau\approx(3.167,2.833)$，
+  $\exp(\cdot)\approx(23.73,17.00)$，
+  $c\approx(0.583,0.417)$。
+  \item \textbf{Eq.(3)}：
+  $y^{p}=0.583\cdot0.90+0.417\cdot0.40\approx0.692$
+  （等权平均为 $0.65$）。
+  \item \textbf{Eq.(4)}：
+  $r=-\ln(0.35)\approx1.050$。
+  \item \textbf{Eq.(5)}：
+  $\gamma=e^{-0.5}\approx0.607$。
+  \item \textbf{Eq.(6)}：
+  $t\approx1.050\times0.607\approx0.637$。
+  \item \textbf{Eq.(7)}：
+  $w=0.637/1.637\approx0.389$。
+  \item \textbf{Eq.(8)}：
+  $y^{c}=0.389\cdot0.692+0.611\cdot1\approx0.880$。
+  \item \textbf{Eq.(9)} 单样本：
+  $\ell\approx0.976$（硬标签 CE $\approx1.050$）。
+\end{enumerate}
+
+\begin{tipbox}[故事线]
+原标签硬 1 可能 clickbait；伪标签 0.692 表示“有兴趣但不绝对”；
+校正为 0.880 的软正例——训练更温和，既不完全丢掉点击信号，也不把 cold 往极正例猛拉。
+\end{tipbox}
+
+\subsection{热门对照}
+若 $g_i=200$，则 $\gamma\approx0$，$w\approx0$，$y^{c}\approx\tilde{y}$——几乎只改冷启动。
+
+\subsection{汇总表}
+\begin{center}
+\small
+\begin{tabular}{clc}
+\toprule
+步骤 & 公式 & 本例结果 \\
+\midrule
+伪标签 & (1) & $0.90,\;0.40$ \\
+置信度 & (2) & $(0.583,\;0.417)$ \\
+聚合 & (3) & $y^{p}\approx0.692$ \\
+相对熵 & (4) & $r\approx1.050$ \\
+冷启动 & (5) & $\gamma\approx0.607$ \\
+不确定性 & (6) & $t\approx0.637$ \\
+权重 & (7) & $w\approx0.389$ \\
+校正标签 & (8) & $y^{c}\approx0.880$ \\
+单样本 CE & (9) & $\ell\approx0.976$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ============================================================
+\section{实验：表与图}
+% ============================================================
+
+\subsection{Table 1：数据集统计}
+Amazon-Sports / Amazon-Baby / TikTok；含 V/A/T 多模态维度；极稀疏（约 99.9\%）。\\
+\textbf{作用}：说明依赖多模态内容相似；TikTok 更小更稀，解释部分 cold NDCG 非最优。
+
+\subsection{Table 2：主对比}
+Backbone：NeuMF / LightGCN / SimGCL；
+方法：Normal / RINCE / DECL / MWUF / Ours；
+指标：Recall@20、NDCG@20；拆 Overall / Cold / Warm。
+
+\textbf{主要结论}：
+\begin{itemize}
+  \item 去噪普遍优于 Normal，cold 更明显；
+  \item DIF 多数设置最优或前二，且不伤 warm；
+  \item model-agnostic：三 backbone 均有增益；
+  \item TikTok cold NDCG 非处处第一（数据稀疏 + 主打召回）。
+\end{itemize}
+
+\subsection{Table 3：消融（LightGCN, Recall@20）}
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+变体 & 去掉内容 & Sports Cold & TikTok Cold \\
+\midrule
+w/o CM & 置信度 Eq.(2) & 0.00293 & 0.00311 \\
+w/o RE & 相对熵 Eq.(4) & 0.00278 & 0.00152 \\
+w/o CS & 冷启动 $\gamma$ Eq.(5) & 0.00264 & 0.00104 \\
+\textbf{DIF} & 完整 & \textbf{0.00325} & \textbf{0.00518} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{组件重要性}：CS $>$ RE $>$ CM（多模态已很准时 CM 增益较小）。
+
+\subsection{Figure 3：噪声鲁棒}
+Amazon 上人为噪声 20\%--80\%；Cold Recall@20 曲线。\\
+结论：噪声升全体掉点；DIF 持续在上方。
+
+\subsection{Table 4：线上 A/B（2025-01-12--16，冷启动）}
+\begin{center}
+\small
+\begin{tabular}{cccc}
+\toprule
+Effective View & Watch Time & Long View & Short View \\
++2.327\% & +2.921\% & +2.688\% & $-$2.030\% \\
+\midrule
+Like & Comment & Follow & Share \\
++2.921\% & +2.435\% & +2.790\% & +0.876\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+短播下降通常正面；工业语境约 1\% 相对提升已显著。
+
+\subsection{图/表/式总索引}
+\begin{center}
+\small
+\begin{tabular}{cllp{6.2cm}}
+\toprule
+序 & 对象 & 章节 & 一句话作用 \\
+\midrule
+1 & Fig.1 & 2.2 & 算法总览 \\
+2 & Fig.2 & 2.3.1 & 工业四步伪标签链路 \\
+3 & Eq.(1) & 2.3.2 & $k$ 个 warm 伪标签 \\
+4 & Eq.(2)(3) & 2.4 & 相似度置信聚合 \\
+5 & Eq.(4)--(6) & 2.5 & 不确定性 $t=r\gamma$ \\
+6 & Eq.(7)--(9) & 2.6 & 校正 + CE 训练 \\
+7 & Assum./Thm & 2.8 & 伪标签界 + 最优权重 \\
+8 & Table 1 & 3.1 & 数据规模与模态 \\
+9 & Table 2 & 3.2 & 主对比 \\
+10 & Table 3 & 3.3 & 消融 \\
+11 & Fig.3 & 3.4 & 抗噪曲线 \\
+12 & Table 4 & 3.5 & 线上 A/B \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ============================================================
+\section{批判性思考}
+% ============================================================
+
+\subsection{优势}
+\begin{enumerate}
+  \item 问题耦合抓得准：cold $\times$ noise，而非再堆一个冷启动 embedding；
+  \item 信号源聪明：信内容邻域 warm 的协同，不信 cold 自己的 $\hat{y}$；
+  \item $\gamma$ 工程感强：自动少动 warm、多救 cold；
+  \item 理论—系统—离线—上线闭环完整。
+\end{enumerate}
+
+\subsection{局限}
+\begin{enumerate}
+  \item 平台统计（37.7\%、28.3\%）非严格因果；
+  \item 离线 cold 用交互 20 分位，与线上“24h+播放$<$5万”不完全同构；
+  \item 8:1:1 随机划分对时序冷启动可能偏乐观；
+  \item 基线可更全（近年专用推荐去噪、强多模态冷启动 SOTA）；
+  \item 强依赖多模态质量；课程场景相似度未必普遍 $>$0.9；
+  \item 伪标签为内积分与 0/1 混合，校准讨论偏少；
+  \item TikTok cold NDCG 未全面最优；
+  \item 理论假设（Hölder、密度下界、噪声不相关）在真实推荐中偏理想。
+\end{enumerate}
+
+% ============================================================
+\section{对课程推荐冷启动的启发}
+% ============================================================
+
+\begin{keybox}[可迁移范式]
+冷启动未必先硬训 embedding，可先借内容/知识邻域的“干净协同信号”把标签洗干净，再让模型学。
+\end{keybox}
+
+\subsection{最小复现清单}
+\begin{enumerate}
+  \item Backbone：LightGCN 或简单双塔；
+  \item 课程“内容相似”：标题/简介 SBERT、知识点共现、先修边、课程图谱邻居；
+  \item 伪标签：用户对 $k$ 门相似热门课的预测分加权；
+  \item 用 $\gamma(g_i)$ 只校正新课/选课人数少的课；
+  \item 对照：w/ vs w/o 伪标签校正，看 cold item Recall。
+\end{enumerate}
+
+\subsection{课程域噪声}
+\begin{itemize}
+  \item 假正例：点开即退、任务驱动被迫点、标题党；
+  \item 假负例：列表位置靠后、未曝光；
+  \item 新课/新学期课 $\approx$ 短视频 cold。
+\end{itemize}
+
+\subsection{可延伸方向}
+用户冷启动联合去噪；伪标签随曝光累积动态减弱；假正/假负非对称校正；
+与对比学习/自监督结合；校正放到精排而非只召回；
+用知识图谱邻居替代/增强多模态 ANN（KG-DIF）。
+
+\subsection{研一阅读建议}
+精读 §2.3--2.6 与 §2.8；对照 Wang et al.\ SIGIR'21 \textit{Denoising Implicit Feedback}、
+MWUF（SIGIR'21）、LightGCN；在公开教育数据集上做最小对照实验。
+
+% ============================================================
+\section{附录：Theorem 2.1 迷你数值直觉}
+% ============================================================
+
+设 $L=1,\alpha=1,d=2,\sigma'=0.2$（示意，非论文数据）：
+\begin{center}
+\small
+\begin{tabular}{ccccc}
+\toprule
+$N_{\mathrm{warm}}$ & $k$ & 偏差阶 $(k/N)^{\alpha/d}$ & 方差阶 $\sigma'/\sqrt{k}$ & 和（示意） \\
+\midrule
+1000 & 5 & 0.071 & 0.089 & 0.16 \\
+10000 & 5 & 0.022 & 0.089 & 0.11 \\
+10000 & 20 & 0.045 & 0.045 & 0.09 \\
+10000 & 200 & 0.141 & 0.014 & 0.16 \\
+\bottomrule
+\end{tabular}
+\end{center}
+可见 $k$ 不是越大越好；$N_{\mathrm{warm}}$ 变大整体更松弛——与 $k=5$ 经验一致。
+
+% ============================================================
+\section{参考文献（原文）}
+% ============================================================
+
+\noindent
+Gaode Chen, Shicheng Wang, Shikun Li, et al.
+\textit{Denoising Implicit Feedback for Cold-start Recommendation}.
+In Proceedings of the 32nd ACM SIGKDD Conference on Knowledge Discovery and Data Mining V.2 (KDD '26),
+August 09--13, 2026, Jeju Island, Republic of Korea.
+arXiv:2606.19658v1, 2026.
+\url{https://doi.org/10.1145/3770855.3818367}
+
+\vspace{1.2em}
+\begin{center}
+\rule{0.4\textwidth}{0.4pt}\\[0.6em]
+\textit{本笔记仅供学习整理，不替代原文。数字与公式以原文 PDF 为准。}\\[0.3em]
+\textit{—— 文献解读 PDF 完 ——}
+\end{center}
+
+\end{document}

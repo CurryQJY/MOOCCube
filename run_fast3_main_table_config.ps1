@@ -21,6 +21,11 @@ param(
     [double]$CourseDiffW = 0.03,
     [double]$CourseRedundantW = 0.02,
     [double]$CourseSampleBeta = 0.20,
+    [ValidateSet("legacy_id", "initial_state")]
+    [string]$SimulatorTargetMode = "legacy_id",
+    [bool]$DeterministicEvalCandidates = $false,
+    [bool]$EvalReuseItemBank = $false,
+    [int]$DeterministicEvalSeed = 0,
     [switch]$UseSageLite,
     [double]$SageGateMin = 0.10,
     [double]$SageGateMax = 0.60,
@@ -77,7 +82,11 @@ $normEnv = @(
     "USIM_SAGE_AUX_COURSE_TEMP",
     "USIM_SAGE_AUX_RETRIEVAL_TEMP",
     "USIM_SAGE_AUX_ONLY_STRICT_COLD",
-    "USIM_SAGE_AUX_DETACH_USER"
+    "USIM_SAGE_AUX_DETACH_USER",
+    "USIM_SIMULATOR_TARGET_MODE",
+    "USIM_DETERMINISTIC_EVAL_CANDIDATES",
+    "USIM_EVAL_REUSE_ITEM_BANK",
+    "USIM_DETERMINISTIC_EVAL_SEED"
 )
 $originalEnv = @{}
 foreach ($name in $normEnv) {
@@ -142,6 +151,10 @@ try {
     $env:USIM_SAGE_AUX_RETRIEVAL_TEMP = [string]$SageAuxRetrievalTemp
     $env:USIM_SAGE_AUX_ONLY_STRICT_COLD = if ($sageAuxOnlyStrictColdBool) { "1" } else { "0" }
     $env:USIM_SAGE_AUX_DETACH_USER = if ($sageAuxDetachUserBool) { "1" } else { "0" }
+    $env:USIM_SIMULATOR_TARGET_MODE = $SimulatorTargetMode
+    $env:USIM_DETERMINISTIC_EVAL_CANDIDATES = if ($DeterministicEvalCandidates) { "1" } else { "0" }
+    $env:USIM_EVAL_REUSE_ITEM_BANK = if ($EvalReuseItemBank) { "1" } else { "0" }
+    $env:USIM_DETERMINISTIC_EVAL_SEED = [string]$DeterministicEvalSeed
 
     $runnerParams = @{
         PythonRunner = $PythonRunner
@@ -201,6 +214,10 @@ try {
         MaskKnownPosNeg = $true
         MaskSameItemNeg = $true
         RunSampledEval = $false
+        SimulatorTargetMode = $SimulatorTargetMode
+        DeterministicEvalCandidates = $DeterministicEvalCandidates
+        EvalReuseItemBank = $EvalReuseItemBank
+        DeterministicEvalSeed = $DeterministicEvalSeed
         SaveCkpt = [bool]$SaveCkpt
         AutoResume = $false
         ForceFresh = $true
@@ -250,6 +267,10 @@ try {
         Write-Setting "CourseDiffW" $CourseDiffW
         Write-Setting "CourseRedundantW" $CourseRedundantW
         Write-Setting "CourseSampleBeta" $CourseSampleBeta
+        Write-Setting "SimulatorTargetMode" $SimulatorTargetMode
+        Write-Setting "DeterministicEvalCandidates" $DeterministicEvalCandidates
+        Write-Setting "EvalReuseItemBank" $EvalReuseItemBank
+        Write-Setting "DeterministicEvalSeed" $DeterministicEvalSeed
         Write-Setting "UseSageLite" ([bool]$UseSageLite)
         Write-Setting "SageGateMin" $SageGateMin
         Write-Setting "SageGateMax" $SageGateMax

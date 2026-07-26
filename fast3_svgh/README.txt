@@ -1,0 +1,41 @@
+FAST3 redrawn SVG icons
+These are clean, editable SVG icons redrawn to match the original diagram style.
+All files are independent SVGs with transparent background, 512x512 canvas.
+
+01_user_top_blue.svg
+02_course_id_document_blue.svg
+03_content_embedding_document_blue.svg
+04_llm_score_barchart_blue.svg
+05_embedding_vector_blue.svg
+06_embedding_vector_green.svg
+07_content_delta_blue_vector.svg
+08_content_delta_green_vector.svg
+09_gate_fusion_alpha_core.svg
+10_state_cylinder_initial_purple.svg
+11_sampler_magnifier_blue.svg
+12_sampler_thermometer_blue.svg
+13_sampler_dice_blue.svg
+14_sampler_course_document_purple.svg
+15_actor_network_orange_black.svg
+16_critic_barchart_blue.svg
+17_selected_course_clipboard_orange.svg
+18_state_update_user_purple.svg
+19_state_update_cylinder_purple.svg
+20_reward_chain_green.svg
+21_reward_overlap_green.svg
+22_reward_gauge_green.svg
+23_reward_stack_green.svg
+24_reward_popularity_green.svg
+25_training_target_orange.svg
+26_final_state_cylinder_purple.svg
+27_course_embedding_document_purple.svg
+28_trophy_orange.svg
+29_legend_user_blue.svg
+30_legend_state_cylinder_purple.svg
+31_legend_course_document_purple.svg
+32_legend_group_blue.svg
+33_legend_embedding_vector_blue.svg
+34_legend_data_flow_arrow_black.svg
+35_legend_state_transition_arrow_purple.svg
+36_legend_action_selection_arrow_orange.svg
+37_legend_feedback_reward_arrow_green.svg

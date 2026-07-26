@@ -1,0 +1,50 @@
+{
+"result":{
+"query":"cold* start* item* recommendation* representation*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"26.64"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"3",
+"@dc":"3",
+"@oc":"3",
+"@id":"70646421",
+"text":"representation"
+}
+},
+"hits":{
+"@total":"3",
+"@computed":"3",
+"@sent":"3",
+"@first":"0",
+"hit":[{
+"@score":"5",
+"@id":"1375100",
+"info":{"authors":{"author":[{"@pid":"296/4034","text":"Jooeun Kim"},{"@pid":"376/1086","text":"Jinri Kim"},{"@pid":"376/0911","text":"Kwangeun Yeo"},{"@pid":"268/5707","text":"Eungi Kim"},{"@pid":"175/0873","text":"Kyoung-Woon On"},{"@pid":"192/2107","text":"Jonghwan Mun"},{"@pid":"77/1319","text":"Joonseok Lee"}]},"title":"General Item Representation Learning for Cold-start Content Recommendations.","venue":"CoRR","volume":"abs/2404.13808","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2404-13808","doi":"10.48550/ARXIV.2404.13808","ee":"https://doi.org/10.48550/arXiv.2404.13808","url":"https://dblp.org/rec/journals/corr/abs-2404-13808"},
+"url":"URL#1375100"
+},
+{
+"@score":"5",
+"@id":"1538190",
+"info":{"authors":{"author":[{"@pid":"178/4185","text":"Meizi Li"},{"@pid":"359/1970","text":"Weiqiao Que"},{"@pid":"359/2156","text":"Ziyao Geng"},{"@pid":"l/MaozhenLi","text":"Maozhen Li 0001"},{"@pid":"353/7312","text":"Zuliang Kou"},{"@pid":"141/8891","text":"Jisheng Chen"},{"@pid":"168/6265","text":"Chang Guo"},{"@pid":"36/2259-4","text":"Bo Zhang 0004"}]},"title":"Cold-start item recommendation for representation learning based on heterogeneous information networks with fusion side information.","venue":"Future Gener. Comput. Syst.","volume":"149","pages":"227-239","year":"2023","type":"Journal Articles","access":"closed","key":"journals/fgcs/LiQGLKCGZ23","doi":"10.1016/J.FUTURE.2023.07.003","ee":"https://doi.org/10.1016/j.future.2023.07.003","url":"https://dblp.org/rec/journals/fgcs/LiQGLKCGZ23"},
+"url":"URL#1538190"
+},
+{
+"@score":"5",
+"@id":"3276881",
+"info":{"authors":{"author":[{"@pid":"145/4226-2","text":"Xiaoyu Du 0002"},{"@pid":"31/2864-10","text":"Xiang Wang 0010"},{"@pid":"59/1007","text":"Xiangnan He 0001"},{"@pid":"51/8693","text":"Zechao Li"},{"@pid":"75/1030","text":"Jinhui Tang 0001"},{"@pid":"24/6606","text":"Tat-Seng Chua"}]},"title":"How to Learn Item Representation for Cold-Start Multimedia Recommendation?","venue":"ACM Multimedia","pages":"3469-3477","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/mm/Du00LTC20","doi":"10.1145/3394171.3413628","ee":"https://doi.org/10.1145/3394171.3413628","url":"https://dblp.org/rec/conf/mm/Du00LTC20"},
+"url":"URL#3276881"
+}
+]
+}
+}
+}

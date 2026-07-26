@@ -7,7 +7,6 @@ from paper_aaai27.scripts.analyze_validation_motivation import (
     summarize_validation_course_rows,
 )
 from paper_aaai27.scripts.draw_validation_motivation import (
-    STRUCTURAL_METRICS,
     draw_validation_motivation,
     validate_validation_figure_inputs,
 )
@@ -64,28 +63,21 @@ def test_validation_figure_inputs_reject_test_rows_and_ckg_rl():
         validate_validation_figure_inputs(ckg_rows, summary)
 
 
-def test_validation_figure_requires_four_conditional_proxy_intervals():
+def test_validation_figure_requires_exposure_intervals():
     course_rows = _course_rows()
     summary = _summary(course_rows)
     incomplete = summary.loc[
         ~(
             summary["model"].eq("pcgnn")
-            & summary["metric"].eq("cold_prerequisite_gap")
+            & summary["metric"].eq("ndcg_at_10")
         )
     ]
 
-    with pytest.raises(ValueError, match="structural summary"):
+    with pytest.raises(ValueError, match="exposure summary"):
         validate_validation_figure_inputs(course_rows, incomplete)
 
-    assert tuple(STRUCTURAL_METRICS) == (
-        "cold_prerequisite_gap",
-        "cold_concept_continuity",
-        "cold_difficulty_gap",
-        "cold_structural_redundancy",
-    )
 
-
-def test_draw_validation_motivation_exports_bounded_two_panel_figure(tmp_path):
+def test_draw_validation_motivation_exports_evidence_pack(tmp_path):
     course_rows = _course_rows()
     summary = _summary(course_rows)
     outputs = draw_validation_motivation(
@@ -98,9 +90,15 @@ def test_draw_validation_motivation_exports_bounded_two_panel_figure(tmp_path):
     assert all(Path(path).is_file() and Path(path).stat().st_size > 0 for path in outputs)
 
     svg = (tmp_path / "mooccube_validation_motivation.svg").read_text(encoding="utf-8")
-    assert "Validation cold-course exposure" in svg
-    assert "conditional on a cold course being recommended" in svg
-    assert "Coverage / missingness" in svg
+    assert "Baseline contrast" in svg
+    assert "Cold-course evidence coverage" in svg
+    assert "Learner-conditioned variation" in svg
+    assert "Cold-target NDCG@10" in svg
+    assert "Top-10 cold-course share" in svg
+    assert "Within-course SD across learners" in svg
+    assert "Effective coverage" not in svg
+    assert "conditional on a cold course being recommended" not in svg
+    assert "Cold-only structural proxies" not in svg
     assert "PCGNN" in svg and "CGRC" in svg
     assert "CKG-RL response" not in svg
     assert "improvement" not in svg.lower()

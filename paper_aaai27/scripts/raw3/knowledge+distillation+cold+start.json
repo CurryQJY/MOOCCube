@@ -1,0 +1,44 @@
+{
+"result":{
+"query":"knowledge* distillation* cold* start*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"20.92"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"2",
+"@dc":"2",
+"@oc":"2",
+"@id":"70854898",
+"text":"start"
+}
+},
+"hits":{
+"@total":"2",
+"@computed":"2",
+"@sent":"2",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"311453",
+"info":{"authors":{"author":[{"@pid":"63/563","text":"Kwang Hee Lee"},{"@pid":"124/2794","text":"Hyun Ji Jeong"},{"@pid":"178/0924","text":"Myoung Ho Kim"}]},"title":"A cold-start aware group recommendation method based on an augmented graph and knowledge distillation.","venue":"Appl. Soft Comput.","volume":"180","pages":"113341","year":"2025","type":"Journal Articles","access":"closed","key":"journals/asc/LeeJK25","doi":"10.1016/J.ASOC.2025.113341","ee":"https://doi.org/10.1016/j.asoc.2025.113341","url":"https://dblp.org/rec/journals/asc/LeeJK25"},
+"url":"URL#311453"
+},
+{
+"@score":"4",
+"@id":"1707169",
+"info":{"authors":{"author":[{"@pid":"205/0473-1","text":"Weizhi Zhang 0001"},{"@pid":"260/5064","text":"Liangwei Yang"},{"@pid":"256/8286","text":"Yuwei Cao"},{"@pid":"181/2626-18","text":"Ke Xu 0018"},{"@pid":"207/7781","text":"Yuanjie Zhu"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"}]},"title":"Dual-Teacher Knowledge Distillation for Strict Cold-Start Recommendation.","venue":"IEEE Big Data","pages":"483-492","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/bigdataconf/ZhangYCXZY23","doi":"10.1109/BIGDATA59044.2023.10386104","ee":"https://doi.org/10.1109/BigData59044.2023.10386104","url":"https://dblp.org/rec/conf/bigdataconf/ZhangYCXZY23"},
+"url":"URL#1707169"
+}
+]
+}
+}
+}

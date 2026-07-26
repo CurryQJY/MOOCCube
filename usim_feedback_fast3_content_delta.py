@@ -47,6 +47,7 @@ from fast3_delta.checkpoint import (
     _save_feedback_checkpoint,
     _serialize_user_seen_items,
     _static_train_config_fingerprint,
+    checkpoint_fingerprint_schema_version,
     checkpoint_resume_decision,
 )
 from fast3_delta.config import BaseConfig, Fast3Config, FeedbackConfig
@@ -93,6 +94,12 @@ from fast3_delta.reports import (
     _feedback_output_path,
     _save_final_report_exports,
 )
+from fast3_delta.pseudocold import (
+    build_pseudocold_plan,
+    effective_item_difficulty,
+    effective_item_popularity,
+    mask_user_item_history,
+)
 from fast3_delta.sg_urinit import apply_sg_urinit_
 from fast3_delta.static_protocol import (
     StreamDataset,
@@ -103,6 +110,14 @@ from fast3_delta.static_protocol import (
     _static_split_df,
     collate_fn,
     write_static_split_artifacts as _write_static_split_artifacts_impl,
+)
+from fast3_delta.v1_protocol import (
+    advance_running_retention_selector,
+    apply_course_fit_sampling_bias,
+    batch_invariant_alignment_score,
+    exclude_row_targets_from_history,
+    retained_by_base,
+    select_retained_cold_checkpoint,
 )
 
 
@@ -779,10 +794,14 @@ class PAM_RL_Pure_USIM(nn.Module):
             return None
         return pop.to(device=self.device).float().view(-1) < float(self.cfg.cold_threshold)
 
-    def _effective_train_cold_mask(self, pop):
+    def _effective_train_cold_mask(self, pop, item_idx=None):
         true_cold = self._cold_mask_from_pop(pop)
         if true_cold is None:
             return None
+        if bool(getattr(self.cfg, "v1_enabled", False)):
+            if item_idx is None:
+                raise ValueError("V1 pseudo-cold routing requires item_idx")
+            return true_cold | self._pseudo_cold_mask_for_items(item_idx)
         if (
             not self.training
             or not getattr(self.cfg, "use_pseudo_cold_train", False)
@@ -1079,7 +1098,38 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         self.item_popularity_cpu = None
         self.item_popularity_max = None
         self.item_difficulty = None
+        self.pseudo_cold_item_mask = None
+        self.pseudo_cold_plan = None
+        self.pseudo_cold_plan_hash = ""
+        self.pseudo_cold_effective_popularity = None
+        self.pseudo_cold_effective_difficulty = None
         self.course_term_ema_scales = {}
+        # 路A: 先修课程行为嵌入质心 target（默认关闭，主表零影响）
+        self.prereq_target_enabled = os.environ.get("USIM_PREREQ_TARGET", "0") == "1"
+        self.prereq_index = None      # (n_items, topk) long
+        self.prereq_index_mask = None # (n_items,) bool
+        if self.prereq_target_enabled:
+            idx_path = os.environ.get(
+                "USIM_PREREQ_TARGET_PATH", "outputs/prereq_target/prereq_index_topk10.pt"
+            )
+            blob = torch.load(idx_path, map_location="cpu", weights_only=False)
+            self.prereq_index = blob["prereq_idx"].long()
+            self.prereq_index_mask = blob["has_prereq"].bool()
+
+    def _compute_prereq_target(self, i_idx):
+        """动态计算冷课的先修课程行为嵌入质心（用当前 item_id_emb，无循环依赖）。
+
+        返回 (target, valid_mask)：target[k] 为 i_idx[k] 的先修课质心，
+        valid_mask[k] 指示该样本是否有先修集合。"""
+        device = self.item_id_emb.weight.device
+        idx_map = self.prereq_index.to(device)          # (n_items, topk)
+        mask_map = self.prereq_index_mask.to(device)    # (n_items,)
+        rows = idx_map.index_select(0, i_idx)           # (B, topk)
+        valid = mask_map.index_select(0, i_idx)         # (B,)
+        flat = rows.reshape(-1)
+        emb = self.item_id_emb(flat).view(rows.size(0), rows.size(1), -1)  # (B,topk,d)
+        mu = emb.mean(dim=1)                             # (B,d)
+        return mu, valid
 
     def set_feedback_item_stats(self, item_popularity):
         if item_popularity is None:
@@ -1097,6 +1147,64 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         self.item_popularity_cpu = pop.detach().cpu()
         self.item_popularity_max = pop.max().detach().clamp_min(1.0)
         self.item_difficulty = difficulty.clamp(0.0, 1.0)
+        self._refresh_pseudo_cold_item_stats()
+
+    def _refresh_pseudo_cold_item_stats(self):
+        mask = self.pseudo_cold_item_mask
+        if self.item_popularity is None or mask is None:
+            self.pseudo_cold_effective_popularity = None
+            self.pseudo_cold_effective_difficulty = None
+            return
+        mask = mask.to(device=self.item_popularity.device, dtype=torch.bool)
+        if int(mask.numel()) != int(self.cfg.n_items):
+            raise ValueError("pseudo-cold item mask must have one value per item")
+        self.pseudo_cold_item_mask = mask
+        self.pseudo_cold_effective_popularity = effective_item_popularity(
+            self.item_popularity,
+            mask,
+        ).to(device=self.device, dtype=self.item_popularity.dtype)
+        self.pseudo_cold_effective_difficulty = effective_item_difficulty(
+            self.item_popularity,
+            mask,
+        ).to(device=self.device, dtype=self.item_difficulty.dtype)
+
+    def set_pseudo_cold_item_mask(self, item_mask, plan=None):
+        """Install the fixed V1 pseudo-cold catalog mask for the training route."""
+        mask = torch.as_tensor(item_mask, dtype=torch.bool, device=self.device).view(-1)
+        if int(mask.numel()) != int(self.cfg.n_items):
+            raise ValueError(
+                f"pseudo-cold item mask size mismatch: expected {self.cfg.n_items}, got {mask.numel()}"
+            )
+        self.pseudo_cold_item_mask = mask
+        self.pseudo_cold_plan = plan
+        self.pseudo_cold_plan_hash = str(getattr(plan, "plan_hash", ""))
+        self._refresh_pseudo_cold_item_stats()
+
+    def set_pseudo_cold_plan(self, plan):
+        if plan is None:
+            self.pseudo_cold_item_mask = None
+            self.pseudo_cold_plan = None
+            self.pseudo_cold_plan_hash = ""
+            self._refresh_pseudo_cold_item_stats()
+            return
+        self.set_pseudo_cold_item_mask(plan.selected_mask, plan=plan)
+
+    def _pseudo_cold_mask_for_items(self, item_idx):
+        item_idx = torch.as_tensor(item_idx, dtype=torch.long, device=self.device).view(-1)
+        if self.pseudo_cold_item_mask is None:
+            return torch.zeros_like(item_idx, dtype=torch.bool)
+        return self.pseudo_cold_item_mask.index_select(0, item_idx)
+
+    def _course_item_difficulty(self, item_idx):
+        difficulty = self.item_difficulty
+        if (
+            bool(getattr(self.cfg, "v1_enabled", False))
+            and self.pseudo_cold_effective_difficulty is not None
+        ):
+            difficulty = self.pseudo_cold_effective_difficulty
+        if difficulty is None:
+            return None
+        return difficulty.to(device=self.device).index_select(0, item_idx.view(-1).long())
 
     def _sage_popularity_bucket_ids(self, pop):
         bucket_count = max(2, int(getattr(self.cfg, "sage_gate_bucket_count", 20)))
@@ -1538,6 +1646,11 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             seen_mat[rows, cols] = 1.0
         return seen_mat, seen_mat.sum(dim=1, keepdim=True)
 
+    def _course_term_history_without_target(self, seen_mat, seen_cnt_raw, item_idx):
+        if not bool(getattr(self.cfg, "v1_target_history_exclusion", False)):
+            return seen_mat, seen_cnt_raw
+        return exclude_row_targets_from_history(seen_mat, item_idx)
+
     def _build_known_positive_batch_mask(self, user_ids, item_idx, user_seen_items):
         seen_index = getattr(self, "user_seen_index", None)
         if seen_index is not None:
@@ -1672,6 +1785,12 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         else:
             seen_mat, seen_cnt_raw = self._build_seen_mat(selected_user_ids, user_seen_items)
 
+        seen_mat, seen_cnt_raw = self._course_term_history_without_target(
+            seen_mat,
+            seen_cnt_raw,
+            item_idx,
+        )
+
         if seen_cnt_raw.max().item() < 1:
             return terms
 
@@ -1710,8 +1829,9 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             if redundant_mode != "video_family":
                 terms["redundant"] = redundant * seen_active * active
 
-        if self.item_difficulty is not None:
-            item_difficulty = self.item_difficulty[item_idx].unsqueeze(1)
+        item_difficulty = self._course_item_difficulty(item_idx)
+        if item_difficulty is not None:
+            item_difficulty = item_difficulty.unsqueeze(1)
             difficulty_gap = F.relu(item_difficulty - user_readiness)
             terms["difficulty_gap"] = difficulty_gap * active
 
@@ -1731,12 +1851,17 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         flat_user_idx = candidate_user_idx.reshape(-1)
         unique_uids, inverse_map = flat_user_idx.unique(return_inverse=True)
         seen_mat_u, seen_cnt_u = self._build_seen_mat(unique_uids, user_seen_items)
-        if seen_cnt_u.max().item() < 1:
-            return zero
         seen_mat = seen_mat_u[inverse_map]
         seen_cnt_raw = seen_cnt_u[inverse_map]
 
         flat_item_idx = item_idx.view(-1, 1).expand(-1, n_cand).reshape(-1)
+        seen_mat, seen_cnt_raw = self._course_term_history_without_target(
+            seen_mat,
+            seen_cnt_raw,
+            flat_item_idx,
+        )
+        if seen_cnt_raw.max().item() < 1:
+            return zero
         fit = torch.zeros((flat_user_idx.size(0), 1), dtype=torch.float32, device=self.device)
 
         warm_seen = max(1.0, float(self.cfg.feedback_course_warm_seen))
@@ -1761,8 +1886,9 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             concept_bonus = concept_bonus * prereq_safe * seen_active * (1.0 - redundant_gate * redundant)
 
         difficulty_gap = torch.zeros_like(fit)
-        if self.item_difficulty is not None:
-            item_difficulty = self.item_difficulty[flat_item_idx].unsqueeze(1)
+        item_difficulty = self._course_item_difficulty(flat_item_idx)
+        if item_difficulty is not None:
+            item_difficulty = item_difficulty.unsqueeze(1)
             difficulty_gap = F.relu(item_difficulty - user_readiness)
 
         concept_bonus = self._normalize_course_term("sample.concept_bonus", concept_bonus)
@@ -1778,6 +1904,35 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         ) * active.repeat_interleave(n_cand, dim=0)
 
         return fit.view(batch_size, n_cand)
+
+    def _apply_v1_course_fit_to_sampling_probs(
+        self,
+        probs,
+        candidate_user_idx,
+        item_idx,
+        target_pop=None,
+        user_seen_items=None,
+    ):
+        if (
+            not bool(getattr(self.cfg, "v1_enabled", False))
+            or candidate_user_idx is None
+            or item_idx is None
+            or user_seen_items is None
+            or float(getattr(self.cfg, "feedback_course_sample_beta", 0.0)) <= 0.0
+        ):
+            return probs, None
+        course_fit = self._compute_candidate_course_fit(
+            candidate_user_idx,
+            item_idx=item_idx,
+            target_pop=target_pop,
+            user_seen_items=user_seen_items,
+        )
+        biased = apply_course_fit_sampling_bias(
+            probs,
+            course_fit.to(device=probs.device, dtype=probs.dtype),
+            beta=float(getattr(self.cfg, "feedback_course_sample_beta", 0.0)),
+        )
+        return biased, course_fit
 
     def _build_user_bank_raw(self):
         chunks_raw = []
@@ -2059,12 +2214,37 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         item_idx=None,
         target_pop=None,
         user_seen_items=None,
+        deterministic=False,
+        rollout_step=0,
     ):
         B = item_emb.size(0)
         N_cand = self.cfg.n_candidates
         strategy = self.cfg.candidate_strategy
         if strategy != "retrieve_sample":
-            rand_idx = torch.randint(0, self.cfg.n_users, (B, N_cand), device=self.device)
+            if deterministic:
+                if item_idx is None:
+                    item_ids = list(range(B))
+                else:
+                    item_ids = item_idx.detach().view(-1).cpu().tolist()
+                    if len(item_ids) != B:
+                        raise ValueError("item_idx must match the candidate batch size")
+                rand_idx = torch.stack(
+                    [
+                        torch.randint(
+                            0,
+                            self.cfg.n_users,
+                            (N_cand,),
+                            device=self.device,
+                            generator=self._deterministic_candidate_generator(
+                                item_id, rollout_step, self.device
+                            ),
+                        )
+                        for item_id in item_ids
+                    ],
+                    dim=0,
+                )
+            else:
+                rand_idx = torch.randint(0, self.cfg.n_users, (B, N_cand), device=self.device)
             cand_emb = self.user_proj(self.user_emb(rand_idx)).detach()
             return cand_emb, rand_idx, None
         if user_bank_raw is None:
@@ -2200,9 +2380,38 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
                         cgrc_recon_sample_active_mean = float((recon_gate > 0).float().mean().item())
                         cgrc_recon_sample_score_mean = float((recon_logits * recon_gate).sum().item() / recon_gate.sum().clamp_min(1.0).item())
         probs = probs / probs.sum(dim=1, keepdim=True).clamp_min(1e-12)
+        probs, v1_course_fit = self._apply_v1_course_fit_to_sampling_probs(
+            probs,
+            pool_idx,
+            item_idx=item_idx,
+            target_pop=target_pop,
+            user_seen_items=user_seen_items,
+        )
         nonzero_per_row = (probs > 0).sum(dim=1)
         replacement = int(nonzero_per_row.min().detach().item()) < N_cand
-        sample_pos = torch.multinomial(probs, num_samples=N_cand, replacement=replacement)
+        if deterministic:
+            if item_idx is None:
+                item_ids = list(range(B))
+            else:
+                item_ids = item_idx.detach().view(-1).cpu().tolist()
+                if len(item_ids) != B:
+                    raise ValueError("item_idx must match the candidate batch size")
+            sample_pos = torch.stack(
+                [
+                    torch.multinomial(
+                        probs[row],
+                        num_samples=N_cand,
+                        replacement=replacement,
+                        generator=self._deterministic_candidate_generator(
+                            item_id, rollout_step, probs.device
+                        ),
+                    )
+                    for row, item_id in enumerate(item_ids)
+                ],
+                dim=0,
+            )
+        else:
+            sample_pos = torch.multinomial(probs, num_samples=N_cand, replacement=replacement)
         cand_idx = pool_idx.gather(1, sample_pos)
         cand_emb = user_bank_raw[cand_idx].detach()
         topm_unique = max(1, int(pool_idx.unique().numel()))
@@ -2220,27 +2429,70 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             "sage_two_expert": float(1.0 if sage_active and sage_two_expert else 0.0),
             "cgrc_recon_sample_active": float(cgrc_recon_sample_active_mean),
             "cgrc_recon_sample_score": float(cgrc_recon_sample_score_mean),
+            "v1_course_fit_pre_sample": float(
+                v1_course_fit.mean().item() if v1_course_fit is not None else 0.0
+            ),
+            "v1_course_fit_pre_sample_active": float(v1_course_fit is not None),
         }
         return cand_emb, cand_idx, stats
 
+    def _deterministic_candidate_generator(self, item_id, rollout_step, device):
+        modulus = (1 << 63) - 1
+        seed = (
+            int(getattr(self.cfg, "deterministic_eval_seed", 2025)) * 6364136223846793005
+            + (int(item_id) + 1) * 1442695040888963407
+            + (int(rollout_step) + 1) * 3202034522624059733
+        ) % modulus
+        generator = torch.Generator(device=device)
+        generator.manual_seed(seed)
+        return generator
+
     def forward(self, batch, pop, llm_s, user_bank_raw=None, user_seen_items=None):
         u, i = batch["u"], batch["i"]
+        v1_enabled = bool(getattr(self.cfg, "v1_enabled", False))
         is_cold = self._cold_mask_from_pop(pop)
-        effective_cold = self._effective_train_cold_mask(pop)
+        effective_cold = self._effective_train_cold_mask(pop, item_idx=i)
         episode_pop = self._target_pop_with_effective_cold(pop, effective_cold)
         z_u_base = self.user_proj(self.user_emb(u))
-        force_cold_mask = effective_cold if self.cfg.train_force_cold else False
+        force_cold_mask = effective_cold if (self.cfg.train_force_cold or v1_enabled) else False
         z_i_base, id_e_true, content_e = self.get_item_vector(i, llm_s, force_cold=force_cold_mask)
-        target_emb = id_e_true.detach().clone()
-        final_h, trajectory, candidate_stats = self.run_usim_episode(
-            z_i_base,
-            target_emb,
-            user_bank_raw=user_bank_raw,
-            item_idx=i,
-            target_pop=episode_pop,
-            user_seen_items=user_seen_items,
-        )
-        final_h = self._blend_rl_episode_output(z_i_base, final_h)
+        if getattr(self.cfg, "simulator_target_mode", "legacy_id") == "initial_state":
+            target_emb = z_i_base.detach().clone()
+        else:
+            target_emb = id_e_true.detach().clone()
+        # 路A: 先修 target 注入不在此处(训练期冷课被 held-out, effective_cold 恒空 -> no-op)。
+        # 冷课表示在推理期由 infer_refined_item_vectors 构造, 先修 target 注入在那里(见 3138 附近)。
+        if v1_enabled:
+            # Hot courses remain on the base representation in both training
+            # and evaluation.  Only true/pseudo-cold rows invoke the simulator.
+            episode_rows = effective_cold.nonzero(as_tuple=False).view(-1)
+            trajectory = {"rewards": []}
+            candidate_stats = {"steps": 0}
+            final_h = z_i_base
+            if episode_rows.numel() > 0:
+                episode_base = z_i_base.index_select(0, episode_rows)
+                episode_target = target_emb.index_select(0, episode_rows)
+                episode_pop = episode_pop.index_select(0, episode_rows) if episode_pop is not None else None
+                episode_final, trajectory, candidate_stats = self.run_usim_episode(
+                    episode_base,
+                    episode_target,
+                    user_bank_raw=user_bank_raw,
+                    item_idx=i.index_select(0, episode_rows),
+                    target_pop=episode_pop,
+                    user_seen_items=user_seen_items,
+                )
+                episode_final = self._blend_rl_episode_output(episode_base, episode_final)
+                final_h = z_i_base.index_copy(0, episode_rows, episode_final)
+        else:
+            final_h, trajectory, candidate_stats = self.run_usim_episode(
+                z_i_base,
+                target_emb,
+                user_bank_raw=user_bank_raw,
+                item_idx=i,
+                target_pop=episode_pop,
+                user_seen_items=user_seen_items,
+            )
+            final_h = self._blend_rl_episode_output(z_i_base, final_h)
         pseudo_cold_mask = effective_cold & (~is_cold)
         candidate_stats["pseudo_cold_count"] = int(pseudo_cold_mask.sum().detach().item())
         candidate_stats["pseudo_cold_ratio"] = (
@@ -2252,7 +2504,16 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         candidate_stats["rl_residual_scale"] = float(getattr(self.cfg, "rl_residual_scale", 1.0))
         ppo_loss_raw = self.compute_ppo_loss(trajectory)
         ppo_loss = float(getattr(self.cfg, "ppo_loss_weight", 1.0)) * ppo_loss_raw
-        z_u = F.normalize(z_u_base, dim=1)
+        # The pseudo-cold supervision label must not train a user embedding
+        # that later serves as simulator evidence for the hidden interaction.
+        z_u_for_main = z_u_base
+        if v1_enabled and bool(pseudo_cold_mask.any().item()):
+            z_u_for_main = torch.where(
+                pseudo_cold_mask.view(-1, 1),
+                z_u_base.detach(),
+                z_u_base,
+            )
+        z_u = F.normalize(z_u_for_main, dim=1)
         z_i = F.normalize(final_h, dim=1)
         logits = torch.matmul(z_u, z_i.t()) / self.cfg.temp
         labels = torch.arange(logits.size(0), device=self.device)
@@ -2488,6 +2749,12 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
         if not torch.isfinite(fit_score).all():
             fit_score = torch.nan_to_num(fit_score, nan=0.0, posinf=0.0, neginf=0.0)
 
+        # V1 moves the identity-level course-fit bias to `get_candidates`,
+        # before multinomial sampling.  Reordering an already sampled pool
+        # cannot change a permutation-equivariant PPO policy's user choice.
+        if bool(getattr(self.cfg, "v1_enabled", False)):
+            return candidates, cand_user_idx, fit_score
+
         if not getattr(self.cfg, "feedback_course_sample_soft", True):
             order = torch.argsort(fit_score, dim=1, descending=True)
             candidates = candidates.gather(1, order.unsqueeze(-1).expand(-1, -1, candidates.size(-1)))
@@ -2648,6 +2915,11 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 item_idx=item_idx,
                 target_pop=target_pop,
                 user_seen_items=user_seen_items,
+                deterministic=(
+                    deterministic
+                    and bool(getattr(self.cfg, "deterministic_eval_candidates", False))
+                ),
+                rollout_step=t,
             )
             candidates, cand_user_idx, fit_score = self._apply_course_sampling_bias(
                 current_h,
@@ -2704,9 +2976,29 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                         batch_size=current_h.size(0),
                     )
                     candidate_stats["target_alpha"] += float(target_alpha.mean().item())
-                    score = (((1.0 - target_alpha) * user_align) + (target_alpha * target_align)).mean()
+                    if bool(getattr(self.cfg, "v1_enabled", False)):
+                        score = batch_invariant_alignment_score(
+                            h_detached,
+                            selected_user.detach(),
+                            target_emb.detach(),
+                            target_alpha,
+                            reference_batch_size=int(
+                                getattr(self.cfg, "v1_reference_batch_size", self.cfg.batch_size)
+                            ),
+                        )
+                    else:
+                        score = (
+                            ((1.0 - target_alpha) * user_align) + (target_alpha * target_align)
+                        ).mean()
                 else:
-                    score = user_align.mean()
+                    if bool(getattr(self.cfg, "v1_enabled", False)):
+                        reference_batch_size = max(
+                            1,
+                            int(getattr(self.cfg, "v1_reference_batch_size", self.cfg.batch_size)),
+                        )
+                        score = user_align.sum() / float(reference_batch_size)
+                    else:
+                        score = user_align.mean()
                 grad = torch.autograd.grad(score, h_detached)[0]
 
             current_h = current_h + self.cfg.usim_lr * grad
@@ -2725,7 +3017,12 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                 reward = terminal_reward + float(self.cfg.reward_gain_weight) * step_gain
                 step_gain_mean = float(step_gain.mean().item())
                 if cand_stats is not None:
-                    collapse_penalty = float(self.cfg.reward_dup_penalty_weight) * float(cand_stats["dup_rate"])
+                    duplicate_weight = (
+                        0.0
+                        if bool(getattr(self.cfg, "v1_enabled", False))
+                        else float(self.cfg.reward_dup_penalty_weight)
+                    )
+                    collapse_penalty = duplicate_weight * float(cand_stats["dup_rate"])
                     reward = reward - collapse_penalty
                     if float(self.cfg.reward_cov_bonus_weight) > 0.0:
                         reward = reward + float(self.cfg.reward_cov_bonus_weight) * float(cand_stats["topm_coverage"])
@@ -2821,9 +3118,31 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
                     target_pop = None
                     if self.item_popularity is not None:
                         target_pop = self.item_popularity.to(device=self.device).index_select(0, idx_batch).float()
+                    if getattr(self.cfg, "simulator_target_mode", "legacy_id") == "initial_state":
+                        target_emb = z_i_base.detach().clone()
+                    else:
+                        target_emb = None
+                    # 路A(默认关闭): 冷课推理期本无行为锚(target=None)，用先修课程行为嵌入质心填补。
+                    # 这是冷课表示唯一真正成形处；仅对 has_prereq 的课注入，动态用当前 item_id_emb。
+                    if getattr(self, "prereq_target_enabled", False) and self.prereq_index is not None:
+                        dev = self.item_id_emb.weight.device
+                        pre_idx = self.prereq_index.to(dev).index_select(0, idx_batch)      # (B, topk)
+                        pre_mask = self.prereq_index_mask.to(dev).index_select(0, idx_batch)  # (B,)
+                        if bool(pre_mask.any().item()):
+                            id_table = self.item_id_emb.weight.detach()
+                            mu_pre = id_table[pre_idx].mean(dim=1)                            # (B,128)
+                            if target_emb is None:
+                                base = z_i_base.detach().clone()
+                            else:
+                                base = target_emb
+                            target_emb = torch.where(
+                                pre_mask.view(-1, 1).to(base.device),
+                                mu_pre.to(base.device),
+                                base,
+                            )
                     final_h, _, _ = self.run_usim_episode(
                         z_i_base,
-                        target_emb=None,
+                        target_emb=target_emb,
                         user_bank_raw=bank_arg,
                         item_idx=idx_batch,
                         target_pop=target_pop,
@@ -2937,6 +3256,27 @@ def _file_digest(path):
         return None
 
 
+def _directory_digest(path):
+    """Stable content digest for the relation artifacts consumed by V1."""
+    root = os.path.abspath(str(path))
+    if not os.path.isdir(root):
+        return None
+    hasher = hashlib.sha256()
+    for current_root, dirs, files in os.walk(root):
+        dirs.sort()
+        for name in sorted(files):
+            file_path = os.path.join(current_root, name)
+            relative = os.path.relpath(file_path, root).replace("\\", "/")
+            digest = _file_digest(file_path)
+            if digest is None:
+                continue
+            hasher.update(relative.encode("utf-8"))
+            hasher.update(b"\0")
+            hasher.update(digest.encode("ascii"))
+            hasher.update(b"\n")
+    return hasher.hexdigest()
+
+
 def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df, provenance=None):
     script_path = os.path.abspath(__file__)
     manifest = {
@@ -2959,6 +3299,28 @@ def _write_static_manifest(split_info, exports, cfg, course_stats, data_dir, df,
         "model_config": {
             "n_epochs": int(cfg.n_epochs),
             "batch_size": int(cfg.batch_size),
+            "ckg_rl_v1_enabled": bool(getattr(cfg, "v1_enabled", False)),
+            "v1_contract_version": int(getattr(cfg, "v1_contract_version", 0)),
+            "v1_reference_batch_size": int(getattr(cfg, "v1_reference_batch_size", cfg.batch_size)),
+            "v1_target_history_exclusion": bool(
+                getattr(cfg, "v1_target_history_exclusion", False)
+            ),
+            "v1_target_history_exclusion_scope": str(
+                getattr(cfg, "v1_target_history_exclusion_scope", "")
+            ),
+            "v1_pseudo_cold_plan_hash": str(
+                getattr(cfg, "v1_pseudo_cold_plan_hash", "")
+            ),
+            "v1_pseudo_cold_plan_count": int(
+                getattr(cfg, "v1_pseudo_cold_plan_count", 0)
+            ),
+            "v1_selector_mode": str(getattr(cfg, "v1_selector_mode", "")),
+            "v1_selector_hot_tolerance": float(
+                getattr(cfg, "v1_selector_hot_tolerance", 0.0)
+            ),
+            "v1_selector_overall_tolerance": float(
+                getattr(cfg, "v1_selector_overall_tolerance", 0.0)
+            ),
             "cold_threshold": int(cfg.cold_threshold),
             "eval_n_neg": int(cfg.eval_n_neg),
             "run_sampled_eval": bool(cfg.run_sampled_eval),
@@ -3174,9 +3536,99 @@ def _compute_early_stop_score(cold_metrics, hot_metrics, k, mode="cold_only"):
     return float(cold_n)
 
 
+def _validate_v1_static_contract(cfg):
+    """Reject a V1 launch that silently re-enables incompatible legacy paths."""
+    if not bool(getattr(cfg, "v1_enabled", False)):
+        return
+    required_true = (
+        "use_pseudo_cold_train",
+        "aux_hot_only",
+        "deterministic_eval_candidates",
+        "eval_reuse_item_bank",
+        "v1_target_history_exclusion",
+        "feedback_course_match_exclude_target",
+        "feedback_course_only_cold",
+        "feedback_course_sample_only_cold",
+        "use_epoch_early_stop",
+    )
+    required_false = (
+        "train_force_cold",
+        "use_content_delta",
+        "use_paac",
+        "use_prereq_aux_loss",
+        "use_sage_lite",
+        "use_sage_aux_loss",
+        "use_cgrc_recon",
+        "use_course_reward",
+        "legacy_train_protocol",
+    )
+    violations = [name for name in required_true if not bool(getattr(cfg, name, False))]
+    violations.extend(name for name in required_false if bool(getattr(cfg, name, False)))
+    if str(getattr(cfg, "pseudo_cold_mode", "")) != "fixed_item_stratified":
+        violations.append("pseudo_cold_mode=fixed_item_stratified")
+    if str(getattr(cfg, "simulator_target_mode", "")) != "initial_state":
+        violations.append("simulator_target_mode=initial_state")
+    if str(getattr(cfg, "rollout_policy", "")) != "course_fit":
+        violations.append("rollout_policy=course_fit")
+    if int(getattr(cfg, "ppo_epochs", 0)) != 1:
+        violations.append("ppo_epochs=1")
+    if abs(float(getattr(cfg, "ppo_loss_weight", 1.0))) > 1e-12:
+        violations.append("ppo_loss_weight=0")
+    if abs(float(getattr(cfg, "reward_dup_penalty_weight", 1.0))) > 1e-12:
+        violations.append("reward_dup_penalty_weight=0")
+    if float(getattr(cfg, "feedback_course_sample_beta", 0.0)) <= 0.0:
+        violations.append("feedback_course_sample_beta>0")
+    if str(getattr(cfg, "early_stop_average_mode", "")) != "item_macro":
+        violations.append("early_stop_average_mode=item_macro")
+    if str(getattr(cfg, "v1_selector_mode", "")) not in {
+        "cold_ndcg_then_recall_with_retention",
+        "cold_ndcg_running_retention",
+    }:
+        violations.append("supported v1_selector_mode")
+    if violations:
+        raise ValueError(
+            "Invalid CKG-RL V1 configuration; required controls violated: "
+            + ", ".join(violations)
+        )
+
+
 def run_static_experiment(df, cfg, device, content_emb, llm_scores):
     train_df, val_df, test_df, split_info = _static_split_df(df)
     train_df, val_df, test_df, item_train_pop = _apply_train_popularity(train_df, val_df, test_df, cfg)
+    v1_pseudo_cold_plan = None
+    if bool(getattr(cfg, "v1_enabled", False)):
+        _validate_v1_static_contract(cfg)
+        heldout_cold_items = set(
+            int(item_id)
+            for split_df in (val_df, test_df)
+            for item_id, pop in zip(split_df["i_idx"].values, split_df["popularity"].values)
+            if float(pop) < float(cfg.cold_threshold)
+        )
+        requested_count = int(getattr(cfg, "v1_pseudo_cold_plan_count", 0))
+        if requested_count <= 0:
+            requested_count = len(heldout_cold_items)
+        if requested_count < 1:
+            raise RuntimeError(
+                "V1 requires a positive pseudo-cold catalog count; the strict held-out cold catalog is empty."
+            )
+        v1_pseudo_cold_plan = build_pseudocold_plan(
+            item_train_pop,
+            target_count=requested_count,
+            min_popularity=float(cfg.pseudo_cold_min_pop),
+            cold_threshold=float(cfg.cold_threshold),
+            seed=int(getattr(cfg, "v1_pseudo_cold_plan_seed", _static_seed())),
+            n_strata=4,
+        )
+        cfg.v1_pseudo_cold_plan_hash = v1_pseudo_cold_plan.plan_hash
+        cfg.v1_pseudo_cold_plan_count = len(v1_pseudo_cold_plan.selected_item_ids)
+        cfg.pseudo_cold_plan_strategy = "popularity_stratified"
+        split_info["v1_pseudo_cold_plan_hash"] = v1_pseudo_cold_plan.plan_hash
+        split_info["v1_pseudo_cold_requested_count"] = int(requested_count)
+        split_info["v1_pseudo_cold_selected_count"] = int(
+            len(v1_pseudo_cold_plan.selected_item_ids)
+        )
+        split_info["v1_pseudo_cold_heldout_catalog_count"] = int(len(heldout_cold_items))
+        split_info["v1_pseudo_cold_plan_strategy"] = "train_popularity_stratified"
     split_info["cold_threshold"] = int(cfg.cold_threshold)
     if split_info.get("split_family") == "strict_item_cold" and int(cfg.cold_threshold) == 1:
         split_info["cold_definition"] = "strict item cold iff train_popularity == 0"
@@ -3217,11 +3669,26 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
     if course_artifacts is not None:
         model.set_course_artifacts(course_artifacts)
     model.set_feedback_item_stats(item_train_pop)
+    if v1_pseudo_cold_plan is not None:
+        model.set_pseudo_cold_plan(v1_pseudo_cold_plan)
     sg_urinit_stats = _apply_static_sg_urinit(model, train_df, content_emb, cfg)
     optimizer = _make_fast3_optimizer(model, cfg)
 
     exports = _write_static_split_artifacts(train_df, val_df, test_df, split_info, cfg)
+    if v1_pseudo_cold_plan is not None:
+        pseudo_plan_path = _feedback_output_path("v1_pseudocold_plan.json")
+        with open(pseudo_plan_path, "w", encoding="utf-8") as f:
+            json.dump(v1_pseudo_cold_plan.to_dict(), f, indent=2)
+        exports["v1_pseudocold_plan"] = pseudo_plan_path
     data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
+    if bool(getattr(cfg, "v1_enabled", False)):
+        relation_dir = os.environ.get("USIM_RELATION_DIR", "MOOCCube/relations")
+        split_info["v1_input_artifact_sha256"] = {
+            "stream_data": _file_digest(os.path.join(data_dir, "stream_data.pkl")),
+            "content_embeddings": _file_digest(os.path.join(data_dir, "content_emb.pt")),
+            "metadata": _file_digest(os.path.join(data_dir, "meta.json")),
+            "relation_artifacts": _directory_digest(relation_dir),
+        }
     entry_script = os.environ.get("USIM_FB_ENTRY_SCRIPT", "").strip() or (
         os.path.abspath(sys.argv[0]) if sys.argv else os.path.abspath(__file__)
     )
@@ -3295,6 +3762,14 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         f"mode={cfg.pseudo_cold_mode} | ratio={cfg.pseudo_cold_ratio:.2f} | "
         f"min_pop={cfg.pseudo_cold_min_pop}"
     )
+    if v1_pseudo_cold_plan is not None:
+        print(
+            f">> CKG-RL V1: pseudo_items={len(v1_pseudo_cold_plan.selected_item_ids)} | "
+            f"plan_hash={v1_pseudo_cold_plan.plan_hash[:12]} | "
+            f"reference_batch={cfg.v1_reference_batch_size} | "
+            f"selector={cfg.v1_selector_mode} | Hot/Overall tolerance="
+            f"{cfg.v1_selector_hot_tolerance:.3f}/{cfg.v1_selector_overall_tolerance:.3f}"
+        )
     print(
         f">> Course Match: mode={getattr(cfg, 'feedback_course_match_mode', 'mean')} | "
         f"topk={getattr(cfg, 'feedback_course_match_topk', 5)} | "
@@ -3381,6 +3856,11 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         "PseudoColdRatio",
         "EffectiveColdRatio",
         "PseudoColdCount",
+        "V1RetentionOK",
+        "V1ValOverallN10",
+        "V1ValOverallR10",
+        "V1BaseHotN10",
+        "V1BaseOverallN10",
     ]
     for key in static_diag_keys:
         history[key] = []
@@ -3416,9 +3896,15 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             history[key].append(diag.get(key, 0.0))
 
     train_seen = _add_user_seen_from_df({}, train_df)
+    simulator_train_seen = train_seen
+    if v1_pseudo_cold_plan is not None:
+        simulator_train_seen = mask_user_item_history(
+            train_seen,
+            v1_pseudo_cold_plan.selected_mask,
+        )
     # Build the (n_users, n_items) bool index ONCE on device for fast batch lookup.
     # Replaces per-batch Python loops in _build_seen_mat / evaluate full-ranking seen-mask.
-    model.set_user_seen_index(train_seen)
+    model.set_user_seen_index(simulator_train_seen)
     train_loader = DataLoader(StreamDataset(train_df, llm_scores), batch_size=cfg.batch_size, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(StreamDataset(val_df, llm_scores), batch_size=2048, shuffle=False, collate_fn=collate_fn)
     test_loader = DataLoader(StreamDataset(test_df, llm_scores), batch_size=2048, shuffle=False, collate_fn=collate_fn)
@@ -3427,8 +3913,14 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
     best_opt_state = None
     best_epoch = 0
     best_score = -1e9
+    best_selection_metrics = None
+    running_retention_n_peaks = None
     no_improve = 0
     do_early_stop = cfg.use_epoch_early_stop and cfg.n_epochs > 1 and len(val_df) > 0
+    if bool(getattr(cfg, "v1_enabled", False)) and not do_early_stop:
+        raise RuntimeError(
+            "V1 requires full-ranking validation with epoch early stopping enabled and a non-empty validation split."
+        )
     delta_only_applied = False
     resume_start_epoch = 0
     ckpt_dir = _feedback_ckpt_dir()
@@ -3449,6 +3941,12 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             "average_mode": str(cfg.early_stop_average_mode),
             "k": int(cfg.early_stop_k),
         }
+        if best_selection_metrics is not None:
+            es_best["selection_metrics"] = best_selection_metrics
+        if bool(getattr(cfg, "v1_enabled", False)):
+            es_best["selector_mode"] = str(getattr(cfg, "v1_selector_mode", ""))
+            if str(getattr(cfg, "v1_selector_mode", "")) == "cold_ndcg_running_retention":
+                es_best["running_retention_n_peaks"] = dict(running_retention_n_peaks or {})
         state = _build_feedback_ckpt_state(
             model,
             optimizer,
@@ -3476,7 +3974,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         )
         state.update(
             {
-                "fingerprint_schema_version": CHECKPOINT_FINGERPRINT_SCHEMA_VERSION,
+                "fingerprint_schema_version": checkpoint_fingerprint_schema_version(cfg),
                 "mode": "static",
                 "protocol": "static",
                 "split_mode": str(split_info.get("split_mode", "")),
@@ -3558,6 +4056,24 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                     best_score = -1e9
                 best_state = resume_state.get("es_best_state")
                 best_opt_state = resume_state.get("es_best_opt_state")
+                best_selection_metrics = es_best.get("selection_metrics")
+                if (
+                    bool(getattr(cfg, "v1_enabled", False))
+                    and str(getattr(cfg, "v1_selector_mode", ""))
+                    == "cold_ndcg_running_retention"
+                ):
+                    saved_selector_mode = str(es_best.get("selector_mode", ""))
+                    saved_peaks = es_best.get("running_retention_n_peaks")
+                    if saved_selector_mode != "cold_ndcg_running_retention" or not isinstance(
+                        saved_peaks, dict
+                    ):
+                        raise RuntimeError(
+                            "V1 running-retention selector cannot resume without its saved selector state."
+                        )
+                    running_retention_n_peaks = {
+                        "hot_n": float(saved_peaks.get("hot_n", 0.0)),
+                        "overall_n": float(saved_peaks.get("overall_n", 0.0)),
+                    }
                 no_improve = int(resume_state.get("es_no_improve", 0) or 0)
                 delta_only_applied = bool(resume_state.get("delta_only_applied", False))
                 resume_start_epoch = int(resume_state.get("next_epoch", 0) or 0)
@@ -3566,7 +4082,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 print(
                     f">> Static Resume: status={resume_state.get('status')} | "
                     f"next_epoch={resume_start_epoch + 1}/{cfg.n_epochs} | "
-                    f"best_epoch={best_epoch} | best_score={best_score:.4f} | {cfg_reason}"
+                    f"best_epoch={best_epoch} | best_score={best_score:.4f} | {decision.reason}"
                 )
     elif force_fresh:
         print(">> Static Resume: force_fresh=1; ignoring existing checkpoints.")
@@ -3666,7 +4182,7 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 pop.to(device),
                 llm.to(device),
                 user_bank_raw=cached_user_bank,
-                user_seen_items=train_seen,
+                user_seen_items=simulator_train_seen,
             )
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -3800,7 +4316,17 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         val_hot_metrics, val_hot_count = None, 0
         if do_early_stop:
             print("  [STATIC-EARLYSTOP-EVAL] Run validation full ranking...")
-            val_item_vecs = build_eval_item_vecs(model, device, llm_scores, item_batch=1024)
+            # Training uses the masked pseudo-cold history. Validation restores
+            # the real train-only history, which is the information available
+            # for a genuinely unseen catalog course at inference time.
+            model.set_user_seen_index(train_seen)
+            val_item_vecs = build_eval_item_vecs(
+                model,
+                device,
+                llm_scores,
+                item_batch=1024,
+                user_seen_items=train_seen,
+            )
             val_cold_metrics, val_cold_count = evaluate_usim(
                 model, val_loader, device, llm_scores, k_list=k_list,
                 n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
@@ -3813,39 +4339,157 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
                 user_seen_items=train_seen, all_item_vecs=val_item_vecs,
                 average_mode=cfg.early_stop_average_mode,
             )
-            cur_score = _compute_early_stop_score(
-                val_cold_metrics,
-                val_hot_metrics,
-                cfg.early_stop_k,
-                mode=cfg.early_stop_score_mode,
-            )
             cold_n_now = _metric_or_zero(val_cold_metrics, f"N@{cfg.early_stop_k}")
             hot_n_now = _metric_or_zero(val_hot_metrics, f"N@{cfg.early_stop_k}")
             cold_r_now = _metric_or_zero(val_cold_metrics, f"R@{cfg.early_stop_k}")
             hot_r_now = _metric_or_zero(val_hot_metrics, f"R@{cfg.early_stop_k}")
-            print(
-                f"  [STATIC-EARLYSTOP] Epoch {epoch + 1}: "
-                f"Cold N@{cfg.early_stop_k}={cold_n_now:.4f}, "
-                f"Hot N@{cfg.early_stop_k}={hot_n_now:.4f}, "
-                f"Cold R@{cfg.early_stop_k}={cold_r_now:.4f}, "
-                f"Hot R@{cfg.early_stop_k}={hot_r_now:.4f} | "
-                f"score[{cfg.early_stop_score_mode}]={cur_score:.4f}"
-            )
-            if cur_score > best_score + cfg.early_stop_min_delta:
-                best_score = cur_score
-                best_epoch = epoch + 1
-                best_state = copy.deepcopy(model.state_dict())
-                best_opt_state = copy.deepcopy(optimizer.state_dict())
-                no_improve = 0
-                print("  [STATIC-EARLYSTOP] update")
+            if bool(getattr(cfg, "v1_enabled", False)):
+                val_overall_metrics, _ = evaluate_usim(
+                    model, val_loader, device, llm_scores, k_list=k_list,
+                    n_neg=cfg.eval_n_neg, eval_type="all", full_ranking=True,
+                    user_seen_items=train_seen, all_item_vecs=val_item_vecs,
+                    average_mode=cfg.early_stop_average_mode,
+                )
+                base_bank = build_all_item_vecs(
+                    model,
+                    device,
+                    llm_scores,
+                    item_batch=1024,
+                    force_cold="auto",
+                )
+                base_item_vecs = {"cold": base_bank, "hot": base_bank, "all": base_bank}
+                base_hot_metrics, _ = evaluate_usim(
+                    model, val_loader, device, llm_scores, k_list=k_list,
+                    n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
+                    user_seen_items=train_seen, all_item_vecs=base_item_vecs,
+                    average_mode=cfg.early_stop_average_mode,
+                )
+                base_overall_metrics, _ = evaluate_usim(
+                    model, val_loader, device, llm_scores, k_list=k_list,
+                    n_neg=cfg.eval_n_neg, eval_type="all", full_ranking=True,
+                    user_seen_items=train_seen, all_item_vecs=base_item_vecs,
+                    average_mode=cfg.early_stop_average_mode,
+                )
+                selection_candidate = {
+                    "cold": val_cold_metrics or {},
+                    "hot": val_hot_metrics or {},
+                    "overall": val_overall_metrics or {},
+                }
+                selection_base = {
+                    "hot": base_hot_metrics or {},
+                    "overall": base_overall_metrics or {},
+                }
+                retained = retained_by_base(
+                    selection_candidate,
+                    selection_base,
+                    k=cfg.early_stop_k,
+                    hot_tolerance=float(getattr(cfg, "v1_selector_hot_tolerance", 0.003)),
+                    overall_tolerance=float(getattr(cfg, "v1_selector_overall_tolerance", 0.003)),
+                )
+                selector_mode = str(getattr(cfg, "v1_selector_mode", ""))
+                running_retained = True
+                running_hot_floor = 0.0
+                running_overall_floor = 0.0
+                if selector_mode == "cold_ndcg_running_retention":
+                    previous_peaks = running_retention_n_peaks or {}
+                    if previous_peaks:
+                        running_hot_floor = float(previous_peaks.get("hot_n", 0.0)) - float(
+                            getattr(cfg, "v1_selector_hot_tolerance", 0.003)
+                        )
+                        running_overall_floor = float(
+                            previous_peaks.get("overall_n", 0.0)
+                        ) - float(getattr(cfg, "v1_selector_overall_tolerance", 0.003))
+                    (
+                        selected_candidate,
+                        running_retention_n_peaks,
+                        retained,
+                        running_retained,
+                    ) = advance_running_retention_selector(
+                        previous=best_selection_metrics,
+                        candidate=selection_candidate,
+                        base=selection_base,
+                        running_n_peaks=running_retention_n_peaks,
+                        k=cfg.early_stop_k,
+                        hot_tolerance=float(getattr(cfg, "v1_selector_hot_tolerance", 0.003)),
+                        overall_tolerance=float(getattr(cfg, "v1_selector_overall_tolerance", 0.003)),
+                        min_delta=cfg.early_stop_min_delta,
+                    )
+                else:
+                    selected_candidate = select_retained_cold_checkpoint(
+                        previous=best_selection_metrics,
+                        candidate=selection_candidate,
+                        base=selection_base,
+                        k=cfg.early_stop_k,
+                        hot_tolerance=float(getattr(cfg, "v1_selector_hot_tolerance", 0.003)),
+                        overall_tolerance=float(getattr(cfg, "v1_selector_overall_tolerance", 0.003)),
+                        min_delta=cfg.early_stop_min_delta,
+                    )
+                cur_score = cold_n_now
+                overall_n_now = _metric_or_zero(val_overall_metrics, f"N@{cfg.early_stop_k}")
+                overall_r_now = _metric_or_zero(val_overall_metrics, f"R@{cfg.early_stop_k}")
+                base_hot_n = _metric_or_zero(base_hot_metrics, f"N@{cfg.early_stop_k}")
+                base_overall_n = _metric_or_zero(base_overall_metrics, f"N@{cfg.early_stop_k}")
+                epoch_diag["V1RetentionOK"] = float(retained)
+                epoch_diag["V1ValOverallN10"] = overall_n_now
+                epoch_diag["V1ValOverallR10"] = overall_r_now
+                epoch_diag["V1BaseHotN10"] = base_hot_n
+                epoch_diag["V1BaseOverallN10"] = base_overall_n
+                print(
+                    f"  [V1-SELECT] Epoch {epoch + 1}: "
+                    f"Cold N@{cfg.early_stop_k}={cold_n_now:.4f}, R@{cfg.early_stop_k}={cold_r_now:.4f} | "
+                    f"Hot N@{cfg.early_stop_k}={hot_n_now:.4f} (base={base_hot_n:.4f}) | "
+                    f"Overall N@{cfg.early_stop_k}={overall_n_now:.4f}, R@{cfg.early_stop_k}={overall_r_now:.4f} "
+                    f"(base N={base_overall_n:.4f}) | retained={retained}"
+                )
+                if selector_mode == "cold_ndcg_running_retention":
+                    print(
+                        f"  [V1-SELECT-RUNNING] hot_floor={running_hot_floor:.4f} | "
+                        f"overall_floor={running_overall_floor:.4f} | retained={running_retained}"
+                    )
+                if selected_candidate is selection_candidate:
+                    best_selection_metrics = selection_candidate
+                    best_score = cur_score
+                    best_epoch = epoch + 1
+                    best_state = copy.deepcopy(model.state_dict())
+                    best_opt_state = copy.deepcopy(optimizer.state_dict())
+                    no_improve = 0
+                    print("  [V1-SELECT] update")
+                else:
+                    no_improve += 1
+                    print(f"  [V1-SELECT] no_improve={no_improve}/{cfg.early_stop_patience}")
             else:
-                no_improve += 1
-                print(f"  [STATIC-EARLYSTOP] no_improve={no_improve}/{cfg.early_stop_patience}")
-                if no_improve >= cfg.early_stop_patience:
-                    print(f"  [STATIC-EARLYSTOP] Triggered at epoch {epoch + 1}.")
-                    _append_static_history(epoch + 1, avg_loss, val_cold_metrics, val_hot_metrics, epoch_diag)
-                    _save_static_checkpoint("early_stopped", epoch + 1)
-                    break
+                cur_score = _compute_early_stop_score(
+                    val_cold_metrics,
+                    val_hot_metrics,
+                    cfg.early_stop_k,
+                    mode=cfg.early_stop_score_mode,
+                )
+                print(
+                    f"  [STATIC-EARLYSTOP] Epoch {epoch + 1}: "
+                    f"Cold N@{cfg.early_stop_k}={cold_n_now:.4f}, "
+                    f"Hot N@{cfg.early_stop_k}={hot_n_now:.4f}, "
+                    f"Cold R@{cfg.early_stop_k}={cold_r_now:.4f}, "
+                    f"Hot R@{cfg.early_stop_k}={hot_r_now:.4f} | "
+                    f"score[{cfg.early_stop_score_mode}]={cur_score:.4f}"
+                )
+                if cur_score > best_score + cfg.early_stop_min_delta:
+                    best_score = cur_score
+                    best_epoch = epoch + 1
+                    best_state = copy.deepcopy(model.state_dict())
+                    best_opt_state = copy.deepcopy(optimizer.state_dict())
+                    no_improve = 0
+                    print("  [STATIC-EARLYSTOP] update")
+                else:
+                    no_improve += 1
+                    print(f"  [STATIC-EARLYSTOP] no_improve={no_improve}/{cfg.early_stop_patience}")
+
+            # Restore the masked simulator view before the next training epoch.
+            model.set_user_seen_index(simulator_train_seen)
+            if no_improve >= cfg.early_stop_patience:
+                print(f"  [STATIC-EARLYSTOP] Triggered at epoch {epoch + 1}.")
+                _append_static_history(epoch + 1, avg_loss, val_cold_metrics, val_hot_metrics, epoch_diag)
+                _save_static_checkpoint("early_stopped", epoch + 1)
+                break
         else:
             best_state = copy.deepcopy(model.state_dict())
             best_opt_state = copy.deepcopy(optimizer.state_dict())
@@ -3853,6 +4497,11 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
 
         _append_static_history(epoch + 1, avg_loss, val_cold_metrics, val_hot_metrics, epoch_diag)
         _save_static_checkpoint("running", epoch + 1)
+
+    if bool(getattr(cfg, "v1_enabled", False)) and best_selection_metrics is None:
+        raise RuntimeError(
+            "V1 found no validation epoch that retained both Hot and Overall metrics against its unrefined base bank."
+        )
 
     if best_state is not None:
         _load_static_model_state_compat(best_state, "best_state")
@@ -3876,7 +4525,13 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         _add_user_seen_from_df(test_seen, val_df)
     # Refresh the seen-index with the test history (train_only or train+val) before final eval.
     model.set_user_seen_index(test_seen)
-    test_item_vecs = build_eval_item_vecs(model, device, llm_scores, item_batch=1024)
+    test_item_vecs = build_eval_item_vecs(
+        model,
+        device,
+        llm_scores,
+        item_batch=1024,
+        user_seen_items=test_seen,
+    )
 
     if cfg.run_sampled_eval:
         sampled_cold, sampled_cold_count = evaluate_usim(
@@ -3903,6 +4558,17 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
         n_neg=cfg.eval_n_neg, eval_type="hot", full_ranking=True,
         user_seen_items=test_seen, all_item_vecs=test_item_vecs,
     )
+    full_overall, full_overall_count = (None, 0)
+    if bool(getattr(cfg, "v1_enabled", False)):
+        full_overall, full_overall_count = evaluate_usim(
+            model, test_loader, device, llm_scores, k_list=k_list,
+            n_neg=cfg.eval_n_neg, eval_type="all", full_ranking=True,
+            user_seen_items=test_seen, all_item_vecs=test_item_vecs,
+            average_mode="item_macro",
+            export_item_metrics_path=_feedback_output_path(
+                "per_item_full_overall_usim_feedback_fast3_content_delta_static.csv"
+            ),
+        )
     full_cold_item_macro, full_cold_item_macro_count = evaluate_usim(
         model, test_loader, device, llm_scores, k_list=k_list,
         n_neg=cfg.eval_n_neg, eval_type="cold", full_ranking=True,
@@ -3925,22 +4591,31 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
     sampled_hot = sampled_hot or {key: 0.0 for key in metrics_keys}
     full_cold = full_cold or {key: 0.0 for key in metrics_keys}
     full_hot = full_hot or {key: 0.0 for key in metrics_keys}
+    full_overall = full_overall or {key: 0.0 for key in metrics_keys}
     full_cold_item_macro = full_cold_item_macro or {key: 0.0 for key in metrics_keys}
     full_hot_item_macro = full_hot_item_macro or {key: 0.0 for key in metrics_keys}
 
     print("\n" + "=" * 90)
     print("         FINAL REPORT (STATIC MAIN): item-macro full ranking (RL-USIM FAST3 ContentDelta)")
     print("=" * 90)
-    print(f"{'Metric':<10} | {'Cold ItemMacro':<14} | {'Hot ItemMacro':<14}")
+    if bool(getattr(cfg, "v1_enabled", False)):
+        print(f"{'Metric':<10} | {'Cold ItemMacro':<14} | {'Hot ItemMacro':<14} | {'Overall ItemMacro':<17}")
+    else:
+        print(f"{'Metric':<10} | {'Cold ItemMacro':<14} | {'Hot ItemMacro':<14}")
     print("-" * 90)
     for key in metrics_keys:
-        print(
+        line = (
             f"{key:<10} | "
             f"{full_cold_item_macro.get(key, 0.0):<14.4f} | "
             f"{full_hot_item_macro.get(key, 0.0):<14.4f}"
         )
+        if bool(getattr(cfg, "v1_enabled", False)):
+            line += f" | {full_overall.get(key, 0.0):<17.4f}"
+        print(line)
     print("-" * 90)
     print(f"Item-Macro Counts: ColdItems={full_cold_item_macro_count}, HotItems={full_hot_item_macro_count}")
+    if bool(getattr(cfg, "v1_enabled", False)):
+        print(f"Overall Item-Macro Count: {full_overall_count}")
     print("=" * 90)
 
     print("\n" + "=" * 90)
@@ -4012,6 +4687,18 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             float(full_hot_item_macro.get(key, 0.0)) if full_hot_item_macro_count > 0 else None
         )
     summary_rows.append(macro_row)
+    if bool(getattr(cfg, "v1_enabled", False)):
+        overall_row = {
+            "Model": "USIM-Feedback-FAST3-ContentDelta",
+            "Eval": "full_rank_item_macro_overall",
+            "Protocol": "static",
+            "OverallSamples": int(full_overall_count),
+        }
+        for key in metrics_keys:
+            overall_row[f"Overall_{key}"] = (
+                float(full_overall.get(key, 0.0)) if full_overall_count > 0 else None
+            )
+        summary_rows.append(overall_row)
     pd.DataFrame(summary_rows).to_csv(summary_path, index=False)
     exports.update(
         {
@@ -4027,6 +4714,10 @@ def run_static_experiment(df, cfg, device, content_emb, llm_scores):
             ),
         }
     )
+    if bool(getattr(cfg, "v1_enabled", False)):
+        exports["per_item_full_overall"] = _feedback_output_path(
+            "per_item_full_overall_usim_feedback_fast3_content_delta_static.csv"
+        )
     _write_static_manifest(
         split_info, exports, cfg, course_stats, data_dir, df, provenance=provenance_record
     )
