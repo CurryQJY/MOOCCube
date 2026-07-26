@@ -1,0 +1,249 @@
+=== ColdRec Run Result ===
+timestamp: 2026-07-14T00:40:11
+method: MF
+dataset: gar_mfpre_mooccube_strict_item_cold_balanced_thr1_seed_2026
+cold_object: item
+backbone: MF
+runs: 1
+
+--- Hyperparameters ---
+backbone: MF
+bs: 4096
+cold_object: item
+dataset: gar_mfpre_mooccube_strict_item_cold_balanced_thr1_seed_2026
+early_stop: 5
+emb_size: 64
+epochs: 500
+eval_every: 1
+gpu_id: 0
+layers: 2
+lr: 0.001
+model: MF
+reg: 0.0001
+result_dir: ./result
+result_file: D:\DeskTop\MOOCCube\paper_aaai27\baseline_sources\_gar_coldrec_strict\mooccube_source_default_3seed\seed_2026\coldrec_native_mf_result.txt
+result_log: history.txt
+result_overwrite: True
+runs: 1
+save_emb: True
+seed: 2026
+topN: 5,10,20
+use_gpu: True
+
+--- Test Metrics (mean ± std) ---
+Top-5 Overall: Hit=0.1496±0.0000, Precision=0.0415±0.0000, Recall=0.1501±0.0000, NDCG=0.1204±0.0000
+Top-5 Cold-Start: Hit=0.0483±0.0000, Precision=0.0111±0.0000, Recall=0.0463±0.0000, NDCG=0.0264±0.0000
+Top-5 Warm-Start: Hit=0.3218±0.0000, Precision=0.0810±0.0000, Recall=0.3445±0.0000, NDCG=0.2638±0.0000
+Top-10 Overall: Hit=0.1948±0.0000, Precision=0.0270±0.0000, Recall=0.1920±0.0000, NDCG=0.1350±0.0000
+Top-10 Cold-Start: Hit=0.0923±0.0000, Precision=0.0106±0.0000, Recall=0.0879±0.0000, NDCG=0.0403±0.0000
+Top-10 Warm-Start: Hit=0.4188±0.0000, Precision=0.0527±0.0000, Recall=0.4427±0.0000, NDCG=0.2969±0.0000
+Top-20 Overall: Hit=0.2488±0.0000, Precision=0.0173±0.0000, Recall=0.2414±0.0000, NDCG=0.1487±0.0000
+Top-20 Cold-Start: Hit=0.1620±0.0000, Precision=0.0093±0.0000, Recall=0.1547±0.0000, NDCG=0.0578±0.0000
+Top-20 Warm-Start: Hit=0.5351±0.0000, Precision=0.0337±0.0000, Recall=0.5576±0.0000, NDCG=0.3276±0.0000
+
+--- Efficiency ---
+seconds_per_completed_epoch_mean: 11.992400
+seconds_per_completed_epoch_std: 0.000000
+
+--- JSON (machine-readable) ---
+{
+  "method": "MF",
+  "hyperparameters": {
+    "backbone": "MF",
+    "bs": 4096,
+    "cold_object": "item",
+    "dataset": "gar_mfpre_mooccube_strict_item_cold_balanced_thr1_seed_2026",
+    "early_stop": 5,
+    "emb_size": 64,
+    "epochs": 500,
+    "eval_every": 1,
+    "gpu_id": 0,
+    "layers": 2,
+    "lr": 0.001,
+    "model": "MF",
+    "reg": 0.0001,
+    "result_dir": "./result",
+    "result_file": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_gar_coldrec_strict\\mooccube_source_default_3seed\\seed_2026\\coldrec_native_mf_result.txt",
+    "result_log": "history.txt",
+    "result_overwrite": true,
+    "runs": 1,
+    "save_emb": true,
+    "seed": 2026,
+    "topN": "5,10,20",
+    "use_gpu": true
+  },
+  "metrics": {
+    "5": {
+      "all": {
+        "Hit": {
+          "mean": 0.14964,
+          "std": 0.0
+        },
+        "Precision": {
+          "mean": 0.04154,
+          "std": 0.0
+        },
+        "Recall": {
+          "mean": 0.15011,
+          "std": 0.0
+        },
+        "NDCG": {
+          "mean": 0.12036,
+          "std": 0.0
+        }
+      },
+      "cold": {
+        "Hit": {
+          "mean": 0.04835,
+          "std": 0.0
+        },
+        "Precision": {
+          "mean": 0.01113,
+          "std": 0.0
+        },
+        "Recall": {
+          "mean": 0.04629,
+          "std": 0.0
+        },
+        "NDCG": {
+          "mean": 0.0264,
+          "std": 0.0
+        }
+      },
+      "warm": {
+        "Hit": {
+          "mean": 0.32178,
+          "std": 0.0
+        },
+        "Precision": {
+          "mean": 0.08098,
+          "std": 0.0
+        },
+        "Recall": {
+          "mean": 0.3445,
+          "std": 0.0
+        },
+        "NDCG": {
+          "mean": 0.26377,
+          "std": 0.0
+        }
+      }
+    },
+    "10": {
+      "all": {
+        "Hit": {
+          "mean": 0.19475,
+          "std": 0.0
+        },
+        "Precision": {
+          "mean": 0.02703,
+          "std": 0.0
+        },
+        "Recall": {
+          "mean": 0.19196,
+          "std": 0.0
+        },
+        "NDCG": {
+          "mean": 0.13499,
+          "std": 0.0
+        }
+      },
+      "cold": {
+        "Hit": {
+          "mean": 0.09226,
+          "std": 0.0
+        },
+        "Precision": {
+          "mean": 0.01062,
+          "std": 0.0
+        },
+        "Recall": {
+          "mean": 0.0879,
+          "std": 0.0
+        },
+        "NDCG": {
+          "mean": 0.04033,
+          "std": 0.0
+        }
+      },
+      "warm": {
+        "Hit": {
+          "mean": 0.41877,
+          "std": 0.0
+        },
+        "Precision": {
+          "mean": 0.0527,
+          "std": 0.0
+        },
+        "Recall": {
+          "mean": 0.44267,
+          "std": 0.0
+        },
+        "NDCG": {
+          "mean": 0.29691,
+          "std": 0.0
+        }
+      }
+    },
+    "20": {
+      "all": {
+        "Hit": {
+          "mean": 0.24883,
+          "std": 0.0
+        },
+        "Precision": {
+          "mean": 0.01727,
+          "std": 0.0
+        },
+        "Recall": {
+          "mean": 0.24145,
+          "std": 0.0
+        },
+        "NDCG": {
+          "mean": 0.14874,
+          "std": 0.0
+        }
+      },
+      "cold": {
+        "Hit": {
+          "mean": 0.16205,
+          "std": 0.0
+        },
+        "Precision": {
+          "mean": 0.00933,
+          "std": 0.0
+        },
+        "Recall": {
+          "mean": 0.15467,
+          "std": 0.0
+        },
+        "NDCG": {
+          "mean": 0.05781,
+          "std": 0.0
+        }
+      },
+      "warm": {
+        "Hit": {
+          "mean": 0.53507,
+          "std": 0.0
+        },
+        "Precision": {
+          "mean": 0.03367,
+          "std": 0.0
+        },
+        "Recall": {
+          "mean": 0.55762,
+          "std": 0.0
+        },
+        "NDCG": {
+          "mean": 0.32755,
+          "std": 0.0
+        }
+      }
+    }
+  },
+  "efficiency": {
+    "seconds_per_completed_epoch_mean": 11.992400182996477,
+    "seconds_per_completed_epoch_std": 0.0
+  }
+}

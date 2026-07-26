@@ -1,0 +1,51 @@
+\contentsline {section}{\numberline {1}论文元信息}{3}{section.1}%
+\contentsline {section}{\numberline {2}作者背景（据论文署名与可核对信息）}{3}{section.2}%
+\contentsline {section}{\numberline {3}核心贡献速览}{4}{section.3}%
+\contentsline {subsection}{\numberline {3.1}解决什么问题}{4}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}提出什么方法}{4}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}与主流路线对比}{4}{subsection.3.3}%
+\contentsline {section}{\numberline {4}背景与问题形式化}{4}{section.4}%
+\contentsline {subsection}{\numberline {4.1}研究动机}{4}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}形式化定义}{5}{subsection.4.2}%
+\contentsline {section}{\numberline {5}方法总览与图解}{5}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Figure 1：DIF + 双塔总览}{5}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Figure 2：工业伪标签链路}{5}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}数据流串讲}{5}{subsection.5.3}%
+\contentsline {section}{\numberline {6}核心公式逐项讲解}{6}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Eq.(1)：伪标签生成}{6}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Eq.(2)(3)：置信度聚合}{6}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Eq.(4)(5)(6)：不确定性}{6}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Eq.(7)(8)(9)：校正与训练}{6}{subsection.6.4}%
+\contentsline {section}{\numberline {7}理论：假设、定理与证明注释}{6}{section.7}%
+\contentsline {subsection}{\numberline {7.1}符号}{6}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}四个假设}{7}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Theorem 2.1（伪标签误差界）}{7}{subsection.7.3}%
+\contentsline {subsubsection}{\numberline {7.3.1}证明逐步注释}{7}{subsubsection.7.3.1}%
+\contentsline {paragraph}{Step A：误差拆分（对应 Eq.(10)）}{7}{subsubsection.7.3.1}%
+\contentsline {paragraph}{Step B：压偏差（Eq.(11)(12)）}{7}{subsubsection.7.3.1}%
+\contentsline {paragraph}{Step C：压方差（Eq.(13)）}{7}{subsubsection.7.3.1}%
+\contentsline {paragraph}{Step D：合并（Eq.(14)）}{7}{subsubsection.7.3.1}%
+\contentsline {subsubsection}{\numberline {7.3.2}设计原则表}{7}{subsubsection.7.3.2}%
+\contentsline {subsection}{\numberline {7.4}Theorem 2.2（最优混合权重）}{7}{subsection.7.4}%
+\contentsline {section}{\numberline {8}数值演算示例（$k=2$）}{8}{section.8}%
+\contentsline {subsection}{\numberline {8.1}设定}{8}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}逐步计算}{8}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}热门对照}{8}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}汇总表}{9}{subsection.8.4}%
+\contentsline {section}{\numberline {9}实验：表与图}{9}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Table 1：数据集统计}{9}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Table 2：主对比}{9}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Table 3：消融（LightGCN, Recall@20）}{9}{subsection.9.3}%
+\contentsline {subsection}{\numberline {9.4}Figure 3：噪声鲁棒}{9}{subsection.9.4}%
+\contentsline {subsection}{\numberline {9.5}Table 4：线上 A/B（2025-01-12--16，冷启动）}{10}{subsection.9.5}%
+\contentsline {subsection}{\numberline {9.6}图/表/式总索引}{10}{subsection.9.6}%
+\contentsline {section}{\numberline {10}批判性思考}{10}{section.10}%
+\contentsline {subsection}{\numberline {10.1}优势}{10}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}局限}{10}{subsection.10.2}%
+\contentsline {section}{\numberline {11}对课程推荐冷启动的启发}{11}{section.11}%
+\contentsline {subsection}{\numberline {11.1}最小复现清单}{11}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}课程域噪声}{11}{subsection.11.2}%
+\contentsline {subsection}{\numberline {11.3}可延伸方向}{11}{subsection.11.3}%
+\contentsline {subsection}{\numberline {11.4}研一阅读建议}{11}{subsection.11.4}%
+\contentsline {section}{\numberline {12}附录：Theorem 2.1 迷你数值直觉}{11}{section.12}%
+\contentsline {section}{\numberline {13}参考文献（原文）}{12}{section.13}%

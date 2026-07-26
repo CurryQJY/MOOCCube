@@ -1,0 +1,23 @@
+{
+"result":{
+"query":"course* recommendation* cold* start*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"14.90"
+},
+"completions":{
+"@total":"0",
+"@computed":"0",
+"@sent":"0"
+},
+"hits":{
+"@total":"0",
+"@computed":"0",
+"@sent":"0",
+"@first":"0"}
+}
+}

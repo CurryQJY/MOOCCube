@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "method": "LIRA",
+  "status": "frozen_before_test",
+  "frozen_at": "2026-07-16T00:00:00+08:00",
+  "freeze_reason": "Full T=3 is the strongest configuration with complete three-seed validation checkpoints. T=0 is substantially worse, completed T=1 seeds do not exceed Full, and single-seed ablations are diagnostic only.",
+  "dataset": {
+    "name": "MOOCCube",
+    "data_dir": "processed_data_hin_clean_pop5",
+    "relation_dir": "MOOCCube/relations"
+  },
+  "protocol": {
+    "name": "strict_item_cold_balanced",
+    "cold_threshold": 1,
+    "split_target": [0.8, 0.1, 0.1],
+    "artifact_source": "all_metadata",
+    "test_history": "train_only",
+    "full_ranking": true,
+    "sampled_evaluation": false,
+    "average_mode": "item_macro"
+  },
+  "selection": {
+    "target": "validation",
+    "metric": "full_cold_item_macro_n10",
+    "score_mode": "cold_only",
+    "k": 10,
+    "test_was_unseen_at_freeze": true
+  },
+  "model": {
+    "steps": 3,
+    "update_lr": 0.1,
+    "min_fit": 0.15,
+    "min_gain": 0.001,
+    "step_cap": 0.05,
+    "total_cap": 0.1,
+    "candidate_topk": 20,
+    "dynamic_retrieval_each_step": true,
+    "exclude_repeated_learners": true,
+    "same_refinement_during_training_and_inference": true,
+    "concept_weight": 0.25,
+    "prerequisite_beta": 1.0,
+    "difficulty_beta": 1.0,
+    "embedding_dim": 128,
+    "hidden_dim": 256,
+    "dropout": 0.35,
+    "temperature": 0.07,
+    "margin": 0.15
+  },
+  "training": {
+    "epochs": 35,
+    "patience": 10,
+    "pseudo_cold_enabled": true,
+    "pseudo_cold_mode": "item_tail",
+    "pseudo_cold_ratio": 0.3,
+    "pseudo_cold_min_popularity": 5,
+    "train_force_cold": true,
+    "refinement_loss_weight": 0.5,
+    "stability_loss_weight": 0.01,
+    "optimizer_state_saved": true
+  },
+  "disabled_components": [
+    "actor",
+    "critic",
+    "ppo",
+    "reward",
+    "course_reward",
+    "llm_score",
+    "sage",
+    "cgrc",
+    "content_delta",
+    "paac",
+    "prerequisite_auxiliary_loss",
+    "course_rerank",
+    "structured_hard_negative"
+  ],
+  "source_hashes": {
+    "lira_entry.py": "fd9c2a16d09edd2f63b1728ecbf832693526ddb6f8ed7c35a072e99da7634897",
+    "lira/model.py": "83ccc43d5a93073c2f119fb2a0740f4e53bb7afaaa0009c1b3b87d7e794341b2",
+    "lira/refinement.py": "5e87cdc7330f89530092abe954c78da5a94efefd58308c1ec38c0a902c71aba4",
+    "lira/protocol_adapter.py": "af546f451428f994523b6847426875d0cf78066b48bb5d81b68721d2e2a63eeb"
+  },
+  "checkpoints": [
+    {
+      "seed": 2025,
+      "best_epoch": 12,
+      "validation_full_cold_item_macro_n10": 0.3112932918974592,
+      "path": "checkpoints/learner_guided_full/lira_v2_dynamic_dualloss_seed2025/strict_item_cold_balanced_thr1_seed_2025/validation_finished.pt",
+      "sha256": "0c1660e1c466992cd8d0dcde9cd095c12781146d03b0135aa9c837b51eebfe1f"
+    },
+    {
+      "seed": 2026,
+      "best_epoch": 12,
+      "validation_full_cold_item_macro_n10": 0.28273890689988235,
+      "path": "checkpoints/learner_guided_full/lira_v2_dynamic_dualloss_seed2026/strict_item_cold_balanced_thr1_seed_2026/validation_finished.pt",
+      "sha256": "a1d9689202c40fb42e8ce21d3dde891eb42d0bd5c7fd1695a09721166e0f44d1"
+    },
+    {
+      "seed": 2027,
+      "best_epoch": 8,
+      "validation_full_cold_item_macro_n10": 0.2608986046640341,
+      "path": "checkpoints/learner_guided_full/lira_v2_dynamic_dualloss_seed2027/strict_item_cold_balanced_thr1_seed_2027/validation_finished.pt",
+      "sha256": "c69016fd8b02463c8542c56f136a58dac5bc1289813cc975a056df3d0e4709e3"
+    }
+  ],
+  "validation_summary": {
+    "full_t3_cold_n10_mean": 0.2849769344871252,
+    "full_t3_cold_n10_sample_std": 0.025271776766773443,
+    "t0_three_seed_cold_n10_mean": 0.20803333333333332,
+    "t1_completed_seed_2025_2026_cold_n10_mean": 0.28855,
+    "full_matching_seed_2025_2026_cold_n10_mean": 0.297,
+    "single_seed_no_stop_cold_n10": 0.3186,
+    "single_seed_no_stop_is_not_selection_evidence": true
+  },
+  "rules": {
+    "test_results_must_not_change_config": true,
+    "checkpoints_read_only": true,
+    "test_replay_must_load_es_best_state": true,
+    "unfinished_ablations_are_diagnostic_only": true,
+    "no_hyperparameter_search_after_freeze": true
+  }
+}

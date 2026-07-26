@@ -1,0 +1,521 @@
+{
+"result":{
+"query":"item* cold* start* recommendation*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"18.56"
+},
+"completions":{
+"@total":"2",
+"@computed":"2",
+"@sent":"2",
+"c":[
+{
+"@sc":"84",
+"@dc":"84",
+"@oc":"84",
+"@id":"70633652",
+"text":"recommendation"
+},
+{
+"@sc":"11",
+"@dc":"11",
+"@oc":"11",
+"@id":"70633655",
+"text":"recommendations"
+}
+]
+},
+"hits":{
+"@total":"95",
+"@computed":"95",
+"@sent":"80",
+"@first":"0",
+"hit":[{
+"@score":"5",
+"@id":"506120",
+"info":{"authors":{"author":[{"@pid":"132/5158","text":"Wenbo Wang"},{"@pid":"94/4500-4","text":"Ben Chen 0004"},{"@pid":"33/4882","text":"Bingquan Liu"},{"@pid":"120/9007","text":"Lili Shan"},{"@pid":"92/5589","text":"Chengjie Sun"},{"@pid":"11/1394-28","text":"Qian Chen 0028"},{"@pid":"289/1973","text":"Feiyang Xiao"},{"@pid":"58/2489-1","text":"Jian Guan 0001"}]},"title":"Preference Aware Item Cold-Start Recommendation With Hierarchical Item Alignment.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"37","number":"12","pages":"7388-7401","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tkde/WangCLSSCXG25","doi":"10.1109/TKDE.2025.3613263","ee":"https://doi.org/10.1109/TKDE.2025.3613263","url":"https://dblp.org/rec/journals/tkde/WangCLSSCXG25"},
+"url":"URL#506120"
+},
+{
+"@score":"5",
+"@id":"1677933",
+"info":{"authors":{"author":[{"@pid":"200/9625","text":"Hanrui Wu"},{"@pid":"353/9479","text":"Chung Wang Wong"},{"@pid":"80/2266-19","text":"Jia Zhang 0019"},{"@pid":"154/0064","text":"Yuguang Yan"},{"@pid":"31/2647-1","text":"Dahai Yu 0001"},{"@pid":"33/10653","text":"Jinyi Long"},{"@pid":"n/MichaelKNg","text":"Michael K. Ng 0001"}]},"title":"Cold-Start Next-Item Recommendation by User-Item Matching and Auto-Encoders.","venue":"IEEE Trans. Serv. Comput.","volume":"16","number":"4","pages":"2477-2489","year":"2023","type":"Journal Articles","access":"closed","key":"journals/tsc/WuWZYYLN23","doi":"10.1109/TSC.2023.3237638","ee":"https://doi.org/10.1109/TSC.2023.3237638","url":"https://dblp.org/rec/journals/tsc/WuWZYYLN23"},
+"url":"URL#1677933"
+},
+{
+"@score":"5",
+"@id":"1782988",
+"info":{"authors":{"author":[{"@pid":"80/920-5","text":"Shen Wang 0005"},{"@pid":"165/2097-1","text":"Ziwei Fan 0001"},{"@pid":"76/7727","text":"Jibing Gong"},{"@pid":"160/5948","text":"Xiaokai Wei"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"}]},"title":"IGCN: Item Influence Enhanced Graph Convolution Networks for Recommendation of Cold-Start Items.","venue":"ICDM","pages":"1516-1525","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/icdm/WangFGWY23","doi":"10.1109/ICDMW60847.2023.00193","ee":"https://doi.org/10.1109/ICDMW60847.2023.00193","url":"https://dblp.org/rec/conf/icdm/WangFGWY23"},
+"url":"URL#1782988"
+},
+{
+"@score":"5",
+"@id":"1858846",
+"info":{"authors":{"author":[{"@pid":"256/8286","text":"Yuwei Cao"},{"@pid":"260/5064","text":"Liangwei Yang"},{"@pid":"82/4206-52","text":"Chen Wang 0052"},{"@pid":"90/9499-1","text":"Zhiwei Liu 0001"},{"@pid":"69/7742-1","text":"Hao Peng 0001"},{"@pid":"191/9432","text":"Chenyu You"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"}]},"title":"Multi-task Item-attribute Graph Pre-training for Strict Cold-start Item Recommendation.","venue":"RecSys","pages":"322-333","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/recsys/CaoYWLPYY23","doi":"10.1145/3604915.3608806","ee":"https://doi.org/10.1145/3604915.3608806","url":"https://dblp.org/rec/conf/recsys/CaoYWLPYY23"},
+"url":"URL#1858846"
+},
+{
+"@score":"5",
+"@id":"1858872",
+"info":{"authors":{"author":[{"@pid":"97/2454","text":"Zhen Gong"},{"@pid":"13/5235","text":"Xin Wu"},{"@pid":"09/3666-96","text":"Lei Chen 0096"},{"@pid":"132/8083-1","text":"Zhenzhe Zheng 0001"},{"@pid":"90/10765-1","text":"Shengjie Wang 0001"},{"@pid":"248/3541-3","text":"Anran Xu 0003"},{"@pid":"72/1334","text":"Chong Wang"},{"@pid":"07/6378-6","text":"Fan Wu 0006"}]},"title":"Full Index Deep Retrieval: End-to-End User and Item Structures for Cold-start and Long-tail Item Recommendation.","venue":"RecSys","pages":"47-57","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/recsys/GongWCZWXW023","doi":"10.1145/3604915.3608773","ee":"https://doi.org/10.1145/3604915.3608773","url":"https://dblp.org/rec/conf/recsys/GongWCZWXW023"},
+"url":"URL#1858872"
+},
+{
+"@score":"5",
+"@id":"1941003",
+"info":{"authors":{"author":[{"@pid":"256/8286","text":"Yuwei Cao"},{"@pid":"260/5064","text":"Liangwei Yang"},{"@pid":"82/4206-18","text":"Chen Wang 0018"},{"@pid":"90/9499-1","text":"Zhiwei Liu 0001"},{"@pid":"69/7742-1","text":"Hao Peng 0001"},{"@pid":"191/9432","text":"Chenyu You"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"}]},"title":"Multi-task Item-attribute Graph Pre-training for Strict Cold-start Item Recommendation.","venue":"CoRR","volume":"abs/2306.14462","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2306-14462","doi":"10.48550/ARXIV.2306.14462","ee":"https://doi.org/10.48550/arXiv.2306.14462","url":"https://dblp.org/rec/journals/corr/abs-2306-14462"},
+"url":"URL#1941003"
+},
+{
+"@score":"5",
+"@id":"2212365",
+"info":{"authors":{"author":[{"@pid":"225/7700","text":"Cesare Bernardis"},{"@pid":"03/3233","text":"Paolo Cremonesi"}]},"title":"NFC: a deep and hybrid item-based model for item cold-start recommendation.","venue":"User Model. User Adapt. Interact.","volume":"32","number":"4","pages":"747-780","year":"2022","type":"Journal Articles","access":"closed","key":"journals/umuai/BernardisC22","doi":"10.1007/S11257-021-09303-W","ee":"https://doi.org/10.1007/s11257-021-09303-w","url":"https://dblp.org/rec/journals/umuai/BernardisC22"},
+"url":"URL#2212365"
+},
+{
+"@score":"5",
+"@id":"2850568",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"10/5415-6","text":"Ying Sun 0006"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"75/2820-1","text":"Juan Cao 0001"}]},"title":"Learning to Warm Up Cold Item Embeddings for Cold-start Recommendation with Meta Scaling and Shifting Networks.","venue":"SIGIR","pages":"1167-1176","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ZhuXZGSZLC21","doi":"10.1145/3404835.3462843","ee":"https://doi.org/10.1145/3404835.3462843","url":"https://dblp.org/rec/conf/sigir/ZhuXZGSZLC21"},
+"url":"URL#2850568"
+},
+{
+"@score":"5",
+"@id":"2901578",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"10/5415-6","text":"Ying Sun 0006"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"75/2820-1","text":"Juan Cao 0001"}]},"title":"Learning to Warm Up Cold Item Embeddings for Cold-start Recommendation with Meta Scaling and Shifting Networks.","venue":"CoRR","volume":"abs/2105.04790","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2105-04790","ee":"https://arxiv.org/abs/2105.04790","url":"https://dblp.org/rec/journals/corr/abs-2105-04790"},
+"url":"URL#2901578"
+},
+{
+"@score":"4",
+"@id":"57407",
+"info":{"authors":{"author":[{"@pid":"29/3987","text":"Jiaxing Li"},{"@pid":"154/7641","text":"Youyong Kong"}]},"title":"Embedding uncertainty modeling for cold-start item recommendation.","venue":"Neurocomputing","volume":"665","pages":"132144","year":"2026","type":"Journal Articles","access":"closed","key":"journals/ijon/LiK26","doi":"10.1016/J.NEUCOM.2025.132144","ee":"https://doi.org/10.1016/j.neucom.2025.132144","url":"https://dblp.org/rec/journals/ijon/LiK26"},
+"url":"URL#57407"
+},
+{
+"@score":"4",
+"@id":"65399",
+"info":{"authors":{"author":[{"@pid":"161/4735","text":"Nuan Luo"},{"@pid":"167/0942","text":"Yaqi Zhao"},{"@pid":"07/314","text":"Jian Zhang"},{"@pid":"70/2170","text":"Yuan Ni"}]},"title":"Dual-view fusion of structure and behavior: A robust learning item recommendation framework against interest drift and cold-start.","venue":"Inf. Process. Manag.","volume":"63","number":"7","pages":"104778","year":"2026","type":"Journal Articles","access":"closed","key":"journals/ipm/LuoZZN26","doi":"10.1016/J.IPM.2026.104778","ee":"https://doi.org/10.1016/j.ipm.2026.104778","url":"https://dblp.org/rec/journals/ipm/LuoZZN26"},
+"url":"URL#65399"
+},
+{
+"@score":"4",
+"@id":"67619",
+"info":{"authors":{"author":[{"@pid":"10/3844","text":"Jianfeng Li"},{"@pid":"428/4602","text":"Mingxiao Fu"},{"@pid":"07/2559","text":"Jun Zhai"}]},"title":"Reverse Recommendation about Pure Cold-Start Item in Multi-hierarchical Heterogeneous Network.","venue":"KSII Trans. Internet Inf. Syst.","volume":"20","number":"1","pages":"265-283","year":"2026","type":"Journal Articles","access":"open","key":"journals/itiis/LiFZ26","doi":"10.3837/TIIS.2026.01.012","ee":"https://doi.org/10.3837/tiis.2026.01.012","url":"https://dblp.org/rec/journals/itiis/LiFZ26"},
+"url":"URL#67619"
+},
+{
+"@score":"4",
+"@id":"137250",
+"info":{"authors":{"author":[{"@pid":"76/4276-5","text":"Chuan He 0005"},{"@pid":"29/3462-4","text":"Yongchao Liu 0004"},{"@pid":"72/872-54","text":"Qiang Li 0054"},{"@pid":"62/6933","text":"Chuntao Hong"},{"@pid":"81/8863","text":"Wenliang Zhong"},{"@pid":"128/2545","text":"Xin-Wei Yao 0001"}]},"title":"M²VAE: Multi-Modal Multi-View Variational Autoencoder for Cold-start Item Recommendation.","venue":"AAAI","pages":"14811-14819","year":"2026","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/HeLLHZY26","doi":"10.1609/AAAI.V40I17.38501","ee":"https://doi.org/10.1609/aaai.v40i17.38501","url":"https://dblp.org/rec/conf/aaai/HeLLHZY26"},
+"url":"URL#137250"
+},
+{
+"@score":"4",
+"@id":"177784",
+"info":{"authors":{"author":[{"@pid":"61/8502","text":"Chenglei Shen"},{"@pid":"375/1301","text":"Teng Shi"},{"@pid":"150/8498-3","text":"Weijie Yu 0003"},{"@pid":"49/4478-34","text":"Xiao Zhang 0034"},{"@pid":"90/514-1","text":"Jun Xu 0001"}]},"title":"GenRecEdit: Adapting Model Editing for Generative Recommendation with Cold-Start Items.","venue":"SIGIR","pages":"1601-1611","year":"2026","type":"Conference and Workshop Papers","access":"open","key":"conf/sigir/ShenSYZX26","doi":"10.1145/3805712.3809662","ee":"https://doi.org/10.1145/3805712.3809662","url":"https://dblp.org/rec/conf/sigir/ShenSYZX26"},
+"url":"URL#177784"
+},
+{
+"@score":"4",
+"@id":"183811",
+"info":{"authors":{"author":[{"@pid":"195/2196","text":"Yihang Li"},{"@pid":"85/1802","text":"Zhuo Liu"},{"@pid":"24/4105-2","text":"Wei Wei 0002"}]},"title":"EpicCBR: Item-Relation-Enhanced Dual-Scenario Contrastive Learning for Cold-Start Bundle Recommendation.","venue":"WSDM","pages":"377-386","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/LiL026","doi":"10.1145/3773966.3777993","ee":"https://doi.org/10.1145/3773966.3777993","url":"https://dblp.org/rec/conf/wsdm/LiL026"},
+"url":"URL#183811"
+},
+{
+"@score":"4",
+"@id":"184137",
+"info":{"authors":{"author":[{"@pid":"400/5777","text":"Ke Fei"},{"@pid":"65/4699-1","text":"Jingjing Li 0001"},{"@pid":"259/2953","text":"Zhekai Du"},{"@pid":"62/4375","text":"Hongbo Chen"}]},"title":"Sharpness-Consistent Cross-Domain Recommendation for Cold-Start Items.","venue":"WWW","pages":"6621-6629","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/FeiLDC26","doi":"10.1145/3774904.3792576","ee":"https://doi.org/10.1145/3774904.3792576","url":"https://dblp.org/rec/conf/www/FeiLDC26"},
+"url":"URL#184137"
+},
+{
+"@score":"4",
+"@id":"184391",
+"info":{"authors":{"author":[{"@pid":"15/4924-2","text":"Shijun Li 0002"},{"@pid":"02/5889-158","text":"Yu Wang 0158"},{"@pid":"92/1375","text":"Jin Wang"},{"@pid":"22/1805-124","text":"Ying Li 0124"},{"@pid":"51/2272","text":"Joydeep Ghosh"},{"@pid":"185/5562","text":"Anne Cocos"}]},"title":"LLM Reasoning for Cold-Start Item Recommendation.","venue":"WWW","pages":"8409-8412","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/LiWWLGC26","doi":"10.1145/3774904.3792872","ee":"https://doi.org/10.1145/3774904.3792872","url":"https://dblp.org/rec/conf/www/LiWWLGC26"},
+"url":"URL#184391"
+},
+{
+"@score":"4",
+"@id":"206713",
+"info":{"authors":{"author":[{"@pid":"195/2196","text":"Yihang Li"},{"@pid":"85/1802","text":"Zhuo Liu"},{"@pid":"24/4105","text":"Wei Wei"}]},"title":"EpicCBR: Item-Relation-Enhanced Dual-Scenario Contrastive Learning for Cold-Start Bundle Recommendation.","venue":"CoRR","volume":"abs/2602.11680","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2602-11680","doi":"10.48550/ARXIV.2602.11680","ee":"https://doi.org/10.48550/arXiv.2602.11680","url":"https://dblp.org/rec/journals/corr/abs-2602-11680"},
+"url":"URL#206713"
+},
+{
+"@score":"4",
+"@id":"268500",
+"info":{"authors":{"author":[{"@pid":"04/8266","text":"Anh Truong"},{"@pid":"356/8105","text":"John Trenkle"},{"@pid":"91/10844","text":"Yuanbo Chen"},{"@pid":"276/6257","text":"Honghong Zhao"},{"@pid":"205/2940","text":"Abdullah Alchihabi"},{"@pid":"439/6883","text":"Effy Fang"},{"@pid":"438/1161","text":"Michael Tamir"}]},"title":"Bridging the Semantic-Collaborative Gap: An Asymmetric Graph Architecture for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2606.06225","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2606-06225","doi":"10.48550/ARXIV.2606.06225","ee":"https://doi.org/10.48550/arXiv.2606.06225","url":"https://dblp.org/rec/journals/corr/abs-2606-06225"},
+"url":"URL#268500"
+},
+{
+"@score":"4",
+"@id":"271974",
+"info":{"authors":{"author":[{"@pid":"266/4362","text":"Kangning Zhang"},{"@pid":"258/6919","text":"Yingjie Qin"},{"@pid":"28/10261-1","text":"Weinan Zhang 0001"},{"@pid":"43/5685-1","text":"Yong Yu 0001"},{"@pid":"188/7862","text":"Jianghao Lin"}]},"title":"DiffCold: A Diffusion-based Generative Model for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2606.12245","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2606-12245","doi":"10.48550/ARXIV.2606.12245","ee":"https://doi.org/10.48550/arXiv.2606.12245","url":"https://dblp.org/rec/journals/corr/abs-2606-12245"},
+"url":"URL#271974"
+},
+{
+"@score":"4",
+"@id":"489156",
+"info":{"authors":{"author":[{"@pid":"49/4941","text":"Zhipeng Zhang"},{"@pid":"416/8962","text":"Youfu Zhu"},{"@pid":"62/6234","text":"Mianxiong Dong"},{"@pid":"18/4822","text":"Kaoru Ota"},{"@pid":"57/3892-5","text":"Yao Zhang 0005"},{"@pid":"06/3200","text":"Yonggong Ren"}]},"title":"Embedding Guarantor: Knowledge-Enhanced Graph Learning for New Item Cold-Start Recommendation.","venue":"IEEE Trans. Emerg. Top. Comput. Intell.","volume":"9","number":"5","pages":"3311-3324","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tetci/ZhangZDOZR25","doi":"10.1109/TETCI.2024.3516087","ee":"https://doi.org/10.1109/TETCI.2024.3516087","url":"https://dblp.org/rec/journals/tetci/ZhangZDOZR25"},
+"url":"URL#489156"
+},
+{
+"@score":"4",
+"@id":"557725",
+"info":{"authors":{"author":[{"@pid":"50/2192","text":"Yang Xiang"},{"@pid":"57/3099-9","text":"Li Fan 0009"},{"@pid":"375/5131","text":"Chenke Yin"},{"@pid":"348/0298","text":"Menglin Kong"},{"@pid":"209/8801","text":"Chengtao Ji"}]},"title":"Harnessing Light for Cold-Start Recommendations: Leveraging Epistemic Uncertainty to Enhance Performance in User-Item Interactions.","venue":"CIKM","pages":"5361-5365","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/Xiang0YKJ25","doi":"10.1145/3746252.3760793","ee":"https://doi.org/10.1145/3746252.3760793","url":"https://dblp.org/rec/conf/cikm/Xiang0YKJ25"},
+"url":"URL#557725"
+},
+{
+"@score":"4",
+"@id":"557856",
+"info":{"authors":{"author":[{"@pid":"359/4708","text":"Zaiyi Zheng"},{"@pid":"251/3533","text":"Yaochen Zhu"},{"@pid":"200/1423","text":"Haochen Liu"},{"@pid":"234/2715","text":"Mingxuan Ju"},{"@pid":"94/6503-3","text":"Tong Zhao 0003"},{"@pid":"71/7771","text":"Neil Shah"},{"@pid":"144/7997","text":"Jundong Li"}]},"title":"MI4Rec: Pretrained Language Model based Cold-Start Recommendation with Meta-Item Embeddings.","venue":"CIKM","pages":"4455-4465","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/ZhengZLJ0SL25","doi":"10.1145/3746252.3761313","ee":"https://doi.org/10.1145/3746252.3761313","url":"https://dblp.org/rec/conf/cikm/ZhengZLJ0SL25"},
+"url":"URL#557856"
+},
+{
+"@score":"4",
+"@id":"660494",
+"info":{"authors":{"author":[{"@pid":"389/9720","text":"Yunze Luo"},{"@pid":"298/0856","text":"Yuezihan Jiang"},{"@pid":"314/2114","text":"Yinjie Jiang"},{"@pid":"294/6457","text":"Gaode Chen"},{"@pid":"387/2333","text":"Jingchi Wang"},{"@pid":"87/2334","text":"Kaigui Bian"},{"@pid":"136/5221-8","text":"Peiyi Li 0008"},{"@pid":"52/323-10","text":"Qi Zhang 0010"}]},"title":"Online Item Cold-Start Recommendation with Popularity-Aware Meta-Learning.","venue":"KDD","pages":"927-937","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/kdd/LuoJJCWB0025","doi":"10.1145/3690624.3709336","ee":"https://doi.org/10.1145/3690624.3709336","url":"https://dblp.org/rec/conf/kdd/LuoJJCWB0025"},
+"url":"URL#660494"
+},
+{
+"@score":"4",
+"@id":"686982",
+"info":{"authors":{"author":[{"@pid":"409/3143","text":"Gregor Meehan"},{"@pid":"21/4933","text":"Johan Pauwels"}]},"title":"On Inherited Popularity Bias in Cold-Start Item Recommendation.","venue":"RecSys","pages":"649-654","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/recsys/MeehanP25","doi":"10.1145/3705328.3748035","ee":"https://doi.org/10.1145/3705328.3748035","url":"https://dblp.org/rec/conf/recsys/MeehanP25"},
+"url":"URL#686982"
+},
+{
+"@score":"4",
+"@id":"687007",
+"info":{"authors":{"author":[{"@pid":"386/2380","text":"Anton Pembek"},{"@pid":"413/6778","text":"Artem Fatkulin"},{"@pid":"356/8420","text":"Anton Klenitskiy"},{"@pid":"301/8431","text":"Alexey Vasilev"}]},"title":"Let It Go? Not Quite: Addressing Item Cold Start in Sequential Recommendations with Content-Based Initialization.","venue":"RecSys","pages":"626-631","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/recsys/PembekFKV25","doi":"10.1145/3705328.3748038","ee":"https://doi.org/10.1145/3705328.3748038","url":"https://dblp.org/rec/conf/recsys/PembekFKV25"},
+"url":"URL#687007"
+},
+{
+"@score":"4",
+"@id":"806824",
+"info":{"authors":{"author":[{"@pid":"386/2380","text":"Anton Pembek"},{"@pid":"413/6778","text":"Artem Fatkulin"},{"@pid":"356/8420","text":"Anton Klenitskiy"},{"@pid":"301/8431","text":"Alexey Vasilev"}]},"title":"Let It Go? Not Quite: Addressing Item Cold Start in Sequential Recommendations with Content-Based Initialization.","venue":"CoRR","volume":"abs/2507.19473","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2507-19473","doi":"10.48550/ARXIV.2507.19473","ee":"https://doi.org/10.48550/arXiv.2507.19473","url":"https://dblp.org/rec/journals/corr/abs-2507-19473"},
+"url":"URL#806824"
+},
+{
+"@score":"4",
+"@id":"809248",
+"info":{"authors":{"author":[{"@pid":"76/4276-5","text":"Chuan He 0005"},{"@pid":"29/3462-4","text":"Yongchao Liu 0004"},{"@pid":"72/872-54","text":"Qiang Li 0054"},{"@pid":"81/8863","text":"Wenliang Zhong"},{"@pid":"62/6933","text":"Chuntao Hong"},{"@pid":"26/3646","text":"Xin Yao 0001"}]},"title":"M2VAE: Multi-Modal Multi-View Variational Autoencoder for Cold-start Item Recommendation.","venue":"CoRR","volume":"abs/2508.00452","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2508-00452","doi":"10.48550/ARXIV.2508.00452","ee":"https://doi.org/10.48550/arXiv.2508.00452","url":"https://dblp.org/rec/journals/corr/abs-2508-00452"},
+"url":"URL#809248"
+},
+{
+"@score":"4",
+"@id":"841263",
+"info":{"authors":{"author":[{"@pid":"409/3143","text":"Gregor Meehan"},{"@pid":"21/4933","text":"Johan Pauwels"}]},"title":"On Inherited Popularity Bias in Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2510.11402","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2510-11402","doi":"10.48550/ARXIV.2510.11402","ee":"https://doi.org/10.48550/arXiv.2510.11402","url":"https://dblp.org/rec/journals/corr/abs-2510-11402"},
+"url":"URL#841263"
+},
+{
+"@score":"4",
+"@id":"859541",
+"info":{"authors":{"author":[{"@pid":"15/4924-2","text":"Shijun Li 0002"},{"@pid":"02/5889-158","text":"Yu Wang 0158"},{"@pid":"92/1375","text":"Jin Wang"},{"@pid":"22/1805-124","text":"Ying Li 0124"},{"@pid":"51/2272","text":"Joydeep Ghosh"},{"@pid":"185/5562","text":"Anne Cocos"}]},"title":"LLM Reasoning for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2511.18261","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2511-18261","doi":"10.48550/ARXIV.2511.18261","ee":"https://doi.org/10.48550/arXiv.2511.18261","url":"https://dblp.org/rec/journals/corr/abs-2511-18261"},
+"url":"URL#859541"
+},
+{
+"@score":"4",
+"@id":"861567",
+"info":{"authors":{"author":[{"@pid":"423/5173","text":"Nachiket Subbaraman"},{"@pid":"423/7429","text":"Jaskinder Sarai"},{"@pid":"09/8399","text":"Aniruddh Nath"},{"@pid":"85/4697","text":"Lichan Hong"},{"@pid":"63/5281","text":"Lukasz Heldt"},{"@pid":"23/149","text":"Li Wei"},{"@pid":"28/6429-1","text":"Zhe Zhao 0001"}]},"title":"Selecting User Histories to Generate LLM Users for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2511.21989","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2511-21989","doi":"10.48550/ARXIV.2511.21989","ee":"https://doi.org/10.48550/arXiv.2511.21989","url":"https://dblp.org/rec/journals/corr/abs-2511-21989"},
+"url":"URL#861567"
+},
+{
+"@score":"4",
+"@id":"874120",
+"info":{"authors":{"author":[{"@pid":"166/0413","text":"Kang Fu"},{"@pid":"40/2812-2","text":"Honglei Zhang 0002"},{"@pid":"341/8058","text":"Xuechao Zou"},{"@pid":"40/7652","text":"Yidong Li"}]},"title":"MDiffFR: Modality-Guided Diffusion Generation for Cold-start Items in Federated Recommendation.","venue":"CoRR","volume":"abs/2512.24715","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2512-24715","doi":"10.48550/ARXIV.2512.24715","ee":"https://doi.org/10.48550/arXiv.2512.24715","url":"https://dblp.org/rec/journals/corr/abs-2512-24715"},
+"url":"URL#874120"
+},
+{
+"@score":"4",
+"@id":"1122279",
+"info":{"authors":{"author":[{"@pid":"132/5158","text":"Wenbo Wang"},{"@pid":"33/4882","text":"Bingquan Liu"},{"@pid":"120/9007","text":"Lili Shan"},{"@pid":"92/5589","text":"Chengjie Sun"},{"@pid":"94/4500","text":"Ben Chen"},{"@pid":"58/2489","text":"Jian Guan"}]},"title":"Preference Aware Dual Contrastive Learning for Item Cold-Start Recommendation.","venue":"AAAI","pages":"9125-9132","year":"2024","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/WangLSSCG24","doi":"10.1609/AAAI.V38I8.28763","ee":"https://doi.org/10.1609/aaai.v38i8.28763","url":"https://dblp.org/rec/conf/aaai/WangLSSCG24"},
+"url":"URL#1122279"
+},
+{
+"@score":"4",
+"@id":"1206570",
+"info":{"authors":{"author":[{"@pid":"05/10612","text":"Guohui Li"},{"@pid":"73/2498","text":"Li Zou"},{"@pid":"123/9163","text":"Zhiying Deng"},{"@pid":"66/6320","text":"Qi Chen"}]},"title":"Neighborhood-Enhanced Multimodal Collaborative Filtering for Item Cold Start Recommendation.","venue":"ICASSP","pages":"7815-7819","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/icassp/LiZDC24","doi":"10.1109/ICASSP48485.2024.10446911","ee":"https://doi.org/10.1109/ICASSP48485.2024.10446911","url":"https://dblp.org/rec/conf/icassp/LiZDC24"},
+"url":"URL#1206570"
+},
+{
+"@score":"4",
+"@id":"1218826",
+"info":{"authors":{"author":[{"@pid":"359/0820","text":"Hulingxiao He"},{"@pid":"195/8195","text":"Xiangteng He"},{"@pid":"13/3073-1","text":"Yuxin Peng 0001"},{"@pid":"117/7973","text":"Zifei Shan"},{"@pid":"54/3643","text":"Xin Su"}]},"title":"Firzen: Firing Strict Cold-Start Items with Frozen Heterogeneous and Homogeneous Graphs for Recommendation.","venue":"ICDE","pages":"4657-4670","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/icde/HeHPSS24","doi":"10.1109/ICDE60146.2024.00354","ee":"https://doi.org/10.1109/ICDE60146.2024.00354","url":"https://dblp.org/rec/conf/icde/HeHPSS24"},
+"url":"URL#1218826"
+},
+{
+"@score":"4",
+"@id":"1260396",
+"info":{"authors":{"author":[{"@pid":"397/9877","text":"Panjawat Rungtranont"},{"@pid":"29/7431","text":"Janjao Mongkolnavin"}]},"title":"Using Large Language Models as user Interests Interpretation for Solving Cold-Start Item Recommendation.","venue":"ISCIT","pages":"36-40","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/iscit/RungtranontM24","doi":"10.1109/ISCIT63075.2024.10793679","ee":"https://doi.org/10.1109/ISCIT63075.2024.10793679","url":"https://dblp.org/rec/conf/iscit/RungtranontM24"},
+"url":"URL#1260396"
+},
+{
+"@score":"4",
+"@id":"1300188",
+"info":{"authors":{"author":[{"@pid":"298/0856","text":"Yuezihan Jiang"},{"@pid":"294/6457","text":"Gaode Chen"},{"@pid":"46/4452-4","text":"Wenhan Zhang 0004"},{"@pid":"387/2333","text":"Jingchi Wang"},{"@pid":"314/2114","text":"Yinjie Jiang"},{"@pid":"52/323-10","text":"Qi Zhang 0010"},{"@pid":"166/4433","text":"Jingjian Lin"},{"@pid":"273/6545","text":"Peng Jiang 0002"},{"@pid":"87/2334","text":"Kaigui Bian"}]},"title":"Prompt Tuning for Item Cold-start Recommendation.","venue":"RecSys","pages":"411-421","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/recsys/JiangC0WJZLJB24","doi":"10.1145/3640457.3688126","ee":"https://doi.org/10.1145/3640457.3688126","url":"https://dblp.org/rec/conf/recsys/JiangC0WJZLJB24"},
+"url":"URL#1300188"
+},
+{
+"@score":"4",
+"@id":"1309397",
+"info":{"authors":{"author":[{"@pid":"376/1086","text":"Jinri Kim"},{"@pid":"268/5707","text":"Eungi Kim"},{"@pid":"376/0911","text":"Kwangeun Yeo"},{"@pid":"342/8426","text":"Yujin Jeon"},{"@pid":"62/79","text":"Chanwoo Kim"},{"@pid":"124/8683","text":"Sewon Lee"},{"@pid":"77/1319","text":"Joonseok Lee"}]},"title":"Content-based Graph Reconstruction for Cold-start Item Recommendation.","venue":"SIGIR","pages":"1263-1273","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/KimKYJKLL24","doi":"10.1145/3626772.3657801","ee":"https://doi.org/10.1145/3626772.3657801","url":"https://dblp.org/rec/conf/sigir/KimKYJKLL24"},
+"url":"URL#1309397"
+},
+{
+"@score":"4",
+"@id":"1330099",
+"info":{"authors":{"author":[{"@pid":"50/8201","text":"Jianling Wang"},{"@pid":"28/11208","text":"Haokai Lu"},{"@pid":"55/3697","text":"James Caverlee"},{"@pid":"13/310","text":"Ed H. Chi"},{"@pid":"78/4298","text":"Minmin Chen"}]},"title":"Large Language Models as Data Augmenters for Cold-Start Item Recommendation.","venue":"WWW","pages":"726-729","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/WangLCCC24","doi":"10.1145/3589335.3651532","ee":"https://doi.org/10.1145/3589335.3651532","url":"https://dblp.org/rec/conf/www/WangLCCC24"},
+"url":"URL#1330099"
+},
+{
+"@score":"4",
+"@id":"1330226",
+"info":{"authors":{"author":[{"@pid":"192/1046","text":"Chunxu Zhang"},{"@pid":"34/10089","text":"Guodong Long"},{"@pid":"88/8205-1","text":"Tianyi Zhou 0001"},{"@pid":"43/6524-9","text":"Zijian Zhang 0009"},{"@pid":"64/397-2","text":"Peng Yan 0002"},{"@pid":"46/999-2","text":"Bo Yang 0002"}]},"title":"When Federated Recommendation Meets Cold-Start Problem: Separating Item Attributes and User Interactions.","venue":"WWW","pages":"3632-3642","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/ZhangL00YY24","doi":"10.1145/3589334.3645525","ee":"https://doi.org/10.1145/3589334.3645525","url":"https://dblp.org/rec/conf/www/ZhangL00YY24"},
+"url":"URL#1330226"
+},
+{
+"@score":"4",
+"@id":"1352025",
+"info":{"authors":{"author":[{"@pid":"163/3996","text":"Feiran Huang"},{"@pid":"368/7528","text":"Zhenghang Yang"},{"@pid":"170/9187","text":"Junyi Jiang"},{"@pid":"331/2167","text":"Yuanchen Bei"},{"@pid":"185/9892","text":"Yijie Zhang"},{"@pid":"175/3324-62","text":"Hao Chen 0062"}]},"title":"Large Language Model Interaction Simulator for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2402.09176","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2402-09176","doi":"10.48550/ARXIV.2402.09176","ee":"https://doi.org/10.48550/arXiv.2402.09176","url":"https://dblp.org/rec/journals/corr/abs-2402-09176"},
+"url":"URL#1352025"
+},
+{
+"@score":"4",
+"@id":"1353396",
+"info":{"authors":{"author":[{"@pid":"50/8201","text":"Jianling Wang"},{"@pid":"28/11208","text":"Haokai Lu"},{"@pid":"55/3697","text":"James Caverlee"},{"@pid":"13/310","text":"Ed H. Chi"},{"@pid":"78/4298","text":"Minmin Chen"}]},"title":"Large Language Models as Data Augmenters for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2402.11724","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2402-11724","doi":"10.48550/ARXIV.2402.11724","ee":"https://doi.org/10.48550/arXiv.2402.11724","url":"https://dblp.org/rec/journals/corr/abs-2402-11724"},
+"url":"URL#1353396"
+},
+{
+"@score":"4",
+"@id":"1375100",
+"info":{"authors":{"author":[{"@pid":"296/4034","text":"Jooeun Kim"},{"@pid":"376/1086","text":"Jinri Kim"},{"@pid":"376/0911","text":"Kwangeun Yeo"},{"@pid":"268/5707","text":"Eungi Kim"},{"@pid":"175/0873","text":"Kyoung-Woon On"},{"@pid":"192/2107","text":"Jonghwan Mun"},{"@pid":"77/1319","text":"Joonseok Lee"}]},"title":"General Item Representation Learning for Cold-start Content Recommendations.","venue":"CoRR","volume":"abs/2404.13808","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2404-13808","doi":"10.48550/ARXIV.2404.13808","ee":"https://doi.org/10.48550/arXiv.2404.13808","url":"https://dblp.org/rec/journals/corr/abs-2404-13808"},
+"url":"URL#1375100"
+},
+{
+"@score":"4",
+"@id":"1434177",
+"info":{"authors":{"author":[{"@pid":"359/0820","text":"Hulingxiao He"},{"@pid":"195/8195","text":"Xiangteng He"},{"@pid":"13/3073-1","text":"Yuxin Peng 0001"},{"@pid":"117/7973","text":"Zifei Shan"},{"@pid":"54/3643","text":"Xin Su"}]},"title":"Firzen: Firing Strict Cold-Start Items with Frozen Heterogeneous and Homogeneous Graphs for Recommendation.","venue":"CoRR","volume":"abs/2410.07654","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2410-07654","doi":"10.48550/ARXIV.2410.07654","ee":"https://doi.org/10.48550/arXiv.2410.07654","url":"https://dblp.org/rec/journals/corr/abs-2410-07654"},
+"url":"URL#1434177"
+},
+{
+"@score":"4",
+"@id":"1442151",
+"info":{"authors":{"author":[{"@pid":"245/4818","text":"Shaked Brody"},{"@pid":"335/1652","text":"Shoval Lagziel"}]},"title":"SimRec: Mitigating the Cold-Start Problem in Sequential Recommendation by Integrating Item Similarity.","venue":"CoRR","volume":"abs/2410.22136","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2410-22136","doi":"10.48550/ARXIV.2410.22136","ee":"https://doi.org/10.48550/arXiv.2410.22136","url":"https://dblp.org/rec/journals/corr/abs-2410-22136"},
+"url":"URL#1442151"
+},
+{
+"@score":"4",
+"@id":"1448843",
+"info":{"authors":{"author":[{"@pid":"389/9720","text":"Yunze Luo"},{"@pid":"298/0856","text":"Yuezihan Jiang"},{"@pid":"314/2114","text":"Yinjie Jiang"},{"@pid":"294/6457","text":"Gaode Chen"},{"@pid":"387/2333","text":"Jingchi Wang"},{"@pid":"87/2334","text":"Kaigui Bian"},{"@pid":"136/5221-8","text":"Peiyi Li 0008"},{"@pid":"52/323-10","text":"Qi Zhang 0010"}]},"title":"Online Item Cold-Start Recommendation with Popularity-Aware Meta-Learning.","venue":"CoRR","volume":"abs/2411.11225","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2411-11225","doi":"10.48550/ARXIV.2411.11225","ee":"https://doi.org/10.48550/arXiv.2411.11225","url":"https://dblp.org/rec/journals/corr/abs-2411-11225"},
+"url":"URL#1448843"
+},
+{
+"@score":"4",
+"@id":"1456834",
+"info":{"authors":{"author":[{"@pid":"329/4099","text":"Dilina Chandika Rajapakse"},{"@pid":"l/DouglasJLeith","text":"Douglas J. Leith"}]},"title":"RLT4Rec: Reinforcement Learning Transformer for User Cold Start and Item Recommendation.","venue":"CoRR","volume":"abs/2412.07403","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2412-07403","doi":"10.48550/ARXIV.2412.07403","ee":"https://doi.org/10.48550/arXiv.2412.07403","url":"https://dblp.org/rec/journals/corr/abs-2412-07403"},
+"url":"URL#1456834"
+},
+{
+"@score":"4",
+"@id":"1462252",
+"info":{"authors":{"author":[{"@pid":"298/0856","text":"Yuezihan Jiang"},{"@pid":"294/6457","text":"Gaode Chen"},{"@pid":"46/4452-4","text":"Wenhan Zhang 0004"},{"@pid":"387/2333","text":"Jingchi Wang"},{"@pid":"314/2114","text":"Yinjie Jiang"},{"@pid":"52/323-10","text":"Qi Zhang 0010"},{"@pid":"166/4433","text":"Jingjian Lin"},{"@pid":"273/6545","text":"Peng Jiang 0002"},{"@pid":"87/2334","text":"Kaigui Bian"}]},"title":"Prompt Tuning for Item Cold-start Recommendation.","venue":"CoRR","volume":"abs/2412.18082","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2412-18082","doi":"10.48550/ARXIV.2412.18082","ee":"https://doi.org/10.48550/arXiv.2412.18082","url":"https://dblp.org/rec/journals/corr/abs-2412-18082"},
+"url":"URL#1462252"
+},
+{
+"@score":"4",
+"@id":"1466820",
+"info":{"title":"CDRNP: Cross-Domain Recommendation to Cold-Start Users via Neural Process.","venue":"CoRR","volume":"abs/2401.12732","year":"2024","type":"Withdrawn Items","access":"withdrawn","key":"journals/corr/abs-2401-12732","doi":"10.48550/ARXIV.2401.12732","ee":"https://doi.org/10.48550/arXiv.2401.12732","url":"https://dblp.org/rec/journals/corr/abs-2401-12732"},
+"url":"URL#1466820"
+},
+{
+"@score":"4",
+"@id":"1479556",
+"info":{"authors":{"author":[{"@pid":"364/1223","text":"Won-Min Lee"},{"@pid":"56/9828","text":"Yoon-Sik Cho"}]},"title":"A Flexible Two-Tower Model for Item Cold-Start Recommendation.","venue":"IEEE Access","volume":"11","pages":"146194-146207","year":"2023","type":"Journal Articles","access":"open","key":"journals/access/LeeC23a","doi":"10.1109/ACCESS.2023.3346918","ee":"https://doi.org/10.1109/ACCESS.2023.3346918","url":"https://dblp.org/rec/journals/access/LeeC23a"},
+"url":"URL#1479556"
+},
+{
+"@score":"4",
+"@id":"1516342",
+"info":{"authors":{"author":[{"@pid":"276/0273","text":"Eyad Kannout"},{"@pid":"330/2340","text":"Michal Grodzki"},{"@pid":"122/1797","text":"Marek Grzegorowski"}]},"title":"Towards addressing item cold-start problem in collaborative filtering by embedding agglomerative clustering and FP-growth into the recommendation system.","venue":"Comput. Sci. Inf. Syst.","volume":"20","number":"4","pages":"1343-1366","year":"2023","type":"Journal Articles","access":"open","key":"journals/comsis/KannoutGG23","doi":"10.2298/CSIS221116052K","ee":"https://doi.org/10.2298/csis221116052k","url":"https://dblp.org/rec/journals/comsis/KannoutGG23"},
+"url":"URL#1516342"
+},
+{
+"@score":"4",
+"@id":"1538190",
+"info":{"authors":{"author":[{"@pid":"178/4185","text":"Meizi Li"},{"@pid":"359/1970","text":"Weiqiao Que"},{"@pid":"359/2156","text":"Ziyao Geng"},{"@pid":"l/MaozhenLi","text":"Maozhen Li 0001"},{"@pid":"353/7312","text":"Zuliang Kou"},{"@pid":"141/8891","text":"Jisheng Chen"},{"@pid":"168/6265","text":"Chang Guo"},{"@pid":"36/2259-4","text":"Bo Zhang 0004"}]},"title":"Cold-start item recommendation for representation learning based on heterogeneous information networks with fusion side information.","venue":"Future Gener. Comput. Syst.","volume":"149","pages":"227-239","year":"2023","type":"Journal Articles","access":"closed","key":"journals/fgcs/LiQGLKCGZ23","doi":"10.1016/J.FUTURE.2023.07.003","ee":"https://doi.org/10.1016/j.future.2023.07.003","url":"https://dblp.org/rec/journals/fgcs/LiQGLKCGZ23"},
+"url":"URL#1538190"
+},
+{
+"@score":"4",
+"@id":"1544765",
+"info":{"authors":{"author":[{"@pid":"78/437-6","text":"Rui Tang 0006"},{"@pid":"49/1457-9","text":"Cheng Yang 0009"},{"@pid":"94/3940","text":"Yuxuan Wang"}]},"title":"A Cross-Domain Multimodal Supervised Latent Topic Model for Item Tagging and Cold-Start Recommendation.","venue":"IEEE Multim.","volume":"30","number":"3","pages":"48-62","year":"2023","type":"Journal Articles","access":"closed","key":"journals/ieeemm/TangYW23","doi":"10.1109/MMUL.2023.3242455","ee":"https://doi.org/10.1109/MMUL.2023.3242455","url":"https://dblp.org/rec/journals/ieeemm/TangYW23"},
+"url":"URL#1544765"
+},
+{
+"@score":"4",
+"@id":"1867807",
+"info":{"authors":{"author":[{"@pid":"163/3996","text":"Feiran Huang"},{"@pid":"246/2190","text":"Zefan Wang"},{"@pid":"25/692-1","text":"Xiao Huang 0001"},{"@pid":"139/1496","text":"Yufeng Qian"},{"@pid":"128/3410","text":"Zhetao Li"},{"@pid":"175/3324-62","text":"Hao Chen 0062"}]},"title":"Aligning Distillation For Cold-start Item Recommendation.","venue":"SIGIR","pages":"1147-1157","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/HuangWHQLC23","doi":"10.1145/3539618.3591732","ee":"https://doi.org/10.1145/3539618.3591732","url":"https://dblp.org/rec/conf/sigir/HuangWHQLC23"},
+"url":"URL#1867807"
+},
+{
+"@score":"4",
+"@id":"1867888",
+"info":{"authors":{"author":[{"@pid":"299/5407","text":"Taichi Liu"},{"@pid":"76/5013-1","text":"Chen Gao 0001"},{"@pid":"22/1486-5","text":"Zhenyu Wang 0005"},{"@pid":"47/4826-16","text":"Dong Li 0016"},{"@pid":"21/7664","text":"Jianye Hao"},{"@pid":"46/5770","text":"Depeng Jin"},{"@pid":"93/2334-8","text":"Yong Li 0008"}]},"title":"Uncertainty-aware Consistency Learning for Cold-Start Item Recommendation.","venue":"SIGIR","pages":"2466-2470","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/LiuGWLHJL23","doi":"10.1145/3539618.3592078","ee":"https://doi.org/10.1145/3539618.3592078","url":"https://dblp.org/rec/conf/sigir/LiuGWLHJL23"},
+"url":"URL#1867888"
+},
+{
+"@score":"4",
+"@id":"1887254",
+"info":{"authors":{"author":[{"@pid":"147/2978","text":"Zhihui Zhou"},{"@pid":"120/6385","text":"Lilin Zhang"},{"@pid":"67/1751-1","text":"Ning Yang 0001"}]},"title":"Contrastive Collaborative Filtering for Cold-Start Item Recommendation.","venue":"WWW","pages":"928-937","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/ZhouZY23","doi":"10.1145/3543507.3583286","ee":"https://doi.org/10.1145/3543507.3583286","url":"https://dblp.org/rec/conf/www/ZhouZY23"},
+"url":"URL#1887254"
+},
+{
+"@score":"4",
+"@id":"1901906",
+"info":{"authors":{"author":[{"@pid":"147/2978","text":"Zhihui Zhou"},{"@pid":"120/6385","text":"Lilin Zhang"},{"@pid":"67/1751-1","text":"Ning Yang 0001"}]},"title":"Contrastive Collaborative Filtering for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2302.02151","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2302-02151","doi":"10.48550/ARXIV.2302.02151","ee":"https://doi.org/10.48550/arXiv.2302.02151","url":"https://dblp.org/rec/journals/corr/abs-2302-02151"},
+"url":"URL#1901906"
+},
+{
+"@score":"4",
+"@id":"1907518",
+"info":{"authors":{"author":[{"@pid":"321/1845","text":"Shenzheng Zhang"},{"@pid":"77/6056","text":"Qi Tan"},{"@pid":"341/3686","text":"Xinzhi Zheng"},{"@pid":"75/6568","text":"Yi Ren"},{"@pid":"37/3580-7","text":"Xu Zhao 0007"}]},"title":"Item Cold Start Recommendation via Adversarial Variational Auto-encoder Warm-up.","venue":"CoRR","volume":"abs/2302.14395","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2302-14395","doi":"10.48550/ARXIV.2302.14395","ee":"https://doi.org/10.48550/arXiv.2302.14395","url":"https://dblp.org/rec/journals/corr/abs-2302-14395"},
+"url":"URL#1907518"
+},
+{
+"@score":"4",
+"@id":"1951597",
+"info":{"authors":{"author":[{"@pid":"299/5407","text":"Taichi Liu"},{"@pid":"76/5013-1","text":"Chen Gao 0001"},{"@pid":"22/1486-5","text":"Zhenyu Wang 0005"},{"@pid":"47/4826-16","text":"Dong Li 0016"},{"@pid":"21/7664","text":"Jianye Hao"},{"@pid":"46/5770","text":"Depeng Jin"},{"@pid":"93/2334-8","text":"Yong Li 0008"}]},"title":"Uncertainty-aware Consistency Learning for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2308.03470","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2308-03470","doi":"10.48550/ARXIV.2308.03470","ee":"https://doi.org/10.48550/arXiv.2308.03470","url":"https://dblp.org/rec/journals/corr/abs-2308-03470"},
+"url":"URL#1951597"
+},
+{
+"@score":"4",
+"@id":"1997266",
+"info":{"title":"An AI-based solution for the cold start and data sparsity problems in the recommendation systems.","venue":"CoRR","volume":"abs/2312.01840","year":"2023","type":"Withdrawn Items","access":"withdrawn","key":"journals/corr/abs-2312-01840","doi":"10.48550/ARXIV.2312.01840","ee":"https://doi.org/10.48550/arXiv.2312.01840","url":"https://dblp.org/rec/journals/corr/abs-2312-01840"},
+"url":"URL#1997266"
+},
+{
+"@score":"4",
+"@id":"2085848",
+"info":{"authors":{"author":[{"@pid":"328/8331","text":"Chengmei Peng"},{"@pid":"99/549-2","text":"Lei Zhu 0002"},{"@pid":"61/3906-25","text":"Yang Xu 0025"},{"@pid":"85/3234","text":"Yaping Li"},{"@pid":"64/1967-8","text":"Lei Guo 0008"}]},"title":"Binary multi-modal matrix factorization for fast item cold-start recommendation.","venue":"Neurocomputing","volume":"507","pages":"145-156","year":"2022","type":"Journal Articles","access":"closed","key":"journals/ijon/PengZXLG22","doi":"10.1016/J.NEUCOM.2022.08.013","ee":"https://doi.org/10.1016/j.neucom.2022.08.013","url":"https://dblp.org/rec/journals/ijon/PengZXLG22"},
+"url":"URL#2085848"
+},
+{
+"@score":"4",
+"@id":"2375879",
+"info":{"authors":{"author":[{"@pid":"175/3324-62","text":"Hao Chen 0062"},{"@pid":"246/2190","text":"Zefan Wang"},{"@pid":"163/3996","text":"Feiran Huang"},{"@pid":"25/692-1","text":"Xiao Huang 0001"},{"@pid":"29/3925","text":"Yue Xu"},{"@pid":"140/8178","text":"Yishi Lin"},{"@pid":"84/6016","text":"Peng He"},{"@pid":"76/2866-1","text":"Zhoujun Li 0001"}]},"title":"Generative Adversarial Framework for Cold-Start Item Recommendation.","venue":"SIGIR","pages":"2565-2571","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ChenWHHXLH022","doi":"10.1145/3477495.3531897","ee":"https://doi.org/10.1145/3477495.3531897","url":"https://dblp.org/rec/conf/sigir/ChenWHHXLH022"},
+"url":"URL#2375879"
+},
+{
+"@score":"4",
+"@id":"2376247",
+"info":{"authors":{"author":[{"@pid":"37/3580-7","text":"Xu Zhao 0007"},{"@pid":"75/6568","text":"Yi Ren"},{"@pid":"33/4685","text":"Ying Du"},{"@pid":"321/1845","text":"Shenzheng Zhang"},{"@pid":"50/5696","text":"Nian Wang"}]},"title":"Improving Item Cold-start Recommendation via Model-agnostic Conditional Variational Autoencoder.","venue":"SIGIR","pages":"2595-2600","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ZhaoRDZW22","doi":"10.1145/3477495.3531902","ee":"https://doi.org/10.1145/3477495.3531902","url":"https://dblp.org/rec/conf/sigir/ZhaoRDZW22"},
+"url":"URL#2376247"
+},
+{
+"@score":"4",
+"@id":"2434248",
+"info":{"authors":{"author":[{"@pid":"37/3580-7","text":"Xu Zhao 0007"},{"@pid":"75/6568","text":"Yi Ren"},{"@pid":"33/4685","text":"Ying Du"},{"@pid":"321/1845","text":"Shenzheng Zhang"},{"@pid":"50/5696","text":"Nian Wang"}]},"title":"Improving Item Cold-start Recommendation via Model-agnostic Conditional Variational Autoencoder.","venue":"CoRR","volume":"abs/2205.13795","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2205-13795","doi":"10.48550/ARXIV.2205.13795","ee":"https://doi.org/10.48550/arXiv.2205.13795","url":"https://dblp.org/rec/journals/corr/abs-2205-13795"},
+"url":"URL#2434248"
+},
+{
+"@score":"4",
+"@id":"2503570",
+"info":{"authors":{"author":[{"@pid":"292/6241","text":"Jirut Polohakul"},{"@pid":"26/10649","text":"Ekapol Chuangsuwanich"},{"@pid":"49/3783","text":"Atiwong Suchato"},{"@pid":"24/6430","text":"Proadpran Punyabukkana"}]},"title":"Real Estate Recommendation Approach for Solving the Item Cold-Start Problem.","venue":"IEEE Access","volume":"9","pages":"68139-68150","year":"2021","type":"Journal Articles","access":"open","key":"journals/access/PolohakulCSP21","doi":"10.1109/ACCESS.2021.3077564","ee":"https://doi.org/10.1109/ACCESS.2021.3077564","url":"https://dblp.org/rec/journals/access/PolohakulCSP21"},
+"url":"URL#2503570"
+},
+{
+"@score":"4",
+"@id":"2680116",
+"info":{"authors":{"author":[{"@pid":"15/4924-2","text":"Shijun Li 0002"},{"@pid":"167/9604","text":"Wenqiang Lei"},{"@pid":"183/0579","text":"Qingyun Wu"},{"@pid":"59/1007","text":"Xiangnan He 0001"},{"@pid":"273/6545","text":"Peng Jiang 0002"},{"@pid":"24/6606","text":"Tat-Seng Chua"}]},"title":"Seamlessly Unifying Attributes and Items: Conversational Recommendation for Cold-start Users.","venue":"ACM Trans. Inf. Syst.","volume":"39","number":"4","pages":"40:1-40:29","year":"2021","type":"Journal Articles","access":"closed","key":"journals/tois/LiLWHJC21","doi":"10.1145/3446427","ee":"https://doi.org/10.1145/3446427","url":"https://dblp.org/rec/journals/tois/LiLWHJC21"},
+"url":"URL#2680116"
+},
+{
+"@score":"4",
+"@id":"2686130",
+"info":{"authors":{"author":[{"@pid":"222/4776","text":"Nourah A. ALRossais"},{"@pid":"46/2964","text":"Daniel Kudenko"},{"@pid":"212/7624","text":"Tommy Yuan"}]},"title":"Improving cold-start recommendations using item-based stereotypes.","venue":"User Model. User Adapt. Interact.","volume":"31","number":"5","pages":"867-905","year":"2021","type":"Journal Articles","access":"open","key":"journals/umuai/ALRossaisKY21","doi":"10.1007/S11257-021-09293-9","ee":"https://doi.org/10.1007/s11257-021-09293-9","url":"https://dblp.org/rec/journals/umuai/ALRossaisKY21"},
+"url":"URL#2686130"
+},
+{
+"@score":"4",
+"@id":"3006381",
+"info":{"authors":{"author":{"@pid":"130/9769","text":"Robert A. Klopotek"}},"title":"Modeling Bimodal Social Networks Subject to the Recommendation with the Cold Start User-Item Model.","venue":"Comput.","volume":"9","number":"1","pages":"11","year":"2020","type":"Journal Articles","access":"open","key":"journals/computers/Klopotek20","doi":"10.3390/COMPUTERS9010011","ee":"https://doi.org/10.3390/computers9010011","url":"https://dblp.org/rec/journals/computers/Klopotek20"},
+"url":"URL#3006381"
+},
+{
+"@score":"4",
+"@id":"3010775",
+"info":{"authors":{"author":[{"@pid":"155/1903","text":"Shameem Ahamed Puthiya Parambath"},{"@pid":"22/5463","text":"Sanjay Chawla"}]},"title":"Simple and effective neural-free soft-cluster embeddings for item cold-start recommendations.","venue":"Data Min. Knowl. Discov.","volume":"34","number":"5","pages":"1560-1588","year":"2020","type":"Journal Articles","access":"open","key":"journals/datamine/ParambathC20","doi":"10.1007/S10618-020-00708-6","ee":"https://doi.org/10.1007/s10618-020-00708-6","url":"https://dblp.org/rec/journals/datamine/ParambathC20"},
+"url":"URL#3010775"
+},
+{
+"@score":"4",
+"@id":"3056926",
+"info":{"authors":{"author":[{"@pid":"52/295-3","text":"Yifan Chen 0003"},{"@pid":"07/668-2","text":"Xiang Zhao 0002"},{"@pid":"169/7173","text":"Jinyuan Liu"},{"@pid":"79/3482-6","text":"Bin Ge 0006"},{"@pid":"20/612-3","text":"Weiming Zhang 0003"}]},"title":"Item Cold-Start Recommendation with Personalized Feature Selection.","venue":"J. Comput. Sci. Technol.","volume":"35","number":"5","pages":"1217-1230","year":"2020","type":"Journal Articles","access":"closed","key":"journals/jcst/ChenZLGZ20","doi":"10.1007/S11390-020-9864-Z","ee":"https://doi.org/10.1007/s11390-020-9864-z","url":"https://dblp.org/rec/journals/jcst/ChenZLGZ20"},
+"url":"URL#3056926"
+},
+{
+"@score":"4",
+"@id":"3276881",
+"info":{"authors":{"author":[{"@pid":"145/4226-2","text":"Xiaoyu Du 0002"},{"@pid":"31/2864-10","text":"Xiang Wang 0010"},{"@pid":"59/1007","text":"Xiangnan He 0001"},{"@pid":"51/8693","text":"Zechao Li"},{"@pid":"75/1030","text":"Jinhui Tang 0001"},{"@pid":"24/6606","text":"Tat-Seng Chua"}]},"title":"How to Learn Item Representation for Cold-Start Multimedia Recommendation?","venue":"ACM Multimedia","pages":"3469-3477","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/mm/Du00LTC20","doi":"10.1145/3394171.3413628","ee":"https://doi.org/10.1145/3394171.3413628","url":"https://dblp.org/rec/conf/mm/Du00LTC20"},
+"url":"URL#3276881"
+},
+{
+"@score":"4",
+"@id":"3306972",
+"info":{"authors":{"author":[{"@pid":"226/3697","text":"Yitong Meng"},{"@pid":"07/2626-2","text":"Xiao Yan 0002"},{"@pid":"75/2746","text":"Weiwen Liu"},{"@pid":"122/3065","text":"Huanhuan Wu"},{"@pid":"06/4171","text":"James Cheng"}]},"title":"Wasserstein Collaborative Filtering for Item Cold-start Recommendation.","venue":"UMAP","pages":"318-322","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/um/MengYLWC20","doi":"10.1145/3340631.3394870","ee":"https://doi.org/10.1145/3340631.3394870","url":"https://dblp.org/rec/conf/um/MengYLWC20"},
+"url":"URL#3306972"
+},
+{
+"@score":"4",
+"@id":"3347978",
+"info":{"authors":{"author":[{"@pid":"15/4924-2","text":"Shijun Li 0002"},{"@pid":"167/9604","text":"Wenqiang Lei"},{"@pid":"183/0579","text":"Qingyun Wu"},{"@pid":"59/1007","text":"Xiangnan He 0001"},{"@pid":"273/6545","text":"Peng Jiang 0002"},{"@pid":"24/6606","text":"Tat-Seng Chua"}]},"title":"Seamlessly Unifying Attributes and Items: Conversational Recommendation for Cold-Start Users.","venue":"CoRR","volume":"abs/2005.12979","year":"2020","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2005-12979","ee":"https://arxiv.org/abs/2005.12979","url":"https://dblp.org/rec/journals/corr/abs-2005-12979"},
+"url":"URL#3347978"
+},
+{
+"@score":"4",
+"@id":"3379417",
+"info":{"authors":{"author":[{"@pid":"226/3697","text":"Yitong Meng"},{"@pid":"03/2134-48","text":"Jie Liu 0048"},{"@pid":"07/2626-2","text":"Xiao Yan 0002"},{"@pid":"06/4171","text":"James Cheng"}]},"title":"The item selection problem for user cold-start recommendation.","venue":"CoRR","volume":"abs/2010.14013","year":"2020","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2010-14013","ee":"https://arxiv.org/abs/2010.14013","url":"https://dblp.org/rec/journals/corr/abs-2010-14013"},
+"url":"URL#3379417"
+},
+{
+"@score":"4",
+"@id":"3561855",
+"info":{"authors":{"author":[{"@pid":"167/2847","text":"Yashar Deldjoo"},{"@pid":"225/7792","text":"Maurizio Ferrari Dacrema"},{"@pid":"190/1743","text":"Mihai Gabriel Constantin"},{"@pid":"170/1944","text":"Hamid Eghbal-zadeh"},{"@pid":"203/0246","text":"Stefano Cereda"},{"@pid":"77/271","text":"Markus Schedl"},{"@pid":"53/948","text":"Bogdan Ionescu"},{"@pid":"03/3233","text":"Paolo Cremonesi"}]},"title":"Movie genome: alleviating new item cold start in movie recommendation.","venue":"User Model. User Adapt. Interact.","volume":"29","number":"2","pages":"291-343","year":"2019","type":"Journal Articles","access":"open","key":"journals/umuai/DeldjooDCECSIC19","doi":"10.1007/S11257-019-09221-Y","ee":"https://doi.org/10.1007/s11257-019-09221-y","url":"https://dblp.org/rec/journals/umuai/DeldjooDCECSIC19"},
+"url":"URL#3561855"
+},
+{
+"@score":"4",
+"@id":"3775873",
+"info":{"authors":{"author":[{"@pid":"04/3916-2","text":"Mohit Sharma 0002"},{"@pid":"73/1353","text":"Jiayu Zhou"},{"@pid":"16/5708","text":"Junling Hu"},{"@pid":"k/GeorgeKarypis","text":"George Karypis"}]},"title":"Feature-based factorized Bilinear Similarity Model for Cold-Start Top-n Item Recommendation.","venue":"CoRR","volume":"abs/1904.11799","year":"2019","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-1904-11799","ee":"http://arxiv.org/abs/1904.11799","url":"https://dblp.org/rec/journals/corr/abs-1904-11799"},
+"url":"URL#3775873"
+},
+{
+"@score":"4",
+"@id":"3796747",
+"info":{"authors":{"author":[{"@pid":"226/3697","text":"Yitong Meng"},{"@pid":"175/1354","text":"Guangyong Chen"},{"@pid":"241/6296","text":"Benben Liao"},{"@pid":"73/273-8","text":"Jun Guo 0008"},{"@pid":"75/2746","text":"Weiwen Liu"}]},"title":"Wasserstein Collaborative Filtering for Item Cold-start Recommendation.","venue":"CoRR","volume":"abs/1909.04266","year":"2019","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-1909-04266","ee":"http://arxiv.org/abs/1909.04266","url":"https://dblp.org/rec/journals/corr/abs-1909-04266"},
+"url":"URL#3796747"
+},
+{
+"@score":"4",
+"@id":"4090041",
+"info":{"authors":{"author":[{"@pid":"31/3668-2","text":"Geng Sun 0002"},{"@pid":"99/10502","text":"Tingru Cui"},{"@pid":"03/2363","text":"Dongming Xu"},{"@pid":"48/5700-1","text":"Jun Shen 0001"},{"@pid":"65/287","text":"Shiping Chen 0001"}]},"title":"A Heuristic Approach for New-Item Cold Start Problem in Recommendation of Micro Open Education Resources.","venue":"ITS","pages":"212-222","year":"2018","type":"Conference and Workshop Papers","access":"closed","key":"conf/its/SunCX0C18","doi":"10.1007/978-3-319-91464-0_21","ee":"https://doi.org/10.1007/978-3-319-91464-0_21","url":"https://dblp.org/rec/conf/its/SunCX0C18"},
+"url":"URL#4090041"
+},
+{
+"@score":"4",
+"@id":"4238434",
+"info":{"authors":{"author":[{"@pid":"70/854","text":"Jian Wei"},{"@pid":"40/3669-1","text":"Jianhua He 0001"},{"@pid":"c/KaiChen6","text":"Kai Chen 0006"},{"@pid":"01/1901-3","text":"Yi Zhou 0003"},{"@pid":"11/3417","text":"Zuoyin Tang"}]},"title":"Collaborative filtering and deep learning based recommendation system for cold start items.","venue":"Expert Syst. Appl.","volume":"69","pages":"29-39","year":"2017","type":"Journal Articles","access":"closed","key":"journals/eswa/WeiHCZT17","doi":"10.1016/J.ESWA.2016.09.040","ee":"https://doi.org/10.1016/j.eswa.2016.09.040","url":"https://dblp.org/rec/journals/eswa/WeiHCZT17"},
+"url":"URL#4238434"
+},
+{
+"@score":"4",
+"@id":"4261358",
+"info":{"authors":{"author":[{"@pid":"197/1359","text":"Travis Ebesu"},{"@pid":"96/361-8","text":"Yi Fang 0008"}]},"title":"Neural Semantic Personalized Ranking for item cold-start recommendation.","venue":"Inf. Retr. J.","volume":"20","number":"2","pages":"109-131","year":"2017","type":"Journal Articles","access":"closed","key":"journals/ir/EbesuF17","doi":"10.1007/S10791-017-9295-9","ee":"https://doi.org/10.1007/s10791-017-9295-9","url":"https://dblp.org/rec/journals/ir/EbesuF17"},
+"url":"URL#4261358"
+}
+]
+}
+}
+}

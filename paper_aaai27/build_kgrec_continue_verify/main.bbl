@@ -1,0 +1,349 @@
+\begin{thebibliography}{46}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Bauer, Zangerle, and Said(2024)}]{bauer2024landscape}
+Bauer, C.; Zangerle, E.; and Said, A. 2024.
+\newblock Exploring the Landscape of Recommender Systems Evaluation: Practices
+  and Perspectives.
+\newblock \emph{ACM Transactions on Recommender Systems}, 2(1): 1--31.
+
+\bibitem[{Chen, Hsieh, and Tsai(2020)}]{chen2020junyi}
+Chen, P.; Hsieh, M.; and Tsai, T. 2020.
+\newblock Junyi Academy Online Learning Activity Dataset: A Large-scale Public
+  Online Learning Activity Dataset from Elementary to Senior High School
+  Students.
+\newblock Kaggle dataset.
+
+\bibitem[{Chen et~al.(2023)Chen, Li, Li, Jiang, Qi, and
+  Song}]{chen2023rlrecsurvey}
+Chen, X.; Li, C.; Li, H.; Jiang, S.; Qi, Y.; and Song, L. 2023.
+\newblock Reinforcement Learning based Recommender Systems: A Survey.
+\newblock \emph{ACM Computing Surveys}, 55(11): 1--38.
+
+\bibitem[{da~Silva et~al.(2023)da~Silva, Slodkowski, da~Silva, and
+  Cazella}]{dasilva2023educationalrs}
+da~Silva, F.~L.; Slodkowski, B.~K.; da~Silva, K. K.~A.; and Cazella, S.~C.
+  2023.
+\newblock A Systematic Literature Review on Educational Recommender Systems for
+  Teaching and Learning: Research Trends, Limitations and Opportunities.
+\newblock \emph{Education and Information Technologies}, 28(3): 3289--3328.
+
+\bibitem[{Dacrema, Cremonesi, and Jannach(2019)}]{dacrema2019progress}
+Dacrema, M.~F.; Cremonesi, P.; and Jannach, D. 2019.
+\newblock Are We Really Making Much Progress? A Worrying Analysis of Recent
+  Neural Recommendation Approaches.
+\newblock In \emph{Proceedings of the 13th ACM Conference on Recommender
+  Systems}, 101--109. New York, NY, USA: Association for Computing Machinery.
+
+\bibitem[{Dess{\`i} et~al.(2018)Dess{\`i}, Fenu, Marras, and
+  Reforgiato~Recupero}]{dessi2018coco}
+Dess{\`i}, D.; Fenu, G.; Marras, M.; and Reforgiato~Recupero, D. 2018.
+\newblock COCO: Semantic-Enriched Collection of Online Courses at Scale with
+  Experimental Use Cases.
+\newblock In \emph{Trends and Advances in Information Systems and
+  Technologies}, volume 746, 1386--1396. Cham, Switzerland: Springer.
+
+\bibitem[{Devlin et~al.(2019)Devlin, Chang, Lee, and
+  Toutanova}]{devlin2019bert}
+Devlin, J.; Chang, M.-W.; Lee, K.; and Toutanova, K. 2019.
+\newblock BERT: Pre-training of Deep Bidirectional Transformers for Language
+  Understanding.
+\newblock In \emph{Proceedings of the 2019 Conference of the North American
+  Chapter of the Association for Computational Linguistics: Human Language
+  Technologies, Volume 1 (Long and Short Papers)}, 4171--4186. Minneapolis,
+  Minnesota: Association for Computational Linguistics.
+
+\bibitem[{Ekstrand, Carterette, and Diaz(2024)}]{ekstrand2024distributional}
+Ekstrand, M.~D.; Carterette, B.; and Diaz, F. 2024.
+\newblock Distributionally-Informed Recommender System Evaluation.
+\newblock \emph{ACM Transactions on Recommender Systems}, 2(1): 1--27.
+
+\bibitem[{Frej et~al.(2024)Frej, Shah, Kne{\v{z}}evi{\'c}, Nazaretsky, and
+  K{\"a}ser}]{dessi2024findingpaths}
+Frej, J.; Shah, N.; Kne{\v{z}}evi{\'c}, M.; Nazaretsky, T.; and K{\"a}ser, T.
+  2024.
+\newblock Finding Paths for Explainable MOOC Recommendation: A Learner
+  Perspective.
+\newblock In \emph{Proceedings of the 14th Learning Analytics and Knowledge
+  Conference}, 426--437. New York, NY, USA: Association for Computing
+  Machinery.
+
+\bibitem[{Gantner et~al.(2010)Gantner, Drumond, Freudenthaler, Rendle, and
+  Schmidt-Thieme}]{gantner2010attribute}
+Gantner, Z.; Drumond, L.; Freudenthaler, C.; Rendle, S.; and Schmidt-Thieme, L.
+  2010.
+\newblock Learning Attribute-to-Feature Mappings for Cold-Start
+  Recommendations.
+\newblock In \emph{Proceedings of the 10th IEEE International Conference on
+  Data Mining}, 176--185. Los Alamitos, CA, USA: IEEE Computer Society.
+
+\bibitem[{He et~al.(2020)He, Deng, Wang, Li, Zhang, and Wang}]{he2020lightgcn}
+He, X.; Deng, K.; Wang, X.; Li, Y.; Zhang, Y.; and Wang, M. 2020.
+\newblock LightGCN: Simplifying and Powering Graph Convolution Network for
+  Recommendation.
+\newblock In \emph{Proceedings of the 43rd International ACM SIGIR Conference
+  on Research and Development in Information Retrieval}, 639--648. New York,
+  NY, USA: Association for Computing Machinery.
+
+\bibitem[{Hidasi and Czapp(2023)}]{hidasi2023flaws}
+Hidasi, B.; and Czapp, {\'A}.~T. 2023.
+\newblock Widespread Flaws in Offline Evaluation of Recommender Systems.
+\newblock In \emph{Proceedings of the 17th ACM Conference on Recommender
+  Systems}, 848--855. New York, NY, USA: Association for Computing Machinery.
+
+\bibitem[{Huang et~al.(2025)Huang, Bei, Yang, Jiang, Chen, Shen, Wang, and
+  Karray}]{huang2025coldllm}
+Huang, F.; Bei, Y.; Yang, Z.; Jiang, J.; Chen, H.; Shen, Q.; Wang, S.; and
+  Karray, F. 2025.
+\newblock Large Language Model Simulator for Cold-Start Recommendation.
+\newblock In \emph{Proceedings of the Eighteenth ACM International Conference
+  on Web Search and Data Mining}, 261--270. New York, NY, USA: Association for
+  Computing Machinery.
+
+\bibitem[{Huang, Wang, and Huang(2023)}]{huang2023aldi}
+Huang, F.; Wang, Z.; and Huang, X. 2023.
+\newblock Aligning Distillation for Cold-Start Item Recommendation.
+\newblock In \emph{Proceedings of the 46th International ACM SIGIR Conference
+  on Research and Development in Information Retrieval}, 1154--1164. New York,
+  NY, USA: Association for Computing Machinery.
+
+\bibitem[{Kim et~al.(2024)Kim, Kim, Yeo, Jeon, Kim, Lee, and Lee}]{kim2024cgrc}
+Kim, J.; Kim, E.; Yeo, K.; Jeon, Y.; Kim, C.; Lee, S.; and Lee, J. 2024.
+\newblock Content-based Graph Reconstruction for Cold-Start Item
+  Recommendation.
+\newblock In \emph{Proceedings of the 47th International ACM SIGIR Conference
+  on Research and Development in Information Retrieval}, 1263--1273. New York,
+  NY, USA: Association for Computing Machinery.
+
+\bibitem[{Krichene and Rendle(2020)}]{krichene2020sampled}
+Krichene, W.; and Rendle, S. 2020.
+\newblock On Sampled Metrics for Item Recommendation.
+\newblock In \emph{Proceedings of the 26th ACM SIGKDD International Conference
+  on Knowledge Discovery \& Data Mining}, 1748--1757. New York, NY, USA:
+  Association for Computing Machinery.
+
+\bibitem[{Lei et~al.(2025)Lei, Chang, Yu, He, Huo, Wang, and
+  Jin}]{zhao2025fsgnn}
+Lei, S.; Chang, X.; Yu, Z.; He, D.; Huo, C.; Wang, J.; and Jin, D. 2025.
+\newblock Feature-Structure Adaptive Completion Graph Neural Network for
+  Cold-start Recommendation.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~39, 12022--12030. Palo Alto, CA, USA: AAAI Press.
+
+\bibitem[{Li et~al.(2024)Li, Jin, Liu, Ren, Gao, and Liu}]{li2024itemsampling}
+Li, D.; Jin, R.; Liu, Z.; Ren, B.; Gao, J.; and Liu, Z. 2024.
+\newblock On Item-Sampling Evaluation for Recommender System.
+\newblock \emph{ACM Transactions on Recommender Systems}, 2(1): 1--36.
+
+\bibitem[{Lin et~al.(2024)Lin, Wang, Zhao, Li, Feng, and Chua}]{lin2024tdro}
+Lin, X.; Wang, W.; Zhao, J.; Li, Y.; Feng, F.; and Chua, T.-S. 2024.
+\newblock Temporally and Distributionally Robust Optimization for Cold-Start
+  Recommendation.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~38, 8750--8758. Palo Alto, CA, USA: AAAI Press.
+
+\bibitem[{Liu et~al.(2024{\natexlab{a}})Liu, Chen, Sakai, and Wu}]{liu2024once}
+Liu, Q.; Chen, N.; Sakai, T.; and Wu, X.-M. 2024{\natexlab{a}}.
+\newblock ONCE: Boosting Content-Based Recommendation with Both Open- and
+  Closed-Source Large Language Models.
+\newblock In \emph{Proceedings of the 17th ACM International Conference on Web
+  Search and Data Mining}, 452--461. New York, NY, USA: Association for
+  Computing Machinery.
+
+\bibitem[{Liu et~al.(2024{\natexlab{b}})Liu, Chen, Bei, Shen, Zhong, Wang, and
+  Wang}]{zhao2024usim}
+Liu, R.; Chen, H.; Bei, Y.; Shen, Q.; Zhong, F.; Wang, S.; and Wang, J.
+  2024{\natexlab{b}}.
+\newblock Fine Tuning Out-of-Vocabulary Item Recommendation with User Sequence
+  Imagination.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~37, 8930--8955. Red Hook, NY, USA: Curran Associates, Inc.
+
+\bibitem[{Luo et~al.(2025)Luo, Jiang, Jiang, Chen, Wang, Bian, Li, and
+  Zhang}]{luo2025pam}
+Luo, Y.; Jiang, Y.; Jiang, Y.; Chen, G.; Wang, J.; Bian, K.; Li, P.; and Zhang,
+  Q. 2025.
+\newblock Online Item Cold-Start Recommendation with Popularity-Aware
+  Meta-Learning.
+\newblock In \emph{Proceedings of the 31st ACM SIGKDD Conference on Knowledge
+  Discovery and Data Mining V.1}, 927--937. New York, NY, USA: Association for
+  Computing Machinery.
+
+\bibitem[{Ma et~al.(2026)Ma, Xie, Meng, Feng, Du, Sun, Kang, and
+  Meng}]{ma2026negative}
+Ma, H.; Xie, R.; Meng, L.; Feng, F.; Du, X.; Sun, X.; Kang, Z.; and Meng, X.
+  2026.
+\newblock Negative Sampling in Recommendation: A Survey and Future Directions.
+\newblock \emph{ACM Transactions on Information Systems}, 44(4): 1--44.
+
+\bibitem[{Meehan and Pauwels(2026)}]{meehan2026semco}
+Meehan, G.; and Pauwels, J. 2026.
+\newblock Sparse Contrastive Learning for Content-Based Cold Item
+  Recommendation.
+\newblock In \emph{Proceedings of the 49th International ACM SIGIR Conference
+  on Research and Development in Information Retrieval}. New York, NY, USA:
+  Association for Computing Machinery.
+
+\bibitem[{Rahayu, Ferdiana, and Kusumawardani(2023)}]{rahayu2023learningpath}
+Rahayu, N.~W.; Ferdiana, R.; and Kusumawardani, S.~S. 2023.
+\newblock A Systematic Review of Learning Path Recommender Systems.
+\newblock \emph{Education and Information Technologies}, 28(6): 7437--7460.
+
+\bibitem[{Rendle et~al.(2009)Rendle, Freudenthaler, Gantner, and
+  Schmidt-Thieme}]{rendle2009bpr}
+Rendle, S.; Freudenthaler, C.; Gantner, Z.; and Schmidt-Thieme, L. 2009.
+\newblock BPR: Bayesian Personalized Ranking from Implicit Feedback.
+\newblock In \emph{Proceedings of the Twenty-Fifth Conference on Uncertainty in
+  Artificial Intelligence}, 452--461. Arlington, Virginia, USA: AUAI Press.
+
+\bibitem[{Schein et~al.(2002)Schein, Popescul, Ungar, and
+  Pennock}]{schein2002coldstart}
+Schein, A.~I.; Popescul, A.; Ungar, L.~H.; and Pennock, D.~M. 2002.
+\newblock Methods and Metrics for Cold-Start Recommendations.
+\newblock In \emph{Proceedings of the 25th Annual International ACM SIGIR
+  Conference on Research and Development in Information Retrieval}, 253--260.
+  New York, NY, USA: Association for Computing Machinery.
+
+\bibitem[{Schulman et~al.(2015)Schulman, Moritz, Levine, Jordan, and
+  Abbeel}]{schulman2015gae}
+Schulman, J.; Moritz, P.; Levine, S.; Jordan, M.~I.; and Abbeel, P. 2015.
+\newblock High-Dimensional Continuous Control Using Generalized Advantage
+  Estimation.
+\newblock arXiv preprint arXiv:1506.02438.
+
+\bibitem[{Schulman et~al.(2017)Schulman, Wolski, Dhariwal, Radford, and
+  Klimov}]{schulman2017ppo}
+Schulman, J.; Wolski, F.; Dhariwal, P.; Radford, A.; and Klimov, O. 2017.
+\newblock Proximal Policy Optimization Algorithms.
+\newblock arXiv preprint arXiv:1707.06347.
+
+\bibitem[{Shani, Heckerman, and Brafman(2005)}]{shani2005mdp}
+Shani, G.; Heckerman, D.; and Brafman, R.~I. 2005.
+\newblock An MDP-Based Recommender System.
+\newblock \emph{Journal of Machine Learning Research}, 6: 1265--1295.
+
+\bibitem[{Stray et~al.(2024)Stray, Halevy, Assar, Hadfield-Menell, Boutilier,
+  Ashar, Bakalar, Beattie, Ekstrand, Leibowicz, and Others}]{stray2024values}
+Stray, J.; Halevy, A.; Assar, P.; Hadfield-Menell, D.; Boutilier, C.; Ashar,
+  A.; Bakalar, C.; Beattie, L.; Ekstrand, M.; Leibowicz, C.; and Others. 2024.
+\newblock Building Human Values into Recommender Systems: An Interdisciplinary
+  Synthesis.
+\newblock \emph{ACM Transactions on Recommender Systems}, 2(3): 1--57.
+
+\bibitem[{Sun et~al.(2020)Sun, Yu, Fang, Yang, Qu, Zhang, and
+  Geng}]{sun2020rigorous}
+Sun, Z.; Yu, D.; Fang, H.; Yang, J.; Qu, X.; Zhang, J.; and Geng, C. 2020.
+\newblock Are We Evaluating Rigorously? Benchmarking Recommendation for
+  Reproducible Evaluation and Fair Comparison.
+\newblock In \emph{Proceedings of the 14th ACM Conference on Recommender
+  Systems}, 23--32. New York, NY, USA: Association for Computing Machinery.
+
+\bibitem[{Takehi, Diaz, and Sakai(2026)}]{takehi2025diversification}
+Takehi, R.; Diaz, F.; and Sakai, T. 2026.
+\newblock Diversification as Risk Minimization.
+\newblock In \emph{Proceedings of the 19th ACM International Conference on Web
+  Search and Data Mining}, 618--628. New York, NY, USA: Association for
+  Computing Machinery.
+
+\bibitem[{Volkovs, Yu, and Poutanen(2017)}]{volkovs2017dropoutnet}
+Volkovs, M.; Yu, G.; and Poutanen, T. 2017.
+\newblock DropoutNet: Addressing Cold Start in Recommender Systems.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~30, 4957--4966. Red Hook, NY, USA: Curran Associates, Inc.
+
+\bibitem[{Wang et~al.(2025)Wang, Jiao, Bhadury, Zhang, Gao, and
+  Dalal}]{jiang2025itemcentric}
+Wang, D.; Jiao, J.; Bhadury, A.; Zhang, Y.; Gao, M.; and Dalal, O. 2025.
+\newblock Item-centric Exploration for Cold Start Problem.
+\newblock In \emph{Proceedings of the Nineteenth ACM Conference on Recommender
+  Systems}, 987--990. New York, NY, USA: Association for Computing Machinery.
+
+\bibitem[{Wang et~al.(2024)Wang, Lu, Caverlee, Chi, and
+  Chen}]{wang2024llmaugmenter}
+Wang, J.; Lu, H.; Caverlee, J.; Chi, E.~H.; and Chen, M. 2024.
+\newblock Large Language Models as Data Augmenters for Cold-Start Item
+  Recommendation.
+\newblock In \emph{Companion Proceedings of the ACM Web Conference 2024},
+  726--729. New York, NY, USA: Association for Computing Machinery.
+
+\bibitem[{Wang et~al.(2019)Wang, He, Wang, Feng, and Chua}]{wang2019ngcf}
+Wang, X.; He, X.; Wang, M.; Feng, F.; and Chua, T.-S. 2019.
+\newblock Neural Graph Collaborative Filtering.
+\newblock In \emph{Proceedings of the 42nd International ACM SIGIR Conference
+  on Research and Development in Information Retrieval}, 165--174. New York,
+  NY, USA: Association for Computing Machinery.
+
+\bibitem[{Wu et~al.(2024)Wu, Zheng, Qiu, Wang, Gu, Shen, Qin, Zhu, Zhu, Liu,
+  Xiong, and Chen}]{wu2024llmrec}
+Wu, L.; Zheng, Z.; Qiu, Z.; Wang, H.; Gu, H.; Shen, T.; Qin, C.; Zhu, C.; Zhu,
+  H.; Liu, Q.; Xiong, H.; and Chen, E. 2024.
+\newblock A Survey on Large Language Models for Recommendation.
+\newblock \emph{World Wide Web}, 27(5): 60.
+
+\bibitem[{Yang et~al.(2023)Yang, Huang, Xia, and Huang}]{yang2023knowledge}
+Yang, Y.; Huang, C.; Xia, L.; and Huang, C. 2023.
+\newblock Knowledge Graph Self-Supervised Rationalization for Recommendation.
+\newblock In \emph{Proceedings of the 29th ACM SIGKDD Conference on Knowledge
+  Discovery and Data Mining}, 3046--3056. Association for Computing Machinery.
+
+\bibitem[{Yu et~al.(2020)Yu, Luo, Xiao, Zhong, Wang, Feng, Luo, Wang, Hou, Li,
+  Liu, and Tang}]{yu2020mooccube}
+Yu, J.; Luo, G.; Xiao, T.; Zhong, Q.; Wang, Y.; Feng, W.; Luo, J.; Wang, C.;
+  Hou, L.; Li, J.; Liu, Z.; and Tang, J. 2020.
+\newblock MOOCCube: A Large-scale Data Repository for NLP Applications in
+  MOOCs.
+\newblock In \emph{Proceedings of the 58th Annual Meeting of the Association
+  for Computational Linguistics}, 3135--3142. Online: Association for
+  Computational Linguistics.
+
+\bibitem[{Yu et~al.(2021)Yu, Wang, Zhong, Luo, Mao, Sun, Feng, Xu, Cao, Zeng,
+  Yao, Hou, Lin, Li, Zhou, Xu, Li, Tang, and Sun}]{wang2021mooccubex}
+Yu, J.; Wang, Y.; Zhong, Q.; Luo, G.; Mao, Y.; Sun, K.; Feng, W.; Xu, W.; Cao,
+  S.; Zeng, K.; Yao, Z.; Hou, L.; Lin, Y.; Li, P.; Zhou, J.; Xu, B.; Li, J.;
+  Tang, J.; and Sun, M. 2021.
+\newblock MOOCCubeX: A Large Knowledge-centered Repository for Adaptive
+  Learning in MOOCs.
+\newblock In \emph{Proceedings of the 30th ACM International Conference on
+  Information and Knowledge Management}, 4643--4652. New York, NY, USA:
+  Association for Computing Machinery.
+
+\bibitem[{Zhang et~al.(2019)Zhang, Hao, Chen, Li, Chen, and
+  Sun}]{zhang2019hrlcourse}
+Zhang, J.; Hao, B.; Chen, B.; Li, C.; Chen, H.; and Sun, J. 2019.
+\newblock Hierarchical Reinforcement Learning for Course Recommendation in
+  MOOCs.
+\newblock In \emph{Proceedings of the Thirty-Third AAAI Conference on
+  Artificial Intelligence}, volume~33, 435--442. Palo Alto, CA, USA: AAAI
+  Press.
+
+\bibitem[{Zhang et~al.(2025)Zhang, Bei, Yang, Zou, Zhou, Liu, Li, Chen, Wang,
+  Wang, Huang, Zhou, Bu, Lin, Caverlee, Karray, King, and
+  Yu}]{zhang2025coldstartllm}
+Zhang, W.; Bei, Y.; Yang, L.; Zou, H.~P.; Zhou, P.; Liu, A.; Li, Y.; Chen, H.;
+  Wang, J.; Wang, Y.; Huang, F.; Zhou, S.; Bu, J.; Lin, A.; Caverlee, J.;
+  Karray, F.; King, I.; and Yu, P.~S. 2025.
+\newblock Cold-Start Recommendation towards the Era of Large Language Models
+  (LLMs): A Comprehensive Survey and Roadmap.
+\newblock arXiv:2501.01945.
+
+\bibitem[{Zhao et~al.(2018)Zhao, Zhang, Xia, Ding, Yin, Zhao, and
+  Tang}]{zhao2018deepreinforcement}
+Zhao, X.; Zhang, L.; Xia, L.; Ding, Z.; Yin, D.; Zhao, Y.; and Tang, J. 2018.
+\newblock Deep Reinforcement Learning for List-wise Recommendations.
+\newblock arXiv:1801.00209.
+
+\bibitem[{Zhao et~al.(2025)Zhao, Wang, Liu, Cheng, Aggarwal, and
+  Derr}]{zhao2025fairnessdiversity}
+Zhao, Y.; Wang, Y.; Liu, Y.; Cheng, X.; Aggarwal, C.~C.; and Derr, T. 2025.
+\newblock Fairness and Diversity in Recommender Systems: A Survey.
+\newblock \emph{ACM Transactions on Intelligent Systems and Technology}, 16(1):
+  1--28.
+
+\bibitem[{Zhou, Zhang, and Yang(2023)}]{zhou2023ccfcrec}
+Zhou, Z.; Zhang, L.; and Yang, N. 2023.
+\newblock Contrastive Collaborative Filtering for Cold-Start Item
+  Recommendation.
+\newblock In \emph{Proceedings of the ACM Web Conference 2023}, 928--937. New
+  York, NY, USA: Association for Computing Machinery.
+
+\end{thebibliography}

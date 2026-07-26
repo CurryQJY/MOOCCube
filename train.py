@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 
 from torch.utils.data import Dataset, DataLoader
 from pam_model import PAM, Config
-from processed_data_utils import load_processed_bundle
 
 
 # ==========================================
@@ -184,12 +183,14 @@ def evaluate(model, loader, device):
 def main():
     # --- Load Data ---
     print("Loading Data...")
-    try:
-        data_dir, meta, df, content_emb = load_processed_bundle()
-    except FileNotFoundError as exc:
-        print(exc)
+    if not os.path.exists("processed_data/stream_data.pkl"):
+        print("错误: 找不到处理好的数据，请先运行 data_process.py")
         return
-    print(f">> Data Dir: {data_dir}")
+
+    with open("processed_data/meta.json", "r") as f:
+        meta = json.load(f)
+    df = pd.read_pickle("processed_data/stream_data.pkl")
+    content_emb = torch.load("processed_data/content_emb.pt")
 
     # --- Split Data ---
     periods = split_dataframe_by_periods(df, period_type='M')
@@ -241,7 +242,7 @@ def main():
                 c_n10 = metrics['Cold_N@10']
                 history['Cold_R@10'].append(c_r10)
                 history['Cold_N@10'].append(c_n10)
-                print(f"  [Cold Test] Recall@10 = {c_r10:.4f} | NDCG@10 = {c_n10:.4f}")
+                print(f"  [★测试结果] ❄️ 新课 (Cold): Recall@10 = {c_r10:.4f} | NDCG@10 = {c_n10:.4f}")
             else:
                 print("  [测试跳过] 本周期无足够的冷启动新课 (No Cold Items).")
                 history['Cold_R@10'].append(0)

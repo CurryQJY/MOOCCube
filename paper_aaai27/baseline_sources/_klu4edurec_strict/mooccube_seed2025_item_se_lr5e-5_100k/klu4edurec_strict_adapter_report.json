@@ -1,0 +1,273 @@
+{
+  "best_epoch": 3,
+  "checkpoint_metric": "validation.full_cold_item_macro.N@10",
+  "content_path": "D:\\DeskTop\\MOOCCube\\processed_data_hin_clean_pop5\\content_emb.pt",
+  "device": "cuda",
+  "elapsed_seconds": 54.09722185134888,
+  "gates": {
+    "author_source_class_loaded": true,
+    "cold_semantics_nonconstant": true,
+    "content_catalog_aligned": true,
+    "device_request_satisfied": true,
+    "finite_loss": true,
+    "full_catalog_ranking": true,
+    "item_macro_metrics": true,
+    "no_positive_cold_train_edges": true,
+    "nonconstant_test_scores": true,
+    "nonconstant_validation_scores": true,
+    "nonempty_train_graph": true,
+    "source_mode_item_se": true,
+    "test_has_cold_courses": true,
+    "train_history_masked": true,
+    "validation_has_cold_courses": true,
+    "warm_only_negatives": true
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "improved": true,
+      "train": {
+        "batches": 13,
+        "examples": 100000,
+        "loss": 0.6937108177405137
+      },
+      "validation": {
+        "candidate_courses": 698,
+        "count_full_cold_item_macro": 34,
+        "count_full_hot_item_macro": 0,
+        "evaluated_users": 2048,
+        "full_cold_item_macro": {
+          "N@10": 0.029871392945251384,
+          "N@20": 0.04311736676382444,
+          "N@5": 0.021127863889690436,
+          "R@10": 0.06077094669720446,
+          "R@20": 0.11304188318768962,
+          "R@5": 0.03318282917145788
+        },
+        "full_hot_item_macro": {},
+        "rows_full_cold": 2202,
+        "rows_full_hot": 0,
+        "score_std": 0.004487117286771536
+      }
+    },
+    {
+      "epoch": 2,
+      "improved": true,
+      "train": {
+        "batches": 13,
+        "examples": 100000,
+        "loss": 0.6936746789858892
+      },
+      "validation": {
+        "candidate_courses": 698,
+        "count_full_cold_item_macro": 34,
+        "count_full_hot_item_macro": 0,
+        "evaluated_users": 2048,
+        "full_cold_item_macro": {
+          "N@10": 0.03041708504242843,
+          "N@20": 0.042296788189017595,
+          "N@5": 0.021722791726872442,
+          "R@10": 0.06023359505774814,
+          "R@20": 0.10724607636644481,
+          "R@5": 0.03277488079851341
+        },
+        "full_hot_item_macro": {},
+        "rows_full_cold": 2202,
+        "rows_full_hot": 0,
+        "score_std": 0.0045116557739675045
+      }
+    },
+    {
+      "epoch": 3,
+      "improved": true,
+      "train": {
+        "batches": 13,
+        "examples": 100000,
+        "loss": 0.6936516303282517
+      },
+      "validation": {
+        "candidate_courses": 698,
+        "count_full_cold_item_macro": 34,
+        "count_full_hot_item_macro": 0,
+        "evaluated_users": 2048,
+        "full_cold_item_macro": {
+          "N@10": 0.0311422093639863,
+          "N@20": 0.04151226791721751,
+          "N@5": 0.02111264704767349,
+          "R@10": 0.06440519332244579,
+          "R@20": 0.10564382135728818,
+          "R@5": 0.032322392110730604
+        },
+        "full_hot_item_macro": {},
+        "rows_full_cold": 2202,
+        "rows_full_hot": 0,
+        "score_std": 0.004537955392152071
+      }
+    },
+    {
+      "epoch": 4,
+      "improved": false,
+      "train": {
+        "batches": 13,
+        "examples": 100000,
+        "loss": 0.6936221489539514
+      },
+      "validation": {
+        "candidate_courses": 698,
+        "count_full_cold_item_macro": 34,
+        "count_full_hot_item_macro": 0,
+        "evaluated_users": 2048,
+        "full_cold_item_macro": {
+          "N@10": 0.0308748766873709,
+          "N@20": 0.04075668520475954,
+          "N@5": 0.0210977262697086,
+          "R@10": 0.06285398842077479,
+          "R@20": 0.10163758212756024,
+          "R@5": 0.03243095304538674
+        },
+        "full_hot_item_macro": {},
+        "rows_full_cold": 2202,
+        "rows_full_hot": 0,
+        "score_std": 0.004565650597214699
+      }
+    },
+    {
+      "epoch": 5,
+      "improved": false,
+      "train": {
+        "batches": 13,
+        "examples": 100000,
+        "loss": 0.6935643462034372
+      },
+      "validation": {
+        "candidate_courses": 698,
+        "count_full_cold_item_macro": 34,
+        "count_full_hot_item_macro": 0,
+        "evaluated_users": 2048,
+        "full_cold_item_macro": {
+          "N@10": 0.030627076777343488,
+          "N@20": 0.040394806549952214,
+          "N@5": 0.02120811782562208,
+          "R@10": 0.06149767896154332,
+          "R@20": 0.10028856589965128,
+          "R@5": 0.032372095011004055
+        },
+        "full_hot_item_macro": {},
+        "rows_full_cold": 2202,
+        "rows_full_hot": 0,
+        "score_std": 0.004595426842570305
+      }
+    },
+    {
+      "epoch": 6,
+      "improved": false,
+      "train": {
+        "batches": 13,
+        "examples": 100000,
+        "loss": 0.693528610926408
+      },
+      "validation": {
+        "candidate_courses": 698,
+        "count_full_cold_item_macro": 34,
+        "count_full_hot_item_macro": 0,
+        "evaluated_users": 2048,
+        "full_cold_item_macro": {
+          "N@10": 0.03074202598271476,
+          "N@20": 0.04028594079232855,
+          "N@5": 0.021560358093029017,
+          "R@10": 0.060538554779533404,
+          "R@20": 0.09904693807910278,
+          "R@5": 0.032298931417208326
+        },
+        "full_hot_item_macro": {},
+        "rows_full_cold": 2202,
+        "rows_full_hot": 0,
+        "score_std": 0.004628611728549004
+      }
+    }
+  ],
+  "hyperparameters": {
+    "batch_size": 8192,
+    "edge_drop": 0.8,
+    "embed_dim": 64,
+    "epochs_completed": 6,
+    "epochs_requested": 10,
+    "eval_batch_size": 256,
+    "item_loss_reg": 0.0001,
+    "item_temperature": 0.1,
+    "lr": 5e-05,
+    "max_eval_users": 2048,
+    "max_train_examples": 100000,
+    "n_layers": 1,
+    "weight_decay": 5e-05
+  },
+  "model": "KLU4EduRec-item_se (author source, strict adapter)",
+  "protocol": {
+    "adaptation_scope": "Official item-semantic mode only; author precomputed user summaries cannot be mapped to the strict users.",
+    "bitwise_cuda_reproducibility_verified": false,
+    "candidate_courses": 698,
+    "cold_courses": 102,
+    "content_shape": [
+      698,
+      768
+    ],
+    "deterministic_algorithms": true,
+    "expected_course_catalog": 698,
+    "full_catalog_ranking": true,
+    "full_model_claimed": false,
+    "item_macro": true,
+    "positive_train_edges": 464314,
+    "source_mode": "item_se",
+    "train_history_masked": true,
+    "validation_checkpointing": true,
+    "warm_courses": 596,
+    "warm_only_training_negatives": true
+  },
+  "seed": 2025,
+  "source_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\KLU4EduRec",
+  "source_hashes": {
+    "main.py": "67a5ee09a4ed0588b1cc0bd738bc4205bd69e9fbff2eb3890c6ec1667af827fa",
+    "model/GNNRec.py": "7c7a30029827a7855849ecc08348d60afcb62be695b96efc9964ac1d8863e216",
+    "model/dataset.py": "34a9a32793a98f24b16ed450972a02bbae0c956e7fb7110c2bdc1c2d41e425b8",
+    "model/metric.py": "0a65dea3b4f6c06ad625534d1be320658f537be8bd7da86ce18f1b15f1e5158f",
+    "readme.md": "9ab4102187a3131333ab1d9376ab2de8672de61b523b738a19ca50773e7ea428"
+  },
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2025",
+  "status": "smoke_passed",
+  "test": {
+    "candidate_courses": 698,
+    "count_full_cold_item_macro": 64,
+    "count_full_hot_item_macro": 0,
+    "evaluated_users": 2048,
+    "full_cold_item_macro": {
+      "N@10": 0.04285400935577474,
+      "N@20": 0.05310935644794622,
+      "N@5": 0.03491803338099043,
+      "R@10": 0.08535956111147985,
+      "R@20": 0.12678839974704392,
+      "R@5": 0.060924203318388354
+    },
+    "full_hot_item_macro": {},
+    "rows_full_cold": 2334,
+    "rows_full_hot": 0,
+    "score_std": 0.004545948002487421
+  },
+  "validation": {
+    "candidate_courses": 698,
+    "count_full_cold_item_macro": 34,
+    "count_full_hot_item_macro": 0,
+    "evaluated_users": 2048,
+    "full_cold_item_macro": {
+      "N@10": 0.0311422093639863,
+      "N@20": 0.04151226791721751,
+      "N@5": 0.02111264704767349,
+      "R@10": 0.06440519332244579,
+      "R@20": 0.10564382135728818,
+      "R@5": 0.032322392110730604
+    },
+    "full_hot_item_macro": {},
+    "rows_full_cold": 2202,
+    "rows_full_hot": 0,
+    "score_std": 0.004537955392152071
+  }
+}

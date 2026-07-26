@@ -86,6 +86,11 @@ class FeedbackConfig(BaseConfig):
             "USIM_USE_STRUCTURED_HARD_NEG",
             "1" if self.use_structured_hard_neg else "0",
         ) == "1"
+        # Negative action mechanism in USIM episode
+        self.usim_neg_action = os.environ.get("USIM_NEG_ACTION", "1") == "1"
+        self.usim_neg_weight = float(os.environ.get("USIM_NEG_WEIGHT", "0.3"))
+        self.usim_neg_strategy = os.environ.get("USIM_NEG_STRATEGY", "lowest_score")  # lowest_score | random
+
         self.train_log_interval = int(os.environ.get("USIM_FB_TRAIN_LOG_INTERVAL", "25"))
         self.train_log_first = int(os.environ.get("USIM_FB_TRAIN_LOG_FIRST", "1"))
         self.train_log_time_sec = float(os.environ.get("USIM_FB_TRAIN_LOG_TIME_SEC", "60"))
@@ -180,25 +185,86 @@ def _latest_feedback_ckpt_path(ckpt_dir):
     return os.path.join(ckpt_dir, "latest.pt")
 
 
+def _checkpoint_replace_retries():
+    return max(0, int(os.environ.get("USIM_FB_CKPT_REPLACE_RETRIES", "8")))
+
+
+def _checkpoint_replace_sleep_sec():
+    return max(0.0, float(os.environ.get("USIM_FB_CKPT_REPLACE_SLEEP_SEC", "0.5")))
+
+
+def _atomic_torch_save_checkpoint(state, path):
+    tmp_path = f"{path}.{os.getpid()}.{time.time_ns()}.tmp"
+    torch.save(state, tmp_path)
+    last_error = None
+    retries = _checkpoint_replace_retries()
+    sleep_sec = _checkpoint_replace_sleep_sec()
+    for attempt in range(retries + 1):
+        try:
+            os.replace(tmp_path, path)
+            return path
+        except PermissionError as exc:
+            last_error = exc
+            if attempt < retries and sleep_sec > 0:
+                time.sleep(sleep_sec)
+
+    recovery_path = f"{path}.recovery-{os.getpid()}-{time.time_ns()}.pt"
+    try:
+        os.replace(tmp_path, recovery_path)
+    except OSError:
+        recovery_path = tmp_path
+    print(
+        f">> Checkpoint warning: could not replace {path!r} after {retries + 1} attempts "
+        f"({last_error}). Kept recoverable checkpoint at {recovery_path!r}."
+    )
+    return recovery_path
+
+
 def _save_feedback_checkpoint(ckpt_dir, state, snapshot_name=None):
     os.makedirs(ckpt_dir, exist_ok=True)
     latest_path = _latest_feedback_ckpt_path(ckpt_dir)
-    tmp_path = latest_path + ".tmp"
-    state = copy.deepcopy(state)
+    state = _move_state_to_cpu(state)
     state["saved_at"] = time.time()
-    torch.save(state, tmp_path)
-    os.replace(tmp_path, latest_path)
+    saved_path = _atomic_torch_save_checkpoint(state, latest_path)
     if snapshot_name:
         snapshot_path = os.path.join(ckpt_dir, snapshot_name)
-        torch.save(state, snapshot_path)
-    return latest_path
+        _atomic_torch_save_checkpoint(state, snapshot_path)
+    return saved_path
+
+
+def _candidate_feedback_ckpt_paths(ckpt_dir):
+    candidates = []
+    latest_path = _latest_feedback_ckpt_path(ckpt_dir)
+    if os.path.exists(latest_path):
+        candidates.append(latest_path)
+    if not os.path.isdir(ckpt_dir):
+        return candidates
+    for name in os.listdir(ckpt_dir):
+        path = os.path.join(ckpt_dir, name)
+        if path == latest_path or not os.path.isfile(path):
+            continue
+        if name == "latest.pt.tmp" or name.startswith("latest.pt.") or name == "finished.pt":
+            candidates.append(path)
+    candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+    return candidates
 
 
 def _load_feedback_checkpoint(ckpt_dir):
-    latest_path = _latest_feedback_ckpt_path(ckpt_dir)
-    if not os.path.exists(latest_path):
+    candidates = _candidate_feedback_ckpt_paths(ckpt_dir)
+    if not candidates:
         return None
-    return torch.load(latest_path, map_location="cpu")
+    errors = []
+    for path in candidates:
+        try:
+            state = torch.load(path, map_location="cpu")
+            if path != _latest_feedback_ckpt_path(ckpt_dir):
+                print(f">> Resume: loaded recovery checkpoint {path}")
+            return state
+        except Exception as exc:
+            errors.append(f"{path}: {exc}")
+    print(">> Resume skipped: no readable checkpoint found. " + " | ".join(errors[:3]))
+    return None
+
 
 
 def _move_state_to_cpu(obj):
@@ -1337,7 +1403,7 @@ def run_static_experiment_feedback(df, cfg, device, model, optimizer, llm_scores
 
 
 def main():
-    data_dir = "processed_data_hin"
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     _console_print(f"Loading Data for Feedback-Aware USIM from {data_dir}...")
     if not os.path.exists(f"{data_dir}/stream_data.pkl"):
         _console_print("错误: 请先运行 data_process_hin.py", force=True)
@@ -1356,7 +1422,7 @@ def main():
         course_artifacts, course_stats = build_course_artifacts(
             df,
             cfg.n_items,
-            relation_dir="MOOCCube/relations",
+            relation_dir=os.environ.get("USIM_RELATION_DIR", "MOOCCube/relations"),
             prereq_min_support=cfg.prereq_min_support,
             prereq_max_per_item=cfg.prereq_max_per_item,
             prereq_min_items=cfg.prereq_min_items,
@@ -1430,11 +1496,9 @@ def main():
         f"id_dropout={cfg.dropout_prob:.2f}"
     )
     _console_print(
-        f">> Course Priors: source={course_stats.get('prereq_source', 'behavior')} | "
-        f"concept={course_stats['items_with_concept']}/{cfg.n_items}, "
+        f">> Course Priors: concept={course_stats['items_with_concept']}/{cfg.n_items}, "
         f"prereq={course_stats['items_with_prereq']}/{cfg.n_items}, "
         f"hard_density={course_stats['hard_density']:.3f}, "
-        f"prereq_raw={course_stats.get('prereq_edges_raw', 0)} | "
         f"prereq_edges={course_stats['prereq_edges_kept']} "
         f"(raw={course_stats['prereq_edges_raw']}, users={course_stats['prereq_users']})"
     )

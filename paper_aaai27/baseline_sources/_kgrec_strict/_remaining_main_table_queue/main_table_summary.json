@@ -1,0 +1,227 @@
+﻿{
+    "model":  "KGRec (adapted)",
+    "status":  "main_table_ready",
+    "protocol":  "strict_item_cold_full_catalog_item_macro",
+    "generated_at":  "2026-07-13T01:34:39.4115752+08:00",
+    "datasets":  [
+                     {
+                         "dataset":  "MOOCCube",
+                         "seeds":  [
+                                       {
+                                           "seed":  2025,
+                                           "best_epoch":  3,
+                                           "validation_n10":  0.14179760171998035,
+                                           "test_cold_item_macro":  {
+                                                                        "R@5":  0.10025677747067745,
+                                                                        "R@10":  0.1387734387184181,
+                                                                        "R@20":  0.19745723314082447,
+                                                                        "N@5":  0.074379144730574373,
+                                                                        "N@10":  0.086909564760332292,
+                                                                        "N@20":  0.10170714065911524
+                                                                    },
+                                           "report_path":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\mooccube_seed2025_retuned_lr1e-5\\kgrec_strict_adapter_report.json"
+                                       },
+                                       {
+                                           "seed":  2026,
+                                           "best_epoch":  3,
+                                           "validation_n10":  0.0838214230582698,
+                                           "test_cold_item_macro":  {
+                                                                        "R@5":  0.097002317203972,
+                                                                        "R@10":  0.12522816560709168,
+                                                                        "R@20":  0.17334160554156328,
+                                                                        "N@5":  0.078604770641490351,
+                                                                        "N@10":  0.087613881487291767,
+                                                                        "N@20":  0.099655575554723722
+                                                                    },
+                                           "report_path":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\mooccube_seed2026_retuned_lr1e-5\\kgrec_strict_adapter_report.json"
+                                       },
+                                       {
+                                           "seed":  2027,
+                                           "best_epoch":  1,
+                                           "validation_n10":  0.09492138137842128,
+                                           "test_cold_item_macro":  {
+                                                                        "R@5":  0.095013746929699119,
+                                                                        "R@10":  0.12742088749544569,
+                                                                        "R@20":  0.18645066046653888,
+                                                                        "N@5":  0.076281111637091878,
+                                                                        "N@10":  0.086644142082431014,
+                                                                        "N@20":  0.10155765744990906
+                                                                    },
+                                           "report_path":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\mooccube_seed2027_retuned_lr1e-5\\kgrec_strict_adapter_report.json"
+                                       }
+                                   ],
+                         "aggregate":  {
+                                           "R@5":  {
+                                                       "mean":  0.097424280534782859,
+                                                       "sample_std":  0.0026468626905866532
+                                                   },
+                                           "R@10":  {
+                                                        "mean":  0.13047416394031849,
+                                                        "sample_std":  0.0072705212125209369
+                                                    },
+                                           "R@20":  {
+                                                        "mean":  0.18574983304964221,
+                                                        "sample_std":  0.012073079264535939
+                                                    },
+                                           "N@5":  {
+                                                       "mean":  0.076421675669718872,
+                                                       "sample_std":  0.0021163169115712313
+                                                   },
+                                           "N@10":  {
+                                                        "mean":  0.08705586277668502,
+                                                        "sample_std":  0.00050114963885697871
+                                                    },
+                                           "N@20":  {
+                                                        "mean":  0.10097345788791601,
+                                                        "sample_std":  0.001143764263545553
+                                                    }
+                                       }
+                     },
+                     {
+                         "dataset":  "COCO",
+                         "seeds":  [
+                                       {
+                                           "seed":  2025,
+                                           "best_epoch":  1,
+                                           "validation_n10":  0.0053255345083370337,
+                                           "test_cold_item_macro":  {
+                                                                        "R@5":  0.0078671594258348659,
+                                                                        "R@10":  0.013143436800336163,
+                                                                        "R@20":  0.023234675076604486,
+                                                                        "N@5":  0.0049209091081158394,
+                                                                        "N@10":  0.006599803102369366,
+                                                                        "N@20":  0.0091327910850070981
+                                                                    },
+                                           "report_path":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\coco_seed2025_single_lr1e-5\\kgrec_strict_adapter_report.json"
+                                       },
+                                       {
+                                           "seed":  2026,
+                                           "best_epoch":  2,
+                                           "validation_n10":  0.0083446608692027517,
+                                           "test_cold_item_macro":  {
+                                                                        "R@5":  0.0064894487976478584,
+                                                                        "R@10":  0.011795918246790478,
+                                                                        "R@20":  0.023530771059155568,
+                                                                        "N@5":  0.0038144513647029553,
+                                                                        "N@10":  0.005507466986207619,
+                                                                        "N@20":  0.00845657999681072
+                                                                    },
+                                           "report_path":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\coco_seed2026_main_lr1e-5\\kgrec_strict_adapter_report.json"
+                                       },
+                                       {
+                                           "seed":  2027,
+                                           "best_epoch":  5,
+                                           "validation_n10":  0.0068302441614909,
+                                           "test_cold_item_macro":  {
+                                                                        "R@5":  0.0065470302454847633,
+                                                                        "R@10":  0.01271628221063318,
+                                                                        "R@20":  0.024216132626258782,
+                                                                        "N@5":  0.0038174595347919512,
+                                                                        "N@10":  0.0057673397486651488,
+                                                                        "N@20":  0.0086619927876623523
+                                                                    },
+                                           "report_path":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\coco_seed2027_main_lr1e-5\\kgrec_strict_adapter_report.json"
+                                       }
+                                   ],
+                         "aggregate":  {
+                                           "R@5":  {
+                                                       "mean":  0.0069678794896558295,
+                                                       "sample_std":  0.00077933125722915656
+                                                   },
+                                           "R@10":  {
+                                                        "mean":  0.01255187908591994,
+                                                        "sample_std":  0.00068863840555045432
+                                                    },
+                                           "R@20":  {
+                                                        "mean":  0.023660526254006279,
+                                                        "sample_std":  0.00050343027162300547
+                                                    },
+                                           "N@5":  {
+                                                       "mean":  0.0041842733358702488,
+                                                       "sample_std":  0.00063794706519092518
+                                                   },
+                                           "N@10":  {
+                                                        "mean":  0.0059582032790807121,
+                                                        "sample_std":  0.00057063229237386466
+                                                    },
+                                           "N@20":  {
+                                                        "mean":  0.0087504546231600561,
+                                                        "sample_std":  0.00034667633493598864
+                                                    }
+                                       }
+                     },
+                     {
+                         "dataset":  "Junyi",
+                         "seeds":  [
+                                       {
+                                           "seed":  2025,
+                                           "best_epoch":  3,
+                                           "validation_n10":  0.039297257883878868,
+                                           "test_cold_item_macro":  {
+                                                                        "R@5":  0.02376027482333563,
+                                                                        "R@10":  0.042809456878092719,
+                                                                        "R@20":  0.077910996607774563,
+                                                                        "N@5":  0.015159071528948298,
+                                                                        "N@10":  0.02122760938433781,
+                                                                        "N@20":  0.029994416000502032
+                                                                    },
+                                           "report_path":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\junyi_seed2025_relationfix_lr1e-6_p8_trainonly\\kgrec_strict_adapter_report.json"
+                                       },
+                                       {
+                                           "seed":  2026,
+                                           "best_epoch":  10,
+                                           "validation_n10":  0.017357194469857163,
+                                           "test_cold_item_macro":  {
+                                                                        "R@5":  0.022092484267453982,
+                                                                        "R@10":  0.042707310802346313,
+                                                                        "R@20":  0.080379025061457068,
+                                                                        "N@5":  0.012339633902408088,
+                                                                        "N@10":  0.018965024377460119,
+                                                                        "N@20":  0.028438419368119663
+                                                                    },
+                                           "report_path":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\junyi_seed2026_relationfix_lr1e-6_p8\\kgrec_strict_adapter_report.json"
+                                       },
+                                       {
+                                           "seed":  2027,
+                                           "best_epoch":  5,
+                                           "validation_n10":  0.017134111654751285,
+                                           "test_cold_item_macro":  {
+                                                                        "R@5":  0.027543935141736853,
+                                                                        "R@10":  0.045369065926934717,
+                                                                        "R@20":  0.079317750030510212,
+                                                                        "N@5":  0.01713759051451913,
+                                                                        "N@10":  0.022840819746081958,
+                                                                        "N@20":  0.0313198356110877
+                                                                    },
+                                           "report_path":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\junyi_seed2027_main_lr1e-6_p8\\kgrec_strict_adapter_report.json"
+                                       }
+                                   ],
+                         "aggregate":  {
+                                           "R@5":  {
+                                                       "mean":  0.024465564744175491,
+                                                       "sample_std":  0.0027933232113396028
+                                                   },
+                                           "R@10":  {
+                                                        "mean":  0.043628611202457916,
+                                                        "sample_std":  0.0015081430439990793
+                                                    },
+                                           "R@20":  {
+                                                        "mean":  0.079202590566580619,
+                                                        "sample_std":  0.0012380377169723177
+                                                    },
+                                           "N@5":  {
+                                                       "mean":  0.014878765315291838,
+                                                       "sample_std":  0.0024112290627366431
+                                                   },
+                                           "N@10":  {
+                                                        "mean":  0.021011151169293297,
+                                                        "sample_std":  0.0019469432590609355
+                                                    },
+                                           "N@20":  {
+                                                        "mean":  0.029917556993236463,
+                                                        "sample_std":  0.0014422449069275279
+                                                    }
+                                       }
+                     }
+                 ]
+}

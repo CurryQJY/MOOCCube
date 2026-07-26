@@ -1,0 +1,20 @@
+{
+  "actor_calls": 10,
+  "episode_calls": 2,
+  "refined_items": 4,
+  "cosine_sum": 3.2,
+  "l2_sum": 0.8,
+  "split_train_rows": 0,
+  "split_validation_rows": 0,
+  "split_test_rows": 0,
+  "course_fit_calls": 0,
+  "course_fit_candidate_pairs": 0,
+  "target_seen_candidate_pairs": 0,
+  "course_fit_target_rows": 0,
+  "target_rows_with_seen_candidate": 0,
+  "mode": "actor",
+  "eval_seed": 7001,
+  "evaluation_target": "validation",
+  "mean_cosine": 0.8,
+  "mean_l2": 0.2
+}

@@ -61,8 +61,9 @@ def _weighted_avg(src: Dict[str, float], count: int):
 
 def main():
     setup_seed(2025)
-    print("Loading data from processed_data_hin ...")
-    meta, df, content_emb = load_hin_processed("processed_data_hin")
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
+    print(f"Loading data from {data_dir} ...")
+    meta, df, content_emb = load_hin_processed(data_dir)
     cfg = Config(meta["n_users"], meta["n_items"], content_dim=content_emb.shape[1])
     periods = split_dataframe_by_periods(df, period_type=cfg.period_type)
     print(
@@ -157,6 +158,8 @@ def main():
                 f"full_cold_R@10={full_cold.get('R@10', 0.0):.4f}, "
                 f"full_hot_R@10={full_hot.get('R@10', 0.0):.4f}"
             )
+            del eval_adj, all_u, all_i
+            torch.cuda.empty_cache()
         else:
             print("  Warmup period: skip evaluation")
 
@@ -182,25 +185,43 @@ def main():
         train_pos_t = torch.tensor(train_pos_np, dtype=torch.long, device=device)
 
         model.train()
+        chunk_size = int(os.environ.get("LIGHTGCN_CHUNK_SIZE", "500000"))
+        n_train = len(train_users_np)
         for ep in range(cfg.n_epochs):
             neg_np = sample_negatives(train_pos_np, user_rows, user_neg_pool, cfg.n_items)
             train_neg_t = torch.tensor(neg_np, dtype=torch.long, device=device)
 
             optimizer.zero_grad()
             z_u, z_i = model.propagate(train_adj)
-            loss = compute_bpr_loss(
-                z_u,
-                z_i,
-                train_users_t,
-                train_pos_t,
-                train_neg_t,
-                reg_weight=cfg.reg_weight,
-            )
-            loss.backward()
+
+            if n_train <= chunk_size:
+                loss = compute_bpr_loss(
+                    z_u, z_i, train_users_t, train_pos_t, train_neg_t,
+                    reg_weight=cfg.reg_weight,
+                )
+                loss.backward()
+            else:
+                total_loss = 0.0
+                n_chunks = (n_train + chunk_size - 1) // chunk_size
+                for ci in range(n_chunks):
+                    s, e = ci * chunk_size, min((ci + 1) * chunk_size, n_train)
+                    chunk_loss = compute_bpr_loss(
+                        z_u, z_i,
+                        train_users_t[s:e], train_pos_t[s:e], train_neg_t[s:e],
+                        reg_weight=cfg.reg_weight if ci == 0 else 0.0,
+                    ) * ((e - s) / n_train)
+                    chunk_loss.backward(retain_graph=(ci < n_chunks - 1))
+                    total_loss += chunk_loss.item()
+                loss = type('', (), {'item': lambda self: total_loss})()
+
+            del z_u, z_i
+            torch.cuda.empty_cache()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             optimizer.step()
             print(f"  Train epoch [{ep + 1}/{cfg.n_epochs}] loss={float(loss.item()):.4f}")
 
+        del train_adj, train_neg_t
+        torch.cuda.empty_cache()
         add_user_seen_from_df(user_seen_items, p_df)
         graph_df_for_eval = train_df
 

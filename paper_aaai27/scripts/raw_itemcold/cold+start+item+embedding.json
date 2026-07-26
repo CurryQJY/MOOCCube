@@ -1,0 +1,107 @@
+{
+"result":{
+"query":"cold* start* item* embedding*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"10.48"
+},
+"completions":{
+"@total":"2",
+"@computed":"2",
+"@sent":"2",
+"c":[
+{
+"@sc":"8",
+"@dc":"8",
+"@oc":"8",
+"@id":"69683111",
+"text":"embeddings"
+},
+{
+"@sc":"3",
+"@dc":"3",
+"@oc":"3",
+"@id":"69683107",
+"text":"embedding"
+}
+]
+},
+"hits":{
+"@total":"11",
+"@computed":"11",
+"@sent":"11",
+"@first":"0",
+"hit":[{
+"@score":"5",
+"@id":"2850568",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"10/5415-6","text":"Ying Sun 0006"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"75/2820-1","text":"Juan Cao 0001"}]},"title":"Learning to Warm Up Cold Item Embeddings for Cold-start Recommendation with Meta Scaling and Shifting Networks.","venue":"SIGIR","pages":"1167-1176","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ZhuXZGSZLC21","doi":"10.1145/3404835.3462843","ee":"https://doi.org/10.1145/3404835.3462843","url":"https://dblp.org/rec/conf/sigir/ZhuXZGSZLC21"},
+"url":"URL#2850568"
+},
+{
+"@score":"5",
+"@id":"2901578",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"10/5415-6","text":"Ying Sun 0006"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"75/2820-1","text":"Juan Cao 0001"}]},"title":"Learning to Warm Up Cold Item Embeddings for Cold-start Recommendation with Meta Scaling and Shifting Networks.","venue":"CoRR","volume":"abs/2105.04790","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2105-04790","ee":"https://arxiv.org/abs/2105.04790","url":"https://dblp.org/rec/journals/corr/abs-2105-04790"},
+"url":"URL#2901578"
+},
+{
+"@score":"4",
+"@id":"57407",
+"info":{"authors":{"author":[{"@pid":"29/3987","text":"Jiaxing Li"},{"@pid":"154/7641","text":"Youyong Kong"}]},"title":"Embedding uncertainty modeling for cold-start item recommendation.","venue":"Neurocomputing","volume":"665","pages":"132144","year":"2026","type":"Journal Articles","access":"closed","key":"journals/ijon/LiK26","doi":"10.1016/J.NEUCOM.2025.132144","ee":"https://doi.org/10.1016/j.neucom.2025.132144","url":"https://dblp.org/rec/journals/ijon/LiK26"},
+"url":"URL#57407"
+},
+{
+"@score":"4",
+"@id":"489156",
+"info":{"authors":{"author":[{"@pid":"49/4941","text":"Zhipeng Zhang"},{"@pid":"416/8962","text":"Youfu Zhu"},{"@pid":"62/6234","text":"Mianxiong Dong"},{"@pid":"18/4822","text":"Kaoru Ota"},{"@pid":"57/3892-5","text":"Yao Zhang 0005"},{"@pid":"06/3200","text":"Yonggong Ren"}]},"title":"Embedding Guarantor: Knowledge-Enhanced Graph Learning for New Item Cold-Start Recommendation.","venue":"IEEE Trans. Emerg. Top. Comput. Intell.","volume":"9","number":"5","pages":"3311-3324","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tetci/ZhangZDOZR25","doi":"10.1109/TETCI.2024.3516087","ee":"https://doi.org/10.1109/TETCI.2024.3516087","url":"https://dblp.org/rec/journals/tetci/ZhangZDOZR25"},
+"url":"URL#489156"
+},
+{
+"@score":"4",
+"@id":"557856",
+"info":{"authors":{"author":[{"@pid":"359/4708","text":"Zaiyi Zheng"},{"@pid":"251/3533","text":"Yaochen Zhu"},{"@pid":"200/1423","text":"Haochen Liu"},{"@pid":"234/2715","text":"Mingxuan Ju"},{"@pid":"94/6503-3","text":"Tong Zhao 0003"},{"@pid":"71/7771","text":"Neil Shah"},{"@pid":"144/7997","text":"Jundong Li"}]},"title":"MI4Rec: Pretrained Language Model based Cold-Start Recommendation with Meta-Item Embeddings.","venue":"CIKM","pages":"4455-4465","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/ZhengZLJ0SL25","doi":"10.1145/3746252.3761313","ee":"https://doi.org/10.1145/3746252.3761313","url":"https://dblp.org/rec/conf/cikm/ZhengZLJ0SL25"},
+"url":"URL#557856"
+},
+{
+"@score":"4",
+"@id":"1516342",
+"info":{"authors":{"author":[{"@pid":"276/0273","text":"Eyad Kannout"},{"@pid":"330/2340","text":"Michal Grodzki"},{"@pid":"122/1797","text":"Marek Grzegorowski"}]},"title":"Towards addressing item cold-start problem in collaborative filtering by embedding agglomerative clustering and FP-growth into the recommendation system.","venue":"Comput. Sci. Inf. Syst.","volume":"20","number":"4","pages":"1343-1366","year":"2023","type":"Journal Articles","access":"open","key":"journals/comsis/KannoutGG23","doi":"10.2298/CSIS221116052K","ee":"https://doi.org/10.2298/csis221116052k","url":"https://dblp.org/rec/journals/comsis/KannoutGG23"},
+"url":"URL#1516342"
+},
+{
+"@score":"4",
+"@id":"3010775",
+"info":{"authors":{"author":[{"@pid":"155/1903","text":"Shameem Ahamed Puthiya Parambath"},{"@pid":"22/5463","text":"Sanjay Chawla"}]},"title":"Simple and effective neural-free soft-cluster embeddings for item cold-start recommendations.","venue":"Data Min. Knowl. Discov.","volume":"34","number":"5","pages":"1560-1588","year":"2020","type":"Journal Articles","access":"open","key":"journals/datamine/ParambathC20","doi":"10.1007/S10618-020-00708-6","ee":"https://doi.org/10.1007/s10618-020-00708-6","url":"https://dblp.org/rec/journals/datamine/ParambathC20"},
+"url":"URL#3010775"
+},
+{
+"@score":"4",
+"@id":"3905715",
+"info":{"authors":{"author":[{"@pid":"17/5471","text":"Fahad Anwar"},{"@pid":"88/7084","text":"Naima Iltaf"},{"@pid":"16/2582","text":"Hammad Afzal"},{"@pid":"29/8153","text":"Raheel Nawaz"}]},"title":"HRS-CE: A hybrid framework to integrate content embeddings in recommender systems for cold start items.","venue":"J. Comput. Sci.","volume":"29","pages":"9-18","year":"2018","type":"Journal Articles","access":"closed","key":"journals/jocs/AnwaarIAN18","doi":"10.1016/J.JOCS.2018.09.008","ee":"https://doi.org/10.1016/j.jocs.2018.09.008","url":"https://dblp.org/rec/journals/jocs/AnwaarIAN18"},
+"url":"URL#3905715"
+},
+{
+"@score":"4",
+"@id":"5108407",
+"info":{"authors":{"author":{"@pid":"166/1256","text":"Maciej Kula"}},"title":"Metadata Embeddings for User and Item Cold-start Recommendations.","venue":"CBRecSys@RecSys","pages":"14-21","year":"2015","type":"Conference and Workshop Papers","access":"open","key":"conf/recsys/Kula15","ee":"https://ceur-ws.org/Vol-1448/paper4.pdf","url":"https://dblp.org/rec/conf/recsys/Kula15"},
+"url":"URL#5108407"
+},
+{
+"@score":"4",
+"@id":"5150677",
+"info":{"authors":{"author":{"@pid":"166/1256","text":"Maciej Kula"}},"title":"Metadata Embeddings for User and Item Cold-start Recommendations.","venue":"CoRR","volume":"abs/1507.08439","year":"2015","type":"Informal and Other Publications","access":"open","key":"journals/corr/Kula15","ee":"http://arxiv.org/abs/1507.08439","url":"https://dblp.org/rec/journals/corr/Kula15"},
+"url":"URL#5150677"
+},
+{
+"@score":"4",
+"@id":"5404190",
+"info":{"authors":{"author":[{"@pid":"138/9642","text":"Martin Saveski"},{"@pid":"72/4569","text":"Amin Mantrach"}]},"title":"Item cold-start recommendations: learning local collective embeddings.","venue":"RecSys","pages":"89-96","year":"2014","type":"Conference and Workshop Papers","access":"closed","key":"conf/recsys/SaveskiM14","doi":"10.1145/2645710.2645751","ee":"https://doi.org/10.1145/2645710.2645751","url":"https://dblp.org/rec/conf/recsys/SaveskiM14"},
+"url":"URL#5404190"
+}
+]
+}
+}
+}

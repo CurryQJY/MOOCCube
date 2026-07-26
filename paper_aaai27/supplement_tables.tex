@@ -1,0 +1,386 @@
+\documentclass[letterpaper]{article}
+\usepackage[submission]{aaai2027}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{threeparttable}
+\usepackage{graphicx}
+\frenchspacing
+
+\pdfinfo{
+/TemplateVersion (2027.1)
+}
+
+\setcounter{secnumdepth}{0}
+\newcommand{\sd}[1]{{\footnotesize$\pm$#1}}
+\newcommand{\sigmark}[1]{\rlap{\textsuperscript{\scriptsize #1}}}
+\newcommand{\methodref}[1]{\textsuperscript{\scriptsize[#1]}}
+\newcommand{\tablecaptiongap}{\vspace{0.35em}}
+
+\title{Supplementary Tables for CKG-RL}
+\author{Anonymous Submission}
+\affiliations{}
+
+\begin{document}
+\maketitle
+
+This supplement reports the detailed tables underlying the main-paper results:
+full strict course-cold results on all datasets, the MOOCCube component ablation,
+the MOOCCube hyperparameter sensitivity study, seed-level confidence intervals,
+per-course gain diagnostics, supported motivation evidence, and the corresponding
+complexity and timing evidence.
+
+\section{Full Strict Course-Cold Results}
+
+\begin{table*}[t]
+\centering
+\caption{Performance comparison on MOOCCube under strict course-cold ranking. Values are mean\(\pm\)std over three seeds; paired tests are in Table~\ref{tab:supp-significance-tests}.}
+\label{tab:supp-mooccube-cold}
+\tablecaptiongap
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
+\toprule
+& \multicolumn{3}{c}{Recall \(\uparrow\)} & \multicolumn{3}{c}{NDCG \(\uparrow\)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Method & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} \\
+\midrule
+Popularity & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} \\
+BPR & 0.0113\sd{0.0037} & 0.0249\sd{0.0068} & 0.0551\sd{0.0114} & 0.0068\sd{0.0023} & 0.0111\sd{0.0030} & 0.0186\sd{0.0033} \\
+LightGCN & 0.0833\sd{0.0150} & 0.1173\sd{0.0126} & 0.1708\sd{0.0155} & 0.0593\sd{0.0120} & 0.0702\sd{0.0113} & 0.0836\sd{0.0119} \\
+DropoutNet & 0.1166\sd{0.0032} & 0.1658\sd{0.0004} & 0.2294\sd{0.0026} & 0.0791\sd{0.0041} & 0.0950\sd{0.0032} & 0.1110\sd{0.0036} \\
+CCFCRec & 0.1476\sd{0.0050} & 0.2033\sd{0.0153} & 0.2688\sd{0.0317} & 0.1101\sd{0.0073} & 0.1281\sd{0.0106} & 0.1447\sd{0.0145} \\
+ALDI & 0.1753\sd{0.0179} & 0.2189\sd{0.0180} & 0.2775\sd{0.0165} & 0.1381\sd{0.0192} & 0.1521\sd{0.0193} & 0.1669\sd{0.0190} \\
+CGRC & 0.2121\sd{0.0205} & 0.2589\sd{0.0171} & 0.3141\sd{0.0168} & 0.1695\sd{0.0190} & 0.1845\sd{0.0182} & 0.1984\sd{0.0178} \\
+KGRec & 0.0974\sd{0.0026} & 0.1305\sd{0.0073} & 0.1857\sd{0.0121} & 0.0764\sd{0.0021} & 0.0871\sd{0.0005} & 0.1010\sd{0.0011} \\
+PCGNN (adapted) & 0.0241\sd{0.0086} & 0.0520\sd{0.0117} & 0.0997\sd{0.0137} & 0.0145\sd{0.0057} & 0.0234\sd{0.0061} & 0.0353\sd{0.0066} \\
+USIM & 0.0377\sd{0.0142} & 0.0614\sd{0.0151} & 0.1042\sd{0.0165} & 0.0244\sd{0.0129} & 0.0320\sd{0.0125} & 0.0427\sd{0.0126} \\
+\textbf{CKG-RL} & \textbf{0.2473}\sd{0.0190} & \textbf{0.2863}\sd{0.0128} & \textbf{0.3220}\sd{0.0106} & \textbf{0.1972}\sd{0.0219} & \textbf{0.2098}\sd{0.0198} & \textbf{0.2188}\sd{0.0189} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Performance comparison on Junyi under strict course-cold ranking. Values are mean\(\pm\)std over three seeds; paired tests are in Table~\ref{tab:supp-significance-tests}.}
+\label{tab:supp-junyi-cold}
+\tablecaptiongap
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
+\toprule
+& \multicolumn{3}{c}{Recall \(\uparrow\)} & \multicolumn{3}{c}{NDCG \(\uparrow\)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Method & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} \\
+\midrule
+Popularity & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} \\
+BPR & 0.0298\sd{0.0039} & 0.0578\sd{0.0079} & 0.1132\sd{0.0110} & 0.0180\sd{0.0027} & 0.0270\sd{0.0040} & 0.0408\sd{0.0047} \\
+LightGCN & 0.0187\sd{0.0033} & 0.0420\sd{0.0074} & 0.0830\sd{0.0153} & 0.0108\sd{0.0018} & 0.0182\sd{0.0030} & 0.0284\sd{0.0050} \\
+DropoutNet & 0.0540\sd{0.0095} & 0.0928\sd{0.0143} & 0.1579\sd{0.0163} & 0.0336\sd{0.0061} & 0.0460\sd{0.0075} & 0.0623\sd{0.0080} \\
+CCFCRec & 0.0942\sd{0.0114} & 0.1462\sd{0.0118} & 0.2177\sd{0.0100} & 0.0619\sd{0.0072} & 0.0786\sd{0.0068} & 0.0967\sd{0.0055} \\
+ALDI & 0.1331\sd{0.0074} & 0.2102\sd{0.0100} & \textbf{0.3186}\sd{0.0158} & 0.0859\sd{0.0053} & 0.1106\sd{0.0061} & 0.1379\sd{0.0073} \\
+CGRC & 0.1269\sd{0.0119} & 0.1915\sd{0.0161} & 0.2732\sd{0.0205} & 0.0833\sd{0.0074} & 0.1041\sd{0.0087} & 0.1246\sd{0.0097} \\
+KGRec & 0.0245\sd{0.0028} & 0.0436\sd{0.0015} & 0.0792\sd{0.0012} & 0.0149\sd{0.0024} & 0.0210\sd{0.0019} & 0.0299\sd{0.0014} \\
+PCGNN (adapted) & 0.0453\sd{0.0066} & 0.0897\sd{0.0119} & 0.1589\sd{0.0136} & 0.0261\sd{0.0036} & 0.0402\sd{0.0051} & 0.0575\sd{0.0055} \\
+USIM & 0.0536\sd{0.0021} & 0.0921\sd{0.0032} & 0.1552\sd{0.0033} & 0.0327\sd{0.0024} & 0.0450\sd{0.0014} & 0.0608\sd{0.0011} \\
+\textbf{CKG-RL} & \textbf{0.1724}\sd{0.0070} & \textbf{0.2443}\sd{0.0154} & 0.3100\sd{0.0241} & \textbf{0.1137}\sd{0.0039} & \textbf{0.1370}\sd{0.0069} & \textbf{0.1537}\sd{0.0092} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Performance comparison on COCO under strict course-cold ranking. Values are mean\(\pm\)std over three seeds; paired tests are in Table~\ref{tab:supp-significance-tests}.}
+\label{tab:supp-coco-cold}
+\tablecaptiongap
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
+\toprule
+& \multicolumn{3}{c}{Recall \(\uparrow\)} & \multicolumn{3}{c}{NDCG \(\uparrow\)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Method & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} \\
+\midrule
+Popularity & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} \\
+BPR & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} & 0.0000\sd{0.0000} \\
+LightGCN & 0.0067\sd{0.0010} & 0.0132\sd{0.0009} & 0.0254\sd{0.0027} & 0.0040\sd{0.0007} & 0.0060\sd{0.0006} & 0.0091\sd{0.0009} \\
+DropoutNet & 0.0391\sd{0.0013} & 0.0650\sd{0.0017} & 0.1016\sd{0.0019} & 0.0243\sd{0.0007} & 0.0326\sd{0.0008} & 0.0418\sd{0.0007} \\
+CCFCRec & 0.0393\sd{0.0033} & 0.0656\sd{0.0035} & \textbf{0.1048}\sd{0.0045} & 0.0248\sd{0.0024} & 0.0332\sd{0.0025} & 0.0431\sd{0.0027} \\
+ALDI & 0.0202\sd{0.0036} & 0.0383\sd{0.0082} & 0.0694\sd{0.0115} & 0.0121\sd{0.0018} & 0.0179\sd{0.0032} & 0.0257\sd{0.0041} \\
+CGRC & 0.0250\sd{0.0075} & 0.0377\sd{0.0103} & 0.0584\sd{0.0148} & 0.0168\sd{0.0055} & 0.0209\sd{0.0063} & 0.0261\sd{0.0075} \\
+KGRec & 0.0070\sd{0.0008} & 0.0126\sd{0.0007} & 0.0237\sd{0.0005} & 0.0042\sd{0.0006} & 0.0060\sd{0.0006} & 0.0088\sd{0.0003} \\
+PCGNN (adapted) & 0.0135\sd{0.0013} & 0.0254\sd{0.0024} & 0.0453\sd{0.0036} & 0.0081\sd{0.0008} & 0.0118\sd{0.0011} & 0.0168\sd{0.0011} \\
+USIM & 0.0069\sd{0.0022} & 0.0131\sd{0.0036} & 0.0265\sd{0.0069} & 0.0043\sd{0.0014} & 0.0063\sd{0.0018} & 0.0096\sd{0.0025} \\
+\textbf{CKG-RL} & \textbf{0.0487}\sd{0.0023} & \textbf{0.0679}\sd{0.0023} & 0.0894\sd{0.0013} & \textbf{0.0330}\sd{0.0015} & \textbf{0.0392}\sd{0.0015} & \textbf{0.0447}\sd{0.0012} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{MOOCCube score-convention audit for hot and overall diagnostics. Values are mean\(\pm\)std over seeds 2025--2027. Hot metrics are hot-course item-macro scores; overall metrics are item-count weighted cold+hot scores. These diagnostics are not primary strict course-cold main-table cells.}
+\label{tab:supp-score-convention-audit}
+\tablecaptiongap
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccc}
+\toprule
+Diagnostic row & Hot R@10 & Hot N@10 & Overall R@10 & Overall N@10 \\
+\midrule
+ALDI official-source rerun & 0.1717\sd{0.0164} & 0.1124\sd{0.0112} & 0.1767\sd{0.0165} & 0.1166\sd{0.0120} \\
+ALDI BPR teacher, raw dot & 0.1999\sd{0.0171} & 0.1370\sd{0.0132} & -- & -- \\
+Matched raw-BPR teacher & 0.2477\sd{0.0152} & 0.1703\sd{0.0107} & -- & -- \\
+Main-table BPR native score & -- & -- & 0.2191\sd{0.0159} & 0.1497\sd{0.0111} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+Table~\ref{tab:supp-score-convention-audit} checks the MOOCCube hot/overall anomaly with clean ALDI reruns and matched raw-dot BPR scoring. The archived ALDI hot/overall values were not reproduced by the WSL GPU reruns; the rerun ALDI hot scale is close to the official teacher raw-dot scale and below the local matched raw-BPR teacher. We therefore report each model with its native scoring function under the common evaluator rather than normalizing scores across model families.
+
+\subsection{Overall Main Table}
+
+Table~\ref{tab:overall-item-macro-main} gives the corresponding overall item-macro comparison used in the paper's main table ordering.
+\input{figures/overall_baseline_comparison/overall_main_table_aaai.tex}
+
+\input{tables/mooccube_p1_motivation_evidence.tex}
+
+\clearpage
+
+\section{Cold-Only Structural Audit and Robustness}
+
+\begin{table*}[t]
+\centering
+\caption{Cold-only Top-10 structural proxies on held-out MOOCCube tests. Means condition on a recommended course having zero training interactions; lists with no recommended cold course remain missing. Effective coverage is the equal-seed course-macro fraction of lists with at least one cold recommendation, and missingness is one minus coverage. The proxies are objective-aligned diagnostics, not learning outcomes.}
+\label{tab:supp-cold-only-audit}
+\tablecaptiongap
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccccc}
+\toprule
+Model & Cold share & Coverage & Missing & Prereq. gap & Continuity & Difficulty gap & Redundancy \\
+\midrule
+CKG-RL & 0.5073 & 0.9912 & 0.0088 & 0.5994 & 0.1441 & 0.0864 & 0.0646 \\
+PCGNN & 0.4218 & 0.9731 & 0.0269 & 0.5943 & 0.1020 & 0.0825 & 0.0049 \\
+CGRC & 0.2457 & 0.9041 & 0.0959 & 0.5997 & 0.1909 & 0.0787 & 0.0925 \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/mooccube_p1_risk_robustness.pdf}
+\caption{Difficulty-definition and rank-profile sensitivity for the held-out-test structural-proxy audit. (a) CKG-RL versus CGRC difficulty effects under P90, P95, or maximum complexity scaling and readiness depths of 3, 5, or 10 historical courses. Positive oriented effects favor CKG-RL. (b) Rank-wise oriented effects for the four proxies. The cold-only difficulty disadvantage persists across all nine definitions; other effects vary by rank, so the aggregate Top-10 result is not interpreted as uniform.}
+\label{fig:supp-risk-robustness}
+\end{figure}
+
+The main audit uses P95 scaling and readiness depth 5. Across the nine alternatives,
+the raw CKG-RL-minus-CGRC cold-only difficulty difference ranges from 0.0065 to
+0.0094 (lower is better), with every 95\% bootstrap interval above zero. The
+rank profile shows adverse continuity at ranks 1--10, early-rank redundancy gains,
+and prerequisite effects that are favorable at several but not all ranks. These
+patterns rule out a single, rank-invariant pedagogical-quality interpretation.
+
+\clearpage
+
+\input{revision_stat_cost_tables}
+
+\clearpage
+
+\section{Ablation and Sensitivity Tables}
+
+\begin{table*}[t]
+\centering
+\caption{Component ablation on MOOCCube. Values are mean\(\pm\)std over three seeds.}
+\label{tab:supp-core-ablation}
+\tablecaptiongap
+\footnotesize
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
+\toprule
+& \multicolumn{3}{c}{Recall \(\uparrow\)} & \multicolumn{3}{c}{NDCG \(\uparrow\)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Variant & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} & \multicolumn{1}{c}{@5} & \multicolumn{1}{c}{@10} & \multicolumn{1}{c}{@20} \\
+\midrule
+\textbf{Full CKG-RL} & \textbf{0.2214}\sd{0.0126} & \textbf{0.2667}\sd{0.0150} & \textbf{0.3172}\sd{0.0092} & \textbf{0.1818}\sd{0.0112} & \textbf{0.1962}\sd{0.0115} & \textbf{0.2090}\sd{0.0104} \\
+w/o educ. rewards & 0.2150\sd{0.0116} & 0.2595\sd{0.0129} & 0.3111\sd{0.0035} & 0.1775\sd{0.0120} & 0.1918\sd{0.0121} & 0.2048\sd{0.0098} \\
+w/o KG sampler & 0.2171\sd{0.0120} & 0.2613\sd{0.0072} & 0.3153\sd{0.0052} & 0.1777\sd{0.0108} & 0.1920\sd{0.0095} & 0.2056\sd{0.0081} \\
+w/o prereq. aux. loss & 0.2163\sd{0.0161} & 0.2582\sd{0.0125} & 0.3112\sd{0.0094} & 0.1756\sd{0.0122} & 0.1892\sd{0.0113} & 0.2026\sd{0.0107} \\
+w/o course-KG inputs & 0.2192\sd{0.0159} & 0.2608\sd{0.0140} & 0.3113\sd{0.0110} & 0.1783\sd{0.0130} & 0.1917\sd{0.0125} & 0.2044\sd{0.0114} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Hyperparameter sensitivity on MOOCCube. Values are mean\(\pm\)std over three seeds at the validation NDCG@10 checkpoint; \(^{\star}\) marks the reported default used for the MOOCCube main-table runs.}
+\label{tab:supp-hparam}
+\tablecaptiongap
+\small
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llcc}
+\toprule
+Sweep & Value & Recall@10 \(\uparrow\) & NDCG@10 \(\uparrow\) \\
+\midrule
+\(\beta\) & 0.00 & 0.2831\sd{0.0419} & 0.2137\sd{0.0387} \\
+\(\beta\) & 0.05 & 0.2890\sd{0.0463} & 0.2165\sd{0.0445} \\
+\(\beta\) & 0.10 & 0.2860\sd{0.0456} & 0.2166\sd{0.0420} \\
+\(\beta\) & 0.15 & \textbf{0.2974}\sd{0.0380} & \textbf{0.2194}\sd{0.0399} \\
+\(\beta\) & 0.20\(^{\star}\) & 0.2942\sd{0.0345} & 0.2175\sd{0.0368} \\
+\(\beta\) & 0.25 & 0.2880\sd{0.0470} & 0.2117\sd{0.0446} \\
+\(\beta\) & 0.30 & 0.2927\sd{0.0389} & 0.2156\sd{0.0391} \\
+\(\beta\) & 0.40 & 0.2889\sd{0.0439} & 0.2150\sd{0.0429} \\
+\(\beta\) & 0.50 & 0.2957\sd{0.0425} & 0.2189\sd{0.0407} \\
+\midrule
+Reward scale & 0.00 & 0.2885\sd{0.0438} & 0.2126\sd{0.0422} \\
+Reward scale & 0.25 & 0.2864\sd{0.0480} & 0.2138\sd{0.0419} \\
+Reward scale & 0.50 & 0.2927\sd{0.0475} & 0.2170\sd{0.0439} \\
+Reward scale & 0.75 & 0.2868\sd{0.0496} & 0.2131\sd{0.0440} \\
+Reward scale & 1.00\(^{\star}\) & 0.2942\sd{0.0345} & 0.2175\sd{0.0368} \\
+Reward scale & 1.25 & 0.2889\sd{0.0476} & 0.2136\sd{0.0440} \\
+Reward scale & 1.50 & 0.2892\sd{0.0415} & 0.2146\sd{0.0414} \\
+Reward scale & 2.00 & \textbf{0.2944}\sd{0.0392} & \textbf{0.2182}\sd{0.0380} \\
+\midrule
+Simulator horizon \(T\) & 1 & 0.2889\sd{0.0412} & 0.2173\sd{0.0385} \\
+Simulator horizon \(T\) & 3 & 0.2939\sd{0.0407} & \textbf{0.2197}\sd{0.0402} \\
+Simulator horizon \(T\) & 5\(^{\star}\) & \textbf{0.2942}\sd{0.0345} & 0.2175\sd{0.0368} \\
+Simulator horizon \(T\) & 7 & 0.2861\sd{0.0445} & 0.2105\sd{0.0417} \\
+Simulator horizon \(T\) & 10 & 0.2893\sd{0.0428} & 0.2138\sd{0.0389} \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+\clearpage
+
+\section{Computational Cost Details}
+
+We compare CKG-RL with CGRC, the graph-reconstruction baseline closest to the
+main experimental setting. Let \(E=|\mathcal{D}_{\mathrm{train}}|\), \(I=|\mathcal{C}|\), and
+\(Q=|\mathcal{D}_{eval}|\). Let \(d\) be the embedding size, \(L\) the number of
+graph propagation layers, \(R\) the reconstructed-edge count, \(n_{-}\) the
+sampled ranking negatives in CGRC, \(H\) the simulator hidden width, \(T\) the
+simulator horizon, \(M\) the retrieved-user count per simulator step, and \(N\)
+the sampled-candidate count per simulator step. Table~\ref{tab:supp-complexity}
+uses the same full-catalog scoring convention for both methods.
+
+\begin{table*}[t]
+\centering
+\caption{Complexity comparison between CKG-RL and CGRC. One-time data loading is omitted.}
+\label{tab:supp-complexity}
+\tablecaptiongap
+\small
+\setlength{\tabcolsep}{4.0pt}
+\renewcommand{\arraystretch}{1.10}
+\begin{tabular}{lp{5.5cm}p{4.6cm}p{4.7cm}}
+\toprule
+Method & Training cost per epoch & Full-ranking inference cost & Main extra cost \\
+\midrule
+CGRC & \(O(LEd + Rd + E n_{-}d)\) & \(O(LEd + Rd + QId)\) & Cold-course graph reconstruction and graph propagation. \\
+CKG-RL & \(O(E(d + T(Md + Nd + H)))\) plus auxiliary content and prerequisite losses & \(O(IH + QId)\), or \(O(QId)\) after course vectors are cached & Retrieval-based simulator with fixed \(T=5\), \(M=256\), and \(N=20\). \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+This comparison separates training overhead from final ranking overhead. CKG-RL
+adds a short retrieval-based simulation for each positive instance during
+training, but the added factors are fixed hyperparameters rather than catalog
+size. CGRC instead incurs graph reconstruction and graph propagation costs. At
+test time, CKG-RL does not roll out the simulator for every candidate course; once
+course vectors are available, the dominant full-ranking term is the same
+\(O(QId)\) dot-product scan used by embedding methods.
+
+Table~\ref{tab:supp-runtime} reports the timing evidence that can be separated
+from experiment logs and eval-only profiling. The reported CKG-RL epoch values
+are training-loop timers before validation ranking, so they exclude validation
+and test evaluation. The inference profiler reloads a retained checkpoint, warms
+up the evaluator, and times final cold+hot full-ranking course-macro inference;
+data loading, checkpoint loading, and metric-file writing are excluded. CKG-RL
+inference includes course-bank construction, while CGRC inference includes
+test-time graph reconstruction and graph propagation. Measured entries come
+only from retained timers; the Junyi CGRC training entry is an explicit
+provisional projection that will be replaced after the three-seed profile completes.
+The MOOCCube CKG-RL
+training timer comes from the main-result logs; its latency uses retained
+Full-family checkpoints on the original main splits. The MOOCCube CGRC timing
+comes from a matched profiling rerun with the same split, configuration, and
+evaluator. Its inference timing covers three seeds, whereas its retained epoch
+timers cover seeds 2026 and 2027 only.
+
+\begin{table*}[t]
+\centering
+\caption{Time cost for training and inference. Values are mean\(\pm\)std seconds; ``--'' indicates unavailable matched checkpoints or timers.}
+\label{tab:supp-runtime}
+\tablecaptiongap
+\small
+\setlength{\tabcolsep}{3.2pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{llcccp{4.5cm}}
+\toprule
+Dataset & Method & Train epoch (s) & Final infer. (s) & Infer. cost & Logged coverage \\
+\midrule
+MOOCCube & CKG-RL & \(95.6\pm21.9\) & \(18.0\pm0.7\) & \(O(QId)\) & 3 seeds, 180 training epochs; 3 retained checkpoints from Full-family runs profiled on the main splits. \\
+MOOCCube & CGRC & \(70.5\pm4.6\) & \(22.2\pm0.4\) & \(O(LEd+Rd+QId)\) & 2 retained seeds, 100 training epochs; matched 3-seed inference profiling rerun with the same split, configuration, and evaluator. \\
+Junyi & CKG-RL & \(312.2\pm67.7\) & \(56.4\pm0.3\) & \(O(QId)\) & 2 logged seeds, 120 training epochs; 2 checkpoints profiled. \\
+Junyi & CGRC & \(333.0\pm45.0\) & \(69.2\pm0.2\) & \(O(LEd+Rd+QId)\) & Provisional projection pending 3-seed training timers; 2 checkpoints profiled for inference. \\
+COCO & CKG-RL & \(279.2\pm17.8\) & \(9.8\pm0.1\) & \(O(QId)\) & 3 seeds, 90 training epochs; 3 checkpoints profiled. \\
+COCO & CGRC & \(389.7\pm80.0\) & \(11.8\pm0.2\) & \(O(LEd+Rd+QId)\) & 3 seeds, 150 training epochs; 3 checkpoints profiled. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\noindent\footnotesize
+Provisional projection. The mean applies the midpoint of the
+observed MOOCCube and COCO CGRC-to-CKG training-time ratios to Junyi; the spread
+uses the midpoint of their CGRC epoch coefficients of variation. The projected
+values are not presented as completed measurements.
+\normalsize
+
+These timings are training-loop and eval-only measurements rather than
+end-to-end wall-clock runtimes. On COCO, where both methods expose three-seed
+epoch timers, CKG-RL is faster per logged training epoch than CGRC. MOOCCube
+also exposes separable epoch timers, but the CGRC estimate covers two retained
+seeds and is therefore descriptive. For retained CKG-RL checkpoints, final
+full-ranking course-macro inference is dominated by the cached full-catalog
+dot-product scan; CGRC additionally reconstructs cold-course edges and
+propagates the reconstructed graph. The table supports an inference comparison
+on all three datasets and measured training-loop comparisons on MOOCCube and
+COCO. The Junyi CGRC value is provisional until its prioritized
+three-seed queue completes.
+
+\section{Ranking--Pedagogy Decoupling on the Held-Out Test Split}
+Figure~1 of the main paper is a validation-only case study: it shows that
+course-macro cold-target NDCG@10 is positively correlated with structural
+redundancy (misaligned) and near-orthogonal to prerequisite safety. Because
+that figure is computed on validation lists from frozen checkpoints, we repeat
+the identical measurement on the held-out test split---same frozen CGRC and
+PCGNN checkpoints, same model-independent structural proxies, with only the
+evaluation split changed---to confirm that the decoupling is not a
+validation-set artifact. Table~\ref{tab:supp-decoupling-test} reports the
+Spearman correlations on both splits.
+
+\begin{table}[t]
+\centering
+{
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lccc}
+\toprule
+& \multicolumn{2}{c}{Spearman $\rho$ with NDCG@10} & \\
+\cmidrule(lr){2-3}
+Structural proxy & Validation & Test & Sign \\
+\midrule
+Structural redundancy & $+0.53$ & $+0.47$ & agree \\
+Prerequisite gap & $-0.15$ & $-0.19$ & agree \\
+Difficulty gap & $-0.18$ & $-0.08$\sigmark{n.s.} & agree \\
+Concept continuity & $+0.56$ & $+0.55$ & agree \\
+\bottomrule
+\end{tabular}
+}
+\tablecaptiongap
+\caption{The ranking--pedagogy decoupling of Figure~1 replicates on the
+held-out test split. Each cell is the Spearman correlation between course-macro
+cold-target NDCG@10 and one structural proxy, computed over exposed cold
+courses (validation $n=158$; test $n=145$) pooled across three seeds. Redundancy
+stays positively correlated (misaligned) and the prerequisite and difficulty
+gaps stay near-orthogonal on both splits; all four signs agree. \sigmark{n.s.}:
+the test difficulty correlation is not significant ($p=0.33$); the difficulty
+signal is weak on both splits and is not used as a primary motivation claim.
+Within CGRC, a median split of exposed courses by NDCG@10 shows the
+better-ranked half carrying $2.3\times$ the redundancy of the worse-ranked half
+($0.130$ vs $0.057$ on test) with an essentially unchanged prerequisite gap
+($0.564$ vs $0.550$), mirroring the validation pattern.}
+\label{tab:supp-decoupling-test}
+\end{table}
+
+\end{document}

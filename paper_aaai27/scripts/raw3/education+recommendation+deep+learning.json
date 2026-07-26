@@ -1,0 +1,104 @@
+{
+"result":{
+"query":"education* recommendation* deep* learning*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"21.14"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"16",
+"@dc":"12",
+"@oc":"16",
+"@id":"70164624",
+"text":"learning"
+}
+},
+"hits":{
+"@total":"12",
+"@computed":"12",
+"@sent":"12",
+"@first":"0",
+"hit":[{
+"@score":"5",
+"@id":"294937",
+"info":{"authors":{"author":[{"@pid":"400/6894","text":"Naadiya Mirbahar"},{"@pid":"164/1301-1","text":"Kamlesh Kumar 0001"},{"@pid":"191/1307","text":"Asif Ali Laghari"}]},"title":"Enhancing Mobile App Recommendations With Crowdsourced Educational Data Using Machine Learning and Deep Learning.","venue":"IEEE Access","volume":"13","pages":"38778-38792","year":"2025","type":"Journal Articles","access":"open","key":"journals/access/MirbaharKL25","doi":"10.1109/ACCESS.2025.3541116","ee":"https://doi.org/10.1109/ACCESS.2025.3541116","url":"https://dblp.org/rec/journals/access/MirbaharKL25"},
+"url":"URL#294937"
+},
+{
+"@score":"5",
+"@id":"338500",
+"info":{"authors":{"author":[{"@pid":"213/5896","text":"Peixia Li"},{"@pid":"88/436","text":"Zhiyong Ding"}]},"title":"Application of deep learning-based personalized learning path prediction and resource recommendation for inheriting scientist spirit in graduate education.","venue":"Comput. Sci. Inf. Syst.","volume":"22","number":"3","pages":"1229-1250","year":"2025","type":"Journal Articles","access":"open","key":"journals/comsis/LiD25","doi":"10.2298/CSIS241125043L","ee":"https://doi.org/10.2298/csis241125043l","url":"https://dblp.org/rec/journals/comsis/LiD25"},
+"url":"URL#338500"
+},
+{
+"@score":"5",
+"@id":"403177",
+"info":{"authors":{"author":{"@pid":"01/9810","text":"Lingyun Tao"}},"title":"Improving the Quality of Vocational Education in Higher Vocational Colleges Based on Deep Learning Technology: Student Learning Prediction and Personalized Recommendation.","venue":"J. Adv. Comput. Intell. Intell. Informatics","volume":"29","number":"2","pages":"407-416","year":"2025","type":"Journal Articles","access":"open","key":"journals/jaciii/Tao25","doi":"10.20965/JACIII.2025.P0407","ee":"https://doi.org/10.20965/jaciii.2025.p0407","url":"https://dblp.org/rec/journals/jaciii/Tao25"},
+"url":"URL#403177"
+},
+{
+"@score":"5",
+"@id":"979039",
+"info":{"authors":{"author":[{"@pid":"374/0122","text":"Xiaosi Qi"},{"@pid":"35/4780","text":"Jianwei Zhao"},{"@pid":"374/0881","text":"Guochao Hu"}]},"title":"Explore the Personalized Resource Recommendation of Educational Learning Platforms: Deep Learning.","venue":"Informatica","volume":"48","number":"7","year":"2024","type":"Journal Articles","access":"open","key":"journals/informaticaSI/QiZH24","doi":"10.31449/INF.V48I7.5690","ee":"https://doi.org/10.31449/inf.v48i7.5690","url":"https://dblp.org/rec/journals/informaticaSI/QiZH24"},
+"url":"URL#979039"
+},
+{
+"@score":"5",
+"@id":"1554103",
+"info":{"authors":{"author":[{"@pid":"39/10619","text":"Sisi Li"},{"@pid":"46/999","text":"Bo Yang"}]},"title":"Personalized Education Resource Recommendation Method Based on Deep Learning in Intelligent Educational Robot Environments.","venue":"Int. J. Inf. Technol. Syst. Approach","volume":"16","number":"3","pages":"1-15","year":"2023","type":"Journal Articles","access":"open","key":"journals/ijitsa/LiY23","doi":"10.4018/IJITSA.321133","ee":"https://doi.org/10.4018/ijitsa.321133","url":"https://dblp.org/rec/journals/ijitsa/LiY23"},
+"url":"URL#1554103"
+},
+{
+"@score":"4",
+"@id":"72813",
+"info":{"authors":{"author":[{"@pid":"422/8811","text":"M. Veena"},{"@pid":"258/4961","text":"Manjunath Kotari"}]},"title":"NLP-Powered Career and Higher Education Guidance and Recommendation System: A Deep Learning Approach.","venue":"J. Circuits Syst. Comput.","volume":"35","number":"2","year":"2026","type":"Journal Articles","access":"closed","key":"journals/jcsc/VeenaK26","doi":"10.1142/S0218126625503839","ee":"https://doi.org/10.1142/s0218126625503839","url":"https://dblp.org/rec/journals/jcsc/VeenaK26"},
+"url":"URL#72813"
+},
+{
+"@score":"4",
+"@id":"337665",
+"info":{"authors":{"author":{"@pid":"252/1780","text":"Shaya Abdullah Alshaya"}},"title":"AI-Based Emoji Recommendation for Early Childhood Education Using Deep Learning Techniques.","venue":"Comput.","volume":"15","number":"1","year":"2025","type":"Journal Articles","access":"open","key":"journals/computers/Alshaya25","doi":"10.3390/COMPUTERS15010059","ee":"https://doi.org/10.3390/computers15010059","url":"https://dblp.org/rec/journals/computers/Alshaya25"},
+"url":"URL#337665"
+},
+{
+"@score":"4",
+"@id":"913716",
+"info":{"authors":{"author":[{"@pid":"384/1543","text":"Jayaprakash Chinnadurai"},{"@pid":"366/4067","text":"A. Karthik 0008"},{"@pid":"358/8756","text":"Janjhyam Venkata Naga Ramesh"},{"@pid":"152/7639","text":"Sudipta Banerjee"},{"@pid":"384/1270","text":"P. V. Rajlakshmi"},{"@pid":"384/1791","text":"Katakam Venkateswara Rao"},{"@pid":"327/7066","text":"D. Sudarvizhi"},{"@pid":"81/7588","text":"A. Rajaram"}]},"title":"Enhancing online education recommendations through clustering-driven deep learning.","venue":"Biomed. Signal Process. Control.","volume":"97","pages":"106669","year":"2024","type":"Journal Articles","access":"closed","key":"journals/bspc/ChinnaduraiKRBRRSR24","doi":"10.1016/J.BSPC.2024.106669","ee":"https://doi.org/10.1016/j.bspc.2024.106669","url":"https://dblp.org/rec/journals/bspc/ChinnaduraiKRBRRSR24"},
+"url":"URL#913716"
+},
+{
+"@score":"4",
+"@id":"965945",
+"info":{"authors":{"author":{"@pid":"76/1490","text":"Peiqing Wang"}},"title":"An optimisation and application of artificial intelligence models based on deep learning in personalised recommendation of English education.","venue":"Int. J. Comput. Appl. Technol.","volume":"75","number":"2/3/4","pages":"96-102","year":"2024","type":"Journal Articles","access":"closed","key":"journals/ijcat/Wang24b","doi":"10.1504/IJCAT.2024.146134","ee":"https://doi.org/10.1504/IJCAT.2024.146134","url":"https://dblp.org/rec/journals/ijcat/Wang24b"},
+"url":"URL#965945"
+},
+{
+"@score":"4",
+"@id":"1554149",
+"info":{"authors":{"author":{"@pid":"64/4371","text":"Ruiping Zhang"}},"title":"A Personalized Course Resource Recommendation Method Based on Deep Learning in an Online Multi-Modal Multimedia Education Cloud Platform.","venue":"Int. J. Inf. Technol. Syst. Approach","volume":"16","number":"2","pages":"1-14","year":"2023","type":"Journal Articles","access":"open","key":"journals/ijitsa/Zhang23a","doi":"10.4018/IJITSA.319344","ee":"https://doi.org/10.4018/ijitsa.319344","url":"https://dblp.org/rec/journals/ijitsa/Zhang23a"},
+"url":"URL#1554149"
+},
+{
+"@score":"4",
+"@id":"1796534",
+"info":{"authors":{"author":[{"@pid":"76/5965","text":"Sen Li"},{"@pid":"212/5707","text":"Xiaoli Duan"}]},"title":"Personalized Recommendation Method of College Art Education Resources Based on Deep Learning.","venue":"ICMTEL","pages":"184-199","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/icmtel/LiD23","doi":"10.1007/978-3-031-50577-5_14","ee":"https://doi.org/10.1007/978-3-031-50577-5_14","url":"https://dblp.org/rec/conf/icmtel/LiD23"},
+"url":"URL#1796534"
+},
+{
+"@score":"4",
+"@id":"3395806",
+"info":{"title":"Recommendation system design for college network education based on deep learning and fuzzy uncertainty.","venue":"J. Intell. Fuzzy Syst.","volume":"38","number":"6","pages":"7083-7094","year":"2020","type":"Withdrawn Items","access":"withdrawn","key":"journals/jifs/WuF20","doi":"10.3233/JIFS-179787","ee":"https://doi.org/10.3233/JIFS-179787","url":"https://dblp.org/rec/journals/jifs/WuF20"},
+"url":"URL#3395806"
+}
+]
+}
+}
+}

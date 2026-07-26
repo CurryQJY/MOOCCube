@@ -1,0 +1,33 @@
+% Requires \usepackage{booktabs,threeparttable}
+\begin{table*}[t]
+\centering
+\begin{threeparttable}
+\caption{Role-aligned, empirically supported motivation evidence on held-out MOOCCube test sets.}
+\label{tab:p1-motivation-evidence}
+\footnotesize
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrc}
+\toprule
+Contrast & Verified signal & CKG-RL & Reference & Effect / improvement & $p$ \\
+\midrule
+\multicolumn{6}{l}{\textit{Course-structure limitation}} \\
+CKG-RL vs. PCGNN & Prerequisite gap $\downarrow$ & 0.5977 & 0.6427 & 0.0450 [0.0353, 0.0549] & $<.0001$ \\
+CKG-RL vs. PCGNN & Difficulty gap $\downarrow$ & 0.0844 & 0.0963 & 0.0119 [0.0093, 0.0145] & $<.0001$ \\
+\addlinespace[1pt]
+\multicolumn{6}{l}{\textit{Strict cold-start effectiveness}} \\
+CKG-RL vs. CGRC & Recall@10 $\uparrow$ & 0.2863 & 0.2589 & +0.0274 (+10.6\%) & $p_{\mathrm{Holm}}<.01$ \\
+CKG-RL vs. CGRC & NDCG@10 $\uparrow$ & 0.2098 & 0.1845 & +0.0253 (+13.7\%) & $p_{\mathrm{Holm}}<.01$ \\
+\addlinespace[1pt]
+\multicolumn{6}{l}{\textit{Course-reward mechanism}} \\
+Full vs. w/o course reward & Cold prerequisite gap $\downarrow$ & 0.5994 & 0.6126 & 0.0132 [0.0056, 0.0205] & $0.0009$ \\
+Full vs. w/o course reward & Cold difficulty gap $\downarrow$ & 0.0864 & 0.0898 & 0.0034 [0.0011, 0.0056] & $0.0037$ \\
+Full vs. w/o course reward & Cold-course share $\uparrow$ & 50.7\% & 48.0\% & +2.7 pp [1.9, 3.5] & $<.0001$ \\
+\bottomrule
+\end{tabular*}
+\begin{tablenotes}[flushleft]
+\scriptsize
+\item Lower-is-better risk improvements use Reference minus CKG-RL. Their 95\% bootstrap intervals and permutation tests use 204 paired seed-course units. Main effectiveness values are held-out three-seed means from the strict course-cold table; significance is the corresponding Holm-corrected paired Wilcoxon result over matched seed-course pairs.
+\item Course-reward exposure is descriptive and does not establish pedagogical quality. Only predeclared supported motivation claims are shown; inconclusive or adverse outcomes are excluded from this claim table and remain reported in the complete risk audit.
+\end{tablenotes}
+\end{threeparttable}
+\end{table*}

@@ -1,0 +1,19 @@
+{
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2025",
+  "n_users": 199199,
+  "n_items": 698,
+  "max_train_pos": 2000,
+  "train_positive_rows_exported": 2000,
+  "train_negative_rows_exported": 2000,
+  "val_cold_positive_rows": 32464,
+  "test_cold_positive_rows": 65605,
+  "kg_triples": 340652,
+  "kg_entities": 27743,
+  "relation_width": 25,
+  "kgan_dir": "paper_aaai27\\baseline_sources\\_prepared_smoke\\mooccube_seed2025\\kgan\\data\\course_strict_seed2025",
+  "idrmi_dir": "paper_aaai27\\baseline_sources\\_prepared_smoke\\mooccube_seed2025\\idrmi\\Data\\moocCube",
+  "notes": [
+    "KGAN original loader randomly splits ratings_final.txt; strict protocol needs a custom loader/evaluator.",
+    "IDRMI loader reads these files, but its NGCF adjacency construction does not populate R without source edits."
+  ]
+}

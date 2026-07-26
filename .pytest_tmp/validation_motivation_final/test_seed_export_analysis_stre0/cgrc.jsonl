@@ -1,0 +1,1 @@
+{"model": "cgrc", "seed": 2025, "sample_index": 0, "user_id": 7, "target_item_id": 3, "target_popularity": 0, "recommended_item_ids": [4, 5, 3], "recommended_scores": [0.83, 0.73, 0.63]}

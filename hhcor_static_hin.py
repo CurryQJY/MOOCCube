@@ -376,8 +376,9 @@ class HHCoRStaticModel(nn.Module):
 
 def main():
     setup_seed(2025)
-    print("Loading data from processed_data_hin ...")
-    meta, df, content_emb = load_hin_processed("processed_data_hin")
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
+    print(f"Loading data from {data_dir} ...")
+    meta, df, content_emb = load_hin_processed(data_dir)
     cfg = Config(meta["n_users"], meta["n_items"], content_dim=content_emb.shape[1])
 
     train_df, val_df, test_df = static_split_df(

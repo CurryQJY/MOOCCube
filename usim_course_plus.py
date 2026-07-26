@@ -48,7 +48,7 @@ class CourseUSIMPlus(ColdResidualAdapterMixin, CourseAwareUSIM):
 
 
 def main():
-    data_dir = "processed_data_hin"
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     print(f"Loading Data for Course USIM+ from {data_dir}...")
     if not os.path.exists(f"{data_dir}/stream_data.pkl"):
         print("Error: please run data_process_hin.py first")
@@ -77,7 +77,7 @@ def main():
     course_artifacts, course_stats = build_course_artifacts(
         df,
         cfg.n_items,
-        relation_dir="MOOCCube/relations",
+        relation_dir=os.environ.get("USIM_RELATION_DIR", "MOOCCube/relations"),
         prereq_min_support=cfg.prereq_min_support,
         prereq_max_per_item=cfg.prereq_max_per_item,
         prereq_min_items=cfg.prereq_min_items,

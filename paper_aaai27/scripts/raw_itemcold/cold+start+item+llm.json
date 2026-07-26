@@ -1,0 +1,50 @@
+{
+"result":{
+"query":"cold* start* item* llm*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"10.45"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"3",
+"@dc":"3",
+"@oc":"3",
+"@id":"70192582",
+"text":"llm"
+}
+},
+"hits":{
+"@total":"3",
+"@computed":"3",
+"@sent":"3",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"184391",
+"info":{"authors":{"author":[{"@pid":"15/4924-2","text":"Shijun Li 0002"},{"@pid":"02/5889-158","text":"Yu Wang 0158"},{"@pid":"92/1375","text":"Jin Wang"},{"@pid":"22/1805-124","text":"Ying Li 0124"},{"@pid":"51/2272","text":"Joydeep Ghosh"},{"@pid":"185/5562","text":"Anne Cocos"}]},"title":"LLM Reasoning for Cold-Start Item Recommendation.","venue":"WWW","pages":"8409-8412","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/LiWWLGC26","doi":"10.1145/3774904.3792872","ee":"https://doi.org/10.1145/3774904.3792872","url":"https://dblp.org/rec/conf/www/LiWWLGC26"},
+"url":"URL#184391"
+},
+{
+"@score":"4",
+"@id":"859541",
+"info":{"authors":{"author":[{"@pid":"15/4924-2","text":"Shijun Li 0002"},{"@pid":"02/5889-158","text":"Yu Wang 0158"},{"@pid":"92/1375","text":"Jin Wang"},{"@pid":"22/1805-124","text":"Ying Li 0124"},{"@pid":"51/2272","text":"Joydeep Ghosh"},{"@pid":"185/5562","text":"Anne Cocos"}]},"title":"LLM Reasoning for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2511.18261","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2511-18261","doi":"10.48550/ARXIV.2511.18261","ee":"https://doi.org/10.48550/arXiv.2511.18261","url":"https://dblp.org/rec/journals/corr/abs-2511-18261"},
+"url":"URL#859541"
+},
+{
+"@score":"4",
+"@id":"861567",
+"info":{"authors":{"author":[{"@pid":"423/5173","text":"Nachiket Subbaraman"},{"@pid":"423/7429","text":"Jaskinder Sarai"},{"@pid":"09/8399","text":"Aniruddh Nath"},{"@pid":"85/4697","text":"Lichan Hong"},{"@pid":"63/5281","text":"Lukasz Heldt"},{"@pid":"23/149","text":"Li Wei"},{"@pid":"28/6429-1","text":"Zhe Zhao 0001"}]},"title":"Selecting User Histories to Generate LLM Users for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2511.21989","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2511-21989","doi":"10.48550/ARXIV.2511.21989","ee":"https://doi.org/10.48550/arXiv.2511.21989","url":"https://dblp.org/rec/journals/corr/abs-2511-21989"},
+"url":"URL#861567"
+}
+]
+}
+}
+}

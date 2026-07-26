@@ -1,0 +1,99 @@
+{
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2025",
+  "out_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_adaptability\\mooccube_seed2025_smoke",
+  "smoke_input": {
+    "n_users": 2976,
+    "n_items": 698,
+    "train_pairs": 2000,
+    "val_pairs": 500,
+    "test_pairs": 500,
+    "kg_triples": 2263
+  },
+  "dependencies": {
+    "torch": "OK",
+    "dgl": "MISSING",
+    "recbole": "OK",
+    "easydict": "OK",
+    "wandb": "OK",
+    "numpy": "OK",
+    "pandas": "OK"
+  },
+  "artifacts": {
+    "pcgnn": {
+      "dataset_name": "mooccube_strict_seed2025_smoke",
+      "dataset_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\dataset\\mooccube_strict_seed2025_smoke",
+      "config_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\recbole_mooccube_strict_seed2025_smoke.yaml",
+      "train_rows": 2000,
+      "validation_rows": 500,
+      "test_rows": 500,
+      "item_rows": 698,
+      "kg_rows": 3639,
+      "protocol_notes": [
+        "Uses benchmark_filename train/valid/test files to preserve the external strict split.",
+        "RecBole still needs a custom item-macro evaluator for paper metrics."
+      ]
+    },
+    "upgpr": {
+      "processed_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_adaptability\\mooccube_seed2025_smoke\\upgpr\\processed_files",
+      "train_rows": 2000,
+      "validation_rows": 500,
+      "test_rows": 500,
+      "n_users": 2976,
+      "n_items": 698,
+      "n_concepts": 1334,
+      "n_teachers": 1206,
+      "n_schools": 151,
+      "protocol_notes": [
+        "Bypasses UPGPR's random splitter by writing train/validation/test files directly.",
+        "Official path ranking must be converted to full-catalog scoring for paper metrics."
+      ]
+    },
+    "msec": {
+      "data_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_adaptability\\mooccube_seed2025_smoke\\msec\\data",
+      "n_users": 2976,
+      "n_items": 698,
+      "n_videos": 5180,
+      "n_concepts": 9712,
+      "train_uc_positive": 2000,
+      "val_uc_positive": 500,
+      "protocol_notes": [
+        "Exports MSEC matrix names, but DGL graph construction and sampled evaluator still need replacement.",
+        "This smoke export keeps matrices small; full export would be much larger for user-course features."
+      ]
+    }
+  },
+  "candidates": [
+    {
+      "priority": 1,
+      "candidate": "PCGNN",
+      "artifact": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\dataset\\mooccube_strict_seed2025_smoke",
+      "loader_status": "atomic files load; stock sequential dataloader needs patch for external strict valid/test histories",
+      "protocol_fit": "medium-high: data split is preservable, official build/evaluator is not protocol-safe yet",
+      "recommendation": "adapt first, but patch loader/build before training"
+    },
+    {
+      "priority": 2,
+      "candidate": "UPGPR",
+      "artifact": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_adaptability\\mooccube_seed2025_smoke\\upgpr\\processed_files",
+      "loader_status": "processed files exported; easydict=OK, wandb=OK; NumPy 2 needs alias shim or older env",
+      "protocol_fit": "medium-high for data; path evaluator must be replaced",
+      "recommendation": "adapt second in a clean dependency env"
+    },
+    {
+      "priority": 3,
+      "candidate": "MSEC-Rec",
+      "artifact": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_adaptability\\mooccube_seed2025_smoke\\msec\\data",
+      "loader_status": "matrix export ready; dgl=MISSING",
+      "protocol_fit": "medium; sampled evaluator and DGL graph need changes",
+      "recommendation": "adapt after PCGNN/UPGPR"
+    },
+    {
+      "priority": 4,
+      "candidate": "KGAN",
+      "artifact": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_prepared\\mooccube_seed2025\\kgan",
+      "loader_status": "loader smoke passes on adapted data; tensorflow/keras missing from py.bat env for training",
+      "protocol_fit": "medium; original loader randomly splits ratings",
+      "recommendation": "backup only"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "model": "PCGNN",
+  "protocol": "strict_item_cold_full_catalog_item_macro_hot_replay",
+  "dataset": "mooccube",
+  "seed": 2026,
+  "split": "cold",
+  "source_report_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\mooccube_seed2026_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+  "checkpoint_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\mooccube_seed2026_full_formal_kg_warm\\checkpoints\\best_model.pt",
+  "best_epoch": 13,
+  "best_validation_score": 0.030580574062001018,
+  "dataset_name": "mooccube_strict_seed2025_full",
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2026",
+  "config_file": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\recbole_mooccube_strict_seed2025_full.yaml",
+  "requested_device": "cuda",
+  "device": "cuda",
+  "eval_batch_size": 64,
+  "max_examples": -1,
+  "selected_test_rows": 66749,
+  "sequence_examples": 66749,
+  "test": {
+    "full_cold_item_macro": {
+      "R@5": 0.026694180762377073,
+      "R@10": 0.04798807277070793,
+      "R@20": 0.0864936598446814,
+      "N@5": 0.01667331515801855,
+      "N@10": 0.023467490153110004,
+      "N@20": 0.032938988902498356
+    },
+    "full_hot_item_macro": {},
+    "count_full_cold_item_macro": 68,
+    "count_full_hot_item_macro": 0,
+    "rows_full_cold": 66749,
+    "rows_full_hot": 0
+  },
+  "notes": [
+    "Replay loads the retained PCGNN best checkpoint and evaluates strict test targets without retraining.",
+    "The original formal PCGNN report selected only strict_item_cold_test rows; this replay includes strict_item_cold_warm_test rows when split=hot/all.",
+    "Full-catalog scores are produced by PCGNN full_sort_predict and train-history items are masked by the same external evaluator as the original adapter."
+  ]
+}

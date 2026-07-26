@@ -1,0 +1,127 @@
+{
+  "model": "PCGNN",
+  "protocol": "strict_item_cold_full_catalog_item_macro",
+  "dataset_name": "mooccube_strict_seed2025_full",
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2025",
+  "epochs": 2,
+  "learning_rate": 0.0001,
+  "train_batch_size": 32,
+  "eval_batch_size": 64,
+  "kg_batch_size": 256,
+  "kg_loss_weight": 1.0,
+  "kg_triples": 5115,
+  "max_train_examples": 512,
+  "max_val_examples": 256,
+  "max_test_examples": 256,
+  "train_sequence_examples": 512,
+  "validation_sequence_examples": 256,
+  "test_sequence_examples": 256,
+  "epoch_losses": [
+    8.536802470684052,
+    8.512953400611877
+  ],
+  "epoch_loss_history": [
+    {
+      "loss": 8.536802470684052,
+      "rs_loss": 6.537312150001526,
+      "kg_loss": 1.999490238726139
+    },
+    {
+      "loss": 8.512953400611877,
+      "rs_loss": 6.515485525131226,
+      "kg_loss": 1.9974679127335548
+    }
+  ],
+  "validation_metric": "full_cold_item_macro.N@10",
+  "best_epoch": 1,
+  "best_validation_score": 0.0,
+  "early_stop_patience": 1,
+  "stopped_early": true,
+  "best_checkpoint_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\mooccube_seed2025_full_kg_smoke\\checkpoints\\best_model.pt",
+  "validation_history": [
+    {
+      "epoch": 1,
+      "loss": 8.536802470684052,
+      "rs_loss": 6.537312150001526,
+      "kg_loss": 1.999490238726139,
+      "validation_metric": "full_cold_item_macro.N@10",
+      "validation_score": 0.0,
+      "improved": true,
+      "validation": {
+        "full_cold_item_macro": {
+          "R@5": 0.0,
+          "R@10": 0.0,
+          "R@20": 0.0,
+          "N@5": 0.0,
+          "N@10": 0.0,
+          "N@20": 0.0
+        },
+        "full_hot_item_macro": {},
+        "count_full_cold_item_macro": 26,
+        "count_full_hot_item_macro": 0,
+        "rows_full_cold": 256,
+        "rows_full_hot": 0
+      }
+    },
+    {
+      "epoch": 2,
+      "loss": 8.512953400611877,
+      "rs_loss": 6.515485525131226,
+      "kg_loss": 1.9974679127335548,
+      "validation_metric": "full_cold_item_macro.N@10",
+      "validation_score": 0.0,
+      "improved": false,
+      "validation": {
+        "full_cold_item_macro": {
+          "R@5": 0.0,
+          "R@10": 0.0,
+          "R@20": 0.0,
+          "N@5": 0.0,
+          "N@10": 0.0,
+          "N@20": 0.0
+        },
+        "full_hot_item_macro": {},
+        "count_full_cold_item_macro": 26,
+        "count_full_hot_item_macro": 0,
+        "rows_full_cold": 256,
+        "rows_full_hot": 0
+      }
+    }
+  ],
+  "validation": {
+    "full_cold_item_macro": {
+      "R@5": 0.0,
+      "R@10": 0.0,
+      "R@20": 0.0,
+      "N@5": 0.0,
+      "N@10": 0.0,
+      "N@20": 0.0
+    },
+    "full_hot_item_macro": {},
+    "count_full_cold_item_macro": 26,
+    "count_full_hot_item_macro": 0,
+    "rows_full_cold": 256,
+    "rows_full_hot": 0
+  },
+  "test": {
+    "full_cold_item_macro": {
+      "R@5": 0.0,
+      "R@10": 0.0,
+      "R@20": 0.023809523809523808,
+      "N@5": 0.0,
+      "N@10": 0.0,
+      "N@20": 0.006039286632802614
+    },
+    "full_hot_item_macro": {},
+    "count_full_cold_item_macro": 42,
+    "count_full_hot_item_macro": 0,
+    "rows_full_cold": 256,
+    "rows_full_hot": 0
+  },
+  "notes": [
+    "This adapter bypasses PCGNN's stock sequential dataloader because it drops strict item-cold validation/test batches.",
+    "Training jointly optimizes PCGNN recommendation loss and KG margin-ranking loss; the external evaluator still uses strict full-catalog item-macro metrics.",
+    "Scores are produced by PCGNN full_sort_predict, then train-history items and padding token 0 are masked while the target score is restored.",
+    "Reported metrics are full-catalog item-macro Recall/NDCG under the existing strict split. Runs with capped examples are adaptation/smoke results, not final paper numbers."
+  ]
+}

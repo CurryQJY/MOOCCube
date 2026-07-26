@@ -424,7 +424,7 @@ def collate_fn(batch):
 # ================= 7. 主训练循环 =================
 
 def main():
-    DATA_DIR = "processed_data_hin"
+    DATA_DIR = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     print(f"Loading Data for Pure RL-USIM (No LLM) from {DATA_DIR}...")
     if not os.path.exists(f"{DATA_DIR}/stream_data.pkl"):
         print("错误: 请先运行 data_process_hin.py")

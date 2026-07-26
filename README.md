@@ -1,6 +1,6 @@
 # MOOCCube MOOC Recommendation
 
-本项目面向 MOOCCube / MOOCCubeX 在线课程数据，构建了一个用于 MOOC 个性化课程推荐与冷启动优化的实验系统。项目重点解决用户行为稀疏、冷启动用户难推荐、热门课程偏置，以及传统推荐模型难以利用课程概念、教师、学校、先修关系等知识结构的问题。
+本项目面向 MOOCCube / MOOCCubeX 在线课程数据，构建了一个用于 MOOC 个性化课程推荐与课程冷启动优化的实验系统。项目核心目标是解决训练阶段几乎没有交互记录的新课程推荐问题，并验证课程概念、先修关系、难度和内容冗余等知识结构能否提升严格课程冷启动场景下的排序效果。
 
 仓库保留了完整的科研实验迭代过程，因此根目录中包含多轮模型版本、基线脚本、日志、结果表和消融实验文件。为了便于评审或复现，建议优先查看本 README 中标出的最终入口和结果文件。
 
@@ -12,23 +12,23 @@
 - 异构信息增强：融合课程、教师、学校、概念、用户交互和课程关系等多源信息。
 - LLM 语义反馈：引入 LLM 评分作为课程语义适配信号，辅助冷启动推荐。
 - 学习路径约束：将先修关系、概念覆盖、难度适配和冗余惩罚转化为奖励函数或重排序策略。
-- 冷/热用户分组评估：分别衡量冷启动用户和行为充分用户上的推荐效果。
+- 冷启动主评估：以 strict item-cold、full-ranking、item-macro 为主口径，热启动指标作为不严重退化的辅助参考。
 
 本项目不采用多 Agent 协作，也不是通用大模型长链推理系统。项目中的“推理”主要体现在将课程学习路径中的先修顺序、知识概念关联、课程难度和内容冗余，转化为可计算的推荐奖励与排序逻辑。
 
 ## 主要成果
 
-实验覆盖约 19.9 万用户和 698 门课程，课程内容向量维度为 768。课程侧消融实验中包含 3418 名冷启动用户和 67 万级热用户样本。
+实验覆盖约 19.9 万用户和 698 门课程，课程内容向量维度为 768。最终目标口径聚焦严格课程冷启动：测试集冷启动课程在训练集中无交互，主指标采用 full-ranking item-macro R@K / N@K，避免采样负例和热门课程交互数量对结论的影响。
 
 | 模块 | 主要效果 |
 | --- | --- |
-| Concept Reward | 冷启动 Sampled R@5 提升 5.51%，Full Cold R@20 提升 5.98% |
-| Prereq Reward | Full Hot R@5 提升 22.93%，Full Hot N@5 提升 23.57% |
-| Difficulty Reward | Full Hot R@5 提升 15.27%，Full Hot N@5 提升 14.72% |
-| Redundant Penalty | Full Hot R@20 提升 2.17%，对课程内容重复有抑制作用 |
-| All Course 组合 | 对冷启动整体指标有提升，但存在冷/热用户权衡 |
+| FAST3 cold-start main | 3 seeds 下 Cold item-macro R@10 / N@10 达到 0.2667 / 0.1962 |
+| Strong cold-start baseline | CGRC-paper Cold item-macro R@10 / N@10 为 0.2589 / 0.1845 |
+| Concept / course reward | 主要用于提升新课程语义匹配和学习路径合理性 |
+| Prereq / difficulty / redundancy | 作为课程结构约束，解释冷启动推荐中的可学习先修顺序、难度适配和内容重复抑制 |
+| Hot metrics | 作为辅助稳定性检查，不作为本项目主胜负口径 |
 
-主要结论是：课程概念奖励更适合提升冷启动用户推荐效果，先修关系奖励对热用户的学习路径排序收益最明显，说明知识结构增强推荐在 MOOC 场景中具有实际价值。
+主要结论是：FAST3 在严格课程冷启动 full-ranking item-macro 协议下优于现有强冷启动基线；课程知识结构增强推荐在 MOOC 新课程推荐场景中具有实际价值。热启动指标用于说明模型没有只靠牺牲已知课程排序来换取冷启动提升。
 
 ## 推荐阅读顺序
 
@@ -37,17 +37,19 @@
 1. `README.md`：项目总览、核心成果和运行入口。
 2. `docs/PROJECT_STRUCTURE.md`：仓库结构说明，解释根目录中各类脚本的用途。
 3. `docs/SUBMISSION_EVIDENCE.md`：评审材料和截图上传建议。
-4. `outputs/usim_feedback_fast3_course_ablation/ablation_report.md`：课程侧消融实验报告。
-5. `mooc_metrics_usim_feedback_fast3_summary.csv`：FAST3 主实验冷/热用户指标汇总。
-6. `mooc_result_usim_feedback_fast3.png`：主实验可视化结果图。
+4. `outputs/content_delta_pop5/course_ablation_e60_3seed/full/fast3_static_multiseed_summary.csv`：FAST3 严格课程冷启动三种子主结果。
+5. `outputs/content_delta_pop5/static_item_cold_balanced/main_table_item_macro_final_audit_with_dropoutnet_official_teacher80_student120_cgrc_paper/main_table_item_macro_summary.csv`：主要基线与 SOTA 的 item-macro 对比表。
+6. `outputs/usim_feedback_fast3_course_ablation/ablation_report.md`：课程侧奖励消融实验报告。
 
 ## 核心文件
 
 | 文件 | 作用 |
 | --- | --- |
 | `data_process_hin.py` | 基于 MOOCCubeX 构建课程异构信息网络和训练数据 |
-| `usim_feedback_fast3.py` | USIM-Feedback FAST3 主实验模型 |
-| `usim_feedback_fast3_standalone.py` | 最终独立版实验入口，减少对旧版本脚本的依赖 |
+| `usim_feedback_fast3_content_delta.py` | 当前课程冷启动主实验入口，支持 strict item-cold 静态协议和 full-ranking item-macro 评估 |
+| `run_usim_feedback_fast3_content_delta_static.ps1` | FAST3 课程冷启动静态协议批量运行脚本 |
+| `usim_feedback_fast3.py` | USIM-Feedback FAST3 流式主实验版本 |
+| `usim_feedback_fast3_standalone.py` | 独立版实验入口，保留用于复核旧主线 |
 | `run_usim_feedback_fast3_course_ablation.ps1` | 课程侧奖励模块消融实验脚本 |
 | `run_usim_feedback_fast3_standalone_redundant_compare.ps1` | 独立版冗余惩罚对比实验脚本 |
 | `hin_data_common.py` | HIN 数据加载与通用处理逻辑 |
@@ -65,7 +67,13 @@
 .\py.bat data_process_hin.py
 ```
 
-运行 FAST3 课程侧消融实验：
+运行 FAST3 严格课程冷启动静态实验：
+
+```powershell
+.\run_usim_feedback_fast3_content_delta_static.ps1 -Protocol strict_item_cold_balanced -ColdThresholds 1 -Seeds 2025,2026,2027 -Epochs 60 -EarlyStopAverageMode item_macro
+```
+
+运行旧版 FAST3 课程侧消融实验：
 
 ```powershell
 .\run_usim_feedback_fast3_course_ablation.ps1
@@ -84,7 +92,9 @@ $env:USIM_DATA_DIR = "processed_data_hin_clean_pop5"
 
 | 文件 | 内容 |
 | --- | --- |
-| `mooc_metrics_usim_feedback_fast3_summary.csv` | FAST3 sampled / full-rank 指标汇总 |
+| `outputs/content_delta_pop5/course_ablation_e60_3seed/full/fast3_static_multiseed_summary.csv` | FAST3 严格课程冷启动三种子 full-ranking item-macro 主结果 |
+| `outputs/content_delta_pop5/static_item_cold_balanced/main_table_item_macro_final_audit_with_dropoutnet_official_teacher80_student120_cgrc_paper/main_table_item_macro_summary.csv` | FAST3 与主要 baseline / SOTA 的 item-macro 对比 |
+| `mooc_metrics_usim_feedback_fast3_summary.csv` | 旧版 FAST3 sampled / full-rank 指标汇总 |
 | `final_report_usim_feedback.csv` | USIM-Feedback 冷/热用户详细指标 |
 | `final_fullrank_usim_original_reconstructed_standalone.csv` | 原始 USIM 独立重构版全量排序结果 |
 | `drop_static_result.json` | DropoutNet 静态基线结果 |
@@ -95,5 +105,4 @@ $env:USIM_DATA_DIR = "processed_data_hin_clean_pop5"
 
 当前仓库刻意保留了多轮实验痕迹，包括 baseline、USIM 原始重构、FAST / FAST2 / FAST3、课程侧奖励、冗余惩罚、LLM 评分对齐等版本。这样便于回溯实验过程，但会让根目录看起来比较密集。
 
-对外展示时，核心版本以 `usim_feedback_fast3.py` 和 `usim_feedback_fast3_standalone.py` 为准；旧版本脚本主要用于对比、消融和结果复核。更详细的结构说明见 `docs/PROJECT_STRUCTURE.md`。
-
+对外展示时，课程冷启动主线以 `usim_feedback_fast3_content_delta.py` 和 `run_usim_feedback_fast3_content_delta_static.ps1` 为准；旧版 FAST3 脚本主要用于流式实验、对比、消融和结果复核。更详细的结构说明见 `docs/PROJECT_STRUCTURE.md`。

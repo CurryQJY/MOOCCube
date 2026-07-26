@@ -1,0 +1,4 @@
+0	course_concept
+1	course_school
+2	course_teacher
+3	course_video

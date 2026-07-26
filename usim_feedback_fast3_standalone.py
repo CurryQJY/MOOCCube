@@ -214,18 +214,12 @@ class BaseConfig:
         self.dropout_prob = 0.35
         self.aux_weight = 0.3
         self.train_force_cold = os.environ.get("USIM_TRAIN_FORCE_COLD", "1") == "1"
+        self.disable_llm_score = os.environ.get("USIM_DISABLE_LLM_SCORE", "0") == "1"
         self.llm_safe_mode = os.environ.get("USIM_LLM_SAFE_MODE", "0") == "1"
-        self.llm_weight = float(
-            os.environ.get("USIM_LLM_WEIGHT", "0.20" if self.llm_safe_mode else "1.0")
-        )
-        self.llm_cold_only = os.environ.get(
-            "USIM_LLM_COLD_ONLY",
-            "1" if self.llm_safe_mode else "0",
-        ) == "1"
-        self.llm_bank_mode = os.environ.get(
-            "USIM_LLM_BANK_MODE",
-            "none" if self.llm_safe_mode else "item",
-        ).strip().lower()
+        self.llm_weight = float(os.environ.get("USIM_LLM_WEIGHT", "1.0"))
+        self.llm_cold_only = os.environ.get("USIM_LLM_COLD_ONLY", "0") == "1"
+        self.llm_hot_only = os.environ.get("USIM_LLM_HOT_ONLY", "0") == "1"
+        self.llm_bank_mode = os.environ.get("USIM_LLM_BANK_MODE", "pair").strip().lower()
         self.ppo_clip = 0.2
         self.ppo_gamma = 0.90
         self.ppo_epochs = 5
@@ -479,23 +473,30 @@ class PAM_RL_Pure_USIM(nn.Module):
         if mask_id.any():
             id_e = torch.where(mask_id, torch.zeros_like(id_e), id_e)
         content_e = self.content_proj(self.item_con_emb(i_idx))
-        llm_weight = float(getattr(self.cfg, "llm_weight", 0.0))
-        if llm_weight > 0.0:
+        if not self.cfg.disable_llm_score and float(self.cfg.llm_weight) > 0.0:
             mask_llm = (llm_s > -0.5).float().unsqueeze(1)
-            if getattr(self.cfg, "llm_cold_only", False):
+            if self.cfg.llm_cold_only or self.cfg.llm_hot_only:
                 if isinstance(force_cold, torch.Tensor):
-                    cold_mask = force_cold.to(device=id_e.device)
-                    if cold_mask.dtype != torch.bool:
-                        cold_mask = cold_mask > 0
-                    cold_mask = cold_mask.float().view(-1, 1)
+                    cold_gate = force_cold.to(device=id_e.device)
+                    if cold_gate.dtype != torch.bool:
+                        cold_gate = cold_gate > 0
+                    cold_gate = cold_gate.float().view(-1, 1)
                 elif force_cold:
-                    cold_mask = torch.ones_like(mask_llm)
+                    cold_gate = torch.ones((batch_size, 1), dtype=torch.float, device=id_e.device)
                 else:
-                    cold_mask = torch.zeros_like(mask_llm)
-                mask_llm = mask_llm * cold_mask
+                    cold_gate = torch.zeros((batch_size, 1), dtype=torch.float, device=id_e.device)
+                if self.cfg.llm_hot_only:
+                    mask_llm = mask_llm * (1.0 - cold_gate)
+                else:
+                    mask_llm = mask_llm * cold_gate
+
             val_llm = torch.clamp(llm_s, min=0.0).unsqueeze(1)
-            llm_e = self.llm_proj(val_llm) * mask_llm
-            content_e = content_e + llm_weight * llm_e
+            if self.cfg.llm_safe_mode:
+                neutral_llm = torch.full_like(val_llm, 0.5)
+                llm_e = self.llm_proj(val_llm) - self.llm_proj(neutral_llm)
+            else:
+                llm_e = self.llm_proj(val_llm)
+            content_e = content_e + llm_e * mask_llm * float(self.cfg.llm_weight)
         alpha = self.gate_net(torch.cat([id_e, content_e], dim=-1))
         item_fused = alpha * id_e + (1 - alpha) * content_e
         return item_fused, id_e_true, content_e
@@ -525,9 +526,16 @@ class FeedbackConfig(BaseConfig):
         self.feedback_course_prereq_weight = float(os.environ.get("USIM_FB_COURSE_PREREQ_W", "0.08"))
         self.feedback_prereq_weighted_edges = os.environ.get("USIM_FB_PREREQ_WEIGHTED_EDGES", "0") == "1"
         self.feedback_prereq_soft_penalty = os.environ.get("USIM_FB_PREREQ_SOFT_PENALTY", "0") == "1"
+        self.feedback_prereq_decouple = os.environ.get("USIM_FB_PREREQ_DECOUPLE", "0") == "1"
+        self.feedback_prereq_seen_scale = os.environ.get("USIM_FB_PREREQ_SEEN_SCALE", "0") == "1"
+        self.feedback_prereq_seen_start = float(os.environ.get("USIM_FB_PREREQ_SEEN_START", "3"))
+        self.feedback_prereq_seen_full = float(os.environ.get("USIM_FB_PREREQ_SEEN_FULL", "10"))
         self.feedback_course_concept_weight = float(os.environ.get("USIM_FB_COURSE_CONCEPT_W", "0.04"))
         self.feedback_course_difficulty_weight = float(os.environ.get("USIM_FB_COURSE_DIFF_W", "0.03"))
         self.feedback_course_redundant_weight = float(os.environ.get("USIM_FB_COURSE_REDUNDANT_W", "0.02"))
+        self.feedback_course_redundant_concept_gate = float(
+            os.environ.get("USIM_FB_COURSE_REDUNDANT_CONCEPT_GATE", "1.0")
+        )
         self.feedback_course_sample_beta = float(os.environ.get("USIM_FB_COURSE_SAMPLE_BETA", "0.20"))
         self.feedback_course_sample_only_cold = os.environ.get("USIM_FB_COURSE_SAMPLE_ONLY_COLD", "1") == "1"
         self.feedback_course_sample_topk = int(os.environ.get("USIM_FB_COURSE_SAMPLE_TOPK", "32"))
@@ -936,6 +944,13 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
 
         return prereq_gap, prereq_safe
 
+    def _compute_prereq_seen_scale(self, seen_cnt_raw):
+        if not getattr(self.cfg, "feedback_prereq_seen_scale", False):
+            return torch.ones_like(seen_cnt_raw)
+        start = max(0.0, float(getattr(self.cfg, "feedback_prereq_seen_start", 3.0)))
+        full = max(start + 1e-6, float(getattr(self.cfg, "feedback_prereq_seen_full", 10.0)))
+        return ((seen_cnt_raw - start) / (full - start)).clamp(0.0, 1.0)
+
     def _compute_course_reward_terms(self, selected_user_ids, item_idx, target_pop=None, user_seen_items=None, cached_seen=None):
         batch_size = int(item_idx.size(0))
         zero = torch.zeros((batch_size, 1), dtype=torch.float32, device=self.device)
@@ -978,7 +993,8 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         user_readiness = (seen_cnt_raw / warm_seen).clamp(0.0, 1.0)
 
         prereq_gap, prereq_safe = self._compute_prereq_gap_and_safe(seen_mat, item_idx)
-        terms["prereq_gap"] = prereq_gap * active
+        prereq_seen_scale = self._compute_prereq_seen_scale(seen_cnt_raw)
+        terms["prereq_gap"] = prereq_gap * prereq_seen_scale * active
 
         redundant_mode = str(getattr(self.cfg, "feedback_course_redundant_mode", "concept")).strip().lower()
         if redundant_mode == "video_family":
@@ -996,7 +1012,10 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
                 redundant = terms["redundant"]
             else:
                 redundant = ((concept_match - redundant_thr) / max(1e-6, 1.0 - redundant_thr)).clamp(0.0, 1.0)
-            concept_bonus = concept_bonus * prereq_safe * seen_active * (1.0 - redundant)
+            redundant_gate = float(min(1.0, max(0.0, self.cfg.feedback_course_redundant_concept_gate)))
+            if not getattr(self.cfg, "feedback_prereq_decouple", False):
+                concept_bonus = concept_bonus * prereq_safe
+            concept_bonus = concept_bonus * seen_active * (1.0 - redundant_gate * redundant)
             terms["concept_bonus"] = concept_bonus * active
             if redundant_mode != "video_family":
                 terms["redundant"] = redundant * seen_active * active
@@ -1034,6 +1053,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         warm_seen = max(1.0, float(self.cfg.feedback_course_warm_seen))
         user_readiness = (seen_cnt_raw / warm_seen).clamp(0.0, 1.0)
         prereq_gap, prereq_safe = self._compute_prereq_gap_and_safe(seen_mat, flat_item_idx)
+        prereq_seen_scale = self._compute_prereq_seen_scale(seen_cnt_raw)
 
         concept_bonus = torch.zeros_like(fit)
         redundant = torch.zeros_like(fit)
@@ -1051,7 +1071,10 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             concept_bonus = ((concept_match - concept_min) / concept_band).clamp(0.0, 1.0)
             if redundant_mode != "video_family":
                 redundant = ((concept_match - redundant_thr) / max(1e-6, 1.0 - redundant_thr)).clamp(0.0, 1.0)
-            concept_bonus = concept_bonus * prereq_safe * seen_active * (1.0 - redundant)
+            redundant_gate = float(min(1.0, max(0.0, self.cfg.feedback_course_redundant_concept_gate)))
+            if not getattr(self.cfg, "feedback_prereq_decouple", False):
+                concept_bonus = concept_bonus * prereq_safe
+            concept_bonus = concept_bonus * seen_active * (1.0 - redundant_gate * redundant)
 
         difficulty_gap = torch.zeros_like(fit)
         if self.item_difficulty is not None:
@@ -1060,7 +1083,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
 
         fit = (
             float(self.cfg.feedback_course_concept_weight) * concept_bonus
-            - float(self.cfg.feedback_course_prereq_weight) * prereq_gap
+            - float(self.cfg.feedback_course_prereq_weight) * prereq_gap * prereq_seen_scale
             - float(self.cfg.feedback_course_difficulty_weight) * difficulty_gap
             - float(self.cfg.feedback_course_redundant_weight) * redundant
         ) * active.repeat_interleave(n_cand, dim=0)
@@ -2117,19 +2140,111 @@ def build_course_artifacts(
     return artifacts, stats
 
 
-def _lookup_llm_score(llm_scores, item_idx, user_idx=None, allow_pair=True, allow_item=True):
+def _lookup_llm_score(llm_scores, item_idx, user_idx=None):
     if llm_scores is None:
         return -1.0
     item_idx = int(item_idx)
-    if allow_pair and user_idx is not None:
+    if user_idx is not None:
         pair_score = llm_scores.get((int(user_idx), item_idx))
         if pair_score is not None:
             return float(pair_score)
-    if allow_item:
-        item_score = llm_scores.get(item_idx)
-        if item_score is not None:
-            return float(item_score)
+    item_score = llm_scores.get(item_idx)
+    if item_score is not None:
+        return float(item_score)
     return -1.0
+
+
+def _is_pair_llm_key(key):
+    return isinstance(key, tuple) and len(key) == 2
+
+
+def _is_item_llm_key(key):
+    return isinstance(key, (int, np.integer))
+
+
+def _count_llm_key_types(llm_scores):
+    if not llm_scores:
+        return 0, 0
+    pair_count = 0
+    item_count = 0
+    for key in llm_scores:
+        if _is_pair_llm_key(key):
+            pair_count += 1
+        elif _is_item_llm_key(key):
+            item_count += 1
+    return pair_count, item_count
+
+
+def _item_mean_llm_scores(llm_scores, keep_pair=False):
+    item_scores = {}
+    pair_sums = defaultdict(float)
+    pair_counts = defaultdict(int)
+    if not llm_scores:
+        return item_scores
+
+    for key, value in llm_scores.items():
+        try:
+            score = float(value)
+        except (TypeError, ValueError):
+            continue
+
+        if _is_pair_llm_key(key):
+            item_idx = int(key[1])
+            pair_sums[item_idx] += score
+            pair_counts[item_idx] += 1
+            if keep_pair:
+                item_scores[(int(key[0]), item_idx)] = score
+        elif _is_item_llm_key(key):
+            item_scores[int(key)] = score
+
+    for item_idx, total in pair_sums.items():
+        if item_idx not in item_scores and pair_counts[item_idx] > 0:
+            item_scores[item_idx] = total / pair_counts[item_idx]
+    return item_scores
+
+
+def prepare_llm_scores(llm_scores, cfg):
+    raw_pair, raw_item = _count_llm_key_types(llm_scores)
+    raw_total = len(llm_scores) if llm_scores else 0
+    mode = str(getattr(cfg, "llm_bank_mode", "pair") or "pair").strip().lower()
+    if mode in {"off", "disable", "disabled"}:
+        mode = "none"
+    elif mode in {"item", "item_avg", "item_mean", "mean_item"}:
+        mode = "item_mean"
+    elif mode in {"hybrid", "pair_item", "pair_item_mean"}:
+        mode = "hybrid_mean"
+
+    if getattr(cfg, "disable_llm_score", False) or mode == "none" or float(getattr(cfg, "llm_weight", 1.0)) <= 0.0:
+        effective_scores = {}
+        effective_mode = "none"
+    elif mode == "item_mean":
+        effective_scores = _item_mean_llm_scores(llm_scores, keep_pair=False)
+        effective_mode = "item_mean"
+    elif mode == "hybrid_mean":
+        effective_scores = _item_mean_llm_scores(llm_scores, keep_pair=True)
+        effective_mode = "hybrid_mean"
+    elif mode == "item_only":
+        effective_scores = {
+            int(key): float(value)
+            for key, value in (llm_scores or {}).items()
+            if _is_item_llm_key(key)
+        }
+        effective_mode = "item_only"
+    else:
+        effective_scores = llm_scores or {}
+        effective_mode = "pair"
+
+    eff_pair, eff_item = _count_llm_key_types(effective_scores)
+    summary = {
+        "mode": effective_mode,
+        "raw_total": raw_total,
+        "raw_pair": raw_pair,
+        "raw_item": raw_item,
+        "effective_total": len(effective_scores),
+        "effective_pair": eff_pair,
+        "effective_item": eff_item,
+    }
+    return effective_scores, summary
 
 
 def _build_llm_score_tensor(llm_scores, user_ids, item_ids, device=None):
@@ -2140,15 +2255,11 @@ def _build_llm_score_tensor(llm_scores, user_ids, item_ids, device=None):
 def build_all_item_vecs(model, device, llm_scores, item_batch=1024, force_cold=True):
     n_items = model.cfg.n_items
     all_item_idx = torch.arange(n_items, device=device)
-    bank_mode = getattr(model.cfg, "llm_bank_mode", "none")
-    if bank_mode == "item":
-        all_llm_s = torch.tensor(
-            [_lookup_llm_score(llm_scores, int(idx), allow_pair=False, allow_item=True) for idx in all_item_idx],
-            dtype=torch.float,
-            device=device,
-        )
-    else:
-        all_llm_s = torch.full((n_items,), -1.0, dtype=torch.float, device=device)
+    all_llm_s = torch.tensor(
+        [_lookup_llm_score(llm_scores, int(idx)) for idx in all_item_idx],
+        dtype=torch.float,
+        device=device,
+    )
     all_item_vecs = []
     with torch.no_grad():
         for start in range(0, n_items, item_batch):
@@ -2329,7 +2440,7 @@ def _clone_user_seen(user_seen_items):
 
 
 def main():
-    data_dir = "processed_data_hin"
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     print(f"Loading Data for Feedback-Aware USIM (FAST3 Standalone) from {data_dir}...")
     if not os.path.exists(f"{data_dir}/stream_data.pkl"):
         print("Error: please run data_process_hin.py first")
@@ -2351,6 +2462,19 @@ def main():
         print(f"   LLM scores loaded from {llm_score_path}")
 
     cfg = Fast3Config(meta["n_users"], meta["n_items"], content_emb.shape[1])
+    llm_scores, llm_summary = prepare_llm_scores(llm_scores, cfg)
+    print(
+        ">> LLMScore: "
+        f"mode={llm_summary['mode']} | "
+        f"weight={cfg.llm_weight:.2f} | "
+        f"safe={cfg.llm_safe_mode} | "
+        f"cold_only={cfg.llm_cold_only} | "
+        f"hot_only={cfg.llm_hot_only} | "
+        f"raw={llm_summary['raw_total']} "
+        f"(pair={llm_summary['raw_pair']}, item={llm_summary['raw_item']}) | "
+        f"effective={llm_summary['effective_total']} "
+        f"(pair={llm_summary['effective_pair']}, item={llm_summary['effective_item']})"
+    )
     device = _resolve_torch_device()
     if cfg.feedback_load_course_artifacts:
         course_artifacts, course_stats = build_course_artifacts(
@@ -2396,10 +2520,6 @@ def main():
         f"BankRefresh={cfg.user_bank_refresh_steps}"
     )
     print(
-        f">> LLM Injection: safe_mode={cfg.llm_safe_mode} | weight={cfg.llm_weight:.2f} | "
-        f"cold_only={cfg.llm_cold_only} | bank_mode={cfg.llm_bank_mode}"
-    )
-    print(
         f">> Course Soft Rerank: enabled={cfg.feedback_course_sample_soft} | "
         f"beta={cfg.feedback_course_sample_beta:.2f} | topL={cfg.feedback_course_sample_top_l}"
     )
@@ -2407,7 +2527,8 @@ def main():
         f">> Course Feedback: redundant_mode={cfg.feedback_course_redundant_mode} | "
         f"video_min={cfg.feedback_course_struct_video_min:.2f} | "
         f"concept_min={cfg.feedback_course_concept_min:.2f} | "
-        f"redundant_thr={cfg.feedback_course_redundant_thr:.2f}"
+        f"redundant_thr={cfg.feedback_course_redundant_thr:.2f} | "
+        f"redundant_concept_gate={cfg.feedback_course_redundant_concept_gate:.2f}"
     )
     print(
         f">> Course Artifacts: enabled={cfg.feedback_load_course_artifacts} | "
@@ -2418,6 +2539,9 @@ def main():
     print(
         f">> Prereq Penalty: weighted_edges={cfg.feedback_prereq_weighted_edges} | "
         f"soft_penalty={cfg.feedback_prereq_soft_penalty} | "
+        f"decouple={cfg.feedback_prereq_decouple} | "
+        f"seen_scale={cfg.feedback_prereq_seen_scale} "
+        f"[{cfg.feedback_prereq_seen_start:.1f}->{cfg.feedback_prereq_seen_full:.1f}] | "
         f"gate={cfg.feedback_course_prereq_gate:.2f} | "
         f"w={cfg.feedback_course_prereq_weight:.3f}"
     )

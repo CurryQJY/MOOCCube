@@ -1,0 +1,125 @@
+{
+  "model": "PCGNN (adapted)",
+  "dataset": "junyi",
+  "protocol": "strict_item_cold_full_catalog_item_macro",
+  "seeds": [
+    2025,
+    2026,
+    2027
+  ],
+  "reports": [
+    "paper_aaai27\\baseline_sources\\_pcgnn_strict\\junyi_seed2025_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+    "paper_aaai27\\baseline_sources\\_pcgnn_strict\\junyi_seed2026_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+    "paper_aaai27\\baseline_sources\\_pcgnn_strict\\junyi_seed2027_full_formal_kg_warm\\pcgnn_strict_adapter_report.json"
+  ],
+  "n": 3,
+  "metrics": {
+    "R@5": {
+      "mean": 0.045343614639528934,
+      "std": 0.006569946322290813,
+      "values": [
+        0.04039911032071352,
+        0.05279864739401549,
+        0.04283308620385778
+      ]
+    },
+    "R@10": {
+      "mean": 0.08972827730918416,
+      "std": 0.011937638619431166,
+      "values": [
+        0.08790424170875298,
+        0.10247295695720071,
+        0.07880763326159881
+      ]
+    },
+    "R@20": {
+      "mean": 0.1588709125422972,
+      "std": 0.013573982289563183,
+      "values": [
+        0.15691456805687934,
+        0.1733169180327174,
+        0.14638125153729492
+      ]
+    },
+    "N@5": {
+      "mean": 0.02605698028234901,
+      "std": 0.0036061182184481387,
+      "values": [
+        0.023163722390013325,
+        0.030097039906547697,
+        0.024910178550486002
+      ]
+    },
+    "N@10": {
+      "mean": 0.04024327522349275,
+      "std": 0.005067242808885214,
+      "values": [
+        0.03834302024784767,
+        0.04598597226791548,
+        0.03640083315471509
+      ]
+    },
+    "N@20": {
+      "mean": 0.05754132874148935,
+      "std": 0.005516832289479018,
+      "values": [
+        0.05554557407757177,
+        0.06377830532821768,
+        0.05330010681867861
+      ]
+    }
+  },
+  "per_seed": [
+    {
+      "dataset": "junyi",
+      "seed": 2025,
+      "report_path": "paper_aaai27\\baseline_sources\\_pcgnn_strict\\junyi_seed2025_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+      "best_epoch": 16,
+      "stopped_early": false,
+      "train_batch_size": 32,
+      "eval_batch_size": 64,
+      "device": "cuda",
+      "session_graph_backend": "torch_batch_scatter",
+      "R@5": 0.04039911032071352,
+      "R@10": 0.08790424170875298,
+      "R@20": 0.15691456805687934,
+      "N@5": 0.023163722390013325,
+      "N@10": 0.03834302024784767,
+      "N@20": 0.05554557407757177
+    },
+    {
+      "dataset": "junyi",
+      "seed": 2026,
+      "report_path": "paper_aaai27\\baseline_sources\\_pcgnn_strict\\junyi_seed2026_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+      "best_epoch": 9,
+      "stopped_early": true,
+      "train_batch_size": 32,
+      "eval_batch_size": 64,
+      "device": "cuda",
+      "session_graph_backend": "torch_batch_scatter",
+      "R@5": 0.05279864739401549,
+      "R@10": 0.10247295695720071,
+      "R@20": 0.1733169180327174,
+      "N@5": 0.030097039906547697,
+      "N@10": 0.04598597226791548,
+      "N@20": 0.06377830532821768
+    },
+    {
+      "dataset": "junyi",
+      "seed": 2027,
+      "report_path": "paper_aaai27\\baseline_sources\\_pcgnn_strict\\junyi_seed2027_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+      "best_epoch": 7,
+      "stopped_early": true,
+      "train_batch_size": 32,
+      "eval_batch_size": 64,
+      "device": "cuda",
+      "session_graph_backend": "torch_batch_scatter",
+      "R@5": 0.04283308620385778,
+      "R@10": 0.07880763326159881,
+      "R@20": 0.14638125153729492,
+      "N@5": 0.024910178550486002,
+      "N@10": 0.03640083315471509,
+      "N@20": 0.05330010681867861
+    }
+  ]
+}

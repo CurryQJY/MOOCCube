@@ -1,0 +1,107 @@
+{
+"result":{
+"query":"intelligent* tutoring* recommendation*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"34.33"
+},
+"completions":{
+"@total":"2",
+"@computed":"2",
+"@sent":"2",
+"c":[
+{
+"@sc":"8",
+"@dc":"8",
+"@oc":"8",
+"@id":"70633655",
+"text":"recommendations"
+},
+{
+"@sc":"3",
+"@dc":"3",
+"@oc":"3",
+"@id":"70633652",
+"text":"recommendation"
+}
+]
+},
+"hits":{
+"@total":"11",
+"@computed":"11",
+"@sent":"11",
+"@first":"0",
+"hit":[{
+"@score":"3",
+"@id":"161412",
+"info":{"authors":{"author":[{"@pid":"116/6681","text":"Mounira Chkiwa"},{"@pid":"362/1902","text":"Moez Chkiwa"}]},"title":"A Fuzzy Intelligent Adaptive Tutoring System with Explainable Recommendations: Case of Math Learning for Elementary Students.","venue":"ICAART","pages":"4412-4419","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/icaart/ChkiwaC26","doi":"10.5220/0014430300004052","ee":"https://doi.org/10.5220/0014430300004052","url":"https://dblp.org/rec/conf/icaart/ChkiwaC26"},
+"url":"URL#161412"
+},
+{
+"@score":"3",
+"@id":"1267288",
+"info":{"authors":{"author":[{"@pid":"377/7999","text":"April Clarke"},{"@pid":"m/AntonijaMitrovic","text":"Antonija Mitrovic"}]},"title":"Explaining Problem Recommendations in an Intelligent Tutoring System.","venue":"ITS","pages":"291-299","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/its/ClarkeM24","doi":"10.1007/978-3-031-63028-6_23","ee":"https://doi.org/10.1007/978-3-031-63028-6_23","url":"https://dblp.org/rec/conf/its/ClarkeM24"},
+"url":"URL#1267288"
+},
+{
+"@score":"3",
+"@id":"1286935",
+"info":{"authors":{"author":[{"@pid":"377/8085","text":"Georgy Smirnov"},{"@pid":"146/6548","text":"Viktor A. Uglev"}]},"title":"Experimental Results of Using Cognitive Maps of Knowledge Diagnosis in Different Modes to Explain the Recommendations of Intelligent Tutoring Systems.","venue":"NiDS","pages":"639-650","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/nids/SmirnovU24","doi":"10.1007/978-3-031-73344-4_56","ee":"https://doi.org/10.1007/978-3-031-73344-4_56","url":"https://dblp.org/rec/conf/nids/SmirnovU24"},
+"url":"URL#1286935"
+},
+{
+"@score":"3",
+"@id":"1738953",
+"info":{"authors":{"author":[{"@pid":"248/2578","text":"Gianluca Romano"},{"@pid":"37/7059-1","text":"Jan Schneider 0001"}]},"title":"Leveraging Feedback Through Personalized Recommendations within Intelligent Tutoring Systems for Psychomotor Skill Development.","venue":"MILeS@EC-TEL","pages":"19-27","year":"2023","type":"Conference and Workshop Papers","access":"open","key":"conf/ectel/Romano023","ee":"https://ceur-ws.org/Vol-3499/paper3.pdf","url":"https://dblp.org/rec/conf/ectel/Romano023"},
+"url":"URL#1738953"
+},
+{
+"@score":"3",
+"@id":"2253517",
+"info":{"authors":{"author":[{"@pid":"168/1695","text":"Rodrigo Elias Francisco"},{"@pid":"02/979","text":"Flávio de Oliveira Silva 0001"}]},"title":"A Recommendation Module based on Reinforcement Learning to an Intelligent Tutoring System for Software Maintenance.","venue":"CSEDU","pages":"322-329","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/csedu/FranciscoS22","doi":"10.5220/0011083900003182","ee":"https://doi.org/10.5220/0011083900003182","url":"https://dblp.org/rec/conf/csedu/FranciscoS22"},
+"url":"URL#2253517"
+},
+{
+"@score":"3",
+"@id":"3160811",
+"info":{"authors":{"author":[{"@pid":"47/6696","text":"Wesley Silva"},{"@pid":"246/2228","text":"Marcos Spalenza"},{"@pid":"96/850","text":"Jean-Rémi Bourguet"},{"@pid":"09/5072","text":"Elias de Oliveira"}]},"title":"Recommendation Filtering à la carte for Intelligent Tutoring Systems.","venue":"BIAS","pages":"58-65","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/bias/SilvaSBO20","doi":"10.1007/978-3-030-52485-2_6","ee":"https://doi.org/10.1007/978-3-030-52485-2_6","url":"https://dblp.org/rec/conf/bias/SilvaSBO20"},
+"url":"URL#3160811"
+},
+{
+"@score":"3",
+"@id":"5034306",
+"info":{"authors":{"author":{"@pid":"132/4098","text":"Anne M. Sinatra"}},"title":"A Personalized GIFT: Recommendations for Authoring Personalization in the Generalized Intelligent Framework for Tutoring.","venue":"HCI","pages":"675-682","year":"2015","type":"Conference and Workshop Papers","access":"closed","key":"conf/hci/Sinatra15","doi":"10.1007/978-3-319-20816-9_64","ee":"https://doi.org/10.1007/978-3-319-20816-9_64","url":"https://dblp.org/rec/conf/hci/Sinatra15"},
+"url":"URL#5034306"
+},
+{
+"@score":"3",
+"@id":"5381171",
+"info":{"authors":{"author":[{"@pid":"145/7842","text":"Ranilson Oscar Araújo Paiva"},{"@pid":"11/2860","text":"Ig Ibert Bittencourt Santa Pinto"},{"@pid":"39/95","text":"Alan Pedro da Silva"},{"@pid":"83/1033","text":"Seiji Isotani"},{"@pid":"j/PatriciaAugustinJaques","text":"Patrícia Augustin Jaques"}]},"title":"A Systematic Approach for Providing Personalized Pedagogical Recommendations Based on Educational Data Mining.","venue":"Intelligent Tutoring Systems","pages":"362-367","year":"2014","type":"Conference and Workshop Papers","access":"closed","key":"conf/its/PaivaPSIJ14","doi":"10.1007/978-3-319-07221-0_45","ee":"https://doi.org/10.1007/978-3-319-07221-0_45","url":"https://dblp.org/rec/conf/its/PaivaPSIJ14"},
+"url":"URL#5381171"
+},
+{
+"@score":"3",
+"@id":"5391099",
+"info":{"authors":{"author":[{"@pid":"82/10229","text":"Igor Jugo"},{"@pid":"33/8240","text":"Bozidar Kovacic"},{"@pid":"130/3447","text":"Vanja Slavuj"}]},"title":"Using data mining for learning path recommendation and visualization in an intelligent tutoring system.","venue":"MIPRO","pages":"924-928","year":"2014","type":"Conference and Workshop Papers","access":"closed","key":"conf/mipro/JugoKS14","doi":"10.1109/MIPRO.2014.6859700","ee":"https://doi.org/10.1109/MIPRO.2014.6859700","url":"https://dblp.org/rec/conf/mipro/JugoKS14"},
+"url":"URL#5391099"
+},
+{
+"@score":"3",
+"@id":"5570467",
+"info":{"authors":{"author":[{"@pid":"74/6478","text":"Vasile Rus"},{"@pid":"16/7210","text":"Nobal B. Niraula"},{"@pid":"33/4640","text":"Mihai C. Lintean"},{"@pid":"127/1484","text":"Rajendra Banjade"},{"@pid":"s/DanStefanescu","text":"Dan Stefanescu"},{"@pid":"30/6969","text":"William Baggett"}]},"title":"Recommendations for the Generalized Intelligent Framework for Tutoring Based on the Development of the Deep Tutor Service.","venue":"AIED Workshops","year":"2013","type":"Conference and Workshop Papers","access":"open","key":"conf/aied/RusNLBSB13","ee":"https://ceur-ws.org/Vol-1009/0714.pdf","url":"https://dblp.org/rec/conf/aied/RusNLBSB13"},
+"url":"URL#5570467"
+},
+{
+"@score":"3",
+"@id":"7955927",
+"info":{"authors":{"author":{"@pid":"35/12","text":"Susan Bull"}},"title":"Individualized Recommendations for Learning Strategy Use.","venue":"Intelligent Tutoring Systems","pages":"594-603","year":"2000","type":"Conference and Workshop Papers","access":"closed","key":"conf/its/Bull00","doi":"10.1007/3-540-45108-0_63","ee":"https://doi.org/10.1007/3-540-45108-0_63","url":"https://dblp.org/rec/conf/its/Bull00"},
+"url":"URL#7955927"
+}
+]
+}
+}
+}

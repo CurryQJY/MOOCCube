@@ -238,10 +238,12 @@ class HINDataProcessor:
         try:
             tokenizer = AutoTokenizer.from_pretrained("bert-base-chinese")
             model = AutoModel.from_pretrained("bert-base-chinese")
+            self.embedding_model_used = "bert-base-chinese"
         except Exception:
             print("   Falling back to bert-base-uncased...")
             tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
             model = AutoModel.from_pretrained("bert-base-uncased")
+            self.embedding_model_used = "bert-base-uncased"
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = model.to(device)
@@ -337,6 +339,9 @@ class HINDataProcessor:
             "n_users": int(n_users),
             "n_items": int(n_items),
             "content_dim": int(content_emb.shape[1]),
+            "embedding_backend": "bert_cls",
+            "embedding_model": getattr(self, "embedding_model_used", "unknown"),
+            "embedding_max_length": 256,
         }
         with open(os.path.join(self.output_dir, "meta.json"), "w", encoding="utf-8") as f:
             json.dump(meta, f)

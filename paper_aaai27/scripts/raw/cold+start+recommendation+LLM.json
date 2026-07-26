@@ -1,0 +1,138 @@
+{
+"result":{
+"query":"cold* start* recommendation* LLM*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"25.08"
+},
+"completions":{
+"@total":"3",
+"@computed":"3",
+"@sent":"3",
+"c":[
+{
+"@sc":"13",
+"@dc":"11",
+"@oc":"13",
+"@id":"70192582",
+"text":"llm"
+},
+{
+"@sc":"3",
+"@dc":"3",
+"@oc":"3",
+"@id":"70192936",
+"text":"llms"
+},
+{
+"@sc":"1",
+"@dc":"1",
+"@oc":"1",
+"@id":"70193005",
+"text":"llmtreerec"
+}
+]
+},
+"hits":{
+"@total":"15",
+"@computed":"15",
+"@sent":"15",
+"@first":"0",
+"hit":[{
+"@score":"5",
+"@id":"575591",
+"info":{"authors":{"author":[{"@pid":"282/7319","text":"Keigo Sakurai"},{"@pid":"187/0069","text":"Ren Togo"},{"@pid":"45/6528","text":"Takahiro Ogawa 0001"},{"@pid":"29/5984","text":"Miki Haseyama"}]},"title":"LLM is Knowledge Graph Reasoner: LLM&apos;s Intuition-Aware Knowledge Graph Reasoning for Cold-Start Sequential Recommendation.","venue":"ECIR","pages":"263-278","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/ecir/SakuraiTOH25","doi":"10.1007/978-3-031-88711-6_17","ee":"https://doi.org/10.1007/978-3-031-88711-6_17","url":"https://dblp.org/rec/conf/ecir/SakuraiTOH25"},
+"url":"URL#575591"
+},
+{
+"@score":"5",
+"@id":"1459423",
+"info":{"authors":{"author":[{"@pid":"282/7319","text":"Keigo Sakurai"},{"@pid":"187/0069","text":"Ren Togo"},{"@pid":"45/6528","text":"Takahiro Ogawa 0001"},{"@pid":"29/5984","text":"Miki Haseyama"}]},"title":"LLM is Knowledge Graph Reasoner: LLM&apos;s Intuition-aware Knowledge Graph Reasoning for Cold-start Sequential Recommendation.","venue":"CoRR","volume":"abs/2412.12464","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2412-12464","doi":"10.48550/ARXIV.2412.12464","ee":"https://doi.org/10.48550/arXiv.2412.12464","url":"https://dblp.org/rec/journals/corr/abs-2412-12464"},
+"url":"URL#1459423"
+},
+{
+"@score":"4",
+"@id":"44269",
+"info":{"authors":{"author":[{"@pid":"427/7154","text":"Nilufar Khodzhaeva"},{"@pid":"310/7911","text":"Sunghyun Ryu"},{"@pid":"198/3324","text":"Donghyeon Park"}]},"title":"Cold-Start recipe recommendation via template-based language inference with LLM-generated summaries.","venue":"Expert Syst. Appl.","volume":"309","pages":"131184","year":"2026","type":"Journal Articles","access":"closed","key":"journals/eswa/KhodzhaevaRP26","doi":"10.1016/J.ESWA.2026.131184","ee":"https://doi.org/10.1016/j.eswa.2026.131184","url":"https://dblp.org/rec/journals/eswa/KhodzhaevaRP26"},
+"url":"URL#44269"
+},
+{
+"@score":"4",
+"@id":"156211",
+"info":{"authors":{"author":[{"@pid":"416/8001","text":"Natalija Glisovic"},{"@pid":"223/5570","text":"Martin Tegner"},{"@pid":"82/1211","text":"Danica Kragic"}]},"title":"Data Augmentation with LLMs for Cold Start Recommendation in E-Commerce.","venue":"ECIR","pages":"94-99","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/ecir/GlisovicTK26","doi":"10.1007/978-3-032-21321-1_13","ee":"https://doi.org/10.1007/978-3-032-21321-1_13","url":"https://dblp.org/rec/conf/ecir/GlisovicTK26"},
+"url":"URL#156211"
+},
+{
+"@score":"4",
+"@id":"184391",
+"info":{"authors":{"author":[{"@pid":"15/4924-2","text":"Shijun Li 0002"},{"@pid":"02/5889-158","text":"Yu Wang 0158"},{"@pid":"92/1375","text":"Jin Wang"},{"@pid":"22/1805-124","text":"Ying Li 0124"},{"@pid":"51/2272","text":"Joydeep Ghosh"},{"@pid":"185/5562","text":"Anne Cocos"}]},"title":"LLM Reasoning for Cold-Start Item Recommendation.","venue":"WWW","pages":"8409-8412","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/LiWWLGC26","doi":"10.1145/3774904.3792872","ee":"https://doi.org/10.1145/3774904.3792872","url":"https://dblp.org/rec/conf/www/LiWWLGC26"},
+"url":"URL#184391"
+},
+{
+"@score":"4",
+"@id":"214452",
+"info":{"authors":{"author":[{"@pid":"96/3825","text":"Yubin Zhang"},{"@pid":"156/9680","text":"Haiming Xu"},{"@pid":"199/1834","text":"Guillaume Salha-Galvan"},{"@pid":"230/3099","text":"Ruiyan Han"},{"@pid":"289/1973","text":"Feiyang Xiao"},{"@pid":"145/6123","text":"Yanhua Huang"},{"@pid":"38/4000","text":"Li Lin"},{"@pid":"68/3710","text":"Yang Luo"},{"@pid":"41/8206","text":"Yao Hu"}]},"title":"IDProxy: Cold-Start CTR Prediction for Ads and Recommendation at Xiaohongshu with Multimodal LLMs.","venue":"CoRR","volume":"abs/2603.01590","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2603-01590","doi":"10.48550/ARXIV.2603.01590","ee":"https://doi.org/10.48550/arXiv.2603.01590","url":"https://dblp.org/rec/journals/corr/abs-2603-01590"},
+"url":"URL#214452"
+},
+{
+"@score":"4",
+"@id":"281554",
+"info":{"authors":{"author":[{"@pid":"64/1903","text":"Zhe Dong"},{"@pid":"231/7071","text":"Fang Qin"},{"@pid":"83/3263","text":"Manish Shah"},{"@pid":"77/4643","text":"Yicheng Wang"}]},"title":"Diagnosing and Mitigating Retrieval Bottlenecks in LLM-Based Cold-Start Recommendation.","venue":"CoRR","volume":"abs/2606.29947","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2606-29947","doi":"10.48550/ARXIV.2606.29947","ee":"https://doi.org/10.48550/arXiv.2606.29947","url":"https://dblp.org/rec/journals/corr/abs-2606-29947"},
+"url":"URL#281554"
+},
+{
+"@score":"4",
+"@id":"563337",
+"info":{"authors":{"author":[{"@pid":"26/9183-1","text":"Wenlin Zhang 0001"},{"@pid":"212/1864","text":"Chuhan Wu"},{"@pid":"417/5412","text":"Xiangyang Li 0004"},{"@pid":"54/518-6","text":"Yuhao Wang 0006"},{"@pid":"292/3629","text":"Kuicai Dong"},{"@pid":"79/10448-2","text":"Yichao Wang 0002"},{"@pid":"230/0439","text":"Xinyi Dai"},{"@pid":"08/890-1","text":"Xiangyu Zhao 0001"},{"@pid":"152/3785","text":"Huifeng Guo"},{"@pid":"24/10003","text":"Ruiming Tang"}]},"title":"LLMTreeRec: Unleashing the Power of Large Language Models for Cold-Start Recommendations.","venue":"COLING","pages":"886-896","year":"2025","type":"Conference and Workshop Papers","access":"open","key":"conf/coling/ZhangWLWDWD0GT25","ee":"https://aclanthology.org/2025.coling-main.59/","url":"https://dblp.org/rec/conf/coling/ZhangWLWDWD0GT25"},
+"url":"URL#563337"
+},
+{
+"@score":"4",
+"@id":"724380",
+"info":{"authors":{"author":[{"@pid":"205/0473-1","text":"Weizhi Zhang 0001"},{"@pid":"331/2167","text":"Yuanchen Bei"},{"@pid":"260/5064","text":"Liangwei Yang"},{"@pid":"359/3792","text":"Henry Peng Zou"},{"@pid":"164/9272","text":"Peilin Zhou"},{"@pid":"321/4365","text":"Aiwei Liu"},{"@pid":"26/2354","text":"Yinghui Li"},{"@pid":"175/3324-62","text":"Hao Chen 0062"},{"@pid":"50/8201","text":"Jianling Wang"},{"@pid":"02/5889-158","text":"Yu Wang 0158"},{"@pid":"163/3996","text":"Feiran Huang"},{"@pid":"34/4858-4","text":"Sheng Zhou 0004"},{"@pid":"50/3147","text":"Jiajun Bu"},{"@pid":"166/5271","text":"Allen Lin"},{"@pid":"55/3697","text":"James Caverlee"},{"@pid":"k/FakhriKarray","text":"Fakhri Karray"},{"@pid":"k/IrwinKing","text":"Irwin King"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"}]},"title":"Cold-Start Recommendation towards the Era of Large Language Models (LLMs): A Comprehensive Survey and Roadmap.","venue":"CoRR","volume":"abs/2501.01945","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2501-01945","doi":"10.48550/ARXIV.2501.01945","ee":"https://doi.org/10.48550/arXiv.2501.01945","url":"https://dblp.org/rec/journals/corr/abs-2501-01945"},
+"url":"URL#724380"
+},
+{
+"@score":"4",
+"@id":"742406",
+"info":{"authors":{"author":[{"@pid":"03/6999-1","text":"Ruochen Liu 0001"},{"@pid":"175/3324-62","text":"Hao Chen 0062"},{"@pid":"331/2167","text":"Yuanchen Bei"},{"@pid":"349/4850","text":"Zheyu Zhou"},{"@pid":"142/2202","text":"Lijia Chen"},{"@pid":"304/3573","text":"Qijie Shen"},{"@pid":"163/3996","text":"Feiran Huang"},{"@pid":"k/FakhriKarray","text":"Fakhri Karray"},{"@pid":"118/5055","text":"Senzhang Wang"}]},"title":"FilterLLM: Text-To-Distribution LLM for Billion-Scale Cold-Start Recommendation.","venue":"CoRR","volume":"abs/2502.16924","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2502-16924","doi":"10.48550/ARXIV.2502.16924","ee":"https://doi.org/10.48550/arXiv.2502.16924","url":"https://dblp.org/rec/journals/corr/abs-2502-16924"},
+"url":"URL#742406"
+},
+{
+"@score":"4",
+"@id":"824984",
+"info":{"authors":{"author":[{"@pid":"242/7492","text":"Haowei Yang"},{"@pid":"408/8340","text":"Yushang Zhao"},{"@pid":"284/7134","text":"Sitao Min"},{"@pid":"18/530","text":"Bo Su"},{"@pid":"99/6747","text":"Chao Yao"},{"@pid":"32/1213","text":"Wei Xu"}]},"title":"Instructional Prompt Optimization for Few-Shot LLM-Based Recommendations on Cold-Start Users.","venue":"CoRR","volume":"abs/2509.09066","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2509-09066","doi":"10.48550/ARXIV.2509.09066","ee":"https://doi.org/10.48550/arXiv.2509.09066","url":"https://dblp.org/rec/journals/corr/abs-2509-09066"},
+"url":"URL#824984"
+},
+{
+"@score":"4",
+"@id":"827118",
+"info":{"authors":{"author":[{"@pid":"408/8340","text":"Yushang Zhao"},{"@pid":"337/7961","text":"Xinyue Han"},{"@pid":"194/2662","text":"Qian Leng"},{"@pid":"304/4867","text":"Qianyi Sun"},{"@pid":"386/8653","text":"Haotian Lyu"},{"@pid":"381/8692","text":"Chengrui Zhou"}]},"title":"Efficient Cold-Start Recommendation via BPE Token-Level Embedding Initialization with LLM.","venue":"CoRR","volume":"abs/2509.13179","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2509-13179","doi":"10.48550/ARXIV.2509.13179","ee":"https://doi.org/10.48550/arXiv.2509.13179","url":"https://dblp.org/rec/journals/corr/abs-2509-13179"},
+"url":"URL#827118"
+},
+{
+"@score":"4",
+"@id":"859541",
+"info":{"authors":{"author":[{"@pid":"15/4924-2","text":"Shijun Li 0002"},{"@pid":"02/5889-158","text":"Yu Wang 0158"},{"@pid":"92/1375","text":"Jin Wang"},{"@pid":"22/1805-124","text":"Ying Li 0124"},{"@pid":"51/2272","text":"Joydeep Ghosh"},{"@pid":"185/5562","text":"Anne Cocos"}]},"title":"LLM Reasoning for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2511.18261","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2511-18261","doi":"10.48550/ARXIV.2511.18261","ee":"https://doi.org/10.48550/arXiv.2511.18261","url":"https://dblp.org/rec/journals/corr/abs-2511-18261"},
+"url":"URL#859541"
+},
+{
+"@score":"4",
+"@id":"861567",
+"info":{"authors":{"author":[{"@pid":"423/5173","text":"Nachiket Subbaraman"},{"@pid":"423/7429","text":"Jaskinder Sarai"},{"@pid":"09/8399","text":"Aniruddh Nath"},{"@pid":"85/4697","text":"Lichan Hong"},{"@pid":"63/5281","text":"Lukasz Heldt"},{"@pid":"23/149","text":"Li Wei"},{"@pid":"28/6429-1","text":"Zhe Zhao 0001"}]},"title":"Selecting User Histories to Generate LLM Users for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2511.21989","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2511-21989","doi":"10.48550/ARXIV.2511.21989","ee":"https://doi.org/10.48550/arXiv.2511.21989","url":"https://dblp.org/rec/journals/corr/abs-2511-21989"},
+"url":"URL#861567"
+},
+{
+"@score":"4",
+"@id":"1238692",
+"info":{"authors":{"author":[{"@pid":"298/9192","text":"Dunlei Rong"},{"@pid":"56/6651-1","text":"Lina Yao 0001"},{"@pid":"351/0806","text":"Yinting Zheng"},{"@pid":"25/6555","text":"Shuang Yu"},{"@pid":"95/3275-1","text":"Xiaofei Xu 0001"},{"@pid":"37/3887","text":"Mingyi Liu"},{"@pid":"88/845-3","text":"Zhongjie Wang 0003"}]},"title":"LLM Enhanced Representation for Cold Start Service Recommendation.","venue":"ICSOC","pages":"153-167","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/icsoc/RongYZYXLW24","doi":"10.1007/978-981-96-0805-8_12","ee":"https://doi.org/10.1007/978-981-96-0805-8_12","url":"https://dblp.org/rec/conf/icsoc/RongYZYXLW24"},
+"url":"URL#1238692"
+}
+]
+}
+}
+}

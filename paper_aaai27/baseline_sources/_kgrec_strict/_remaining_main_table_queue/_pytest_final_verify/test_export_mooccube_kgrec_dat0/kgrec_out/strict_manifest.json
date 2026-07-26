@@ -1,0 +1,51 @@
+{
+  "cold_item_ids": [
+    2
+  ],
+  "course_kg_degree": {
+    "0": 1,
+    "2": 3
+  },
+  "format": "KGRec atomic strict item-cold",
+  "n_entities": 7,
+  "n_items": 3,
+  "n_kg_triples": 4,
+  "n_relations": 3,
+  "n_test_pairs": 1,
+  "n_train_pairs": 2,
+  "n_users": 2,
+  "n_validation_pairs": 1,
+  "relation_edge_counts": {
+    "course_concept": 1,
+    "course_teacher": 1,
+    "course_video": 2
+  },
+  "relation_to_id": {
+    "course_concept": 0,
+    "course_teacher": 1,
+    "course_video": 2
+  },
+  "source": {
+    "included_relations": [
+      "course_concept",
+      "course_teacher",
+      "course_video"
+    ],
+    "relations_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\_remaining_main_table_queue\\_pytest_final_verify\\test_export_mooccube_kgrec_dat0\\relations",
+    "split_root": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\_remaining_main_table_queue\\_pytest_final_verify\\test_export_mooccube_kgrec_dat0\\strict_item_cold_balanced_thr1_seed_2025"
+  },
+  "strict_checks": {
+    "all_cold_items_have_kg_edges": true,
+    "cold_items_absent_from_train": true,
+    "cold_items_with_kg_edges": [
+      2
+    ],
+    "item_ids_contiguous": true,
+    "kg_entity_ids_contiguous": true,
+    "relation_ids_contiguous": true
+  },
+  "warm_item_ids": [
+    0,
+    1
+  ]
+}

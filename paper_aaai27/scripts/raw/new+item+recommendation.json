@@ -1,0 +1,251 @@
+{
+"result":{
+"query":"new* item* recommendation*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"13.01"
+},
+"completions":{
+"@total":"2",
+"@computed":"2",
+"@sent":"2",
+"c":[
+{
+"@sc":"31",
+"@dc":"31",
+"@oc":"31",
+"@id":"70633652",
+"text":"recommendation"
+},
+{
+"@sc":"4",
+"@dc":"4",
+"@oc":"4",
+"@id":"70633655",
+"text":"recommendations"
+}
+]
+},
+"hits":{
+"@total":"35",
+"@computed":"35",
+"@sent":"35",
+"@first":"0",
+"hit":[{
+"@score":"5",
+"@id":"582476",
+"info":{"authors":{"author":[{"@pid":"416/9642","text":"Bruno N. Sotic"},{"@pid":"70/779","text":"Jaap Kamps"}]},"title":"What Makes a User Click on a News Item? - Understanding News Values of Visual Content in News Recommendation.","venue":"TPDL","pages":"321-339","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/ercimdl/SoticK25","doi":"10.1007/978-3-032-05409-8_19","ee":"https://doi.org/10.1007/978-3-032-05409-8_19","url":"https://dblp.org/rec/conf/ercimdl/SoticK25"},
+"url":"URL#582476"
+},
+{
+"@score":"4",
+"@id":"1309365",
+"info":{"authors":{"author":[{"@pid":"325/5509-1","text":"Huizhong Guo 0001"},{"@pid":"52/645-2","text":"Dongxia Wang 0002"},{"@pid":"163/5129-1","text":"Zhu Sun 0001"},{"@pid":"238/5984-7","text":"Haonan Zhang 0007"},{"@pid":"76/7842","text":"Jinfeng Li"},{"@pid":"84/6889-2","text":"Jie Zhang 0002"}]},"title":"Configurable Fairness for New Item Recommendation Considering Entry Time of Items.","venue":"SIGIR","pages":"437-447","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/Guo00ZLZ24","doi":"10.1145/3626772.3657694","ee":"https://doi.org/10.1145/3626772.3657694","url":"https://dblp.org/rec/conf/sigir/Guo00ZLZ24"},
+"url":"URL#1309365"
+},
+{
+"@score":"4",
+"@id":"3297005",
+"info":{"authors":{"author":[{"@pid":"159/9916","text":"Ziwei Zhu 0001"},{"@pid":"166/3695","text":"Shahin Sefati"},{"@pid":"220/1012","text":"Parsa Saadatpanah"},{"@pid":"55/3697","text":"James Caverlee"}]},"title":"Recommendation for New Users and New Items via Randomized Training and Mixture-of-Experts Transformation.","venue":"SIGIR","pages":"1121-1130","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ZhuSSC20","doi":"10.1145/3397271.3401178","ee":"https://doi.org/10.1145/3397271.3401178","url":"https://dblp.org/rec/conf/sigir/ZhuSSC20"},
+"url":"URL#3297005"
+},
+{
+"@score":"4",
+"@id":"4862776",
+"info":{"authors":{"author":{"@pid":"40/11428","text":"David Werner"}},"title":"Indexation et recommandation d&apos;informations : vers une qualification précise des items par une approche ontologique, fondée sur une modélisation métier du domaine : application à la recommandation d&apos;articles économiques. (Information indexing and recommendation : toward a precise description if items by an ontological approach based on business domain modeling : application to recommander system of economic news).","year":"2015","type":"Books and Theses","access":"open","key":"phd/hal/Werner15","ee":"https://tel.archives-ouvertes.fr/tel-01558628","url":"https://dblp.org/rec/phd/hal/Werner15"},
+"url":"URL#4862776"
+},
+{
+"@score":"3",
+"@id":"184865",
+"info":{"authors":{"author":[{"@pid":"297/9985","text":"Jianye Xie"},{"@pid":"01/8326","text":"Lianyong Qi"},{"@pid":"00/105-5","text":"Weiming Liu 0005"},{"@pid":"79/8430","text":"Anqi Wang"},{"@pid":"10/137-1","text":"Xiaolong Xu 0001"},{"@pid":"194/6883","text":"Haolong Xiang"},{"@pid":"54/8558","text":"Xuyun Zhang"},{"@pid":"218/7467","text":"Wenwen Gong"},{"@pid":"06/6785-95","text":"Yang Zhang 0095"},{"@pid":"90/10041","text":"Amin Beheshti"},{"@pid":"57/5595","text":"Wanchun Dou"}]},"title":"Joint Similar User Exploration and Informative Behavior Guidance for Multi-Modal New Item Recommendation.","venue":"WWW","pages":"6218-6229","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/XieQLWXXZGZBD26","doi":"10.1145/3774904.3792302","ee":"https://doi.org/10.1145/3774904.3792302","url":"https://dblp.org/rec/conf/www/XieQLWXXZGZBD26"},
+"url":"URL#184865"
+},
+{
+"@score":"3",
+"@id":"489156",
+"info":{"authors":{"author":[{"@pid":"49/4941","text":"Zhipeng Zhang"},{"@pid":"416/8962","text":"Youfu Zhu"},{"@pid":"62/6234","text":"Mianxiong Dong"},{"@pid":"18/4822","text":"Kaoru Ota"},{"@pid":"57/3892-5","text":"Yao Zhang 0005"},{"@pid":"06/3200","text":"Yonggong Ren"}]},"title":"Embedding Guarantor: Knowledge-Enhanced Graph Learning for New Item Cold-Start Recommendation.","venue":"IEEE Trans. Emerg. Top. Comput. Intell.","volume":"9","number":"5","pages":"3311-3324","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tetci/ZhangZDOZR25","doi":"10.1109/TETCI.2024.3516087","ee":"https://doi.org/10.1109/TETCI.2024.3516087","url":"https://dblp.org/rec/journals/tetci/ZhangZDOZR25"},
+"url":"URL#489156"
+},
+{
+"@score":"3",
+"@id":"953136",
+"info":{"authors":{"author":[{"@pid":"239/4819-3","text":"Chaoyu Wang 0003"},{"@pid":"01/3607","text":"Jihua Zhu"},{"@pid":"311/4086","text":"Ansong Li"},{"@pid":"135/8929","text":"Zhaolong Li"},{"@pid":"77/1916","text":"Yifeng Wang"}]},"title":"Dual-channel representation consistent recommender for session-based new item recommendation.","venue":"Expert Syst. Appl.","volume":"249","pages":"123681","year":"2024","type":"Journal Articles","access":"closed","key":"journals/eswa/WangZLLW24","doi":"10.1016/J.ESWA.2024.123681","ee":"https://doi.org/10.1016/j.eswa.2024.123681","url":"https://dblp.org/rec/journals/eswa/WangZLLW24"},
+"url":"URL#953136"
+},
+{
+"@score":"3",
+"@id":"970547",
+"info":{"authors":{"author":[{"@pid":"56/8497","text":"Qingting Wei"},{"@pid":"87/3144","text":"Xing Liu"},{"@pid":"382/6340","text":"Daming Xian"},{"@pid":"47/6589","text":"Jianfeng Xu"},{"@pid":"43/6387","text":"Lan Liu"},{"@pid":"360/3423","text":"Shiyang Long"}]},"title":"UICF: a new user-item composite filtering recommendation framework by leveraging temporal semantics.","venue":"Int. J. Intell. Comput. Cybern.","volume":"17","number":"3","pages":"577-604","year":"2024","type":"Journal Articles","access":"closed","key":"journals/ijicc/WeiLXXLL24","doi":"10.1108/IJICC-01-2024-0016","ee":"https://doi.org/10.1108/IJICC-01-2024-0016","url":"https://dblp.org/rec/journals/ijicc/WeiLXXLL24"},
+"url":"URL#970547"
+},
+{
+"@score":"3",
+"@id":"1309306",
+"info":{"authors":{"author":[{"@pid":"150/3371-2","text":"Haoyue Bai 0002"},{"@pid":"121/4234","text":"Le Wu"},{"@pid":"15/6301-4","text":"Min Hou 0004"},{"@pid":"355/0377-1","text":"Miaomiao Cai 0001"},{"@pid":"278/3807","text":"Zhuangzhuang He"},{"@pid":"199/0391","text":"Yuyang Zhou"},{"@pid":"59/1501","text":"Richang Hong"},{"@pid":"93/6765-1","text":"Meng Wang 0001"}]},"title":"Multimodality Invariant Learning for Multimedia-Based New Item Recommendation.","venue":"SIGIR","pages":"677-686","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/BaiWHCHZHW24","doi":"10.1145/3626772.3658596","ee":"https://doi.org/10.1145/3626772.3658596","url":"https://dblp.org/rec/conf/sigir/BaiWHCHZHW24"},
+"url":"URL#1309306"
+},
+{
+"@score":"3",
+"@id":"1386029",
+"info":{"authors":{"author":[{"@pid":"150/3371-2","text":"Haoyue Bai 0002"},{"@pid":"121/4234","text":"Le Wu"},{"@pid":"15/6301-4","text":"Min Hou 0004"},{"@pid":"355/0377-1","text":"Miaomiao Cai 0001"},{"@pid":"278/3807","text":"Zhuangzhuang He"},{"@pid":"199/0391","text":"Yuyang Zhou"},{"@pid":"59/1501","text":"Richang Hong"},{"@pid":"93/6765-1","text":"Meng Wang 0001"}]},"title":"Multimodality Invariant Learning for Multimedia-Based New Item Recommendation.","venue":"CoRR","volume":"abs/2405.15783","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2405-15783","doi":"10.48550/ARXIV.2405.15783","ee":"https://doi.org/10.48550/arXiv.2405.15783","url":"https://dblp.org/rec/journals/corr/abs-2405-15783"},
+"url":"URL#1386029"
+},
+{
+"@score":"3",
+"@id":"1774042",
+"info":{"authors":{"author":[{"@pid":"361/9406","text":"Pushya Chaparala"},{"@pid":"361/7931","text":"Poojitha Mallarapu"},{"@pid":"361/8931","text":"Sahithya Pichuka"},{"@pid":"361/7767","text":"Gnaneswar Maram"}]},"title":"New Histogram-Based User and Item Profiles for Recommendation Systems.","venue":"ICCCNT","pages":"1-9","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/icccnt/ChaparalaMPM23","doi":"10.1109/ICCCNT56998.2023.10308043","ee":"https://doi.org/10.1109/ICCCNT56998.2023.10308043","url":"https://dblp.org/rec/conf/icccnt/ChaparalaMPM23"},
+"url":"URL#1774042"
+},
+{
+"@score":"3",
+"@id":"1886834",
+"info":{"authors":{"author":[{"@pid":"67/1861-1","text":"Di Jin 0001"},{"@pid":"237/9704","text":"Luzhi Wang"},{"@pid":"292/0468","text":"Yizhen Zheng"},{"@pid":"37/2900","text":"Guojie Song"},{"@pid":"80/4567-9","text":"Fei Jiang 0009"},{"@pid":"40/1491-67","text":"Xiang Li 0067"},{"@pid":"99/2649-22","text":"Wei Lin 0022"},{"@pid":"91/8171","text":"Shirui Pan"}]},"title":"Dual Intent Enhanced Graph Neural Network for Session-based New Item Recommendation.","venue":"WWW","pages":"684-693","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/JinWZSJLLP23","doi":"10.1145/3543507.3583526","ee":"https://doi.org/10.1145/3543507.3583526","url":"https://dblp.org/rec/conf/www/JinWZSJLLP23"},
+"url":"URL#1886834"
+},
+{
+"@score":"3",
+"@id":"1926160",
+"info":{"authors":{"author":[{"@pid":"67/1861-1","text":"Di Jin 0001"},{"@pid":"237/9704","text":"Luzhi Wang"},{"@pid":"292/0468","text":"Yizhen Zheng"},{"@pid":"37/2900","text":"Guojie Song"},{"@pid":"80/4567-9","text":"Fei Jiang 0009"},{"@pid":"40/1491-67","text":"Xiang Li 0067"},{"@pid":"99/2649-16","text":"Wei Lin 0016"},{"@pid":"91/8171","text":"Shirui Pan"}]},"title":"Dual Intent Enhanced Graph Neural Network for Session-based New Item Recommendation.","venue":"CoRR","volume":"abs/2305.05848","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2305-05848","doi":"10.48550/ARXIV.2305.05848","ee":"https://doi.org/10.48550/arXiv.2305.05848","url":"https://dblp.org/rec/journals/corr/abs-2305-05848"},
+"url":"URL#1926160"
+},
+{
+"@score":"3",
+"@id":"2457197",
+"info":{"authors":{"author":[{"@pid":"282/5062","text":"Boya Xu"},{"@pid":"125/6243","text":"Yiting Deng"},{"@pid":"05/7899","text":"Carl F. Mela"}]},"title":"A Scalable Recommendation Engine for New Users and Items.","venue":"CoRR","volume":"abs/2209.06128","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2209-06128","doi":"10.48550/ARXIV.2209.06128","ee":"https://doi.org/10.48550/arXiv.2209.06128","url":"https://dblp.org/rec/journals/corr/abs-2209-06128"},
+"url":"URL#2457197"
+},
+{
+"@score":"3",
+"@id":"2513163",
+"info":{"authors":{"author":[{"@pid":"170/4214","text":"Supriyo Mandal"},{"@pid":"48/9828","text":"Abyayananda Maiti"}]},"title":"Deep collaborative filtering with social promoter score-based user-item interaction: a new perspective in recommendation.","venue":"Appl. Intell.","volume":"51","number":"11","pages":"7855-7880","year":"2021","type":"Journal Articles","access":"closed","key":"journals/apin/MandalM21","doi":"10.1007/S10489-020-02162-9","ee":"https://doi.org/10.1007/s10489-020-02162-9","url":"https://dblp.org/rec/journals/apin/MandalM21"},
+"url":"URL#2513163"
+},
+{
+"@score":"3",
+"@id":"2650426",
+"info":{"authors":{"author":[{"@pid":"253/9856","text":"Thi Dieu Anh Nguyen"},{"@pid":"253/9836","text":"Thanh Nguyen Vu"},{"@pid":"85/1181","text":"Tuan Dinh Le"}]},"title":"A New Approach Item Rating Data Mining on the Recommendation System.","venue":"SN Comput. Sci.","volume":"2","number":"1","pages":"2","year":"2021","type":"Journal Articles","access":"closed","key":"journals/sncs/NguyenVL21","doi":"10.1007/S42979-020-00351-4","ee":"https://doi.org/10.1007/s42979-020-00351-4","url":"https://dblp.org/rec/journals/sncs/NguyenVL21"},
+"url":"URL#2650426"
+},
+{
+"@score":"3",
+"@id":"2955642",
+"info":{"title":"Personalized Marketing Recommendation System of New Media Short Video Based on Deep Neural Network Data Fusion.","venue":"J. Sensors","volume":"2021","pages":"1-10","year":"2021","type":"Withdrawn Items","access":"withdrawn","key":"journals/js/Huang21","doi":"10.1155/2021/3638071","ee":"https://doi.org/10.1155/2021/3638071","url":"https://dblp.org/rec/journals/js/Huang21"},
+"url":"URL#2955642"
+},
+{
+"@score":"3",
+"@id":"3240026",
+"info":{"authors":{"author":[{"@pid":"242/4567","text":"Mohammad Hossein Rimaz"},{"@pid":"14/9059","text":"Reza Hosseini"},{"@pid":"94/5701","text":"Mehdi Elahi"},{"@pid":"128/4609","text":"Farshad Bakhshandegan Moghaddam"}]},"title":"AudioLens: Audio-Aware Video Recommendation for Mitigating New Item Problem.","venue":"ICSOC Workshops","pages":"365-378","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/icsoc/RimazHEM20","doi":"10.1007/978-3-030-76352-7_35","ee":"https://doi.org/10.1007/978-3-030-76352-7_35","url":"https://dblp.org/rec/conf/icsoc/RimazHEM20"},
+"url":"URL#3240026"
+},
+{
+"@score":"3",
+"@id":"3314614",
+"info":{"authors":{"author":[{"@pid":"256/9301","text":"Changfeng Sun"},{"@pid":"35/2899","text":"Han Liu"},{"@pid":"41/7841-6","text":"Meng Liu 0006"},{"@pid":"58/10440","text":"Zhaochun Ren"},{"@pid":"67/3961-2","text":"Tian Gan 0002"},{"@pid":"92/8277","text":"Liqiang Nie"}]},"title":"LARA: Attribute-to-feature Adversarial Learning for New-item Recommendation.","venue":"WSDM","pages":"582-590","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/SunLLRGN20","doi":"10.1145/3336191.3371805","ee":"https://doi.org/10.1145/3336191.3371805","url":"https://dblp.org/rec/conf/wsdm/SunLLRGN20"},
+"url":"URL#3314614"
+},
+{
+"@score":"3",
+"@id":"3561855",
+"info":{"authors":{"author":[{"@pid":"167/2847","text":"Yashar Deldjoo"},{"@pid":"225/7792","text":"Maurizio Ferrari Dacrema"},{"@pid":"190/1743","text":"Mihai Gabriel Constantin"},{"@pid":"170/1944","text":"Hamid Eghbal-zadeh"},{"@pid":"203/0246","text":"Stefano Cereda"},{"@pid":"77/271","text":"Markus Schedl"},{"@pid":"53/948","text":"Bogdan Ionescu"},{"@pid":"03/3233","text":"Paolo Cremonesi"}]},"title":"Movie genome: alleviating new item cold start in movie recommendation.","venue":"User Model. User Adapt. Interact.","volume":"29","number":"2","pages":"291-343","year":"2019","type":"Journal Articles","access":"open","key":"journals/umuai/DeldjooDCECSIC19","doi":"10.1007/S11257-019-09221-Y","ee":"https://doi.org/10.1007/s11257-019-09221-y","url":"https://dblp.org/rec/journals/umuai/DeldjooDCECSIC19"},
+"url":"URL#3561855"
+},
+{
+"@score":"3",
+"@id":"3652588",
+"info":{"authors":{"author":[{"@pid":"52/295-3","text":"Yifan Chen 0003"},{"@pid":"07/668-2","text":"Xiang Zhao 0002"},{"@pid":"169/7173","text":"Jinyuan Liu"},{"@pid":"79/3482-6","text":"Bin Ge 0006"},{"@pid":"20/612-3","text":"Weiming Zhang 0003"}]},"title":"Learning to Select User-Specific Features for Top-N Recommendation of New Items.","venue":"ICDE Workshops","pages":"141-147","year":"2019","type":"Conference and Workshop Papers","access":"closed","key":"conf/icde/ChenZLGZ19","doi":"10.1109/ICDEW.2019.00-19","ee":"https://doi.org/10.1109/ICDEW.2019.00-19","url":"https://dblp.org/rec/conf/icde/ChenZLGZ19"},
+"url":"URL#3652588"
+},
+{
+"@score":"3",
+"@id":"3902775",
+"info":{"authors":{"author":[{"@pid":"58/10686","text":"Masoud Saeed"},{"@pid":"13/6345","text":"Eghbal G. Mansoori"}]},"title":"A new slope one based recommendation algorithm using virtual predictive items.","venue":"J. Intell. Inf. Syst.","volume":"50","number":"3","pages":"527-547","year":"2018","type":"Journal Articles","access":"closed","key":"journals/jiis/SaeedM18","doi":"10.1007/S10844-017-0470-7","ee":"https://doi.org/10.1007/s10844-017-0470-7","url":"https://dblp.org/rec/journals/jiis/SaeedM18"},
+"url":"URL#3902775"
+},
+{
+"@score":"3",
+"@id":"4090041",
+"info":{"authors":{"author":[{"@pid":"31/3668-2","text":"Geng Sun 0002"},{"@pid":"99/10502","text":"Tingru Cui"},{"@pid":"03/2363","text":"Dongming Xu"},{"@pid":"48/5700-1","text":"Jun Shen 0001"},{"@pid":"65/287","text":"Shiping Chen 0001"}]},"title":"A Heuristic Approach for New-Item Cold Start Problem in Recommendation of Micro Open Education Resources.","venue":"ITS","pages":"212-222","year":"2018","type":"Conference and Workshop Papers","access":"closed","key":"conf/its/SunCX0C18","doi":"10.1007/978-3-319-91464-0_21","ee":"https://doi.org/10.1007/978-3-319-91464-0_21","url":"https://dblp.org/rec/conf/its/SunCX0C18"},
+"url":"URL#4090041"
+},
+{
+"@score":"3",
+"@id":"4539546",
+"info":{"title":"Point of Interest Recommendation Methods in Location Based Social Networks: Traveling to a new geographical region.","venue":"CoRR","volume":"abs/1711.09471","year":"2017","type":"Withdrawn Items","access":"withdrawn","key":"journals/corr/abs-1711-09471","ee":"http://arxiv.org/abs/1711.09471","url":"https://dblp.org/rec/journals/corr/abs-1711-09471"},
+"url":"URL#4539546"
+},
+{
+"@score":"3",
+"@id":"4964793",
+"info":{"authors":{"author":[{"@pid":"160/1983","text":"Asmaa Elbadrawy"},{"@pid":"k/GeorgeKarypis","text":"George Karypis"}]},"title":"User-Specific Feature-Based Similarity Models for Top-n Recommendation of New Items.","venue":"ACM Trans. Intell. Syst. Technol.","volume":"6","number":"3","pages":"33:1-33:20","year":"2015","type":"Journal Articles","access":"closed","key":"journals/tist/ElbadrawyK15","doi":"10.1145/2700495","ee":"https://doi.org/10.1145/2700495","url":"https://dblp.org/rec/journals/tist/ElbadrawyK15"},
+"url":"URL#4964793"
+},
+{
+"@score":"3",
+"@id":"5014339",
+"info":{"authors":{"author":[{"@pid":"33/4679","text":"Zhenhua Wang"},{"@pid":"33/4550","text":"Ping He"},{"@pid":"21/5967","text":"Lidan Shou"},{"@pid":"47/6529-5","text":"Ke Chen 0005"},{"@pid":"30/1186","text":"Sai Wu"},{"@pid":"67/6383-1","text":"Gang Chen 0001"}]},"title":"Toward the New Item Problem: Context-Enhanced Event Recommendation in Event-Based Social Networks.","venue":"ECIR","pages":"333-338","year":"2015","type":"Conference and Workshop Papers","access":"closed","key":"conf/ecir/WangHS0W015","doi":"10.1007/978-3-319-16354-3_36","ee":"https://doi.org/10.1007/978-3-319-16354-3_36","url":"https://dblp.org/rec/conf/ecir/WangHS0W015"},
+"url":"URL#5014339"
+},
+{
+"@score":"3",
+"@id":"5234233",
+"info":{"authors":{"author":[{"@pid":"149/0748","text":"Haomin Cui"},{"@pid":"64/6143","text":"Ming Zhu"},{"@pid":"149/0631","text":"Shijia Yao"}]},"title":"Ontology-based Top-N Recommendations on New Items with Matrix Factorization.","venue":"J. Softw.","volume":"9","number":"8","pages":"2026-2032","year":"2014","type":"Journal Articles","access":"closed","key":"journals/jsw/CuiZY14","doi":"10.4304/JSW.9.8.2026-2032","ee":"https://doi.org/10.4304/jsw.9.8.2026-2032","url":"https://dblp.org/rec/journals/jsw/CuiZY14"},
+"url":"URL#5234233"
+},
+{
+"@score":"3",
+"@id":"5301808",
+"info":{"authors":{"author":[{"@pid":"19/5112","text":"Zhen Zhang"},{"@pid":"159/6936","text":"Zhongnan Huang"},{"@pid":"33/7626","text":"Guangyu Gao"},{"@pid":"45/4723","text":"Chi Harold Liu"}]},"title":"Personalized Video Recommendations with Both Historical and New Items.","venue":"CloudComp","pages":"29-42","year":"2014","type":"Conference and Workshop Papers","access":"closed","key":"conf/cloudcomp/ZhangHGL14","doi":"10.1007/978-3-319-16050-4_3","ee":"https://doi.org/10.1007/978-3-319-16050-4_3","url":"https://dblp.org/rec/conf/cloudcomp/ZhangHGL14"},
+"url":"URL#5301808"
+},
+{
+"@score":"3",
+"@id":"5366931",
+"info":{"authors":{"author":[{"@pid":"45/3518","text":"Victor Codina"},{"@pid":"00/8362","text":"Luis Oliva 0001"}]},"title":"Contextual modeling content-based approaches for new-item recommendation.","venue":"IIiX","pages":"259-262","year":"2014","type":"Conference and Workshop Papers","access":"closed","key":"conf/iiix/CodinaO14","doi":"10.1145/2637002.2637037","ee":"https://doi.org/10.1145/2637002.2637037","url":"https://dblp.org/rec/conf/iiix/CodinaO14"},
+"url":"URL#5366931"
+},
+{
+"@score":"3",
+"@id":"5417135",
+"info":{"authors":{"author":[{"@pid":"135/1314","text":"Thales F. Costa"},{"@pid":"90/844","text":"Anísio Lacerda"},{"@pid":"36/1247","text":"Rodrygo L. T. Santos"},{"@pid":"z/NZiviani","text":"Nivio Ziviani"}]},"title":"Information-Theoretic Term Selection for New Item Recommendation.","venue":"SPIRE","pages":"236-243","year":"2014","type":"Conference and Workshop Papers","access":"closed","key":"conf/spire/CostaLSZ14","doi":"10.1007/978-3-319-11918-2_23","ee":"https://doi.org/10.1007/978-3-319-11918-2_23","url":"https://dblp.org/rec/conf/spire/CostaLSZ14"},
+"url":"URL#5417135"
+},
+{
+"@score":"3",
+"@id":"5641514",
+"info":{"authors":{"author":[{"@pid":"20/9230","text":"Xiaoying Xu"},{"@pid":"58/1227","text":"Kaushik Dutta"},{"@pid":"d/AnindyaDatta","text":"Anindya Datta"}]},"title":"Using Critic Reviews to Boost New Item Recommendation.","venue":"ICIS","year":"2013","type":"Conference and Workshop Papers","access":"closed","key":"conf/icis/XuDD13","ee":"http://aisel.aisnet.org/icis2013/proceedings/KnowledgeManagement/12","url":"https://dblp.org/rec/conf/icis/XuDD13"},
+"url":"URL#5641514"
+},
+{
+"@score":"3",
+"@id":"5649413",
+"info":{"authors":{"author":[{"@pid":"27/2676","text":"Sang-Min Choi"},{"@pid":"h/YoSubHan","text":"Yo-Sub Han"}]},"title":"Identifying representative ratings for a new item in recommendation system.","venue":"ICUIMC","pages":"64","year":"2013","type":"Conference and Workshop Papers","access":"closed","key":"conf/icuimc/ChoiH13","doi":"10.1145/2448556.2448620","ee":"https://doi.org/10.1145/2448556.2448620","url":"https://dblp.org/rec/conf/icuimc/ChoiH13"},
+"url":"URL#5649413"
+},
+{
+"@score":"3",
+"@id":"6574035",
+"info":{"authors":{"author":[{"@pid":"97/6666","text":"Jae Kyeong Kim"},{"@pid":"11/11201","text":"Moon Kyoung Jang"},{"@pid":"84/2680","text":"Hyea Kyeong Kim"},{"@pid":"96/5472","text":"Yoon Ho Cho"}]},"title":"A hybrid recommendation procedure for new items using preference boundary.","venue":"ICEC","pages":"289-295","year":"2009","type":"Conference and Workshop Papers","access":"closed","key":"conf/ACMicec/KimJKC09","doi":"10.1145/1593254.1593298","ee":"https://doi.org/10.1145/1593254.1593298","url":"https://dblp.org/rec/conf/ACMicec/KimJKC09"},
+"url":"URL#6574035"
+},
+{
+"@score":"3",
+"@id":"6902351",
+"info":{"authors":{"author":[{"@pid":"29/791","text":"Iván Cantador"},{"@pid":"23/1049","text":"Alejandro Bellogín"},{"@pid":"c/PabloCastells","text":"Pablo Castells"}]},"title":"Ontology-Based Personalised and Context-Aware Recommendations of News Items.","venue":"Web Intelligence","pages":"562-565","year":"2008","type":"Conference and Workshop Papers","access":"closed","key":"conf/webi/CantadorBC08","doi":"10.1109/WIIAT.2008.204","ee":"https://doi.org/10.1109/WIIAT.2008.204","url":"https://dblp.org/rec/conf/webi/CantadorBC08"},
+"url":"URL#6902351"
+},
+{
+"@score":"3",
+"@id":"7849859",
+"info":{"authors":{"author":[{"@pid":"73/994","text":"Se June Hong"},{"@pid":"75/2627","text":"Ramesh Natarajan"},{"@pid":"47/1655","text":"Ilana Belitskaya"}]},"title":"A New Approach for Item Choice Recommendations.","venue":"DaWaK","pages":"131-140","year":"2001","type":"Conference and Workshop Papers","access":"closed","key":"conf/dawak/HongNB01","doi":"10.1007/3-540-44801-2_14","ee":"https://doi.org/10.1007/3-540-44801-2_14","url":"https://dblp.org/rec/conf/dawak/HongNB01"},
+"url":"URL#7849859"
+}
+]
+}
+}
+}

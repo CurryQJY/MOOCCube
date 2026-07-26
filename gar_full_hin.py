@@ -297,9 +297,6 @@ def evaluate_dual_gafc(model, loader, all_item_z, device, k_list, user_seen_item
             
     c_res = {k: v/c_total for k,v in c_sum.items()} if c_total > 0 else None
     h_res = {k: v/h_total for k,v in h_sum.items()} if h_total > 0 else None
-    if sampled_user_total > 0:
-        avg_neg = sampled_neg_total / sampled_user_total
-        print(f"[Sample Eval] avg effective negatives per user: {avg_neg:.1f}")
     return c_res, c_total, h_res, h_total
 
 def evaluate_sampled_gafc(model, loader, all_item_z, device, k_list, n_neg=999, user_seen_items=None):
@@ -421,15 +418,16 @@ def evaluate_sampled_gafc(model, loader, all_item_z, device, k_list, n_neg=999, 
 
 def main():
     setup_seed(2025)
-    print("Loading Data for GAFC (SIGIR '22) from processed_data_hin...")
-    if not os.path.exists("processed_data_hin/stream_data.pkl"):
-        print("错误: 请先运行 data_process_hin.py")
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
+    print(f"Loading Data for GAFC (SIGIR '22) from {data_dir}...")
+    if not os.path.exists(f"{data_dir}/stream_data.pkl"):
+        print(f"错误: {data_dir}/stream_data.pkl 未找到")
         return
 
-    with open("processed_data_hin/meta.json", "r") as f:
+    with open(f"{data_dir}/meta.json", "r") as f:
         meta = json.load(f)
-    df = pd.read_pickle("processed_data_hin/stream_data.pkl")
-    content_emb = torch.load("processed_data_hin/content_emb.pt")
+    df = pd.read_pickle(f"{data_dir}/stream_data.pkl")
+    content_emb = torch.load(f"{data_dir}/content_emb.pt")
 
     periods = split_dataframe_by_periods(df, period_type='M')
     dataloaders = [DataLoader(StreamDataset(p), batch_size=512, shuffle=True, collate_fn=collate_fn) for p in periods]
@@ -590,6 +588,15 @@ def main():
         v_f_h = accum_f['hot'][k]/counts_f['hot'] if counts_f['hot'] > 0 else 0
         print(f"{k:<10} | {v_s_c:<12.4f} | {v_s_h:<12.4f} | {v_f_c:<12.4f} | {v_f_h:<12.4f}")
     print("=" * 90)
+
+    out = {"model": "GAR", "protocol": "stream"}
+    for k in metrics_keys:
+        out[f"samp_cold_{k}"] = accum_s['cold'][k]/counts_s['cold'] if counts_s['cold'] > 0 else 0
+        out[f"samp_hot_{k}"] = accum_s['hot'][k]/counts_s['hot'] if counts_s['hot'] > 0 else 0
+        out[f"full_cold_{k}"] = accum_f['cold'][k]/counts_f['cold'] if counts_f['cold'] > 0 else 0
+        out[f"full_hot_{k}"] = accum_f['hot'][k]/counts_f['hot'] if counts_f['hot'] > 0 else 0
+    pd.DataFrame([out]).to_json("gar_full_result.json", orient="records", force_ascii=False)
+    print("Saved: gar_full_result.json")
 
 
 if __name__ == "__main__":

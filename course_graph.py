@@ -68,27 +68,6 @@ def _compute_item_difficulty(df, n_items):
     return difficulty.clamp(0.0, 1.0)
 
 
-def _compute_item_popularity(df, n_items):
-    popularity = torch.zeros(n_items, dtype=torch.float32)
-    if "i_idx" not in df.columns or "popularity" not in df.columns:
-        return popularity
-
-    pop = (
-        df[["i_idx", "popularity"]]
-        .dropna()
-        .groupby("i_idx", sort=False)["popularity"]
-        .median()
-    )
-    if pop.empty:
-        return popularity
-
-    for i_idx, value in pop.items():
-        item_idx = int(i_idx)
-        if 0 <= item_idx < n_items:
-            popularity[item_idx] = float(value)
-    return popularity
-
-
 def build_graph_course_artifacts(
     df,
     n_items,
@@ -129,7 +108,6 @@ def build_graph_course_artifacts(
     artifacts["graph_semantic_idx"] = semantic_idx
     artifacts["graph_semantic_w"] = semantic_w
     artifacts["item_difficulty"] = _compute_item_difficulty(df, n_items)
-    artifacts["item_popularity"] = _compute_item_popularity(df, n_items)
 
     stats = dict(stats)
     stats["graph_topk_prereq"] = int(graph_topk_prereq)

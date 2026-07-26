@@ -1,0 +1,35 @@
+% Requires \usepackage{booktabs,threeparttable}
+\begin{table*}[t]
+\centering
+\begin{threeparttable}
+\caption{Empirically supported motivation evidence on MOOCCube Top-10 lists.}
+\label{tab:p1-motivation-evidence}
+\footnotesize
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrc}
+\toprule
+Contrast & Verified signal & CKG-RL & Reference & Improvement [95\% CI] & $p$ \\
+\midrule
+\multicolumn{6}{l}{\textit{Existing-model limitation}} \\
+CKG-RL vs. PCGNN & Prerequisite gap $\downarrow$ & 0.5977 & 0.6427 & 0.0450 [0.0350, 0.0550] & $<.0001$ \\
+CKG-RL vs. PCGNN & Difficulty gap $\downarrow$ & 0.0844 & 0.0963 & 0.0120 [0.0090, 0.0150] & $<.0001$ \\
+CKG-RL vs. CGRC & Prerequisite gap $\downarrow$ & 0.5977 & 0.6172 & 0.0195 [0.0111, 0.0280] & $<.0001$ \\
+CKG-RL vs. CGRC & Structural redundancy $\downarrow$ & 0.0533 & 0.0710 & 0.0176 [0.0151, 0.0202] & $<.0001$ \\
+\addlinespace[1pt]
+\multicolumn{6}{l}{\textit{Exposure diagnostic}} \\
+CKG-RL vs. PCGNN & Cold-course share $\uparrow$ & 50.7\% & 42.2\% & +8.5 pp [6.4, 10.7] & $<.0001$ \\
+CKG-RL vs. CGRC & Cold-course share $\uparrow$ & 50.7\% & 24.6\% & +26.2 pp [24.9, 27.4] & $<.0001$ \\
+\addlinespace[1pt]
+\multicolumn{6}{l}{\textit{Course-reward mechanism}} \\
+Full vs. w/o course reward & Cold prerequisite gap $\downarrow$ & 0.5994 & 0.6126 & 0.0132 [0.0056, 0.0205] & $0.0009$ \\
+Full vs. w/o course reward & Cold difficulty gap $\downarrow$ & 0.0864 & 0.0898 & 0.0034 [0.0011, 0.0056] & $0.0037$ \\
+Full vs. w/o course reward & Cold-course share $\uparrow$ & 50.7\% & 48.0\% & +2.7 pp [1.9, 3.5] & $<.0001$ \\
+\bottomrule
+\end{tabular*}
+\begin{tablenotes}[flushleft]
+\scriptsize
+\item Improvement is Reference minus CKG-RL for lower-is-better risks and CKG-RL minus Reference for cold-course share. Exposure rows are descriptive and do not establish pedagogical quality.
+\item Only predeclared supported motivation claims are shown; inconclusive or adverse outcomes are excluded from this claim table and remain reported in the complete risk audit. All intervals use 204 paired seed-course units.
+\end{tablenotes}
+\end{threeparttable}
+\end{table*}

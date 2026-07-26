@@ -377,25 +377,11 @@ class PAM_RL_Pure_USIM(nn.Module):
         return cand_emb, cand_idx, stats
 
     def get_item_vector(self, i_idx, llm_s, force_cold=False):
-        id_e_true = self.item_id_emb(i_idx)
-        id_e = id_e_true
-
-        batch_size = id_e.size(0)
-        mask_id = torch.zeros((batch_size, 1), dtype=torch.bool, device=id_e.device)
-        if isinstance(force_cold, torch.Tensor):
-            force_mask = force_cold.to(device=id_e.device)
-            if force_mask.dtype != torch.bool:
-                force_mask = force_mask > 0
-            mask_id = mask_id | force_mask.view(-1, 1)
-        elif force_cold:
-            mask_id = torch.ones((batch_size, 1), dtype=torch.bool, device=id_e.device)
-
-        if self.training and self.cfg.dropout_prob > 0:
-            dropout_mask = torch.rand((batch_size, 1), device=id_e.device) < float(self.cfg.dropout_prob)
-            mask_id = mask_id | dropout_mask
-
-        if mask_id.any():
-            id_e = torch.where(mask_id, torch.zeros_like(id_e), id_e)
+        id_e = self.item_id_emb(i_idx)
+        
+        # ID Dropout
+        if force_cold or (self.training and random.random() < self.cfg.dropout_prob):
+            id_e = torch.zeros_like(id_e)
             
         content_e = self.content_proj(self.item_con_emb(i_idx))
         
@@ -408,7 +394,7 @@ class PAM_RL_Pure_USIM(nn.Module):
         alpha = self.gate_net(torch.cat([id_e, content_e], dim=-1))
         
         item_fused = alpha * id_e + (1 - alpha) * content_e
-        return item_fused, id_e_true, content_e
+        return item_fused, id_e, content_e
 
     def run_usim_episode(self, init_item_emb, target_emb=None, user_bank_raw=None):
         current_h = init_item_emb.clone()
@@ -515,7 +501,7 @@ class PAM_RL_Pure_USIM(nn.Module):
 
         # 1. 基础表征 (PAM 优势 + LLM 增益)
         z_u_base = self.user_proj(self.user_emb(u))
-        z_i_base, id_e_raw, content_e = self.get_item_vector(i, llm_s, force_cold=is_cold)
+        z_i_base, id_e_raw, content_e = self.get_item_vector(i, llm_s, force_cold=False)
 
         # 2. RL USIM 序列模拟
         target_emb = z_i_base.detach().clone()
@@ -849,35 +835,11 @@ def build_course_artifacts(
     return artifacts, stats
 
 
-def _lookup_llm_score(llm_scores, item_idx, user_idx=None):
-    if llm_scores is None:
-        return -1.0
-
-    item_idx = int(item_idx)
-    if user_idx is not None:
-        pair_score = llm_scores.get((int(user_idx), item_idx))
-        if pair_score is not None:
-            return float(pair_score)
-
-    item_score = llm_scores.get(item_idx)
-    if item_score is not None:
-        return float(item_score)
-    return -1.0
-
-
-def _build_llm_score_tensor(llm_scores, user_ids, item_ids, device=None):
-    values = [
-        _lookup_llm_score(llm_scores, item_idx, user_idx)
-        for user_idx, item_idx in zip(user_ids, item_ids)
-    ]
-    return torch.tensor(values, dtype=torch.float, device=device)
-
-
-def build_all_item_vecs(model, device, llm_scores, item_batch=1024, force_cold=True):
+def build_all_item_vecs(model, device, llm_scores, item_batch=1024):
     n_items = model.cfg.n_items
     all_item_idx = torch.arange(n_items, device=device)
     all_llm_s = torch.tensor(
-        [_lookup_llm_score(llm_scores, int(idx)) for idx in all_item_idx],
+        [llm_scores.get(int(idx), -1.0) for idx in all_item_idx],
         dtype=torch.float,
         device=device
     )
@@ -888,55 +850,9 @@ def build_all_item_vecs(model, device, llm_scores, item_batch=1024, force_cold=T
             end = min(start + item_batch, n_items)
             idx_batch = all_item_idx[start:end]
             llm_batch = all_llm_s[start:end]
-            z_i, _, _ = model.get_item_vector(idx_batch, llm_batch, force_cold=force_cold)
+            z_i, _, _ = model.get_item_vector(idx_batch, llm_batch, force_cold=True)
             all_item_vecs.append(F.normalize(z_i, dim=1))
     return torch.cat(all_item_vecs, dim=0)
-
-
-def build_eval_item_vecs(model, device, llm_scores, item_batch=1024):
-    hot_bank = build_all_item_vecs(
-        model, device, llm_scores, item_batch=item_batch, force_cold=False
-    )
-    cold_bank = build_all_item_vecs(
-        model, device, llm_scores, item_batch=item_batch, force_cold=True
-    )
-    return {"cold": cold_bank, "hot": hot_bank, "all": hot_bank}
-
-
-def _select_eval_item_bank(all_item_vecs, eval_type):
-    if isinstance(all_item_vecs, dict):
-        if eval_type in all_item_vecs:
-            return all_item_vecs[eval_type]
-        if eval_type == 'all' and 'hot' in all_item_vecs:
-            return all_item_vecs['hot']
-        if 'cold' in all_item_vecs:
-            return all_item_vecs['cold']
-    return all_item_vecs
-
-
-def _build_eval_pos_item_vecs(model, item_idx, llm_s, pop_sel, eval_type):
-    if item_idx.numel() < 1:
-        return torch.empty((0, model.cfg.emb_dim), device=item_idx.device)
-
-    if eval_type == 'cold':
-        pos_vec, _, _ = model.get_item_vector(item_idx, llm_s, force_cold=True)
-        return F.normalize(pos_vec, dim=1)
-
-    if eval_type == 'hot':
-        pos_vec, _, _ = model.get_item_vector(item_idx, llm_s, force_cold=False)
-        return F.normalize(pos_vec, dim=1)
-
-    pos_vec = torch.empty((item_idx.size(0), model.cfg.emb_dim), device=item_idx.device)
-    cold_mask = pop_sel < model.cfg.cold_threshold
-    hot_mask = ~cold_mask
-
-    if cold_mask.any():
-        cold_vec, _, _ = model.get_item_vector(item_idx[cold_mask], llm_s[cold_mask], force_cold=True)
-        pos_vec[cold_mask] = cold_vec
-    if hot_mask.any():
-        hot_vec, _, _ = model.get_item_vector(item_idx[hot_mask], llm_s[hot_mask], force_cold=False)
-        pos_vec[hot_mask] = hot_vec
-    return F.normalize(pos_vec, dim=1)
 
 
 # ================= 5. 评估函数 =================
@@ -952,8 +868,7 @@ def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=2
         n_items = model.cfg.n_items
         all_item_idx = torch.arange(n_items, device=device)
         if all_item_vecs is None:
-            all_item_vecs = build_eval_item_vecs(model, device, llm_scores, item_batch=1024)
-        item_bank = _select_eval_item_bank(all_item_vecs, eval_type)
+            all_item_vecs = build_all_item_vecs(model, device, llm_scores, item_batch=1024)
 
         for batch, pop, llm in loader:
             if eval_type == 'cold':
@@ -971,7 +886,6 @@ def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=2
             i = batch['i'][mask].to(device)
             pop_sel = pop[mask].to(device)
             user_ids = [int(x) for x in u.detach().cpu().tolist()]
-            item_ids = [int(x) for x in i.detach().cpu().tolist()]
 
             for uid in user_ids:
                 if uid in seen_tensor_cache:
@@ -984,15 +898,12 @@ def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=2
                     seen_tensor_cache[uid] = None
 
             z_u = F.normalize(model.user_proj(model.user_emb(u)), dim=1)
-            pos_llm = _build_llm_score_tensor(llm_scores, user_ids, item_ids, device=device)
-            pos_vec = _build_eval_pos_item_vecs(model, i, pos_llm, pop_sel, eval_type)
-            pos_scores = (z_u * pos_vec).sum(dim=1)
 
             if full_ranking:
-                scores = torch.mm(z_u, item_bank.t())
-                row_idx = torch.arange(n_sel, device=device)
-                target_scores = pos_scores.clone()
+                scores = torch.mm(z_u, all_item_vecs.t())
                 if user_seen_items:
+                    row_idx = torch.arange(n_sel, device=device)
+                    target_scores = scores[row_idx, i].clone()
                     for row, uid in enumerate(user_ids):
                         seen_idx = seen_tensor_cache[uid]
                         if seen_idx is None:
@@ -1000,8 +911,6 @@ def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=2
                         scores[row, seen_idx] = -1e9
 
                     # Keep target score valid for this row.
-                    scores[row_idx, i] = target_scores
-                else:
                     scores[row_idx, i] = target_scores
                 scores = model.apply_course_rerank(
                     scores,
@@ -1037,8 +946,7 @@ def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=2
                     pick = torch.randperm(candidates.numel(), device=device)[:n_neg_batch]
                     neg_items[row] = candidates[pick]
                 cand_idx = torch.cat([i.unsqueeze(1), neg_items], dim=1)
-                cand_vecs = item_bank[cand_idx].clone()
-                cand_vecs[:, 0, :] = pos_vec
+                cand_vecs = all_item_vecs[cand_idx]
                 scores = torch.bmm(cand_vecs, z_u.unsqueeze(2)).squeeze(2)
                 scores = model.apply_course_rerank(
                     scores,
@@ -1065,12 +973,10 @@ def evaluate_usim(model, loader, device, llm_scores, k_list=[5, 10, 20], n_neg=2
 
 class StreamDataset(Dataset):
     def __init__(self, df, llm_scores):
-        user_ids = [int(x) for x in df['u_idx'].values]
-        item_ids = [int(x) for x in df['i_idx'].values]
-        self.u = torch.tensor(user_ids, dtype=torch.long)
-        self.i = torch.tensor(item_ids, dtype=torch.long)
+        self.u = torch.tensor(df['u_idx'].values, dtype=torch.long)
+        self.i = torch.tensor(df['i_idx'].values, dtype=torch.long)
         self.pop = torch.tensor(df['popularity'].values, dtype=torch.long)
-        self.llm_s = _build_llm_score_tensor(llm_scores, user_ids, item_ids)
+        self.llm_s = torch.tensor([llm_scores.get(int(idx), -1.0) for idx in self.i], dtype=torch.float)
 
     def __len__(self):
         return len(self.u)
@@ -1208,7 +1114,7 @@ def run_static_experiment(df, cfg, device, model, optimizer, llm_scores):
             )
 
         if do_early_stop:
-            all_item_vecs_val = build_eval_item_vecs(model, device, llm_scores, item_batch=1024)
+            all_item_vecs_val = build_all_item_vecs(model, device, llm_scores, item_batch=1024)
             val_cold, _ = evaluate_usim(
                 model, val_loader, device, llm_scores, k_list,
                 eval_type='cold', full_ranking=True,
@@ -1272,7 +1178,7 @@ def run_static_experiment(df, cfg, device, model, optimizer, llm_scores):
             f"Full Hot R@{cfg.early_stop_k}={es_best['hot_r']:.4f})"
         )
 
-    all_item_vecs_test = build_eval_item_vecs(model, device, llm_scores, item_batch=1024)
+    all_item_vecs_test = build_all_item_vecs(model, device, llm_scores, item_batch=1024)
     met_cold, n_cold_t = evaluate_usim(
         model, test_loader, device, llm_scores, k_list,
         n_neg=cfg.eval_n_neg, eval_type='cold',
@@ -1318,7 +1224,7 @@ def run_static_experiment(df, cfg, device, model, optimizer, llm_scores):
 # ================= 7. Main Training Loop =================
 
 def main():
-    DATA_DIR = "processed_data_hin"
+    DATA_DIR = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     print(f"Loading Data for Pure RL-USIM + PAM from {DATA_DIR}...")
     if not os.path.exists(f"{DATA_DIR}/stream_data.pkl"):
         print("错误: 请先运行 data_process_hin.py")
@@ -1418,7 +1324,7 @@ def main():
         n_cold_t, n_hot_t = 0, 0
 
         if t >= WARMUP_PERIODS:
-            all_item_vecs_eval = build_eval_item_vecs(model, device, llm_scores, item_batch=1024)
+            all_item_vecs_eval = build_all_item_vecs(model, device, llm_scores, item_batch=1024)
             met_cold, n_cold_t = evaluate_usim(
                 model, eval_loader, device, llm_scores, k_list,
                 n_neg=cfg.eval_n_neg, eval_type='cold',
@@ -1547,7 +1453,7 @@ def main():
                 )
 
             if do_early_stop:
-                all_item_vecs_es = build_eval_item_vecs(model, device, llm_scores, item_batch=1024)
+                all_item_vecs_es = build_all_item_vecs(model, device, llm_scores, item_batch=1024)
                 es_cold, _ = evaluate_usim(
                     model, eval_loader, device, llm_scores, k_list,
                     eval_type='cold', full_ranking=True,

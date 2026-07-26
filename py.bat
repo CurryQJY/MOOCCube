@@ -1,2 +1,2 @@
 @echo off
-F:\Anaconda3\envs\nzw\python.exe %*
+D:\Anaconda3\envs\zw\python.exe %*

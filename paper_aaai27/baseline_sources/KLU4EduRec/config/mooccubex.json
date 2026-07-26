@@ -1,0 +1,11 @@
+{
+    "lr": 5e-3,
+    "wd": 5e-4,
+    "train_batch_size": 8192,
+    "embed_size": 64,
+    "n_layers": 2,
+    "item_loss_reg": 5e-3,
+    "item_temp": 0.5,
+    "user_loss_reg": 5e-5,
+    "user_temp": 0.8
+}

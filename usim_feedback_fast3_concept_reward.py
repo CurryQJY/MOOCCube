@@ -18,7 +18,6 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from processed_data_utils import load_llm_scores_for_stream
 
 from usim import (
     StreamDataset,
@@ -432,17 +431,9 @@ def main():
     with open(f"{data_dir}/meta.json", "r") as f:
         meta = json.load(f)
     df = pd.read_pickle(f"{data_dir}/stream_data.pkl")
-    llm_scores, llm_score_path, _ = load_llm_scores_for_stream(
-        data_dir,
-        df,
-        cold_threshold=5,
-        n_users=meta.get("n_users"),
-        n_items=meta.get("n_items"),
-        fallback_data_dirs=["processed_data"],
-    )
+    with open(f"{data_dir}/llm_scores.pkl", "rb") as f:
+        llm_scores = pd.read_pickle(f)
     content_emb = torch.load(f"{data_dir}/content_emb.pt")
-    if llm_score_path:
-        print(f"   LLM scores loaded from {llm_score_path}")
 
     cfg = Fast3Config(meta["n_users"], meta["n_items"], content_emb.shape[1])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -487,10 +478,6 @@ def main():
         f"TopM={cfg.retrieve_top_m} | Temp={cfg.candidate_temp:.2f} | "
         f"Eps={cfg.candidate_epsilon:.2f} | Ncand={cfg.n_candidates} | "
         f"BankRefresh={cfg.user_bank_refresh_steps}"
-    )
-    print(
-        f">> LLM Injection: safe_mode={cfg.llm_safe_mode} | weight={cfg.llm_weight:.2f} | "
-        f"cold_only={cfg.llm_cold_only} | bank_mode={cfg.llm_bank_mode}"
     )
     print(
         f">> Course Soft Rerank: enabled={cfg.feedback_course_sample_soft} | "

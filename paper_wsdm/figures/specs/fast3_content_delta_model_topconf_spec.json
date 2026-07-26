@@ -1,0 +1,48 @@
+{
+  "title": "USIM-Feedback FAST3 ContentDelta model overview",
+  "source_files": [
+    "usim_feedback_fast3_content_delta.py",
+    "fast3_delta/config.py",
+    "fast3_delta/course_artifacts.py",
+    "fast3_delta/eval.py",
+    "run_usim_feedback_fast3_content_delta_static.ps1"
+  ],
+  "main_class": "Fast3FeedbackUSIM",
+  "panels": {
+    "state": [
+      "static item-cold split",
+      "target course, user history, content embeddings, LLM scores, course relations"
+    ],
+    "A": [
+      "course ID/content/LLM fusion",
+      "bounded cold-only ContentDelta",
+      "user history encoder and user bank"
+    ],
+    "B": [
+      "top-M retrieval and knowledge-biased candidate sampling",
+      "actor-critic rollout",
+      "gradient state update and reward feedback"
+    ],
+    "C": [
+      "strict item-cold full catalog scoring",
+      "item-macro Recall@K and NDCG@K"
+    ],
+    "training": [
+      "rank CE",
+      "InfoNCE",
+      "PPO",
+      "course/prereq rewards",
+      "PAAC",
+      "SAGE aux",
+      "CGRC recon aux",
+      "ContentDelta regularization"
+    ]
+  },
+  "visual_grammar": {
+    "black": "forward computation",
+    "green": "course-knowledge guidance and candidate sampling",
+    "blue": "representation/state flow",
+    "red_dashed": "training-only optimization or feedback",
+    "orange": "user/action signal"
+  }
+}

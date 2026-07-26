@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 
 from torch.utils.data import Dataset, DataLoader
 from pam_model import PAM, Config
-from processed_data_utils import load_processed_bundle
 
 
 def setup_seed(seed=2025):
@@ -38,7 +37,7 @@ def setup_seed(seed=2025):
     # 6. 设置环境变量 (防止 Hash 随机化)
     os.environ['PYTHONHASHSEED'] = str(seed)
 
-    print(f"Seed fixed: {seed}")
+    print(f"✅ 随机种子已固定: {seed}")
 
 
 # ==========================================
@@ -185,12 +184,14 @@ def evaluate(model, loader, device):
 
 def main():
     print("Loading Data...")
-    try:
-        data_dir, meta, df, content_emb = load_processed_bundle()
-    except FileNotFoundError as exc:
-        print(exc)
+    if not os.path.exists("processed_data/stream_data.pkl"):
+        print("错误: 请先运行 data_process.py")
         return
-    print(f">> Data Dir: {data_dir}")
+
+    with open("processed_data/meta.json", "r") as f:
+        meta = json.load(f)
+    df = pd.read_pickle("processed_data/stream_data.pkl")
+    content_emb = torch.load("processed_data/content_emb.pt")
 
     # 按月切分
     periods = split_dataframe_by_periods(df, period_type='M')
@@ -241,7 +242,7 @@ def main():
             if metrics:
                 current_res = metrics
                 test_count = n_cold
-                print(f"  [TEST] (n={n_cold}) R@10: {metrics['R@10']:.4f} | N@10: {metrics['N@10']:.4f}")
+                print(f"  [★TEST] (n={n_cold}) R@10: {metrics['R@10']:.4f} | N@10: {metrics['N@10']:.4f}")
             else:
                 print("  [SKIP] No cold items to test.")
         else:

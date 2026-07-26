@@ -1,0 +1,1 @@
+The dataset used in this study was sourced from the MOOCCube platform (http://moocdata.cn/data/MOOCCube). The preprocessed data can be downloaded from the Baidu Cloud link: https://pan.baidu.com/s/1aq5SSPelM42Xoq6hNvCqkQ?pwd=hjd3 提取码: hjd3

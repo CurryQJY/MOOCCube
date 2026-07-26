@@ -1,0 +1,9 @@
+﻿{
+    "state":  "complete",
+    "current":  "done",
+    "message":  "All nine KGRec reports validated; main-table summary generated",
+    "updated_at":  "2026-07-13T01:34:39.4242318+08:00",
+    "queue_log":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\_remaining_main_table_queue\\queue.log",
+    "summary_json":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\_remaining_main_table_queue\\main_table_summary.json",
+    "summary_csv":  "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_kgrec_strict\\_remaining_main_table_queue\\main_table_summary.csv"
+}

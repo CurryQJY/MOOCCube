@@ -1,0 +1,50 @@
+{
+"result":{
+"query":"recommendation* prerequisite* concept*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"67.70"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"3",
+"@dc":"3",
+"@oc":"3",
+"@id":"69516252",
+"text":"concept"
+}
+},
+"hits":{
+"@total":"3",
+"@computed":"3",
+"@sent":"3",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"1059636",
+"info":{"authors":{"author":[{"@pid":"229/7781","text":"Abdessamad Chanaa"},{"@pid":"229/7812","text":"Nour-Eddine El Faddouli"}]},"title":"Prerequisites-based course recommendation: recommending learning objects using concept prerequisites and metadata matching.","venue":"Smart Learn. Environ.","volume":"11","number":"1","pages":"16","year":"2024","type":"Journal Articles","access":"open","key":"journals/sle/ChanaaF24","doi":"10.1186/S40561-024-00301-0","ee":"https://doi.org/10.1186/s40561-024-00301-0","url":"https://dblp.org/rec/journals/sle/ChanaaF24"},
+"url":"URL#1059636"
+},
+{
+"@score":"3",
+"@id":"858818",
+"info":{"authors":{"author":[{"@pid":"418/4957","text":"Xiangrui Xiong"},{"@pid":"170/2151","text":"Yichuan Lu"},{"@pid":"423/7168","text":"Zifei Pan"},{"@pid":"57/6745","text":"Chang Sun"}]},"title":"CLLMRec: LLM-powered Cognitive-Aware Concept Recommendation via Semantic Alignment and Prerequisite Knowledge Distillation.","venue":"CoRR","volume":"abs/2511.17041","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2511-17041","doi":"10.48550/ARXIV.2511.17041","ee":"https://doi.org/10.48550/arXiv.2511.17041","url":"https://dblp.org/rec/journals/corr/abs-2511-17041"},
+"url":"URL#858818"
+},
+{
+"@score":"3",
+"@id":"2035242",
+"info":{"authors":{"author":[{"@pid":"16/3418","text":"Yu He"},{"@pid":"255/2196","text":"Hailin Wang"},{"@pid":"222/6129","text":"Yigong Pan"},{"@pid":"76/5864","text":"Yinghua Zhou"},{"@pid":"44/1372","text":"Guangzhong Sun"}]},"title":"Exercise recommendation method based on knowledge tracing and concept prerequisite relations.","venue":"CCF Trans. Pervasive Comput. Interact.","volume":"4","number":"4","pages":"452-464","year":"2022","type":"Journal Articles","access":"closed","key":"journals/ccftpci/HeWPZS22","doi":"10.1007/S42486-022-00109-2","ee":"https://doi.org/10.1007/s42486-022-00109-2","url":"https://dblp.org/rec/journals/ccftpci/HeWPZS22"},
+"url":"URL#2035242"
+}
+]
+}
+}
+}

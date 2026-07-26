@@ -1,0 +1,37 @@
+data_path: dataset/
+dataset: coco_strict_full
+benchmark_filename: ['train', 'valid', 'test']
+
+field_separator: "\t"
+seq_separator: " "
+USER_ID_FIELD: user_id
+ITEM_ID_FIELD: item_id
+RATING_FIELD: rating
+TIME_FIELD: timestamp
+LABEL_FIELD: label
+NEG_PREFIX: neg_
+ITEM_LIST_LENGTH_FIELD: item_length
+LIST_SUFFIX: _list
+MAX_ITEM_LIST_LENGTH: 50
+POSITION_FIELD: position_id
+HEAD_ENTITY_ID_FIELD: head_id
+TAIL_ENTITY_ID_FIELD: tail_id
+RELATION_ID_FIELD: relation_id
+ENTITY_ID_FIELD: entity_id
+
+load_col:
+    inter: [user_id, item_id, timestamp]
+    item: [item_id, first_level_category, second_level_category]
+    kg: [head_id, relation_id, tail_id]
+    link: [item_id, entity_id]
+
+filter_inter_by_user_or_item: True
+rm_dup_inter: ~
+normalize_all: True
+eval_setting: TO_LS,full
+topk: [5,10,20]
+metrics: ["Recall", "MRR", "NDCG", "Hit", "Precision"]
+training_neg_sample_num: 0
+train_batch_size: 32
+eval_batch_size: 64
+epochs: 1

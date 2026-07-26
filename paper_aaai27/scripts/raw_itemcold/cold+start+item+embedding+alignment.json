@@ -1,0 +1,23 @@
+{
+"result":{
+"query":"cold* start* item* embedding* alignment*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"22.19"
+},
+"completions":{
+"@total":"0",
+"@computed":"0",
+"@sent":"0"
+},
+"hits":{
+"@total":"0",
+"@computed":"0",
+"@sent":"0",
+"@first":"0"}
+}
+}
