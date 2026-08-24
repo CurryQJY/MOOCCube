@@ -1,0 +1,392 @@
+{
+"result":{
+"query":"cold* start* recommendation* meta* learning*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"46.94"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"60",
+"@dc":"60",
+"@oc":"60",
+"@id":"70164624",
+"text":"learning"
+}
+},
+"hits":{
+"@total":"60",
+"@computed":"60",
+"@sent":"60",
+"@first":"0",
+"hit":[{
+"@score":"7",
+"@id":"2775318",
+"info":{"authors":{"author":[{"@pid":"278/0615","text":"Krishna Prasad Neupane"},{"@pid":"220/0374","text":"Ervine Zheng"},{"@pid":"58/6957-1","text":"Qi Yu 0001"}]},"title":"MetaEDL: Meta Evidential Learning For Uncertainty-Aware Cold-Start Recommendations.","venue":"ICDM","pages":"1258-1263","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/icdm/NeupaneZ021","doi":"10.1109/ICDM51629.2021.00154","ee":"https://doi.org/10.1109/ICDM51629.2021.00154","url":"https://dblp.org/rec/conf/icdm/NeupaneZ021"},
+"url":"URL#2775318"
+},
+{
+"@score":"6",
+"@id":"1566130",
+"info":{"authors":{"author":[{"@pid":"340/7859","text":"Honglin Shu"},{"@pid":"c/KFLChung","text":"Fu-Lai Chung"},{"@pid":"48/8628","text":"Da Lin"}]},"title":"MetaGC-MC: A graph-based meta-learning approach to cold-start recommendation with/without auxiliary information.","venue":"Inf. Sci.","volume":"623","pages":"791-811","year":"2023","type":"Journal Articles","access":"closed","key":"journals/isci/ShuCL23","doi":"10.1016/J.INS.2022.12.030","ee":"https://doi.org/10.1016/j.ins.2022.12.030","url":"https://dblp.org/rec/journals/isci/ShuCL23"},
+"url":"URL#1566130"
+},
+{
+"@score":"6",
+"@id":"1670159",
+"info":{"authors":{"author":[{"@pid":"231/8856-2","text":"Yuntao Du 0002"},{"@pid":"227/4791","text":"Xinjun Zhu"},{"@pid":"69/157-1","text":"Lu Chen 0001"},{"@pid":"241/7962","text":"Ziquan Fang"},{"@pid":"80/2651","text":"Yunjun Gao"}]},"title":"MetaKG: Meta-Learning on Knowledge Graph for Cold-Start Recommendation.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"35","number":"10","pages":"9850-9863","year":"2023","type":"Journal Articles","access":"closed","key":"journals/tkde/DuZCFG23","doi":"10.1109/TKDE.2022.3168775","ee":"https://doi.org/10.1109/TKDE.2022.3168775","url":"https://dblp.org/rec/journals/tkde/DuZCFG23"},
+"url":"URL#1670159"
+},
+{
+"@score":"6",
+"@id":"2046249",
+"info":{"authors":{"author":[{"@pid":"166/0017","text":"Tianyuan Li"},{"@pid":"54/3643-4","text":"Xin Su 0004"},{"@pid":"49/3283","text":"Wei Liu"},{"@pid":"22/849","text":"Wei Liang"},{"@pid":"98/4766","text":"Meng-Yen Hsieh"},{"@pid":"318/5756","text":"Zhuhui Chen"},{"@pid":"10/11486","text":"Xuchong Liu"},{"@pid":"24/6914","text":"Hong Zhang"}]},"title":"Memory-augmented meta-learning on meta-path for fast adaptation cold-start recommendation.","venue":"Connect. Sci.","volume":"34","number":"1","pages":"301-318","year":"2022","type":"Journal Articles","access":"open","key":"journals/connection/LiSLLHCLZ22","doi":"10.1080/09540091.2021.1996537","ee":"https://doi.org/10.1080/09540091.2021.1996537","url":"https://dblp.org/rec/journals/connection/LiSLLHCLZ22"},
+"url":"URL#2046249"
+},
+{
+"@score":"6",
+"@id":"2409462",
+"info":{"authors":{"author":[{"@pid":"231/8856-2","text":"Yuntao Du 0002"},{"@pid":"227/4791","text":"Xinjun Zhu"},{"@pid":"69/157-1","text":"Lu Chen 0001"},{"@pid":"241/7962","text":"Ziquan Fang"},{"@pid":"80/2651","text":"Yunjun Gao"}]},"title":"MetaKG: Meta-learning on Knowledge Graph for Cold-start Recommendation.","venue":"CoRR","volume":"abs/2202.03851","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2202-03851","ee":"https://arxiv.org/abs/2202.03851","url":"https://dblp.org/rec/journals/corr/abs-2202-03851"},
+"url":"URL#2409462"
+},
+{
+"@score":"6",
+"@id":"2850568",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"10/5415-6","text":"Ying Sun 0006"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"75/2820-1","text":"Juan Cao 0001"}]},"title":"Learning to Warm Up Cold Item Embeddings for Cold-start Recommendation with Meta Scaling and Shifting Networks.","venue":"SIGIR","pages":"1167-1176","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ZhuXZGSZLC21","doi":"10.1145/3404835.3462843","ee":"https://doi.org/10.1145/3404835.3462843","url":"https://dblp.org/rec/conf/sigir/ZhuXZGSZLC21"},
+"url":"URL#2850568"
+},
+{
+"@score":"6",
+"@id":"2901578",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"10/5415-6","text":"Ying Sun 0006"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"75/2820-1","text":"Juan Cao 0001"}]},"title":"Learning to Warm Up Cold Item Embeddings for Cold-start Recommendation with Meta Scaling and Shifting Networks.","venue":"CoRR","volume":"abs/2105.04790","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2105-04790","ee":"https://arxiv.org/abs/2105.04790","url":"https://dblp.org/rec/journals/corr/abs-2105-04790"},
+"url":"URL#2901578"
+},
+{
+"@score":"5",
+"@id":"199368",
+"info":{"authors":{"author":[{"@pid":"295/3273","text":"Arya Hadizadeh Moghaddam"},{"@pid":"355/4329","text":"Mohsen Nayebi Kerdabadi"},{"@pid":"144/9006","text":"Dongjie Wang"},{"@pid":"65/5195","text":"Mei Liu"},{"@pid":"134/4025-1","text":"Zijun Yao 0001"}]},"title":"User-Adaptive Meta-Learning for Cold-Start Medication Recommendation with Uncertainty Filtering.","venue":"CoRR","volume":"abs/2601.22820","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2601-22820","doi":"10.48550/ARXIV.2601.22820","ee":"https://doi.org/10.48550/arXiv.2601.22820","url":"https://dblp.org/rec/journals/corr/abs-2601-22820"},
+"url":"URL#199368"
+},
+{
+"@score":"5",
+"@id":"297862",
+"info":{"authors":{"author":[{"@pid":"407/4062","text":"Nida Siddique"},{"@pid":"236/9374","text":"Amna Zafar"},{"@pid":"223/8634","text":"Beenish Ayesha Akram"},{"@pid":"52/4427-12","text":"Muhammad Waseem 0012"},{"@pid":"146/0363-1","text":"Sajid Iqbal 0001"},{"@pid":"407/3878","text":"Ahmad A. Al-Yahya"},{"@pid":"154/9309","text":"Muhammad Nabeel Asghar"},{"@pid":"273/1576","text":"Abdullah A. Alaulamie"}]},"title":"IMETA-GNN: Meta Learning-Based Cold Start Optimization for Recommendation System.","venue":"IEEE Access","volume":"13","pages":"93964-93976","year":"2025","type":"Journal Articles","access":"open","key":"journals/access/SiddiqueZAWIAAA25","doi":"10.1109/ACCESS.2025.3564454","ee":"https://doi.org/10.1109/ACCESS.2025.3564454","url":"https://dblp.org/rec/journals/access/SiddiqueZAWIAAA25"},
+"url":"URL#297862"
+},
+{
+"@score":"5",
+"@id":"300399",
+"info":{"authors":{"author":[{"@pid":"348/0711","text":"Jamallah Mohammed Hussein Zawia"},{"@pid":"24/1840","text":"Maizatul Akmar Binti Ismail"},{"@pid":"68/8836","text":"Mohammad Imran"},{"@pid":"214/3667","text":"Buce Trias Hanggara"},{"@pid":"257/6038","text":"Diva Kurnianingtyas"},{"@pid":"397/2585","text":"Silvi Asna"},{"@pid":"64/8605-1","text":"Quang Tran Minh 0001"}]},"title":"Comprehensive Review of Meta-Learning Methods for Cold-Start Issue in Recommendation Systems.","venue":"IEEE Access","volume":"13","pages":"24622-24641","year":"2025","type":"Journal Articles","access":"open","key":"journals/access/ZawiaIIHKAM25","doi":"10.1109/ACCESS.2025.3536025","ee":"https://doi.org/10.1109/ACCESS.2025.3536025","url":"https://dblp.org/rec/journals/access/ZawiaIIHKAM25"},
+"url":"URL#300399"
+},
+{
+"@score":"5",
+"@id":"345179",
+"info":{"authors":{"author":[{"@pid":"331/3401","text":"Yantong Du"},{"@pid":"02/1003-12","text":"Rui Chen 0012"},{"@pid":"84/2613","text":"Qilong Han"},{"@pid":"197/5465","text":"Qiaoyu Tan"},{"@pid":"15/1275","text":"Hongtao Song"},{"@pid":"91/195-60","text":"Chi Zhang 0060"}]},"title":"Greatmeta: gradient-aware adaptive meta-learning for cold-start recommendations.","venue":"Data Min. Knowl. Discov.","volume":"39","number":"5","pages":"42","year":"2025","type":"Journal Articles","access":"closed","key":"journals/datamine/DuCHTSZ25","doi":"10.1007/S10618-025-01123-5","ee":"https://doi.org/10.1007/s10618-025-01123-5","url":"https://dblp.org/rec/journals/datamine/DuCHTSZ25"},
+"url":"URL#345179"
+},
+{
+"@score":"5",
+"@id":"360518",
+"info":{"authors":{"author":[{"@pid":"98/3794-1","text":"Xiaoyang Liu 0001"},{"@pid":"174/3198","text":"Ziyang Zhang"},{"@pid":"284/0094","text":"Xiaoqin Zhang"},{"@pid":"94/5332","text":"Pasquale De Meo"},{"@pid":"27/1589","text":"Hocine Cherifi"}]},"title":"Multi-supervisor association network cold start recommendation based on meta-learning.","venue":"Expert Syst. Appl.","volume":"267","pages":"126204","year":"2025","type":"Journal Articles","access":"closed","key":"journals/eswa/LiuZZMC25","doi":"10.1016/J.ESWA.2024.126204","ee":"https://doi.org/10.1016/j.eswa.2024.126204","url":"https://dblp.org/rec/journals/eswa/LiuZZMC25"},
+"url":"URL#360518"
+},
+{
+"@score":"5",
+"@id":"390424",
+"info":{"authors":{"author":[{"@pid":"52/5150","text":"Ting Liu"},{"@pid":"46/10037","text":"Fei Deng"},{"@pid":"36/5902","text":"Huiqi Zhang"}]},"title":"Meta-Learning Enhanced Recommendation for Cold-Start Tourist Cities: A Multi-Component Adaptive Framework.","venue":"Informatica","volume":"49","number":"32","year":"2025","type":"Journal Articles","access":"open","key":"journals/informaticaSI/LiuDZ25","doi":"10.31449/INF.V49I32.9336","ee":"https://doi.org/10.31449/inf.v49i32.9336","url":"https://dblp.org/rec/journals/informaticaSI/LiuDZ25"},
+"url":"URL#390424"
+},
+{
+"@score":"5",
+"@id":"414149",
+"info":{"authors":{"author":[{"@pid":"74/10193","text":"Qian Xing"},{"@pid":"176/1092","text":"Yaling Xun"},{"@pid":"65/3698-1","text":"Haifeng Yang 0001"},{"@pid":"11/3400","text":"Yanfeng Li"},{"@pid":"02/3674","text":"Xing Wang"}]},"title":"Meta learning-based relevant user identification and aggregation for cold-start recommendation.","venue":"J. Intell. Inf. Syst.","volume":"63","number":"3","pages":"723-744","year":"2025","type":"Journal Articles","access":"closed","key":"journals/jiis/XingXYLW25","doi":"10.1007/S10844-024-00913-5","ee":"https://doi.org/10.1007/s10844-024-00913-5","url":"https://dblp.org/rec/journals/jiis/XingXYLW25"},
+"url":"URL#414149"
+},
+{
+"@score":"5",
+"@id":"505707",
+"info":{"authors":{"author":[{"@pid":"97/5351-1","text":"Huiting Liu 0001"},{"@pid":"147/9092","text":"Wei Zhang 0098"},{"@pid":"60/3675-1","text":"Pei-Pei Li 0001"},{"@pid":"93/4324-10","text":"Peng Zhao 0010"},{"@pid":"59/4107","text":"Xindong Wu 0001"}]},"title":"Causal Meta-learning with Multi-view Graphs for Cold-start Recommendation.","venue":"ACM Trans. Knowl. Discov. Data","volume":"19","number":"7","pages":"138:1-138:29","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tkdd/LiuZLZW25","doi":"10.1145/3732943","ee":"https://doi.org/10.1145/3732943","url":"https://dblp.org/rec/journals/tkdd/LiuZLZW25"},
+"url":"URL#505707"
+},
+{
+"@score":"5",
+"@id":"505855",
+"info":{"authors":{"author":[{"@pid":"331/3401","text":"Yantong Du"},{"@pid":"02/1003-12","text":"Rui Chen 0012"},{"@pid":"197/5465","text":"Qiaoyu Tan"},{"@pid":"84/2613","text":"Qilong Han"},{"@pid":"81/9432","text":"Shenjie Wang"},{"@pid":"08/890-1","text":"Xiangyu Zhao 0001"}]},"title":"Cross-Task Collaborative Meta-Learning for Cold-Start Recommendations.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"37","number":"12","pages":"7016-7029","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tkde/DuCTHWZ25","doi":"10.1109/TKDE.2025.3613366","ee":"https://doi.org/10.1109/TKDE.2025.3613366","url":"https://dblp.org/rec/journals/tkde/DuCTHWZ25"},
+"url":"URL#505855"
+},
+{
+"@score":"5",
+"@id":"505904",
+"info":{"authors":{"author":[{"@pid":"48/8875","text":"Dongxiao He"},{"@pid":"196/4937","text":"Jiaqi Cui"},{"@pid":"122/4465","text":"Xiaobao Wang"},{"@pid":"37/2900","text":"Guojie Song"},{"@pid":"16/10148","text":"Yuxiao Huang"},{"@pid":"27/9060-1","text":"Lingfei Wu 0001"}]},"title":"Dual Enhanced Meta-Learning With Adaptive Task Scheduler for Cold-Start Recommendation.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"37","number":"4","pages":"1728-1741","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tkde/HeCWSHW25","doi":"10.1109/TKDE.2025.3529525","ee":"https://doi.org/10.1109/TKDE.2025.3529525","url":"https://dblp.org/rec/journals/tkde/HeCWSHW25"},
+"url":"URL#505904"
+},
+{
+"@score":"5",
+"@id":"513964",
+"info":{"authors":{"author":[{"@pid":"94/9625-2","text":"Di Han 0002"},{"@pid":"318/6366","text":"Xiaotian Jing"},{"@pid":"01/6801","text":"Yijun Chen"},{"@pid":"12/6911","text":"Junmin Liu"},{"@pid":"133/2874","text":"Kai Liao"},{"@pid":"29/4801","text":"Wenting Li"}]},"title":"Cold-Start Recommendation based on Knowledge Graph and Meta-Learning under Positive and Negative sampling.","venue":"Trans. Recomm. Syst.","volume":"3","number":"3","pages":"33:1-33:24","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tors/HanJCLLL25","doi":"10.1145/3654804","ee":"https://doi.org/10.1145/3654804","url":"https://dblp.org/rec/journals/tors/HanJCLLL25"},
+"url":"URL#513964"
+},
+{
+"@score":"5",
+"@id":"526737",
+"info":{"authors":{"author":[{"@pid":"67/187-5","text":"Zhiqiang Wang 0005"},{"@pid":"39/6476-6","text":"Jiayi Pan 0006"},{"@pid":"03/9261-1","text":"Xingwang Zhao 0001"},{"@pid":"128/2639","text":"Jianqing Liang"},{"@pid":"262/0544","text":"Chenjiao Feng"},{"@pid":"278/7453","text":"Kaixuan Yao"}]},"title":"Counterfactual Task-augmented Meta-learning for Cold-start Sequential Recommendation.","venue":"AAAI","pages":"12801-12809","year":"2025","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/00050ZLFY25","doi":"10.1609/AAAI.V39I12.33396","ee":"https://doi.org/10.1609/aaai.v39i12.33396","url":"https://dblp.org/rec/conf/aaai/00050ZLFY25"},
+"url":"URL#526737"
+},
+{
+"@score":"5",
+"@id":"557812",
+"info":{"authors":{"author":[{"@pid":"187/6243","text":"Ao Zhang"},{"@pid":"334/1030","text":"Boya Du"},{"@pid":"22/583","text":"Yulin Xu"},{"@pid":"62/9983","text":"Jialin Zhu"},{"@pid":"99/7950-1","text":"Yuning Jiang 0001"}]},"title":"Meta-Adaptive Network for Effective Cold-Start Recommendation via Warm-Aware Representation Learning.","venue":"CIKM","pages":"6234-6241","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/ZhangDXZ025","doi":"10.1145/3746252.3761508","ee":"https://doi.org/10.1145/3746252.3761508","url":"https://dblp.org/rec/conf/cikm/ZhangDXZ025"},
+"url":"URL#557812"
+},
+{
+"@score":"5",
+"@id":"660494",
+"info":{"authors":{"author":[{"@pid":"389/9720","text":"Yunze Luo"},{"@pid":"298/0856","text":"Yuezihan Jiang"},{"@pid":"314/2114","text":"Yinjie Jiang"},{"@pid":"294/6457","text":"Gaode Chen"},{"@pid":"387/2333","text":"Jingchi Wang"},{"@pid":"87/2334","text":"Kaigui Bian"},{"@pid":"136/5221-8","text":"Peiyi Li 0008"},{"@pid":"52/323-10","text":"Qi Zhang 0010"}]},"title":"Online Item Cold-Start Recommendation with Popularity-Aware Meta-Learning.","venue":"KDD","pages":"927-937","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/kdd/LuoJJCWB0025","doi":"10.1145/3690624.3709336","ee":"https://doi.org/10.1145/3690624.3709336","url":"https://dblp.org/rec/conf/kdd/LuoJJCWB0025"},
+"url":"URL#660494"
+},
+{
+"@score":"5",
+"@id":"697005",
+"info":{"authors":{"author":[{"@pid":"96/5464","text":"Yukun Cao"},{"@pid":"426/6020","text":"Niu Gu"},{"@pid":"206/8354","text":"Yongcheng He"}]},"title":"DMCM: Dual-space Mapping Contrastive Meta Learning for Cold Start Recommendation*.","venue":"SMC","pages":"3374-3379","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/smc/CaoGH25","doi":"10.1109/SMC58881.2025.11342948","ee":"https://doi.org/10.1109/SMC58881.2025.11342948","url":"https://dblp.org/rec/conf/smc/CaoGH25"},
+"url":"URL#697005"
+},
+{
+"@score":"5",
+"@id":"974176",
+"info":{"authors":{"author":[{"@pid":"62/1272","text":"Hui Pan"},{"@pid":"97/6043","text":"Senlin Luo"},{"@pid":"328/7149","text":"Xinshuai Li"},{"@pid":"21/1355","text":"Limin Pan"},{"@pid":"196/7939","text":"Zhouting Wu"}]},"title":"Meta-learning on dynamic node clustering knowledge graph for cold-start recommendation.","venue":"Neurocomputing","volume":"602","pages":"128192","year":"2024","type":"Journal Articles","access":"closed","key":"journals/ijon/PanLLPW24","doi":"10.1016/J.NEUCOM.2024.128192","ee":"https://doi.org/10.1016/j.neucom.2024.128192","url":"https://dblp.org/rec/journals/ijon/PanLLPW24"},
+"url":"URL#974176"
+},
+{
+"@score":"5",
+"@id":"1052573",
+"info":{"authors":{"author":[{"@pid":"325/1692","text":"Xiaomin Lv"},{"@pid":"65/5858-1","text":"Kai Fang 0001"},{"@pid":"219/4242","text":"Tongcun Liu"}]},"title":"Content-Aware Few-Shot Meta-Learning for Cold-Start Recommendation on Portable Sensing Devices.","venue":"Sensors","volume":"24","number":"17","pages":"5510","year":"2024","type":"Journal Articles","access":"open","key":"journals/sensors/LvFL24","doi":"10.3390/S24175510","ee":"https://doi.org/10.3390/s24175510","url":"https://dblp.org/rec/journals/sensors/LvFL24"},
+"url":"URL#1052573"
+},
+{
+"@score":"5",
+"@id":"1106138",
+"info":{"authors":{"author":[{"@pid":"77/4673-4","text":"Yanan Wang 0004"},{"@pid":"39/844-1","text":"Yong Ge 0001"},{"@pid":"98/1669","text":"Zhepeng Li"},{"@pid":"53/2189-35","text":"Li Li 0035"},{"@pid":"02/1003-12","text":"Rui Chen 0012"}]},"title":"M3Rec: A Context-Aware Offline Meta-Level Model-Based Reinforcement Learning Approach for Cold-Start Recommendation.","venue":"ACM Trans. Inf. Syst.","volume":"42","number":"6","pages":"146:1-146:27","year":"2024","type":"Journal Articles","access":"closed","key":"journals/tois/WangGLLC24","doi":"10.1145/3659947","ee":"https://doi.org/10.1145/3659947","url":"https://dblp.org/rec/journals/tois/WangGLLC24"},
+"url":"URL#1106138"
+},
+{
+"@score":"5",
+"@id":"1448843",
+"info":{"authors":{"author":[{"@pid":"389/9720","text":"Yunze Luo"},{"@pid":"298/0856","text":"Yuezihan Jiang"},{"@pid":"314/2114","text":"Yinjie Jiang"},{"@pid":"294/6457","text":"Gaode Chen"},{"@pid":"387/2333","text":"Jingchi Wang"},{"@pid":"87/2334","text":"Kaigui Bian"},{"@pid":"136/5221-8","text":"Peiyi Li 0008"},{"@pid":"52/323-10","text":"Qi Zhang 0010"}]},"title":"Online Item Cold-Start Recommendation with Popularity-Aware Meta-Learning.","venue":"CoRR","volume":"abs/2411.11225","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2411-11225","doi":"10.48550/ARXIV.2411.11225","ee":"https://doi.org/10.48550/arXiv.2411.11225","url":"https://dblp.org/rec/journals/corr/abs-2411-11225"},
+"url":"URL#1448843"
+},
+{
+"@score":"5",
+"@id":"1556134",
+"info":{"authors":{"author":[{"@pid":"332/3280","text":"Israr Ur Rehman"},{"@pid":"10/7594-1","text":"Waqar Ali 0001"},{"@pid":"48/3321","text":"Zahoor Jan"},{"@pid":"88/10035-2","text":"Zulfiqar Ali 0002"},{"@pid":"90/3055","text":"Hui Xu"},{"@pid":"02/5139-1","text":"Jie Shao 0001"}]},"title":"CAML: Contextual augmented meta-learning for cold-start recommendation.","venue":"Neurocomputing","volume":"533","pages":"178-190","year":"2023","type":"Journal Articles","access":"closed","key":"journals/ijon/RehmanAJ0X023","doi":"10.1016/J.NEUCOM.2023.02.051","ee":"https://doi.org/10.1016/j.neucom.2023.02.051","url":"https://dblp.org/rec/journals/ijon/RehmanAJ0X023"},
+"url":"URL#1556134"
+},
+{
+"@score":"5",
+"@id":"1557705",
+"info":{"authors":{"author":[{"@pid":"17/2976-1","text":"Yang Fang 0001"},{"@pid":"13/10345","text":"Zhen Tan"},{"@pid":"96/4424","text":"Ziyang Chen"},{"@pid":"87/5207-3","text":"Weidong Xiao 0003"},{"@pid":"181/2714","text":"Lingling Zhang"},{"@pid":"78/3204","text":"Feng Tian"}]},"title":"Contrastive Meta-learning on Heterogeneous Information Networks for Cold-start Recommendation.","venue":"Int. J. Softw. Informatics","volume":"13","number":"4","pages":"469-488","year":"2023","type":"Journal Articles","access":"closed","key":"journals/ijsi/FangTCXZT23","doi":"10.21655/IJSI.1673-7288.00309","ee":"https://doi.org/10.21655/ijsi.1673-7288.00309","url":"https://dblp.org/rec/journals/ijsi/FangTCXZT23"},
+"url":"URL#1557705"
+},
+{
+"@score":"5",
+"@id":"1590278",
+"info":{"authors":{"author":[{"@pid":"97/5351-1","text":"Huiting Liu 0001"},{"@pid":"181/2817-121","text":"Lei Wang 0121"},{"@pid":"60/3675-1","text":"Peipei Li 0001"},{"@pid":"12/654","text":"Cheng Qian"},{"@pid":"93/4324-10","text":"Peng Zhao 0010"},{"@pid":"59/4107","text":"Xindong Wu 0001"}]},"title":"Relation-propagation meta-learning on an explicit preference graph for cold-start recommendation.","venue":"Knowl. Based Syst.","volume":"272","pages":"110579","year":"2023","type":"Journal Articles","access":"closed","key":"journals/kbs/LiuW0QZ023","doi":"10.1016/J.KNOSYS.2023.110579","ee":"https://doi.org/10.1016/j.knosys.2023.110579","url":"https://dblp.org/rec/journals/kbs/LiuW0QZ023"},
+"url":"URL#1590278"
+},
+{
+"@score":"5",
+"@id":"1590609",
+"info":{"authors":{"author":[{"@pid":"95/3616-5","text":"Jia Xu 0005"},{"@pid":"48/859-5","text":"Hongming Zhang 0005"},{"@pid":"10/5630-173","text":"Xin Wang 0173"},{"@pid":"42/647","text":"Pin Lv"}]},"title":"AdaML: An Adaptive Meta-Learning model based on user relevance for user cold-start recommendation.","venue":"Knowl. Based Syst.","volume":"279","pages":"110925","year":"2023","type":"Journal Articles","access":"closed","key":"journals/kbs/XuZWL23","doi":"10.1016/J.KNOSYS.2023.110925","ee":"https://doi.org/10.1016/j.knosys.2023.110925","url":"https://dblp.org/rec/journals/kbs/XuZWL23"},
+"url":"URL#1590609"
+},
+{
+"@score":"5",
+"@id":"1670013",
+"info":{"authors":{"author":[{"@pid":"69/1950-1","text":"Chunyang Wang 0001"},{"@pid":"25/8709-6","text":"Yanmin Zhu 0006"},{"@pid":"230/7127-1","text":"Haobing Liu 0001"},{"@pid":"276/5093","text":"Tianzi Zang"},{"@pid":"181/2613-38","text":"Ke Wang 0038"},{"@pid":"85/3615","text":"Jiadi Yu"}]},"title":"Multifaceted Relation-aware Meta-learning with Dual Customization for User Cold-start Recommendation.","venue":"ACM Trans. Knowl. Discov. Data","volume":"17","number":"9","pages":"130:1-130:27","year":"2023","type":"Journal Articles","access":"closed","key":"journals/tkdd/WangZLZWY23","doi":"10.1145/3597458","ee":"https://doi.org/10.1145/3597458","url":"https://dblp.org/rec/journals/tkdd/WangZLZWY23"},
+"url":"URL#1670013"
+},
+{
+"@score":"5",
+"@id":"1718668",
+"info":{"authors":{"author":[{"@pid":"221/0707","text":"Minchang Kim"},{"@pid":"159/8412","text":"Yongjin Yang"},{"@pid":"222/3749","text":"Jung Hyun Ryu"},{"@pid":"02/7619","text":"Taesup Kim"}]},"title":"Meta-Learning with Adaptive Weighted Loss for Imbalanced Cold-Start Recommendation.","venue":"CIKM","pages":"1077-1086","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/KimYRK23","doi":"10.1145/3583780.3614965","ee":"https://doi.org/10.1145/3583780.3614965","url":"https://dblp.org/rec/conf/cikm/KimYRK23"},
+"url":"URL#1718668"
+},
+{
+"@score":"5",
+"@id":"1718743",
+"info":{"authors":{"author":[{"@pid":"35/2899-8","text":"Han Liu 0008"},{"@pid":"226/3955","text":"Hongxiang Lin"},{"@pid":"31/2303-3","text":"Xiaotong Zhang 0003"},{"@pid":"85/10856","text":"Fenglong Ma"},{"@pid":"13/3715","text":"Hongyang Chen 0001"},{"@pid":"w/LeiWang5","text":"Lei Wang 0005"},{"@pid":"55/6749-5","text":"Hong Yu 0005"},{"@pid":"40/4372","text":"Xianchao Zhang 0001"}]},"title":"Boosting Meta-Learning Cold-Start Recommendation with Graph Neural Network.","venue":"CIKM","pages":"4105-4109","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/LiuLZMCWYZ23","doi":"10.1145/3583780.3615283","ee":"https://doi.org/10.1145/3583780.3615283","url":"https://dblp.org/rec/conf/cikm/LiuLZMCWYZ23"},
+"url":"URL#1718743"
+},
+{
+"@score":"5",
+"@id":"1719065",
+"info":{"authors":{"author":[{"@pid":"327/4148-1","text":"Xuhao Zhao 0001"},{"@pid":"25/8709-6","text":"Yanmin Zhu 0006"},{"@pid":"69/1950-1","text":"Chunyang Wang 0001"},{"@pid":"342/7725","text":"Mengyuan Jing"},{"@pid":"85/3615","text":"Jiadi Yu"},{"@pid":"59/2249-1","text":"Feilong Tang 0001"}]},"title":"Task-Difficulty-Aware Meta-Learning with Adaptive Update Strategies for User Cold-Start Recommendation.","venue":"CIKM","pages":"3484-3493","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/ZhaoZWJYT23","doi":"10.1145/3583780.3615074","ee":"https://doi.org/10.1145/3583780.3615074","url":"https://dblp.org/rec/conf/cikm/ZhaoZWJYT23"},
+"url":"URL#1719065"
+},
+{
+"@score":"5",
+"@id":"1842292",
+"info":{"authors":{"author":[{"@pid":"48/4950-1","text":"Huafeng Liu 0001"},{"@pid":"78/8255","text":"Mingjie Zhou"},{"@pid":"54/2770","text":"Liping Jing"},{"@pid":"n/MichaelKNg","text":"Michael K. Ng 0001"}]},"title":"Doubly Intention Learning for Cold-start Recommendation with Uncertainty-aware Stochastic Meta Process.","venue":"ACM Multimedia","pages":"6212-6222","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/mm/0001ZJ023","doi":"10.1145/3581783.3612446","ee":"https://doi.org/10.1145/3581783.3612446","url":"https://dblp.org/rec/conf/mm/0001ZJ023"},
+"url":"URL#1842292"
+},
+{
+"@score":"5",
+"@id":"1867870",
+"info":{"authors":{"author":[{"@pid":"28/3576","text":"Jingyuan Li"},{"@pid":"47/722","text":"Yue Zhang"},{"@pid":"14/6103","text":"Xuan Lin"},{"@pid":"89/3450","text":"Xinxing Yang"},{"@pid":"164/5910","text":"Ge Zhou"},{"@pid":"139/8073","text":"Longfei Li"},{"@pid":"52/4150","text":"Hong Chen"},{"@pid":"99/3847-11","text":"Jun Zhou 0011"}]},"title":"TAML: Time-Aware Meta Learning for Cold-Start Problem in News Recommendation.","venue":"SIGIR","pages":"2415-2419","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/LiZLYZLCZ23","doi":"10.1145/3539618.3592068","ee":"https://doi.org/10.1145/3539618.3592068","url":"https://dblp.org/rec/conf/sigir/LiZLYZLCZ23"},
+"url":"URL#1867870"
+},
+{
+"@score":"5",
+"@id":"1868048",
+"info":{"authors":{"author":[{"@pid":"246/5756","text":"Zhenchao Wu"},{"@pid":"267/2864-5","text":"Xiao Zhou 0005"}]},"title":"M2EU: Meta Learning for Cold-start Recommendation via Enhancing User Preference Estimation.","venue":"SIGIR","pages":"1158-1167","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/WuZ23","doi":"10.1145/3539618.3591719","ee":"https://doi.org/10.1145/3539618.3591719","url":"https://dblp.org/rec/conf/sigir/WuZ23"},
+"url":"URL#1868048"
+},
+{
+"@score":"5",
+"@id":"1886300",
+"info":{"authors":{"author":[{"@pid":"236/6321","text":"Zhendong Chu"},{"@pid":"05/6545","text":"Hongning Wang"},{"@pid":"38/1284","text":"Yun Xiao"},{"@pid":"96/6993","text":"Bo Long"},{"@pid":"27/9060-1","text":"Lingfei Wu 0001"}]},"title":"Meta Policy Learning for Cold-Start Conversational Recommendation.","venue":"WSDM","pages":"222-230","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/ChuWXLW23","doi":"10.1145/3539597.3570443","ee":"https://doi.org/10.1145/3539597.3570443","url":"https://dblp.org/rec/conf/wsdm/ChuWXLW23"},
+"url":"URL#1886300"
+},
+{
+"@score":"5",
+"@id":"1907637",
+"info":{"authors":{"author":[{"@pid":"221/0707","text":"Minchang Kim"},{"@pid":"159/8412","text":"Yongjin Yang"},{"@pid":"222/3749","text":"Jung Hyun Ryu"},{"@pid":"02/7619","text":"Taesup Kim"}]},"title":"Meta-Learning with Adaptive Weighted Loss for Imbalanced Cold-Start Recommendation.","venue":"CoRR","volume":"abs/2302.14640","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2302-14640","doi":"10.48550/ARXIV.2302.14640","ee":"https://doi.org/10.48550/arXiv.2302.14640","url":"https://dblp.org/rec/journals/corr/abs-2302-14640"},
+"url":"URL#1907637"
+},
+{
+"@score":"5",
+"@id":"2120064",
+"info":{"authors":{"author":[{"@pid":"43/3166-84","text":"Zhi Li 0084"},{"@pid":"131/1601","text":"Daichi Amagata"},{"@pid":"148/7274","text":"Yihong Zhang 0001"},{"@pid":"38/2264","text":"Takuya Maekawa"},{"@pid":"40/2808","text":"Takahiro Hara"},{"@pid":"221/2904","text":"Kei Yonekawa"},{"@pid":"25/2313","text":"Mori Kurokawa"}]},"title":"HML4Rec: Hierarchical meta-learning for cold-start recommendation in flash sale e-commerce.","venue":"Knowl. Based Syst.","volume":"255","pages":"109674","year":"2022","type":"Journal Articles","access":"open","key":"journals/kbs/LiAZMHYK22","doi":"10.1016/J.KNOSYS.2022.109674","ee":"https://doi.org/10.1016/j.knosys.2022.109674","url":"https://dblp.org/rec/journals/kbs/LiAZMHYK22"},
+"url":"URL#2120064"
+},
+{
+"@score":"5",
+"@id":"2218362",
+"info":{"authors":{"author":[{"@pid":"278/0615","text":"Krishna Prasad Neupane"},{"@pid":"220/0374","text":"Ervine Zheng"},{"@pid":"55/3630","text":"Yu Kong 0001"},{"@pid":"58/6957-1","text":"Qi Yu 0001"}]},"title":"A Dynamic Meta-Learning Model for Time-Sensitive Cold-Start Recommendations.","venue":"AAAI","pages":"7868-7876","year":"2022","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/NeupaneZK022","doi":"10.1609/AAAI.V36I7.20756","ee":"https://doi.org/10.1609/aaai.v36i7.20756","url":"https://dblp.org/rec/conf/aaai/NeupaneZK022"},
+"url":"URL#2218362"
+},
+{
+"@score":"5",
+"@id":"2245538",
+"info":{"authors":{"author":[{"@pid":"148/2871","text":"Xingyu Pan"},{"@pid":"45/4693","text":"Yushuo Chen"},{"@pid":"277/9239","text":"Changxin Tian"},{"@pid":"248/8419","text":"Zihan Lin"},{"@pid":"74/113-1","text":"Jinpeng Wang 0001"},{"@pid":"h/HeHu","text":"He Hu 0001"},{"@pid":"52/8700","text":"Wayne Xin Zhao"}]},"title":"Multimodal Meta-Learning for Cold-Start Sequential Recommendation.","venue":"CIKM","pages":"3421-3430","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/PanCTLW0Z22","doi":"10.1145/3511808.3557101","ee":"https://doi.org/10.1145/3511808.3557101","url":"https://dblp.org/rec/conf/cikm/PanCTLW0Z22"},
+"url":"URL#2245538"
+},
+{
+"@score":"5",
+"@id":"2245710",
+"info":{"authors":{"author":[{"@pid":"261/2773","text":"Jieyu Yang"},{"@pid":"221/3647","text":"Zhaoxin Huan"},{"@pid":"15/2841-9","text":"Yong He 0009"},{"@pid":"79/1585-1","text":"Ke Ding 0001"},{"@pid":"50/6759-45","text":"Liang Zhang 0045"},{"@pid":"48/5176","text":"Xiaolu Zhang"},{"@pid":"99/3847-11","text":"Jun Zhou 0011"},{"@pid":"88/6405","text":"Linjian Mo"}]},"title":"Task Similarity Aware Meta Learning for Cold-Start Recommendation.","venue":"CIKM","pages":"4630-4634","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/YangHHDZZZM22","doi":"10.1145/3511808.3557709","ee":"https://doi.org/10.1145/3511808.3557709","url":"https://dblp.org/rec/conf/cikm/YangHHDZZZM22"},
+"url":"URL#2245710"
+},
+{
+"@score":"5",
+"@id":"2261467",
+"info":{"authors":{"author":[{"@pid":"59/9431","text":"Guoan Wang"},{"@pid":"82/3752","text":"Xingjun Wang"}]},"title":"Cold-Start Sequential Recommendation with Collaborative Boosted Meta Transitional Learning.","venue":"DSIT","pages":"1-5","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/dsit/WangW22a","doi":"10.1109/DSIT55514.2022.9943897","ee":"https://doi.org/10.1109/DSIT55514.2022.9943897","url":"https://dblp.org/rec/conf/dsit/WangW22a"},
+"url":"URL#2261467"
+},
+{
+"@score":"5",
+"@id":"2307382",
+"info":{"authors":{"author":[{"@pid":"75/1693","text":"Feng Jiang"},{"@pid":"86/7894","text":"Qianfang Xu"},{"@pid":"15/4768-1","text":"Wenliang Li 0001"},{"@pid":"92/6046-6","text":"Bo Xiao 0006"},{"@pid":"10/10305","text":"Yuhao Luo"}]},"title":"They Like Comedy, Don&apos;t You? A Cluster-Based Meta-Learning for Cold-Start Recommendation.","venue":"ICME","pages":"1-6","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/icmcs/JiangXL0L22","doi":"10.1109/ICME52920.2022.9859863","ee":"https://doi.org/10.1109/ICME52920.2022.9859863","url":"https://dblp.org/rec/conf/icmcs/JiangXL0L22"},
+"url":"URL#2307382"
+},
+{
+"@score":"5",
+"@id":"2384299",
+"info":{"authors":{"author":[{"@pid":"287/4920","text":"Junruo Gao"},{"@pid":"75/6589","text":"Yuyang Liu"},{"@pid":"l/JunLi2","text":"Jun Li 0002"},{"@pid":"63/5422","text":"Liang Zhao"}]},"title":"Future-aware and High-order representation learning for cold-start recommendation.","venue":"SmartWorld/UIC/ScalCom/DigitalTwin/PriComp/Meta","pages":"953-960","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/uic/GaoLLZ22","doi":"10.1109/SMARTWORLD-UIC-ATC-SCALCOM-DIGITALTWIN-PRICOMP-METAVERSE56740.2022.00142","ee":"https://doi.org/10.1109/SmartWorld-UIC-ATC-ScalCom-DigitalTwin-PriComp-Metaverse56740.2022.00142","url":"https://dblp.org/rec/conf/uic/GaoLLZ22"},
+"url":"URL#2384299"
+},
+{
+"@score":"5",
+"@id":"2422113",
+"info":{"authors":{"author":[{"@pid":"278/0615","text":"Krishna Prasad Neupane"},{"@pid":"220/0374","text":"Ervine Zheng"},{"@pid":"55/3630","text":"Yu Kong 0001"},{"@pid":"58/6957-1","text":"Qi Yu 0001"}]},"title":"A Dynamic Meta-Learning Model for Time-Sensitive Cold-Start Recommendations.","venue":"CoRR","volume":"abs/2204.00970","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2204-00970","doi":"10.48550/ARXIV.2204.00970","ee":"https://doi.org/10.48550/arXiv.2204.00970","url":"https://dblp.org/rec/journals/corr/abs-2204-00970"},
+"url":"URL#2422113"
+},
+{
+"@score":"5",
+"@id":"2433279",
+"info":{"authors":{"author":[{"@pid":"236/6321","text":"Zhendong Chu"},{"@pid":"05/6545","text":"Hongning Wang"},{"@pid":"38/1284","text":"Yun Xiao"},{"@pid":"96/6993","text":"Bo Long"},{"@pid":"27/9060-1","text":"Lingfei Wu 0001"}]},"title":"Meta Policy Learning for Cold-Start Conversational Recommendation.","venue":"CoRR","volume":"abs/2205.11788","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2205-11788","doi":"10.48550/ARXIV.2205.11788","ee":"https://doi.org/10.48550/arXiv.2205.11788","url":"https://dblp.org/rec/journals/corr/abs-2205-11788"},
+"url":"URL#2433279"
+},
+{
+"@score":"5",
+"@id":"2450920",
+"info":{"authors":{"author":[{"@pid":"44/1219","text":"Yuxiang Shi"},{"@pid":"39/10049-1","text":"Yue Ding 0001"},{"@pid":"89/5615-23","text":"Bo Chen 0023"},{"@pid":"185/6021","text":"Yuyang Huang"},{"@pid":"24/10003","text":"Ruiming Tang"},{"@pid":"40/3934-24","text":"Dong Wang 0024"}]},"title":"Task Aligned Meta-learning based Augmented Graph for Cold-Start Recommendation.","venue":"CoRR","volume":"abs/2208.05716","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2208-05716","doi":"10.48550/ARXIV.2208.05716","ee":"https://doi.org/10.48550/arXiv.2208.05716","url":"https://dblp.org/rec/journals/corr/abs-2208-05716"},
+"url":"URL#2450920"
+},
+{
+"@score":"5",
+"@id":"2721818",
+"info":{"authors":{"author":[{"@pid":"254/6457","text":"Xidong Feng"},{"@pid":"65/4423-77","text":"Chen Chen 0077"},{"@pid":"47/4826-16","text":"Dong Li 0016"},{"@pid":"178/8719","text":"Mengchen Zhao"},{"@pid":"21/7664","text":"Jianye Hao"},{"@pid":"w/JunWang12","text":"Jun Wang 0012"}]},"title":"CMML: Contextual Modulation Meta Learning for Cold-Start Recommendation.","venue":"CIKM","pages":"484-493","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/FengCLZHW21","doi":"10.1145/3459637.3482241","ee":"https://doi.org/10.1145/3459637.3482241","url":"https://dblp.org/rec/conf/cikm/FengCLZHW21"},
+"url":"URL#2721818"
+},
+{
+"@score":"5",
+"@id":"2738539",
+"info":{"authors":{"author":[{"@pid":"80/887-1","text":"Zhengyu Chen 0001"},{"@pid":"80/7163","text":"Donglin Wang"},{"@pid":"288/7599","text":"Shiqian Yin"}]},"title":"Improving Cold-Start Recommendation via Multi-prior Meta-learning.","venue":"ECIR","pages":"249-256","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/ecir/ChenWY21","doi":"10.1007/978-3-030-72240-1_22","ee":"https://doi.org/10.1007/978-3-030-72240-1_22","url":"https://dblp.org/rec/conf/ecir/ChenWY21"},
+"url":"URL#2738539"
+},
+{
+"@score":"5",
+"@id":"2800355",
+"info":{"authors":{"author":[{"@pid":"58/6810-14","text":"Li Wang 0014"},{"@pid":"242/8289","text":"Binbin Jin"},{"@pid":"178/8690","text":"Zhenya Huang"},{"@pid":"160/5961","text":"Hongke Zhao"},{"@pid":"87/10734","text":"Defu Lian"},{"@pid":"95/2446-3","text":"Qi Liu 0003"},{"@pid":"07/258","text":"Enhong Chen"}]},"title":"Preference-Adaptive Meta-Learning for Cold-Start Recommendation.","venue":"IJCAI","pages":"1607-1614","year":"2021","type":"Conference and Workshop Papers","access":"open","key":"conf/ijcai/WangJHZLLC21","doi":"10.24963/IJCAI.2021/222","ee":"https://doi.org/10.24963/ijcai.2021/222","url":"https://dblp.org/rec/conf/ijcai/WangJHZLLC21"},
+"url":"URL#2800355"
+},
+{
+"@score":"5",
+"@id":"2850480",
+"info":{"authors":{"author":[{"@pid":"50/8201","text":"Jianling Wang"},{"@pid":"234/6878","text":"Kaize Ding"},{"@pid":"55/3697","text":"James Caverlee"}]},"title":"Sequential Recommendation for Cold-start Users with Meta Transitional Learning.","venue":"SIGIR","pages":"1783-1787","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/WangDC21","doi":"10.1145/3404835.3463089","ee":"https://doi.org/10.1145/3404835.3463089","url":"https://dblp.org/rec/conf/sigir/WangDC21"},
+"url":"URL#2850480"
+},
+{
+"@score":"5",
+"@id":"2916223",
+"info":{"authors":{"author":[{"@pid":"50/8201","text":"Jianling Wang"},{"@pid":"234/6878","text":"Kaize Ding"},{"@pid":"55/3697","text":"James Caverlee"}]},"title":"Sequential Recommendation for Cold-start Users with Meta Transitional Learning.","venue":"CoRR","volume":"abs/2107.06427","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2107-06427","ee":"https://arxiv.org/abs/2107.06427","url":"https://dblp.org/rec/journals/corr/abs-2107-06427"},
+"url":"URL#2916223"
+},
+{
+"@score":"5",
+"@id":"2923882",
+"info":{"authors":{"author":[{"@pid":"254/6457","text":"Xidong Feng"},{"@pid":"65/4423-77","text":"Chen Chen 0077"},{"@pid":"47/4826-16","text":"Dong Li 0016"},{"@pid":"178/8719","text":"Mengchen Zhao"},{"@pid":"21/7664","text":"Jianye Hao"},{"@pid":"w/JunWang12","text":"Jun Wang 0012"}]},"title":"CMML: Contextual Modulation Meta Learning for Cold-Start Recommendation.","venue":"CoRR","volume":"abs/2108.10511","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2108-10511","ee":"https://arxiv.org/abs/2108.10511","url":"https://dblp.org/rec/journals/corr/abs-2108-10511"},
+"url":"URL#2923882"
+},
+{
+"@score":"5",
+"@id":"2978389",
+"info":{"authors":{"author":[{"@pid":"89/8025","text":"Huiwei Wang"},{"@pid":"14/1356","text":"Yong Zhao"}]},"title":"ML2E: Meta-Learning Embedding Ensemble for Cold-Start Recommendation.","venue":"IEEE Access","volume":"8","pages":"165757-165768","year":"2020","type":"Journal Articles","access":"open","key":"journals/access/WangZ20g","doi":"10.1109/ACCESS.2020.3022796","ee":"https://doi.org/10.1109/ACCESS.2020.3022796","url":"https://dblp.org/rec/journals/access/WangZ20g"},
+"url":"URL#2978389"
+},
+{
+"@score":"5",
+"@id":"3267833",
+"info":{"authors":{"author":[{"@pid":"134/1754","text":"Yuanfu Lu"},{"@pid":"22/981-1","text":"Yuan Fang 0001"},{"@pid":"64/3041-1","text":"Chuan Shi 0001"}]},"title":"Meta-learning on Heterogeneous Information Networks for Cold-start Recommendation.","venue":"KDD","pages":"1563-1573","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/kdd/Lu0S20","doi":"10.1145/3394486.3403207","ee":"https://doi.org/10.1145/3394486.3403207","url":"https://dblp.org/rec/conf/kdd/Lu0S20"},
+"url":"URL#3267833"
+},
+{
+"@score":"5",
+"@id":"3387679",
+"info":{"authors":{"author":[{"@pid":"77/4673-4","text":"Yanan Wang 0004"},{"@pid":"39/844-1","text":"Yong Ge 0001"},{"@pid":"53/2189-35","text":"Li Li 0035"},{"@pid":"02/1003-12","text":"Rui Chen 0012"},{"@pid":"70/6770-1","text":"Tong Xu 0001"}]},"title":"Offline Meta-level Model-based Reinforcement Learning Approach for Cold-Start Recommendation.","venue":"CoRR","volume":"abs/2012.02476","year":"2020","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2012-02476","ee":"https://arxiv.org/abs/2012.02476","url":"https://dblp.org/rec/journals/corr/abs-2012-02476"},
+"url":"URL#3387679"
+},
+{
+"@score":"5",
+"@id":"3680536",
+"info":{"authors":{"author":{"@pid":"223/5842","text":"Homanga Bharadhwaj"}},"title":"Meta-Learning for User Cold-Start Recommendation.","venue":"IJCNN","pages":"1-8","year":"2019","type":"Conference and Workshop Papers","access":"closed","key":"conf/ijcnn/Bharadhwaj19","doi":"10.1109/IJCNN.2019.8852100","ee":"https://doi.org/10.1109/IJCNN.2019.8852100","url":"https://dblp.org/rec/conf/ijcnn/Bharadhwaj19"},
+"url":"URL#3680536"
+},
+{
+"@score":"5",
+"@id":"4464429",
+"info":{"authors":{"author":[{"@pid":"25/7592","text":"Manasi Vartak"},{"@pid":"47/1858","text":"Arvind Thiagarajan"},{"@pid":"149/4092","text":"Conrado Miranda"},{"@pid":"118/4026","text":"Jeshua Bratman"},{"@pid":"86/3862","text":"Hugo Larochelle"}]},"title":"A Meta-Learning Perspective on Cold-Start Recommendations for Items.","venue":"NIPS","pages":"6904-6914","year":"2017","type":"Conference and Workshop Papers","access":"open","key":"conf/nips/VartakTMBL17","ee":"https://proceedings.neurips.cc/paper/2017/hash/51e6d6e679953c6311757004d8cbbba9-Abstract.html","url":"https://dblp.org/rec/conf/nips/VartakTMBL17"},
+"url":"URL#4464429"
+}
+]
+}
+}
+}

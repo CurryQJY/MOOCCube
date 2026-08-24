@@ -1,6 +1,11 @@
+import csv
+import os
+from contextlib import nullcontext
 from typing import Callable, Dict, Optional, Tuple
 
 import torch
+
+from ranking_topk_export import TopKJsonlExporter
 
 
 def compute_ranking_metrics(
@@ -8,23 +13,38 @@ def compute_ranking_metrics(
     target_indices: torch.Tensor,
     k_list=(5, 10, 20)
 ) -> Dict[str, float]:
+    values = compute_ranking_metric_values(scores, target_indices, k_list=k_list)
+    return {key: float(val.mean().item()) for key, val in values.items()}
+
+
+def compute_ranking_metric_values(
+    scores: torch.Tensor,
+    target_indices: torch.Tensor,
+    k_list=(5, 10, 20),
+    topk_indices: Optional[torch.Tensor] = None,
+) -> Dict[str, torch.Tensor]:
     batch_size = scores.size(0)
     n_candidates = scores.size(1)
     max_k = min(max(k_list), n_candidates)
-    _, topk_idx = torch.topk(scores, k=max_k, dim=1)
+    if topk_indices is None:
+        _, topk_idx = torch.topk(scores, k=max_k, dim=1)
+    else:
+        if topk_indices.ndim != 2 or topk_indices.size(0) != batch_size or topk_indices.size(1) < max_k:
+            raise ValueError("topk_indices must cover max(k_list) for every score row")
+        topk_idx = topk_indices[:, :max_k]
 
     targets = target_indices.view(-1, 1)
     results = {}
     for k in k_list:
         preds = topk_idx[:, :k]
         hits = (preds == targets).any(dim=1).float()
-        results[f"R@{k}"] = hits.mean().item()
+        results[f"R@{k}"] = hits
 
         rk = (preds == targets).nonzero(as_tuple=True)
         ndcg_vals = torch.zeros(batch_size, device=scores.device)
         if rk[0].numel() > 0:
             ndcg_vals[rk[0]] = 1.0 / torch.log2(rk[1].float() + 2.0)
-        results[f"N@{k}"] = ndcg_vals.mean().item()
+        results[f"N@{k}"] = ndcg_vals
     return results
 
 
@@ -61,13 +81,30 @@ def evaluate_embedding_ranker(
             [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]],
             torch.Tensor
         ]
-    ] = None
+    ] = None,
+    normalize_user: bool = True,
+    average_mode: str = "interaction",
+    export_item_metrics_path: Optional[str] = None,
+    export_topk_path: Optional[str] = None,
+    export_topk_k: int = 20,
+    export_topk_metadata: Optional[Dict[str, object]] = None,
 ) -> Tuple[Optional[Dict[str, float]], int]:
+    average_mode = average_mode.strip().lower()
+    if average_mode not in {"interaction", "item_macro"}:
+        raise ValueError("average_mode must be 'interaction' or 'item_macro'")
+    if export_topk_path and not full_ranking:
+        raise ValueError("Top-K export requires full_ranking=True")
     accum = {f"{m}@{k}": 0.0 for m in ["R", "N"] for k in k_list}
     total_samples = 0
+    item_accum = {f"{m}@{k}": {} for m in ["R", "N"] for k in k_list}
+    item_counts: Dict[int, int] = {}
     seen_tensor_cache: Dict[int, Optional[torch.Tensor]] = {}
 
-    with torch.no_grad():
+    export_context = (
+        TopKJsonlExporter(export_topk_path, top_k=export_topk_k, metadata=export_topk_metadata)
+        if export_topk_path else nullcontext(None)
+    )
+    with export_context as topk_exporter, torch.no_grad():
         all_item_idx = torch.arange(n_items, device=device, dtype=torch.long)
 
         for batch, pop in loader:
@@ -102,7 +139,9 @@ def evaluate_embedding_ranker(
                     else:
                         seen_tensor_cache[uid] = None
 
-            z_u = torch.nn.functional.normalize(get_user_vectors_fn(batch_sel), dim=1)
+            z_u = get_user_vectors_fn(batch_sel)
+            if normalize_user:
+                z_u = torch.nn.functional.normalize(z_u, dim=1)
 
             if full_ranking:
                 scores = torch.mm(z_u, all_item_vectors.t())
@@ -158,13 +197,63 @@ def evaluate_embedding_ranker(
                 uid_t = torch.tensor(user_ids, dtype=torch.long, device=device)
                 scores = score_adjust_fn(scores, uid_t, i, pop_sel, cand_idx)
 
-            batch_res = compute_ranking_metrics(scores, target_indices, k_list=k_list)
-            for k, v in batch_res.items():
-                accum[k] += v * n_sel
+            metric_topk = None
+            if topk_exporter is not None:
+                shared_k = min(max(export_topk_k, max(k_list)), int(scores.size(1)))
+                shared_scores, metric_topk = torch.topk(scores, k=shared_k, dim=1)
+                topk_exporter.write_precomputed_batch(
+                    metric_topk,
+                    shared_scores,
+                    user_ids=user_ids,
+                    target_item_ids=i.detach().cpu().tolist(),
+                    target_popularity=pop_sel.detach().cpu().tolist(),
+                )
+
+            batch_values = compute_ranking_metric_values(
+                scores,
+                target_indices,
+                k_list=k_list,
+                topk_indices=metric_topk,
+            )
+            if average_mode == "item_macro":
+                item_ids = [int(x) for x in i.detach().cpu().tolist()]
+                for row, item_id in enumerate(item_ids):
+                    item_counts[item_id] = item_counts.get(item_id, 0) + 1
+                    for key, values in batch_values.items():
+                        per_item = item_accum[key]
+                        per_item[item_id] = per_item.get(item_id, 0.0) + float(values[row].detach().cpu().item())
+            else:
+                for k, values in batch_values.items():
+                    accum[k] += float(values.sum().detach().cpu().item())
             total_samples += n_sel
 
     if total_samples < 1:
         return None, 0
+    if average_mode == "item_macro":
+        if not item_counts:
+            return None, 0
+        macro = {}
+        item_rows = []
+        for key, per_item in item_accum.items():
+            item_values = [
+                per_item.get(item_id, 0.0) / count
+                for item_id, count in item_counts.items()
+                if count > 0
+            ]
+            macro[key] = sum(item_values) / max(1, len(item_values))
+        if export_item_metrics_path:
+            os.makedirs(os.path.dirname(export_item_metrics_path) or ".", exist_ok=True)
+            for item_id in sorted(item_counts):
+                row = {"item_id": int(item_id), "count": int(item_counts[item_id])}
+                for key, per_item in item_accum.items():
+                    row[key] = float(per_item.get(item_id, 0.0) / max(1, item_counts[item_id]))
+                item_rows.append(row)
+            fieldnames = ["item_id", "count"] + [f"{m}@{k}" for m in ["R", "N"] for k in k_list]
+            with open(export_item_metrics_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(item_rows)
+        return macro, len(item_counts)
     return {k: v / total_samples for k, v in accum.items()}, total_samples
 
 

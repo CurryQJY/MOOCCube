@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "model": "pcgnn",
+  "seed": 2027,
+  "top_k": 20,
+  "record_count": 62280,
+  "status": "checkpoint_replay_valid",
+  "native_report_test_reproduced": true,
+  "restored_state": "best_model.pt:model_state_dict",
+  "checkpoint": {
+    "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\mooccube_seed2027_full_formal_kg_warm\\checkpoints\\best_model.pt",
+    "size": 2016565,
+    "sha256_before": "6076bdbf8fd20892353b0d7b0eb91c4242a859a841f2d2cec8b24ff44b1d772c",
+    "sha256_after": "6076bdbf8fd20892353b0d7b0eb91c4242a859a841f2d2cec8b24ff44b1d772c"
+  },
+  "report": {
+    "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\mooccube_seed2027_full_formal_kg_warm\\pcgnn_strict_adapter_report.json",
+    "size": 18685,
+    "sha256": "c1d9c704c926bcc85a1f6e6aa5aaf2ba3d0ca9d7dcb3c70d9f1fd62d55796e75"
+  },
+  "config": {
+    "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\recbole_mooccube_strict_seed2025_full.yaml",
+    "size": 970,
+    "sha256": "ba3a3f9ddaab927ff968625a9458445b162754a102247f1a758e8b6826b3210a"
+  },
+  "split_files": [
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2027\\static_protocol_manifest.json",
+      "size": 8760,
+      "sha256": "a6011a0b2bba929f4db34f02b56991dedf88ee7793d5ae2728ae5815c476d23e"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2027\\static_split_assignments.csv",
+      "size": 31852618,
+      "sha256": "3e932f67ffd4b179fe534575d4c8aaa46c53b76705369c03106e6d3eb82a81cc"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2027\\static_split_counts.csv",
+      "size": 200,
+      "sha256": "80841ab6b4f304238e26bfca12e4865b55a416abeecc1dcbbad0cc864871af2d"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2027\\static_split_sources.csv",
+      "size": 255,
+      "sha256": "b3da599d8365efe4094806d43e9da99f4265a370a73faca5d3e545c2f65932a0"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2027\\static_split_summary.json",
+      "size": 1611,
+      "sha256": "0f3c967d16a0fa9ca3e659dc2f006b2197f27655150fd5d6c786b152ea4f7433"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2027\\static_train.pkl",
+      "size": 34396432,
+      "sha256": "29fbdd279600e9fb863541589b5099b2d1f41e337956935e71bb2a70b98e1b10"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2027\\static_val.pkl",
+      "size": 6968463,
+      "sha256": "dd6e0672221c57ae0f7389e7990f849e0ec6c800e4cca2933a57ba5a058d4376"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2027\\static_test.pkl",
+      "size": 9209439,
+      "sha256": "e44dd30ac5609c2210714931065847936fceb1c8183f6bb2f7f2d3f95755e8a8"
+    }
+  ],
+  "script_files": [
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\export_p1_pcgnn_topk.py",
+      "size": 28633,
+      "sha256": "f967e1819523d07409705640fa40b5565da0d86a16d89a908da80a1ddf121a88"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\ranking_topk_export.py",
+      "size": 4064,
+      "sha256": "eaf30852517281f81370cc78a672a229f824c2f74111d861567b76367926631b"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\scripts\\pcgnn_strict_adapter.py",
+      "size": 34334,
+      "sha256": "28292a9c320552cf4f0044e97269d44564cdbba3cce116481f2f4dd805c60911"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\scripts\\priority_baseline_experiments.py",
+      "size": 18018,
+      "sha256": "f622fd880d775524e33a0da19233f4f88ffbe28097d8ef6c51618b8751d1ac90"
+    },
+    {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\recbole\\model\\sequential_recommender\\kg_model.py",
+      "size": 31586,
+      "sha256": "1b9e6d174e7280ca9e41dda5994503ce906bdeca70aff388f665283c48b3b9bf"
+    }
+  ],
+  "topk_output": {
+    "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\mooccube_seed2027_full_formal_kg_warm\\p1_top20_export\\pcgnn_top20.jsonl",
+    "size": 50895419,
+    "sha256": "ccc705ddc6074fec004f4df0f4888f9cc3bbe1d47d99ea8da53a164d181093e2"
+  },
+  "replay_result": {
+    "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\mooccube_seed2027_full_formal_kg_warm\\p1_top20_export\\pcgnn_replay_result.json",
+    "size": 3504,
+    "sha256": "b80460f6d3a135a8ffc2782b14423c76835bdfa7065b6641a0d436e3d72e6a51"
+  }
+}

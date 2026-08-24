@@ -19,7 +19,7 @@ from usim_course import (
     CourseAwareUSIM,
     CourseConfig,
     CourseSeqDataset,
-    build_eval_item_vecs_course,
+    build_all_item_vecs_course,
     collate_course,
     evaluate_course_usim,
     train_one_epoch,
@@ -355,7 +355,7 @@ class FeedbackLiteCourseUSIM(CourseAwareUSIM):
         z_u_base, _, _ = self.encode_course_user(u, hist, item_bank)
         hist_seen_mat, hist_seen_cnt = self._hist_to_seen_mat(hist)
         context_vec = self._build_feedback_context(user_ids, hist_seen_mat, hist_seen_cnt)
-        z_i_base, id_e_raw, content_e = self.get_item_vector(i, llm_s, force_cold=is_cold)
+        z_i_base, id_e_raw, content_e = self.get_item_vector(i, llm_s, force_cold=False)
 
         target_emb = z_i_base.detach().clone()
         hot_mask = ~is_cold
@@ -635,7 +635,7 @@ def run_static_experiment_feedback_lite(df, cfg, device, model, optimizer, llm_s
         avg_loss, avg_dup, avg_cov = train_one_epoch(model, train_loader, optimizer, device, cfg, train_seen)
         epoch_sec = time.time() - epoch_start
 
-        all_item_vecs_val = build_eval_item_vecs_course(model)
+        all_item_vecs_val = build_all_item_vecs_course(model)
         val_cold, _ = evaluate_course_usim(
             model,
             val_loader,
@@ -665,7 +665,7 @@ def run_static_experiment_feedback_lite(df, cfg, device, model, optimizer, llm_s
         model.load_state_dict(best_state)
         print(f"  [STATIC-FEEDBACK-LITE] Restore best epoch={best_epoch} | Full Cold N@10={best_val:.4f}")
 
-    all_item_vecs_test = build_eval_item_vecs_course(model)
+    all_item_vecs_test = build_all_item_vecs_course(model)
     met_cold, n_cold_t = evaluate_course_usim(
         model, test_loader, device, k_list, n_neg=cfg.eval_n_neg, eval_type="cold",
         user_seen_items=test_seen, all_item_vecs=all_item_vecs_test
@@ -702,7 +702,7 @@ def run_static_experiment_feedback_lite(df, cfg, device, model, optimizer, llm_s
 
 
 def main():
-    data_dir = "processed_data_hin"
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     print(f"Loading Data for Course Feedback-Lite USIM from {data_dir}...")
     if not os.path.exists(f"{data_dir}/stream_data.pkl"):
         print("Error: please run data_process_hin.py first")
@@ -720,7 +720,7 @@ def main():
     course_artifacts, course_stats = build_course_artifacts(
         df,
         cfg.n_items,
-        relation_dir="MOOCCube/relations",
+        relation_dir=os.environ.get("USIM_RELATION_DIR", "MOOCCube/relations"),
         prereq_min_support=cfg.prereq_min_support,
         prereq_max_per_item=cfg.prereq_max_per_item,
         prereq_min_items=cfg.prereq_min_items,
@@ -790,7 +790,7 @@ def main():
         n_cold_t, n_hot_t = 0, 0
 
         if t >= warmup_periods:
-            all_item_vecs_eval = build_eval_item_vecs_course(model)
+            all_item_vecs_eval = build_all_item_vecs_course(model)
             met_cold, n_cold_t = evaluate_course_usim(
                 model, eval_loader, device, k_list, n_neg=cfg.eval_n_neg, eval_type="cold",
                 user_seen_items=user_seen_items, all_item_vecs=all_item_vecs_eval

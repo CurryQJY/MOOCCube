@@ -1,0 +1,2 @@
+0	course_concept
+1	course_video

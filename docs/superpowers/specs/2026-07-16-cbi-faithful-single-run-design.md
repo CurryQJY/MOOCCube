@@ -1,0 +1,121 @@
+# CBI-Faithful Single-Run Validation Design
+
+## Objective
+
+Run one isolated MOOCCube seed-2025 experiment that adds a faithful Content-Based Initialization (CBI) bounded-delta representation to the current CKG-RL training pipeline. The experiment is an exploratory validation only. It must not modify the code, configuration, checkpoints, outputs, or reported values used by the existing AAAI main table.
+
+## Scope
+
+The implementation will add only an isolated experiment launcher, reproducibility metadata, focused tests, and a result summary. It will reuse the existing model implementation and its paper-style content-delta path without editing the main-table model source.
+
+The following files are protected and will not be edited:
+
+- `usim_feedback_fast3_content_delta.py`
+- `run_fast3_main_table_config.ps1`
+- `paper_aaai27/main.tex`
+- `paper_aaai27/main_table.tex`
+- existing main-table output and checkpoint directories
+
+## Selected Configuration
+
+The single experiment will use the existing strict item-cold balanced MOOCCube protocol with seed 2025 and the current main-table course components. Only the representation path is changed through explicit runtime parameters.
+
+| Setting | Value | Rationale |
+|---|---:|---|
+| `UseContentDelta` | `true` | Enable the isolated CBI path. |
+| `ContentDeltaPaperStyle` | `true` | Use the frozen standardized-PCA content base already implemented in the model. |
+| `ContentDeltaReplaceItem` | `true` | Use content base plus bounded delta directly instead of the unrestricted ID-content gate. |
+| `ContentDeltaColdOnly` | `false` | Train bounded corrections for warm courses so unseen cold courses can use the shared frozen content space with zero learned delta. |
+| `ContentDeltaMode` | `embedding` | Use a per-course correction vector, matching CBI most closely. |
+| `ContentDeltaMaxNorm` | `0.5` | CBI's reported default; for a unit content base it guarantees a minimum cosine similarity of approximately 0.866. |
+| `ContentDeltaScale` | `1.0` | Make the configured maximum norm equal the effective maximum norm. |
+| `ContentDeltaLrMult` | `1.0` | Avoid the previous 0.1 multiplier under-training a correction initialized at zero. |
+| `ContentDeltaL2W` | `0.0` | Use the CBI hard norm constraint without an additional L2 objective. |
+| `ContentDeltaCapW` | `0.0` | Avoid adding a second soft cap on top of hard clipping. |
+| `ContentDeltaTrainOnIdDropout` | `false` | The direct replacement path does not use ID dropout to decide where the delta is active. |
+| seed | `2025` | Lowest-cost first validation and direct comparison with retained seed-2025 evidence. |
+
+The maximum norm is set to 0.5 rather than 0.3 because the experiment removes the warm-course ID gate and relies on fixed PCA-reduced BERT content. A 0.5 trust region retains semantic proximity while providing enough capacity to absorb collaborative, course-knowledge, and RL supervision. No norm tuning will be performed before this run completes.
+
+## Training Budget
+
+The experiment will use the same formal seed-2025 training budget and checkpoint-selection rule as the current main-table configuration:
+
+- MOOCCube only;
+- strict item-cold balanced protocol;
+- seed 2025;
+- 60 epochs maximum;
+- batch size 2048;
+- patience 60, matching the formal main-configuration launcher;
+- cold course-macro validation checkpoint selection;
+- no pseudo-cold training, PAAC, or unrelated experimental component;
+- educational rewards, knowledge-guided sampling, prerequisite auxiliary loss, PPO controls, and simulator settings kept identical to the main configuration.
+
+Using the formal single-seed budget avoids drawing a conclusion from an under-trained bounded-delta branch. It remains lower cost than a parameter grid or three-seed experiment.
+
+## Isolation
+
+A new launcher named `run_cbi_faithful_seed2025.ps1` will call the existing static experiment runner with every relevant parameter set explicitly. It will write only to new directories:
+
+- outputs: `outputs/cbi_faithful_single_seed2025`
+- checkpoints: `checkpoints/cbi_faithful_single_seed2025`
+- logs: `background_logs/cbi_faithful_single_seed2025`
+
+The launcher will fail if any output or checkpoint path resolves inside a main-table directory. It will not overwrite an existing completed run unless an explicit fresh-run flag is supplied.
+
+## Reproducibility
+
+Before launching training, the new launcher will write a reproducibility manifest containing:
+
+- full resolved command and explicit parameter values;
+- seed, protocol, dataset paths, output paths, and checkpoint paths;
+- current Git commit;
+- dirty-worktree status without copying unrelated diffs;
+- SHA-256 hashes of the new launcher, the existing static runner, the Python model entry point, and relevant configuration modules;
+- Python, PyTorch, CUDA, GPU, and operating-system versions;
+- start time, completion state, exit code, and elapsed time;
+- deterministic environment variables used by the current runner.
+
+The existing experiment manifest generated by the training code will be retained as a second source of provenance.
+
+## Evaluation and Decision Rule
+
+The experiment will be compared with the retained seed-2025 main-configuration result under the same strict course-cold evaluator. No test-set parameter selection will be performed.
+
+The summary will report:
+
+- cold course-macro Recall and NDCG at 5, 10, and 20;
+- hot diagnostics at the same cutoffs;
+- validation-selected epoch;
+- delta mean norm, maximum norm, effective mean/max norm, and clipped ratio;
+- absolute and relative differences from the retained seed-2025 reference.
+
+The run is considered promising enough for later parameter adjustment only if:
+
+- cold course-macro NDCG@10 improves by at least 0.003;
+- cold course-macro Recall@10 does not decrease by more than 0.002;
+- no NaN, invalid checkpoint, evaluator mismatch, or hot-metric collapse occurs.
+
+These thresholds are screening criteria, not statistical claims. A positive result must still be confirmed with the 2026 and 2027 seeds before changing the paper or main table.
+
+## Tests
+
+Focused tests will verify that:
+
+- the launcher uses a new isolated output/checkpoint root;
+- the selected CBI flags and delta norm are passed exactly;
+- main-table files are not edited by the implementation;
+- the manifest records hashes, environment, seed, command, and completion status;
+- rerunning without an explicit override cannot silently overwrite a completed experiment;
+- the result summary reads the strict course-macro fields rather than interaction-weighted metrics.
+
+## Non-Goals
+
+This validation will not:
+
+- alter the simulator update equation;
+- add an adaptive trust-region radius;
+- tune the delta norm;
+- run multiple seeds or datasets;
+- update paper claims, tables, or figures;
+- replace or delete existing checkpoints and outputs.

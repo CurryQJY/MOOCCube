@@ -1,0 +1,44 @@
+{
+"result":{
+"query":"cold* start* item* diffusion*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"2.00"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"2",
+"@dc":"2",
+"@oc":"2",
+"@id":"69605306",
+"text":"diffusion"
+}
+},
+"hits":{
+"@total":"2",
+"@computed":"2",
+"@sent":"2",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"271974",
+"info":{"authors":{"author":[{"@pid":"266/4362","text":"Kangning Zhang"},{"@pid":"258/6919","text":"Yingjie Qin"},{"@pid":"28/10261-1","text":"Weinan Zhang 0001"},{"@pid":"43/5685-1","text":"Yong Yu 0001"},{"@pid":"188/7862","text":"Jianghao Lin"}]},"title":"DiffCold: A Diffusion-based Generative Model for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2606.12245","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2606-12245","doi":"10.48550/ARXIV.2606.12245","ee":"https://doi.org/10.48550/arXiv.2606.12245","url":"https://dblp.org/rec/journals/corr/abs-2606-12245"},
+"url":"URL#271974"
+},
+{
+"@score":"4",
+"@id":"874120",
+"info":{"authors":{"author":[{"@pid":"166/0413","text":"Kang Fu"},{"@pid":"40/2812-2","text":"Honglei Zhang 0002"},{"@pid":"341/8058","text":"Xuechao Zou"},{"@pid":"40/7652","text":"Yidong Li"}]},"title":"MDiffFR: Modality-Guided Diffusion Generation for Cold-start Items in Federated Recommendation.","venue":"CoRR","volume":"abs/2512.24715","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2512-24715","doi":"10.48550/ARXIV.2512.24715","ee":"https://doi.org/10.48550/arXiv.2512.24715","url":"https://dblp.org/rec/journals/corr/abs-2512-24715"},
+"url":"URL#874120"
+}
+]
+}
+}
+}

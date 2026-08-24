@@ -1,91 +1,92 @@
-# Python bytecode and caches
+# Local IDE and runtime files
+.idea/
+.vscode/
+.runtime_tmp/
+.codex_backups/
+.superpowers/
 __pycache__/
 *.py[cod]
 
-# Virtual environments
-.venv/
-venv/
-env/
+# Large raw datasets and generated feature stores
+data_raw/
+data_raw_*/
+*_download/
+MOOCCube/
+MOOCCubeX/
+processed_data/
+processed_data_*/
+model/
+checkpoints/
+ablation_logs/
 
-# Test, lint, and coverage caches
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage*
-htmlcov/
-
-# Notebook checkpoints
-.ipynb_checkpoints/
-
-# Editors and OS noise
-.idea/
-.vscode/
-.DS_Store
-Thumbs.db
-
-# Logs and temporary backups
+# Model weights, checkpoints, binary features, and logs
+*.pt
+*.pth
+*.ckpt
+*.pkl
 *.log
+*.err.log
+*.out.log
+
+# Temporary notebooks / scratch exports
+.ipynb_checkpoints/
 *.tmp
 *.bak
 *.encoding_backup
-.$*.bkp
-.codex_tmp/
 
-# Model checkpoints
-*.pth
-*.ckpt
-
-# Generated data directories
-ablation_logs/
-processed_data/
-processed_data_domain/
-processed_data_hin/
-processed_data_x/
-processed_data_x_course/
-processed_data_x_course_smoke/
-
-# Large raw datasets and pretrained artifacts
-MOOCCube/
-MOOCCubeX/
-Pam/processed_data_video/
-USIM-main/data/
-lightgcn/dataset/
-lightgcn/log_tensorboard/
-*.pt
-*.npy
-*.pkl
-*.tfevents.*
-
-# Experiment outputs
-checkpoints/
+# Experiment outputs (CSV/PNG/JSON results and intermediate artifacts)
+*.csv
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.svg
+*.pdf
+!docs/**/*.svg
+!docs/**/*.png
+!docs/**/*.pdf
+!paper_wsdm/**/*.pdf
+results_mooccubex/
 outputs/
-comparison_*.csv
-comparison_*.png
-*_comparison.png
-concat_k_pam_metrics.csv
-final_*.csv
-final_*.png
-final_*.txt
-k_pam_*.csv
-k_pam_*.png
-*_metrics.csv
-metrics_*.csv
-metrics_*.png
-mooc_metrics*.csv
-mooc_result*.png
-pam_metrics.csv
-pam_result.png
-real_baselines_chart.png
-result_*.png
-*_result.json
+output/
+tmp/
+.worktrees/
 
-# Local-only helpers and handoff files
-external/
-external/HHCOR_official/
-skills/
-tmp_*
-.runtime_tmp/
-.codex_backups/
-model/
-processed_data_*/
-交付物/
+# Large archives and scratch dumps
+*.zip
+*.rar
+*.tar
+*.tar.gz
+_tail.txt
+tmp_*.txt
+*_log.txt
+*_log_*.txt
+*midresult*.txt
+final_summary*.txt
+*_result.json
+*_results.json
+*_response.json
+
+# Camoufox / playwright / other binary deps
+install_camoufox.py
+engine.rar.zip
+
+# Data files (numpy arrays, RecBole interaction files, etc.)
+*.npy
+*.inter
+*.user
+*.item
+*.kg
+*.npz
+*.h5
+*.parquet
+
+# Generated PDFs from latex compilation
+paper_wsdm/*.pdf
+paper_wsdm/*.aux
+paper_wsdm/*.bbl
+paper_wsdm/*.blg
+paper_wsdm/*.out
+!paper_wsdm/sampleteaser.pdf
+!paper_wsdm/acmguide.pdf

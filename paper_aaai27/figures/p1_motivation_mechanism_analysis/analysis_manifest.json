@@ -1,0 +1,97 @@
+{
+  "analysis": "p1_motivation_mechanisms",
+  "seeds": [
+    2025,
+    2026,
+    2027
+  ],
+  "cutoffs": [
+    10,
+    20
+  ],
+  "top_k": 20,
+  "random_seed": 2027,
+  "n_bootstrap": 10000,
+  "n_permutations": 100000,
+  "full_model_reused": true,
+  "recomputed_models": [
+    "ckg_rl_wo_course_reward",
+    "ckg_rl_wo_simulator"
+  ],
+  "comparisons": [
+    {
+      "treatment": "ckg_rl",
+      "baseline": "ckg_rl_wo_course_reward",
+      "mechanism": "course_reward"
+    },
+    {
+      "treatment": "ckg_rl",
+      "baseline": "ckg_rl_wo_simulator",
+      "mechanism": "simulator"
+    }
+  ],
+  "artifact_stats": {
+    "prereq_source": "concept",
+    "items_with_concept": 678,
+    "items_with_prereq": 440,
+    "items_with_video": 698,
+    "redundant_family_groups": 90,
+    "hard_density": 0.7934171557426453,
+    "prereq_edges_kept": 2200,
+    "prereq_edges_raw": 66212,
+    "prereq_users": 0,
+    "prereq_min_support": 30,
+    "prereq_max_per_item": 5,
+    "prereq_max_forward": 20,
+    "concept_overlap_mode": "plain",
+    "prereq_concept_pairs": 1027,
+    "prereq_concept_score_thr": 0.1,
+    "prereq_concept_min_hits": 1,
+    "courses_with_required_concepts": 440,
+    "prereq_concept_file": "prerequisite-dependency.json",
+    "prereq_hybrid_alpha": 0.7,
+    "prereq_hybrid_strong_concept_thr": 0.35,
+    "behavior_prereq_edges_raw": 0,
+    "concept_prereq_edges_raw": 0,
+    "prereq_weighted_edges": false,
+    "course_artifact_cache_status": "hit",
+    "course_artifact_cache_path": "D:\\DeskTop\\MOOCCube\\MOOCCube\\.course_artifact_cache\\19fb56001b012ec1c568cc7ff1e86800560535914d16058c36e67a163287a6b2.pt",
+    "n_items": 698,
+    "complexity_upper_quantile": 0.95,
+    "prerequisite_count_scale": 5.0,
+    "concept_count_scale": 450.7499999999999,
+    "items_with_nonzero_complexity": 678,
+    "data_path": "D:\\DeskTop\\MOOCCube\\processed_data_hin_clean_pop5\\stream_data.pkl",
+    "relation_dir": "D:\\DeskTop\\MOOCCube\\MOOCCube\\relations"
+  },
+  "full_analysis_input_sha256": {
+    "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_topk_motivation_analysis\\analysis_manifest.json": "81e32ef6d7713ad6eb346548f65478e171fe1db500cc889c208705a255611481",
+    "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_topk_motivation_analysis\\course_macro.csv": "1faf1bf253132af12ddb4479adb36179811ee56e4b2a9af2abb4d6893caf4706"
+  },
+  "ablation_export_sha256": {
+    "D:\\DeskTop\\MOOCCube\\outputs\\p1_motivation_topk\\ckg_rl_wo_course_reward\\strict_item_cold_balanced_thr1_seed_2025\\top20_cold_test.jsonl": "a5dc96a67b3d187fd45178443aeaf5bc54ca7561b23db8e0bcb2e7d47668b64c",
+    "D:\\DeskTop\\MOOCCube\\outputs\\p1_motivation_topk\\ckg_rl_wo_simulator\\strict_item_cold_balanced_thr1_seed_2025\\top20_cold_test.jsonl": "397fe7850c48605ac08ccd8bb20d83027e8c96321707c39144083d43bc3f2899",
+    "D:\\DeskTop\\MOOCCube\\outputs\\p1_motivation_topk\\ckg_rl_wo_course_reward\\strict_item_cold_balanced_thr1_seed_2026\\top20_cold_test.jsonl": "27f15f6f86a8bb0c39b7cfb6cd96ffc7ad64038e568fd64522b2c518de46f9c6",
+    "D:\\DeskTop\\MOOCCube\\outputs\\p1_motivation_topk\\ckg_rl_wo_simulator\\strict_item_cold_balanced_thr1_seed_2026\\top20_cold_test.jsonl": "d0ce5ecfeeb5efe193311c83f6ecddae26142f5f97595d441b01969748c76a86",
+    "D:\\DeskTop\\MOOCCube\\outputs\\p1_motivation_topk\\ckg_rl_wo_course_reward\\strict_item_cold_balanced_thr1_seed_2027\\top20_cold_test.jsonl": "febc80a5f9b66bc4d9f8799ee945df35b9c45e939245d1f93acc438e25b20192",
+    "D:\\DeskTop\\MOOCCube\\outputs\\p1_motivation_topk\\ckg_rl_wo_simulator\\strict_item_cold_balanced_thr1_seed_2027\\top20_cold_test.jsonl": "fcfb78ef8f14b8bb48f2f648cf94a37f4fa3704b87368ccf99b40eadc0ceb14c"
+  },
+  "row_counts": {
+    "course_macro": 1224,
+    "ablation_course_macro": 816,
+    "seed_summary": 18,
+    "model_summary": 6,
+    "paired_statistics": 36,
+    "seed_export_audit": 6,
+    "claim_audit_top10": 18
+  },
+  "outputs": {
+    "course_macro": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_motivation_mechanism_analysis\\course_macro.csv",
+    "ablation_course_macro": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_motivation_mechanism_analysis\\ablation_course_macro.csv",
+    "seed_summary": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_motivation_mechanism_analysis\\seed_summary.csv",
+    "model_summary": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_motivation_mechanism_analysis\\model_summary.csv",
+    "paired_statistics": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_motivation_mechanism_analysis\\paired_statistics.csv",
+    "seed_export_audit": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_motivation_mechanism_analysis\\seed_export_audit.csv",
+    "claim_audit_top10": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_motivation_mechanism_analysis\\claim_audit_top10.csv"
+  }
+}

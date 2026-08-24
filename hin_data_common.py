@@ -54,6 +54,26 @@ def static_split_df(
     train_ratio: float = 0.8,
     val_ratio: float = 0.1
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    split_dir = os.environ.get("USIM_STATIC_SPLIT_DIR", "").strip()
+    if split_dir:
+        train_path = os.path.join(split_dir, "static_train.pkl")
+        val_path = os.path.join(split_dir, "static_val.pkl")
+        test_path = os.path.join(split_dir, "static_test.pkl")
+        missing = [p for p in [train_path, val_path, test_path] if not os.path.exists(p)]
+        if missing:
+            raise FileNotFoundError(
+                "USIM_STATIC_SPLIT_DIR is set but split files are missing: "
+                + ", ".join(missing)
+            )
+        train_df = pd.read_pickle(train_path).copy()
+        val_df = pd.read_pickle(val_path).copy()
+        test_df = pd.read_pickle(test_path).copy()
+        print(
+            f"Loaded shared static split from {split_dir}: "
+            f"train={len(train_df)}, val={len(val_df)}, test={len(test_df)}"
+        )
+        return train_df, val_df, test_df
+
     if train_ratio <= 0.0 or val_ratio <= 0.0 or train_ratio + val_ratio >= 1.0:
         raise ValueError("Invalid split ratio, require 0 < train,val and train+val < 1")
 
@@ -102,6 +122,16 @@ def clone_user_seen(user_seen_items: Dict[int, set]) -> Dict[int, set]:
 
 def build_user_seen(src_df: pd.DataFrame) -> Dict[int, set]:
     return add_user_seen_from_df({}, src_df)
+
+
+def static_result_path(default_filename: str) -> str:
+    output_dir = os.environ.get("USIM_BASELINE_OUTPUT_DIR", "").strip()
+    if not output_dir:
+        output_dir = os.environ.get("USIM_STATIC_SPLIT_DIR", "").strip()
+    if not output_dir:
+        return default_filename
+    os.makedirs(output_dir, exist_ok=True)
+    return os.path.join(output_dir, default_filename)
 
 
 class InteractionDataset(Dataset):

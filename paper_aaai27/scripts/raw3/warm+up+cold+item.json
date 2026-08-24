@@ -1,0 +1,83 @@
+{
+"result":{
+"query":"warm* up cold* item*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"6.14"
+},
+"completions":{
+"@total":"2",
+"@computed":"2",
+"@sent":"2",
+"c":[
+{
+"@sc":"6",
+"@dc":"6",
+"@oc":"6",
+"@id":"70004274",
+"text":"item"
+},
+{
+"@sc":"1",
+"@dc":"1",
+"@oc":"1",
+"@id":"70004295",
+"text":"items"
+}
+]
+},
+"hits":{
+"@total":"7",
+"@computed":"7",
+"@sent":"7",
+"@first":"0",
+"hit":[{
+"@score":"5",
+"@id":"2850568",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"10/5415-6","text":"Ying Sun 0006"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"75/2820-1","text":"Juan Cao 0001"}]},"title":"Learning to Warm Up Cold Item Embeddings for Cold-start Recommendation with Meta Scaling and Shifting Networks.","venue":"SIGIR","pages":"1167-1176","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ZhuXZGSZLC21","doi":"10.1145/3404835.3462843","ee":"https://doi.org/10.1145/3404835.3462843","url":"https://dblp.org/rec/conf/sigir/ZhuXZGSZLC21"},
+"url":"URL#2850568"
+},
+{
+"@score":"5",
+"@id":"2901578",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"10/5415-6","text":"Ying Sun 0006"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"75/2820-1","text":"Juan Cao 0001"}]},"title":"Learning to Warm Up Cold Item Embeddings for Cold-start Recommendation with Meta Scaling and Shifting Networks.","venue":"CoRR","volume":"abs/2105.04790","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2105-04790","ee":"https://arxiv.org/abs/2105.04790","url":"https://dblp.org/rec/journals/corr/abs-2105-04790"},
+"url":"URL#2901578"
+},
+{
+"@score":"4",
+"@id":"1271550",
+"info":{"authors":{"author":[{"@pid":"147/1393-2","text":"Yaqing Wang 0002"},{"@pid":"313/9284","text":"Hongming Piao"},{"@pid":"47/9988","text":"Daxiang Dong"},{"@pid":"158/1014","text":"Quanming Yao"},{"@pid":"82/8538-3","text":"Jingbo Zhou 0003"}]},"title":"Warming Up Cold-Start CTR Prediction by Learning Item-Specific Feature Interactions.","venue":"KDD","pages":"3233-3244","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/kdd/WangPDYZ24","doi":"10.1145/3637528.3671784","ee":"https://doi.org/10.1145/3637528.3671784","url":"https://dblp.org/rec/conf/kdd/WangPDYZ24"},
+"url":"URL#1271550"
+},
+{
+"@score":"4",
+"@id":"1404862",
+"info":{"authors":{"author":[{"@pid":"147/1393-2","text":"Yaqing Wang 0002"},{"@pid":"313/9284","text":"Hongming Piao"},{"@pid":"47/9988","text":"Daxiang Dong"},{"@pid":"158/1014","text":"Quanming Yao"},{"@pid":"82/8538-3","text":"Jingbo Zhou 0003"}]},"title":"Warming Up Cold-Start CTR Prediction by Learning Item-Specific Feature Interactions.","venue":"CoRR","volume":"abs/2407.10112","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2407-10112","doi":"10.48550/ARXIV.2407.10112","ee":"https://doi.org/10.48550/arXiv.2407.10112","url":"https://dblp.org/rec/journals/corr/abs-2407-10112"},
+"url":"URL#1404862"
+},
+{
+"@score":"4",
+"@id":"1832303",
+"info":{"authors":{"author":{"@pid":"222/4776","text":"Nourah A. ALRossais"}},"title":"Warming up From Extreme Cold start Using Stereotypes with Dynamic User and Item Features.","venue":"KaRS@RecSys","pages":"103-108","year":"2023","type":"Conference and Workshop Papers","access":"open","key":"conf/kars/ALRossais23","ee":"https://ceur-ws.org/Vol-3560/short1.pdf","url":"https://dblp.org/rec/conf/kars/ALRossais23"},
+"url":"URL#1832303"
+},
+{
+"@score":"4",
+"@id":"1907518",
+"info":{"authors":{"author":[{"@pid":"321/1845","text":"Shenzheng Zhang"},{"@pid":"77/6056","text":"Qi Tan"},{"@pid":"341/3686","text":"Xinzhi Zheng"},{"@pid":"75/6568","text":"Yi Ren"},{"@pid":"37/3580-7","text":"Xu Zhao 0007"}]},"title":"Item Cold Start Recommendation via Adversarial Variational Auto-encoder Warm-up.","venue":"CoRR","volume":"abs/2302.14395","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2302-14395","doi":"10.48550/ARXIV.2302.14395","ee":"https://doi.org/10.48550/arXiv.2302.14395","url":"https://dblp.org/rec/journals/corr/abs-2302-14395"},
+"url":"URL#1907518"
+},
+{
+"@score":"4",
+"@id":"3454695",
+"info":{"authors":{"author":[{"@pid":"36/8436","text":"Dong-Gyun Hong"},{"@pid":"167/5996","text":"Yeon-Chang Lee"},{"@pid":"04/3445","text":"Jongwuk Lee"},{"@pid":"64/5810","text":"Sang-Wook Kim"}]},"title":"CrowdStart: Warming up cold-start items using crowdsourcing.","venue":"Expert Syst. Appl.","volume":"138","year":"2019","type":"Journal Articles","access":"closed","key":"journals/eswa/HongLLK19","doi":"10.1016/J.ESWA.2019.07.030","ee":"https://doi.org/10.1016/j.eswa.2019.07.030","url":"https://dblp.org/rec/journals/eswa/HongLLK19"},
+"url":"URL#3454695"
+}
+]
+}
+}
+}

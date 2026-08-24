@@ -1,0 +1,38 @@
+{
+  "canvas": {
+    "width": 1600,
+    "height": 720
+  },
+  "panels": {
+    "a": {
+      "title": "Cold-course evidence encoder",
+      "blocks": [
+        "target cold course i -> content x_i -> MLP -> gated item vector",
+        "cold mask / ID masked -> gated item vector",
+        "training history only -> MLP -> z_u"
+      ]
+    },
+    "b": {
+      "title": "Course-knowledge guided simulation",
+      "layers": [
+        "top-M item-vector retrieval -> sampled candidates S_i",
+        "actor-critic policy -> grad update",
+        "h_0 -> h_1 -> h_2 -> ... -> h_T -> cached item bank"
+      ]
+    },
+    "c": {
+      "title": "Strict Item-Cold Ranking",
+      "layers": [
+        "strict item-cold protocol",
+        "z_u and z_j^cold -> cosine scoring -> ranked list",
+        "Recall@K and NDCG@K evaluation output"
+      ]
+    }
+  },
+  "visual_grammar": {
+    "black_solid": "forward computation",
+    "green_solid": "cold-side retrieval / course-knowledge guidance",
+    "red_dashed": "training optimization signal",
+    "red_top_route": "training-only feedback route, styled after the reference layout"
+  }
+}

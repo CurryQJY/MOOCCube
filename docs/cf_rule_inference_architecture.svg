@@ -1,0 +1,207 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
+  <title id="title">Certainty-Factor Rule Inference Architecture</title>
+  <desc id="desc">A paper-style architecture diagram for the certainty-factor rule inference code in cf_reasoning.py.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#374151"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#0369a1"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#c2410c"/>
+    </marker>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; fill: #111827; }
+      .title { font-size: 28px; font-weight: 700; }
+      .subtitle { font-size: 14px; fill: #4b5563; }
+      .layer { font-size: 12px; font-weight: 700; letter-spacing: 1.2px; fill: #6b7280; }
+      .box { fill: #ffffff; stroke: #111827; stroke-width: 1.4; }
+      .evidence { fill: #f8fafc; stroke: #334155; }
+      .logic { fill: #f0f9ff; stroke: #0369a1; }
+      .fact { fill: #eff6ff; stroke: #1d4ed8; }
+      .rule { fill: #fff7ed; stroke: #c2410c; }
+      .fusion { fill: #f5f3ff; stroke: #6d28d9; }
+      .final { fill: #ecfdf5; stroke: #047857; stroke-width: 2.2; }
+      .main { font-size: 16px; font-weight: 700; }
+      .small { font-size: 12px; fill: #475569; }
+      .tiny { font-size: 11px; fill: #64748b; }
+      .eq { font-family: Consolas, "Courier New", monospace; font-size: 12px; fill: #334155; }
+      .arrow { fill: none; stroke: #374151; stroke-width: 1.45; marker-end: url(#arrow); }
+      .arrow-blue { fill: none; stroke: #0369a1; stroke-width: 1.55; marker-end: url(#arrowBlue); }
+      .arrow-orange { fill: none; stroke: #c2410c; stroke-width: 1.55; marker-end: url(#arrowOrange); }
+      .dash { fill: none; stroke: #9ca3af; stroke-width: 1; stroke-dasharray: 5 5; }
+      .caption { font-size: 13px; fill: #374151; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="860" fill="#ffffff"/>
+  <text x="56" y="48" class="title">Certainty-Factor Rule Inference Architecture</text>
+  <text x="56" y="72" class="subtitle">Evidence aggregation, weighted rule firing, and conflict-aware CF fusion implemented in cf_reasoning.py</text>
+
+  <text x="80" y="116" class="layer">EVIDENCE</text>
+  <text x="302" y="116" class="layer">LOGIC OPS</text>
+  <text x="522" y="116" class="layer">DERIVED FACTS</text>
+  <text x="742" y="116" class="layer">RULE OUTPUTS</text>
+  <text x="1012" y="116" class="layer">CF FUSION</text>
+  <text x="1222" y="116" class="layer">TARGET</text>
+  <path class="dash" d="M250 102 V795"/>
+  <path class="dash" d="M472 102 V795"/>
+  <path class="dash" d="M690 102 V795"/>
+  <path class="dash" d="M966 102 V795"/>
+  <path class="dash" d="M1192 102 V795"/>
+
+  <!-- Evidence nodes -->
+  <g transform="translate(56 154)">
+    <rect class="box evidence" width="148" height="48" rx="8"/>
+    <text x="18" y="22" class="main">E2</text>
+    <text x="18" y="39" class="small">CF = -0.80</text>
+  </g>
+  <g transform="translate(56 252)">
+    <rect class="box evidence" width="148" height="48" rx="8"/>
+    <text x="18" y="22" class="main">E4</text>
+    <text x="18" y="39" class="small">CF = 0.90</text>
+  </g>
+  <g transform="translate(56 326)">
+    <rect class="box evidence" width="148" height="48" rx="8"/>
+    <text x="18" y="22" class="main">E5</text>
+    <text x="18" y="39" class="small">CF = 0.80</text>
+  </g>
+  <g transform="translate(56 448)">
+    <rect class="box evidence" width="148" height="48" rx="8"/>
+    <text x="18" y="22" class="main">E6</text>
+    <text x="18" y="39" class="small">CF = 0.90</text>
+  </g>
+  <g transform="translate(56 546)">
+    <rect class="box evidence" width="148" height="48" rx="8"/>
+    <text x="18" y="22" class="main">E7</text>
+    <text x="18" y="39" class="small">CF = -0.30</text>
+  </g>
+  <g transform="translate(56 620)">
+    <rect class="box evidence" width="148" height="48" rx="8"/>
+    <text x="18" y="22" class="main">E8</text>
+    <text x="18" y="39" class="small">CF = 0.80</text>
+  </g>
+  <g transform="translate(56 734)">
+    <rect class="box evidence" width="148" height="48" rx="8"/>
+    <text x="18" y="22" class="main">E9</text>
+    <text x="18" y="39" class="small">CF = 0.90</text>
+  </g>
+
+  <!-- Logic operators -->
+  <g transform="translate(298 274)">
+    <rect class="box logic" width="136" height="58" rx="8"/>
+    <text x="24" y="24" class="main">AND</text>
+    <text x="24" y="42" class="eq">min(E4,E5)=0.80</text>
+  </g>
+  <g transform="translate(298 572)">
+    <rect class="box logic" width="136" height="58" rx="8"/>
+    <text x="24" y="24" class="main">OR</text>
+    <text x="24" y="42" class="eq">max(E7,E8)=0.80</text>
+  </g>
+  <g transform="translate(520 486)">
+    <rect class="box logic" width="142" height="58" rx="8"/>
+    <text x="22" y="24" class="main">AND</text>
+    <text x="22" y="42" class="eq">min(E6,OR)=0.80</text>
+  </g>
+
+  <!-- Derived facts -->
+  <g transform="translate(522 274)">
+    <rect class="box fact" width="136" height="58" rx="8"/>
+    <text x="22" y="24" class="main">E1</text>
+    <text x="22" y="42" class="eq">0.80 * 0.9 = 0.72</text>
+  </g>
+  <g transform="translate(734 486)">
+    <rect class="box fact" width="136" height="58" rx="8"/>
+    <text x="22" y="24" class="main">E3</text>
+    <text x="22" y="42" class="eq">0.80 * 1.0 = 0.80</text>
+  </g>
+
+  <!-- Rule outputs to H1 and H -->
+  <g transform="translate(734 164)">
+    <rect class="box rule" width="168" height="60" rx="8"/>
+    <text x="18" y="23" class="main">RULE2: E2 -> H1</text>
+    <text x="18" y="43" class="eq">-0.80 * 0.8 = -0.64</text>
+  </g>
+  <g transform="translate(734 296)">
+    <rect class="box rule" width="168" height="60" rx="8"/>
+    <text x="18" y="23" class="main">RULE1: E1 -> H1</text>
+    <text x="18" y="43" class="eq">0.72 * 0.9 = 0.648</text>
+  </g>
+  <g transform="translate(734 616)">
+    <rect class="box rule" width="168" height="60" rx="8"/>
+    <text x="18" y="23" class="main">RULE6: E9 -> H</text>
+    <text x="18" y="43" class="eq">0.90 * 0.9 = 0.81</text>
+  </g>
+  <g transform="translate(940 486)">
+    <rect class="box rule" width="172" height="60" rx="8"/>
+    <text x="18" y="23" class="main">RULE3: E3 -> H1</text>
+    <text x="18" y="43" class="eq">0.80 * 0.9 = 0.72</text>
+  </g>
+
+  <!-- Fusion blocks -->
+  <g transform="translate(1008 244)">
+    <rect class="box fusion" width="164" height="100" rx="8"/>
+    <text x="18" y="24" class="main">Fuse H1 evidence</text>
+    <text x="18" y="47" class="small">positive first:</text>
+    <text x="18" y="65" class="eq">0.648 + 0.72(1-0.648)</text>
+    <text x="18" y="84" class="eq">then combine -0.64</text>
+  </g>
+  <g transform="translate(1016 386)">
+    <rect class="box fact" width="148" height="62" rx="8"/>
+    <text x="20" y="24" class="main">H1</text>
+    <text x="20" y="44" class="eq">CF(H1)=0.726</text>
+  </g>
+  <g transform="translate(1008 616)">
+    <rect class="box fusion" width="164" height="78" rx="8"/>
+    <text x="18" y="25" class="main">Fuse H evidence</text>
+    <text x="18" y="47" class="eq">0.81 + 0.654(1-0.81)</text>
+    <text x="18" y="65" class="small">same-sign positive fusion</text>
+  </g>
+  <g transform="translate(1216 386)">
+    <rect class="box rule" width="148" height="62" rx="8"/>
+    <text x="18" y="24" class="main">RULE7: H1 -> H</text>
+    <text x="18" y="44" class="eq">0.726 * 0.9 = 0.654</text>
+  </g>
+  <g transform="translate(1216 616)">
+    <rect class="box final" width="148" height="78" rx="8"/>
+    <text x="20" y="28" class="main">Final H</text>
+    <text x="20" y="50" class="eq">CF(H)=0.934</text>
+    <text x="20" y="68" class="tiny">target confidence</text>
+  </g>
+
+  <!-- Connections -->
+  <path class="arrow-orange" d="M204 178 C350 178 620 178 734 194"/>
+  <path class="arrow-blue" d="M204 276 C236 276 254 287 298 298"/>
+  <path class="arrow-blue" d="M204 350 C236 350 254 321 298 310"/>
+  <path class="arrow-orange" d="M434 303 H522"/>
+  <path class="arrow-orange" d="M658 303 H734"/>
+
+  <path class="arrow-blue" d="M204 472 C306 472 438 497 520 511"/>
+  <path class="arrow-blue" d="M204 570 C236 570 254 584 298 596"/>
+  <path class="arrow-blue" d="M204 644 C236 644 254 623 298 610"/>
+  <path class="arrow-blue" d="M434 601 C480 601 492 539 520 522"/>
+  <path class="arrow-orange" d="M662 515 H734"/>
+  <path class="arrow-orange" d="M870 515 H940"/>
+
+  <path class="arrow-orange" d="M204 758 C510 758 650 660 734 646"/>
+
+  <path class="arrow" d="M902 194 C958 194 974 249 1008 270"/>
+  <path class="arrow" d="M902 326 C946 326 966 302 1008 302"/>
+  <path class="arrow" d="M1112 516 C1166 516 1184 424 1216 416"/>
+  <path class="arrow" d="M1112 516 C1152 516 974 348 1008 318"/>
+  <path class="arrow" d="M1172 294 C1190 294 1192 388 1216 414"/>
+  <path class="arrow" d="M1172 416 H1216"/>
+  <path class="arrow" d="M902 646 H1008"/>
+  <path class="arrow" d="M1364 417 C1390 470 1202 562 1172 637"/>
+  <path class="arrow" d="M1172 656 H1216"/>
+
+  <!-- Small rule annotations -->
+  <text x="466" y="291" class="tiny">RULE4 w=0.9</text>
+  <text x="672" y="503" class="tiny">RULE5 w=1.0</text>
+  <text x="914" y="184" class="tiny">negative evidence</text>
+  <text x="920" y="316" class="tiny">positive evidence</text>
+  <text x="914" y="636" class="tiny">direct support</text>
+
+  <text x="56" y="826" class="caption">Figure. The CF engine computes premise confidence by min/max logic, scales each conclusion by rule weight, and merges multiple supports using sign-aware certainty-factor composition.</text>
+</svg>

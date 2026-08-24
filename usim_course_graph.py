@@ -30,13 +30,11 @@ class CourseGraphConfig(CourseConfig):
     def __init__(self, n_users, n_items, content_dim=768):
         super().__init__(n_users, n_items, content_dim)
         self.graph_topk_prereq = int(os.environ.get("USIM_GRAPH_TOPK_PREREQ", "5"))
-        self.graph_topk_semantic = int(os.environ.get("USIM_GRAPH_TOPK_SEMANTIC", "0"))
+        self.graph_topk_semantic = int(os.environ.get("USIM_GRAPH_TOPK_SEMANTIC", "8"))
         self.graph_hidden_dim = int(os.environ.get("USIM_GRAPH_HIDDEN_DIM", str(self.hidden_dim)))
         self.graph_prereq_weight = float(os.environ.get("USIM_GRAPH_PREREQ_WEIGHT", "1.0"))
         self.graph_semantic_weight = float(os.environ.get("USIM_GRAPH_SEMANTIC_WEIGHT", "0.8"))
         self.graph_mix_dropout = float(os.environ.get("USIM_GRAPH_MIX_DROPOUT", "0.05"))
-        self.graph_residual_scale = float(os.environ.get("USIM_GRAPH_RESIDUAL_SCALE", "0.15"))
-        self.graph_apply_cold_only = os.environ.get("USIM_GRAPH_APPLY_COLD_ONLY", "1") == "1"
 
 
 class GraphEnhancedCourseUSIM(GraphItemMixin, CourseAwareUSIM):
@@ -177,7 +175,7 @@ def run_static_experiment_graph(df, cfg, device, model, optimizer, llm_scores):
 
 
 def main():
-    data_dir = "processed_data_hin"
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     print(f"Loading Data for Course Graph USIM from {data_dir}...")
     if not os.path.exists(f"{data_dir}/stream_data.pkl"):
         print("Error: please run data_process_hin.py first")
@@ -195,7 +193,7 @@ def main():
     course_artifacts, course_stats = build_graph_course_artifacts(
         df,
         cfg.n_items,
-        relation_dir="MOOCCube/relations",
+        relation_dir=os.environ.get("USIM_RELATION_DIR", "MOOCCube/relations"),
         prereq_min_support=cfg.prereq_min_support,
         prereq_max_per_item=cfg.prereq_max_per_item,
         prereq_min_items=cfg.prereq_min_items,
@@ -225,10 +223,6 @@ def main():
         f"semantic_topk={course_stats['graph_topk_semantic']} | "
         f"items(prereq)={course_stats['graph_items_with_prereq_neighbors']} | "
         f"items(semantic)={course_stats['graph_items_with_semantic_neighbors']}"
-    )
-    print(
-        f">> Graph Fusion: cold_only={cfg.graph_apply_cold_only} | "
-        f"residual_scale={cfg.graph_residual_scale:.2f}"
     )
 
     if os.environ.get("USIM_STATIC", "0") == "1":

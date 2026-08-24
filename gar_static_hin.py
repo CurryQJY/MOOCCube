@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import json
 import os, random
+import copy
 
 # ==============================
 # 1. 寮哄埗闈炰氦浜掑悗绔?
@@ -12,6 +13,8 @@ import os, random
 import matplotlib
 
 matplotlib.use('Agg')
+from hin_data_common import static_result_path, static_split_df
+from baseline_checkpoint import checkpoint_config, maybe_resume_checkpoint, save_checkpoint
 from torch.utils.data import Dataset, DataLoader
 
 
@@ -27,6 +30,8 @@ def setup_seed(seed=2025):
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(seed)
     print(f"Random Seed Fixed: {seed}")
 
 
@@ -37,8 +42,19 @@ class Config:
         self.emb_dim = 64
         self.content_dim = content_dim
         self.hidden_dim = 128
-        self.cold_threshold = 1
+        self.cold_threshold = int(os.environ.get("GAR_COLD_THRESHOLD", os.environ.get("USIM_COLD_THRESHOLD", "5")))
+        self.eval_n_neg = int(os.environ.get("GAR_EVAL_N_NEG", os.environ.get("USIM_EVAL_N_NEG", "200")))
+        self.static_seed = int(os.environ.get("GAR_STATIC_SEED", os.environ.get("USIM_STATIC_SEED", "2025")))
+        self.seed = int(os.environ.get("GAR_SEED", str(self.static_seed)))
+        self.train_ratio = float(os.environ.get("GAR_STATIC_TRAIN_RATIO", "0.8"))
+        self.val_ratio = float(os.environ.get("GAR_STATIC_VAL_RATIO", "0.1"))
+        self.batch_size = int(os.environ.get("GAR_BATCH_SIZE", "512"))
+        self.n_epochs = int(os.environ.get("GAR_STATIC_EPOCHS", "40"))
+        self.eval_interval = int(os.environ.get("GAR_EVAL_INTERVAL", "5"))
+        self.eval_item_mode = os.environ.get("GAR_EVAL_ITEM_MODE", "mixed").strip().lower()
+        self.rec_mode = os.environ.get("GAR_REC_MODE", "real_fake").strip().lower()
         self.lr = 1e-3
+        self.ckpt = checkpoint_config("GAR")
 
         # --- GAFC (GAN) 鐗规湁鍙傛暟 ---
         self.alpha = 1.0  # Recommender Loss 鏉冮噸
@@ -186,7 +202,25 @@ class GAFC(nn.Module):
 # 4. 鍏ㄩ噺鎺掑悕鐩稿叧鍑芥暟
 # ==============================
 
-def precompute_full_pool(model, num_items, batch_size=2048, device='cuda'):
+def _mixed_item_vector(model, i_idx, cold_mask):
+    content = model.content_features[i_idx]
+    fake_id = model.generator(content)
+    mode = getattr(model.cfg, "eval_item_mode", "mixed")
+    if mode in {"generator", "generator_all", "fake", "fake_all"}:
+        return fake_id
+    if mode in {"real", "real_all", "id", "id_all"}:
+        return model.item_id_emb(i_idx)
+
+    cold_mask = cold_mask.to(device=i_idx.device).bool().view(-1, 1)
+    if cold_mask.all():
+        return fake_id
+    real_id = model.item_id_emb(i_idx)
+    if (~cold_mask).all():
+        return real_id
+    return torch.where(cold_mask, fake_id, real_id)
+
+
+def precompute_full_pool(model, num_items, batch_size=2048, device='cuda', item_popularity=None):
     """
     棰勮绠? 寮哄埗浣跨敤 Generator
     """
@@ -194,26 +228,35 @@ def precompute_full_pool(model, num_items, batch_size=2048, device='cuda'):
     item_loader = DataLoader(SimpleItemDataset(num_items), batch_size=batch_size, shuffle=False)
     all_z_i = []
 
-    print("Pre-computing Full Item Pool (Generator)...")
+    print(f"Pre-computing Full Item Pool (GAFC eval_item_mode={model.cfg.eval_item_mode})...")
     with torch.no_grad():
         for i_batch in item_loader:
             i_batch = i_batch.to(device)
-            content = model.content_features[i_batch]
-            # GAFC 鏍稿績: 鐢?G(content) 鏇夸唬 ID
-            z_i = model.generator(content)
+            if item_popularity is None:
+                cold_mask = torch.ones_like(i_batch, dtype=torch.bool)
+            else:
+                cold_mask = item_popularity[i_batch.detach().cpu()].to(device) < model.cfg.cold_threshold
+            z_i = _mixed_item_vector(model, i_batch, cold_mask)
             z_i = F.normalize(z_i, dim=1)
             all_z_i.append(z_i.cpu())
 
     return torch.cat(all_z_i, dim=0)
 
 
-def evaluate_dual_gafc(model, loader, all_item_z, device, k_list, user_seen_items=None):
+def evaluate_dual_gafc(model, loader, all_item_z, device, k_list, user_seen_items=None, average_mode="interaction"):
     """鍚屾椂璁＄畻 Cold 鍜?Hot 鍏ㄥ簱鎸囨爣"""
+    average_mode = average_mode.strip().lower()
+    if average_mode not in {"interaction", "item_macro"}:
+        raise ValueError("average_mode must be 'interaction' or 'item_macro'")
     model.eval()
     c_sum = {f'{m}@{k}': 0.0 for m in ['R', 'N'] for k in k_list}
     h_sum = {f'{m}@{k}': 0.0 for m in ['R', 'N'] for k in k_list}
     c_total = 0
     h_total = 0
+    c_item_sum = {f'{m}@{k}': {} for m in ['R', 'N'] for k in k_list}
+    h_item_sum = {f'{m}@{k}': {} for m in ['R', 'N'] for k in k_list}
+    c_item_count = {}
+    h_item_count = {}
     seen_tensor_cache = {}
     
     try:
@@ -231,9 +274,7 @@ def evaluate_dual_gafc(model, loader, all_item_z, device, k_list, user_seen_item
             i_tgt = batch['i'].to(device)
             z_u = F.normalize(model.user_emb(u), dim=1)
             
-            # Target Item: Generator Output
-            content = model.content_features[i_tgt]
-            z_i_pos = F.normalize(model.generator(content), dim=1)
+            z_i_pos = F.normalize(_mixed_item_vector(model, i_tgt, pop_mask.to(device)), dim=1)
             
             if cpu_m:
                 scores = torch.matmul(z_u.cpu(), all_emb.t())
@@ -275,8 +316,14 @@ def evaluate_dual_gafc(model, loader, all_item_z, device, k_list, user_seen_item
             topk = perm[topk_pos]
             t_cols = t_cols.view(-1, 1)
             
-            is_c = pop_mask.cpu() if cpu_m else pop_mask
+            is_c = pop_mask.to(scores.device)
             is_h = ~is_c
+            if average_mode == "item_macro":
+                item_ids = [int(x) for x in i_tgt.detach().cpu().tolist()]
+                cold_flags = [bool(x) for x in is_c.detach().cpu().tolist()]
+                for item_id, is_cold_item in zip(item_ids, cold_flags):
+                    counts = c_item_count if is_cold_item else h_item_count
+                    counts[item_id] = counts.get(item_id, 0) + 1
             
             for k in k_list:
                 preds = topk[:, :k]
@@ -287,14 +334,41 @@ def evaluate_dual_gafc(model, loader, all_item_z, device, k_list, user_seen_item
                 if rks[0].numel() > 0:
                     dcgs[rks[0]] = 1.0 / torch.log2(rks[1].float() + 2.0)
                 
-                c_sum[f'R@{k}'] += hits[is_c].sum().item()
-                c_sum[f'N@{k}'] += dcgs[is_c].sum().item()
-                h_sum[f'R@{k}'] += hits[is_h].sum().item()
-                h_sum[f'N@{k}'] += dcgs[is_h].sum().item()
-                
-            c_total += is_c.sum().item()
-            h_total += is_h.sum().item()
+                if average_mode == "item_macro":
+                    hit_vals = [float(x) for x in hits.detach().cpu().tolist()]
+                    ndcg_vals = [float(x) for x in dcgs.detach().cpu().tolist()]
+                    for row, item_id in enumerate(item_ids):
+                        sums = c_item_sum if cold_flags[row] else h_item_sum
+                        sums[f'R@{k}'][item_id] = sums[f'R@{k}'].get(item_id, 0.0) + hit_vals[row]
+                        sums[f'N@{k}'][item_id] = sums[f'N@{k}'].get(item_id, 0.0) + ndcg_vals[row]
+                else:
+                    c_sum[f'R@{k}'] += hits[is_c].sum().item()
+                    c_sum[f'N@{k}'] += dcgs[is_c].sum().item()
+                    h_sum[f'R@{k}'] += hits[is_h].sum().item()
+                    h_sum[f'N@{k}'] += dcgs[is_h].sum().item()
+
+            if average_mode == "interaction":
+                c_total += is_c.sum().item()
+                h_total += is_h.sum().item()
             
+    if average_mode == "item_macro":
+        def macro_result(item_sum, item_count):
+            if not item_count:
+                return None, 0
+            res = {}
+            for key, per_item in item_sum.items():
+                vals = [
+                    per_item.get(item_id, 0.0) / count
+                    for item_id, count in item_count.items()
+                    if count > 0
+                ]
+                res[key] = sum(vals) / max(1, len(vals))
+            return res, len(item_count)
+
+        c_res, c_count = macro_result(c_item_sum, c_item_count)
+        h_res, h_count = macro_result(h_item_sum, h_item_count)
+        return c_res, c_count, h_res, h_count
+
     c_res = {k: v/c_total for k,v in c_sum.items()} if c_total > 0 else None
     h_res = {k: v/h_total for k,v in h_sum.items()} if h_total > 0 else None
     return c_res, c_total, h_res, h_total
@@ -330,8 +404,7 @@ def evaluate_sampled_gafc(model, loader, all_item_z, device, k_list, n_neg=999, 
             batch_size = u.size(0)
             
             z_u = F.normalize(model.user_emb(u), dim=1)
-            content = model.content_features[i_tgt]
-            z_i_pos = F.normalize(model.generator(content), dim=1)
+            z_i_pos = F.normalize(_mixed_item_vector(model, i_tgt, pop_mask.to(device)), dim=1)
 
             # Compute full scores first, then gather sampled candidates from the same
             # score matrix to keep full/sample numerically consistent.
@@ -413,7 +486,7 @@ def evaluate_sampled_gafc(model, loader, all_item_z, device, k_list, n_neg=999, 
             max_k = min(max(k_list), scores.size(1))
             _, topk = torch.topk(scores, k=max_k, dim=1)
             
-            is_c = pop_mask.cpu() if cpu_m else pop_mask
+            is_c = pop_mask.to(scores.device)
             is_h = ~is_c
             
             for k in k_list:
@@ -447,30 +520,38 @@ def evaluate_sampled_gafc(model, loader, all_item_z, device, k_list, n_neg=999, 
 # ==============================
 
 def main():
-    setup_seed(2025)
-    print("Loading Data for GAFC (SIGIR '22) from processed_data_hin...")
-    if not os.path.exists("processed_data_hin/stream_data.pkl"):
-        print("Error: run data_process_hin.py first")
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
+    print(f"Loading Data for GAFC (SIGIR '22) from {data_dir}...")
+    if not os.path.exists(f"{data_dir}/stream_data.pkl"):
+        print(f"Error: {data_dir}/stream_data.pkl not found")
         return
 
-    with open("processed_data_hin/meta.json", "r") as f:
+    with open(f"{data_dir}/meta.json", "r") as f:
         meta = json.load(f)
-    df = pd.read_pickle("processed_data_hin/stream_data.pkl")
-    content_emb = torch.load("processed_data_hin/content_emb.pt")
-
-    # Static random split: 8/1/1
-    df = df.sample(frac=1.0, random_state=2025).reset_index(drop=True)
-    n = len(df)
-    train_df = df.iloc[:int(n * 0.8)]
-    val_df = df.iloc[int(n * 0.8):int(n * 0.9)]
-    test_df = df.iloc[int(n * 0.9):]
-
-    train_loader = DataLoader(StreamDataset(train_df), batch_size=512, shuffle=True, collate_fn=collate_fn)
-    val_loader = DataLoader(StreamDataset(val_df), batch_size=512, shuffle=False, collate_fn=collate_fn)
-    test_loader = DataLoader(StreamDataset(test_df), batch_size=512, shuffle=False, collate_fn=collate_fn)
+    df = pd.read_pickle(f"{data_dir}/stream_data.pkl")
+    content_emb = torch.load(f"{data_dir}/content_emb.pt")
 
     cfg = Config(meta['n_users'], meta['n_items'], content_dim=content_emb.shape[1])
-    print(f">> Model: GAFC (GAN) | Alpha: {cfg.alpha} | Gamma (Adv): {cfg.gamma} | STATIC (8:1:1)")
+    setup_seed(cfg.seed)
+    train_df, val_df, test_df = static_split_df(
+        df, seed=cfg.static_seed, train_ratio=cfg.train_ratio, val_ratio=cfg.val_ratio
+    )
+
+    train_loader = DataLoader(StreamDataset(train_df), batch_size=cfg.batch_size, shuffle=True, collate_fn=collate_fn)
+    val_loader = DataLoader(StreamDataset(val_df), batch_size=cfg.batch_size, shuffle=False, collate_fn=collate_fn)
+    test_loader = DataLoader(StreamDataset(test_df), batch_size=cfg.batch_size, shuffle=False, collate_fn=collate_fn)
+
+    item_popularity = torch.zeros(cfg.n_items, dtype=torch.long)
+    train_counts = train_df["i_idx"].astype(int).value_counts()
+    for item_id, count in train_counts.items():
+        idx = int(item_id)
+        if 0 <= idx < cfg.n_items:
+            item_popularity[idx] = int(count)
+
+    print(
+        f">> Model: GAFC (GAN) | Alpha: {cfg.alpha} | Gamma (Adv): {cfg.gamma} | "
+        f"STATIC | eval_n_neg={cfg.eval_n_neg} | eval_item_mode={cfg.eval_item_mode} | rec_mode={cfg.rec_mode}"
+    )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = GAFC(cfg, content_emb).to(device)
@@ -485,7 +566,7 @@ def main():
     k_list = [5, 10, 20]
     metrics_keys = [f'{m}@{k}' for m in ['R', 'N'] for k in k_list]
 
-    # Seen cache: validation masks train seen; test masks train+val seen.
+    # Seen cache: validation masks train seen; test uses train-only unless configured otherwise.
     train_seen_items = {}
     for u_idx, i_idx in zip(train_df['u_idx'].values, train_df['i_idx'].values):
         uid = int(u_idx)
@@ -494,16 +575,29 @@ def main():
         train_seen_items[uid].add(int(i_idx))
 
     test_seen_items = {uid: set(items) for uid, items in train_seen_items.items()}
-    for u_idx, i_idx in zip(val_df['u_idx'].values, val_df['i_idx'].values):
-        uid = int(u_idx)
-        if uid not in test_seen_items:
-            test_seen_items[uid] = set()
-        test_seen_items[uid].add(int(i_idx))
+    if os.environ.get("USIM_STATIC_TEST_HISTORY", "train_only").strip().lower() == "train_val":
+        for u_idx, i_idx in zip(val_df['u_idx'].values, val_df['i_idx'].values):
+            uid = int(u_idx)
+            if uid not in test_seen_items:
+                test_seen_items[uid] = set()
+            test_seen_items[uid].add(int(i_idx))
 
     criterion_gan = nn.BCELoss()
-    epochs = int(os.environ.get("GAR_STATIC_EPOCHS", "40"))
+    epochs = cfg.n_epochs
+    best_val = -1.0
+    best_epoch = -1
+    best_state = None
+    start_epoch, ckpt_state = maybe_resume_checkpoint(
+        cfg.ckpt,
+        model,
+        {"opt_g": opt_g, "opt_d": opt_d},
+        device,
+    )
+    best_val = float(ckpt_state.get("best_val", best_val))
+    best_epoch = int(ckpt_state.get("best_epoch", best_epoch))
+    best_state = ckpt_state.get("best_state", best_state)
 
-    for epoch in range(1, epochs + 1):
+    for epoch in range(start_epoch + 1, epochs + 1):
         model.train()
         total_g_loss = 0.0
         total_d_loss = 0.0
@@ -535,14 +629,23 @@ def main():
             # 2) Train G + recommender
             opt_g.zero_grad()
             fake_emb_g = model.generator(content)
+            real_emb_g = model.item_id_emb(i_idx)
             prob_fake_g = model.discriminator(fake_emb_g)
             loss_g_adv = criterion_gan(prob_fake_g, real_label)
 
-            logits = model.recommend_score(u_idx, fake_emb_g)
             rec_labels = torch.arange(batch_size, device=device)
-            loss_rec = F.cross_entropy(logits, rec_labels)
+            logits_fake = model.recommend_score(u_idx, fake_emb_g)
+            loss_rec_fake = F.cross_entropy(logits_fake, rec_labels)
+            if cfg.rec_mode in {"real_fake", "fake_real", "both", "mixed"}:
+                logits_real = model.recommend_score(u_idx, real_emb_g)
+                loss_rec_real = F.cross_entropy(logits_real, rec_labels)
+                loss_rec = 0.5 * (loss_rec_fake + loss_rec_real)
+            elif cfg.rec_mode in {"real", "id", "real_only"}:
+                logits_real = model.recommend_score(u_idx, real_emb_g)
+                loss_rec = F.cross_entropy(logits_real, rec_labels)
+            else:
+                loss_rec = loss_rec_fake
 
-            real_emb_g = model.item_id_emb(i_idx)
             loss_recon = F.mse_loss(fake_emb_g, real_emb_g)
 
             loss_g = cfg.alpha * loss_rec + cfg.gamma * loss_g_adv + cfg.beta * loss_recon
@@ -555,24 +658,65 @@ def main():
 
         print(f"Epoch [{epoch}/{epochs}] Train G_Loss: {total_g_loss / max(1, steps):.4f} | D_Loss: {total_d_loss / max(1, steps):.4f}")
 
-        if epoch % 5 == 0 or epoch == epochs:
-            all_z = precompute_full_pool(model, cfg.n_items, device=device)
+        if epoch % cfg.eval_interval == 0 or epoch == epochs:
+            improved = False
+            all_z = precompute_full_pool(model, cfg.n_items, device=device, item_popularity=item_popularity)
             c_m_f, n_c_f, h_m_f, n_h_f = evaluate_dual_gafc(
                 model, val_loader, all_z, device, k_list, user_seen_items=train_seen_items
             )
+            val_key = c_m_f.get("N@10", 0.0) if c_m_f else 0.0
+            if val_key > best_val:
+                best_val = val_key
+                best_epoch = epoch
+                best_state = copy.deepcopy(model.state_dict())
+                improved = True
+            if cfg.ckpt.save and improved:
+                save_checkpoint(
+                    cfg.ckpt,
+                    "best.pt",
+                    epoch,
+                    model,
+                    {"opt_g": opt_g, "opt_d": opt_d},
+                    best_state=best_state,
+                    extra={"best_val": best_val, "best_epoch": best_epoch},
+                )
+            c_f_str = " | ".join([f"{k}={c_m_f[k]:.4f}" for k in metrics_keys[:3]]) if c_m_f else "N/A"
             h_f_str = " | ".join([f"{k}={h_m_f[k]:.4f}" for k in metrics_keys[:3]]) if h_m_f else "N/A"
-            print(f"  --> Valid Hot Full: {h_f_str}")
+            print(f"  --> Valid Cold Full: {c_f_str} | Hot Full: {h_f_str}")
+        if cfg.ckpt.save:
+            save_checkpoint(
+                cfg.ckpt,
+                "latest.pt",
+                epoch,
+                model,
+                {"opt_g": opt_g, "opt_d": opt_d},
+                best_state=best_state,
+                extra={"best_val": best_val, "best_epoch": best_epoch},
+            )
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        print(f"Restore best epoch={best_epoch}, val_full_cold_N@10={best_val:.4f}")
 
     print("\n" + "=" * 90)
-    print("         FINAL TEST REPORT: Sampled (1+999) vs Full Ranking (STATIC 8:1:1)")
+    print(f"         FINAL TEST REPORT: Sampled (1+{cfg.eval_n_neg}) vs Full Ranking (STATIC)")
     print("=" * 90)
 
-    all_z = precompute_full_pool(model, cfg.n_items, device=device)
+    all_z = precompute_full_pool(model, cfg.n_items, device=device, item_popularity=item_popularity)
     c_m_f, n_c_f, h_m_f, n_h_f = evaluate_dual_gafc(
         model, test_loader, all_z, device, k_list, user_seen_items=test_seen_items
     )
+    c_m_f_item_macro, n_c_f_item_macro, h_m_f_item_macro, n_h_f_item_macro = evaluate_dual_gafc(
+        model,
+        test_loader,
+        all_z,
+        device,
+        k_list,
+        user_seen_items=test_seen_items,
+        average_mode="item_macro",
+    )
     c_m_s, n_c_s, h_m_s, n_h_s = evaluate_sampled_gafc(
-        model, test_loader, all_z, device, k_list, n_neg=999, user_seen_items=test_seen_items
+        model, test_loader, all_z, device, k_list, n_neg=cfg.eval_n_neg, user_seen_items=test_seen_items
     )
 
     print(f"{'Metric':<10} | {'Samp Cold':<12} | {'Samp Hot':<12} | {'Full Cold':<12} | {'Full Hot':<12}")
@@ -587,6 +731,41 @@ def main():
     print(f"采样 Samples: Cold={n_c_s}, Hot={n_h_s}")
     print(f"全库 Samples: Cold={n_c_f}, Hot={n_h_f}")
     print("=" * 90)
+
+    out = {
+        "model": "GAR",
+        "protocol": "static_item_cold",
+        "sample_cold": c_m_s or {},
+        "sample_hot": h_m_s or {},
+        "full_cold": c_m_f or {},
+        "full_hot": h_m_f or {},
+        "full_cold_item_macro": c_m_f_item_macro or {},
+        "full_hot_item_macro": h_m_f_item_macro or {},
+    }
+    for k in metrics_keys:
+        out[f"samp_cold_{k}"] = c_m_s.get(k, 0.0) if c_m_s else 0.0
+        out[f"samp_hot_{k}"] = h_m_s.get(k, 0.0) if h_m_s else 0.0
+        out[f"full_cold_{k}"] = c_m_f.get(k, 0.0) if c_m_f else 0.0
+        out[f"full_hot_{k}"] = h_m_f.get(k, 0.0) if h_m_f else 0.0
+    out.update({
+        "count_sample_cold": n_c_s,
+        "count_sample_hot": n_h_s,
+        "count_full_cold": n_c_f,
+        "count_full_hot": n_h_f,
+        "count_full_cold_item_macro": n_c_f_item_macro,
+        "count_full_hot_item_macro": n_h_f_item_macro,
+        "best_epoch": best_epoch,
+        "best_val_full_cold_n10": best_val,
+        "best_metric": "cold",
+        "eval_n_neg": cfg.eval_n_neg,
+        "eval_item_mode": cfg.eval_item_mode,
+        "rec_mode": cfg.rec_mode,
+        "checkpoint_dir": cfg.ckpt.dir or None,
+        "resumed_from_epoch": start_epoch,
+    })
+    result_path = static_result_path("gar_static_result.json")
+    pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)
+    print(f"Saved: {result_path}")
 
 
 if __name__ == "__main__":

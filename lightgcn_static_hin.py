@@ -18,6 +18,7 @@ from hin_data_common import (
     collate_interactions,
     load_hin_processed,
     setup_seed,
+    static_result_path,
     static_split_df,
 )
 from hin_eval_common import evaluate_embedding_ranker, print_final_report
@@ -39,9 +40,10 @@ class Config:
         self.n_epochs = int(os.environ.get("LIGHTGCN_STATIC_EPOCHS", "8"))
         self.batch_size = int(os.environ.get("LIGHTGCN_BATCH_SIZE", "2048"))
 
-        self.cold_threshold = int(os.environ.get("LIGHTGCN_COLD_THRESHOLD", "5"))
-        self.eval_n_neg = int(os.environ.get("LIGHTGCN_EVAL_N_NEG", "200"))
-        self.static_seed = int(os.environ.get("LIGHTGCN_STATIC_SEED", "2025"))
+        self.cold_threshold = int(os.environ.get("LIGHTGCN_COLD_THRESHOLD", os.environ.get("USIM_COLD_THRESHOLD", "5")))
+        self.eval_n_neg = int(os.environ.get("LIGHTGCN_EVAL_N_NEG", os.environ.get("USIM_EVAL_N_NEG", "200")))
+        self.static_seed = int(os.environ.get("LIGHTGCN_STATIC_SEED", os.environ.get("USIM_STATIC_SEED", "2025")))
+        self.seed = int(os.environ.get("LIGHTGCN_SEED", str(self.static_seed)))
         self.train_ratio = float(os.environ.get("LIGHTGCN_STATIC_TRAIN_RATIO", "0.8"))
         self.val_ratio = float(os.environ.get("LIGHTGCN_STATIC_VAL_RATIO", "0.1"))
 
@@ -88,17 +90,19 @@ def prepare_train_cache(
     user_rows = {uid: np.asarray(rows, dtype=np.int64) for uid, rows in user_rows.items()}
 
     user_seen = build_user_seen(train_df)
-    all_items = np.arange(n_items, dtype=np.int64)
+    train_item_pool = np.unique(pos_items).astype(np.int64, copy=False)
+    if train_item_pool.size < 1:
+        raise ValueError("Cannot prepare training cache from an empty training item pool")
     user_neg_pool = {}
     for uid in user_rows.keys():
         seen = user_seen.get(uid, set())
-        if len(seen) >= n_items:
-            pool = all_items
+        if len(seen) >= train_item_pool.size:
+            pool = train_item_pool
         else:
             seen_arr = np.fromiter(seen, dtype=np.int64, count=len(seen)) if seen else np.empty(0, dtype=np.int64)
-            pool = np.setdiff1d(all_items, seen_arr, assume_unique=False)
+            pool = np.setdiff1d(train_item_pool, seen_arr, assume_unique=False)
             if pool.size < 1:
-                pool = all_items
+                pool = train_item_pool
         user_neg_pool[uid] = pool
 
     return users, pos_items, user_rows, user_neg_pool
@@ -117,13 +121,18 @@ def sample_negatives(
     for uid, rows in user_rows.items():
         pool = user_neg_pool.get(uid)
         if pool is None or pool.size < 1:
-            neg[rows] = np.random.randint(0, n_items, size=rows.size, dtype=np.int64)
-        else:
-            neg[rows] = np.random.choice(pool, size=rows.size, replace=True)
-
-    same = neg == pos_items
-    if same.any():
-        neg[same] = (neg[same] + 1) % n_items
+            pool = np.arange(n_items, dtype=np.int64)
+        chosen = np.random.choice(pool, size=rows.size, replace=True)
+        same = chosen == pos_items[rows]
+        if same.any():
+            same_locs = np.where(same)[0]
+            for loc in same_locs:
+                row = rows[loc]
+                alt_pool = pool[pool != pos_items[row]]
+                if alt_pool.size < 1:
+                    alt_pool = pool
+                chosen[loc] = np.random.choice(alt_pool)
+        neg[rows] = chosen
     return neg
 
 
@@ -184,10 +193,11 @@ class LightGCNStaticModel(nn.Module):
 
 
 def main():
-    setup_seed(2025)
-    print("Loading data from processed_data_hin ...")
-    meta, df, content_emb = load_hin_processed("processed_data_hin")
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
+    print(f"Loading data from {data_dir} ...")
+    meta, df, content_emb = load_hin_processed(data_dir)
     cfg = Config(meta["n_users"], meta["n_items"], content_dim=content_emb.shape[1])
+    setup_seed(cfg.seed)
 
     train_df, val_df, test_df = static_split_df(
         df,
@@ -215,7 +225,8 @@ def main():
 
     train_seen = build_user_seen(train_df)
     test_seen = clone_user_seen(train_seen)
-    add_user_seen_from_df(test_seen, val_df)
+    if os.environ.get("USIM_STATIC_TEST_HISTORY", "train_only").strip().lower() == "train_val":
+        add_user_seen_from_df(test_seen, val_df)
 
     train_users_np, train_pos_np, user_rows, user_neg_pool = prepare_train_cache(train_df, cfg.n_items)
 
@@ -352,8 +363,9 @@ def main():
         "best_epoch": best_epoch,
         "best_val_full_cold_n10": best_val,
     }
-    pd.DataFrame([out]).to_json("lightgcn_static_result.json", orient="records", force_ascii=False)
-    print("Saved: lightgcn_static_result.json")
+    result_path = static_result_path("lightgcn_static_result.json")
+    pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)
+    print(f"Saved: {result_path}")
 
 
 if __name__ == "__main__":

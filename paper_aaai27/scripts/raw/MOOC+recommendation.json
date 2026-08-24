@@ -1,0 +1,521 @@
+{
+"result":{
+"query":"MOOC* recommendation*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"245.94"
+},
+"completions":{
+"@total":"2",
+"@computed":"2",
+"@sent":"2",
+"c":[
+{
+"@sc":"102",
+"@dc":"102",
+"@oc":"102",
+"@id":"70633652",
+"text":"recommendation"
+},
+{
+"@sc":"18",
+"@dc":"18",
+"@oc":"18",
+"@id":"70633655",
+"text":"recommendations"
+}
+]
+},
+"hits":{
+"@total":"120",
+"@computed":"100",
+"@sent":"80",
+"@first":"0",
+"hit":[{
+"@score":"3",
+"@id":"2265266",
+"info":{"authors":{"author":[{"@pid":"222/5477","text":"Peide Zhu"},{"@pid":"73/906","text":"Claudia Hauff"},{"@pid":"12/1198-28","text":"Jie Yang 0028"}]},"title":"MOOC-Rec: Instructional Video Clip Recommendation for MOOC Forum Questions.","venue":"EDM","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/edm/ZhuH022","ee":"https://educationaldatamining.org/2022.EDM-posters.86/index.html","url":"https://dblp.org/rec/conf/edm/ZhuH022"},
+"url":"URL#2265266"
+},
+{
+"@score":"3",
+"@id":"2744529",
+"info":{"authors":{"author":[{"@pid":"182/4871","text":"Jorge Maldonado-Mahauad"},{"@pid":"362/6199","text":"Javier Valdiviezo-Ortiz"},{"@pid":"45/2515","text":"Juan Pablo Carvallo 0001"},{"@pid":"242/2703","text":"Nicolay Samaniego Erazo"}]},"title":"The MOOC-CEDIA Observatory: Study of the Current Situation of MOOCs and Recommendations To Improve Their Adoption in Ecuadorian Universities.","venue":"EMOOCs","pages":"143-158","year":"2021","type":"Conference and Workshop Papers","access":"open","key":"conf/emoocs/Maldonado-Mahauad21","doi":"10.25932/PUBLISHUP-51715","ee":"https://doi.org/10.25932/publishup-51715","url":"https://dblp.org/rec/conf/emoocs/Maldonado-Mahauad21"},
+"url":"URL#2744529"
+},
+{
+"@score":"3",
+"@id":"3269008",
+"info":{"authors":{"author":[{"@pid":"244/1926","text":"Deming Sheng"},{"@pid":"49/2683","text":"Jingling Yuan"},{"@pid":"98/2931-2","text":"Qing Xie 0002"},{"@pid":"15/7657","text":"Pei Luo"}]},"title":"MOOCRec: An Attention Meta-path Based Model for Top-K Recommendation in MOOC.","venue":"KSEM","pages":"280-288","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/ksem/ShengYXL20","doi":"10.1007/978-3-030-55130-8_25","ee":"https://doi.org/10.1007/978-3-030-55130-8_25","url":"https://dblp.org/rec/conf/ksem/ShengYXL20"},
+"url":"URL#3269008"
+},
+{
+"@score":"3",
+"@id":"3507888",
+"info":{"authors":{"author":[{"@pid":"55/2270-66","text":"Hao Zhang 0066"},{"@pid":"34/808-17","text":"Tao Huang 0017"},{"@pid":"21/9114","text":"Zhihan Lv"},{"@pid":"75/5624","text":"Sanya Liu"},{"@pid":"83/415","text":"Heng Yang"}]},"title":"MOOCRC: A Highly Accurate Resource Recommendation Model for Use in MOOC Environments.","venue":"Mob. Networks Appl.","volume":"24","number":"1","pages":"34-46","year":"2019","type":"Journal Articles","access":"closed","key":"journals/monet/ZhangHLLY19","doi":"10.1007/S11036-018-1131-Y","ee":"https://doi.org/10.1007/s11036-018-1131-y","url":"https://dblp.org/rec/journals/monet/ZhangHLLY19"},
+"url":"URL#3507888"
+},
+{
+"@score":"3",
+"@id":"4202087",
+"info":{"authors":{"author":{"@pid":"144/4640","text":"Sarra Bouzayane"}},"title":"Méthode de classification multicritère, incrémentale et périodique appliquée à la recommandation pour l&apos;aide au transfert des savoirs dans les MOOCs. (Multi-criteria, incremental and periodic classification method applied to the recommendation for knowledge transfer assistance in MOOCs).","year":"2017","type":"Books and Theses","access":"closed","key":"phd/hal/Bouzayane17","ee":"https://tel.archives-ouvertes.fr/tel-03650459","url":"https://dblp.org/rec/phd/hal/Bouzayane17"},
+"url":"URL#4202087"
+},
+{
+"@score":"3",
+"@id":"4815843",
+"info":{"authors":{"author":[{"@pid":"177/5856","text":"Guangyuan Piao"},{"@pid":"95/6661","text":"John G. Breslin"}]},"title":"Analyzing MOOC Entries of Professionals on LinkedIn for User Modeling and Personalized MOOC Recommendations.","venue":"UMAP","pages":"291-292","year":"2016","type":"Conference and Workshop Papers","access":"closed","key":"conf/um/PiaoB16a","doi":"10.1145/2930238.2930264","ee":"https://doi.org/10.1145/2930238.2930264","url":"https://dblp.org/rec/conf/um/PiaoB16a"},
+"url":"URL#4815843"
+},
+{
+"@score":"3",
+"@id":"5419481",
+"info":{"authors":{"author":[{"@pid":"97/7423","text":"Carlos Alario-Hoyos"},{"@pid":"54/7452","text":"Mar Pérez-Sanagustín"},{"@pid":"k/CarlosDelgadoKloos","text":"Carlos Delgado Kloos"},{"@pid":"99/1873","text":"Pedro J. Muñoz Merino"}]},"title":"Recommendations for the design and deployment of MOOCs: insights about the MOOC digital education of the future deployed in MiríadaX.","venue":"TEEM","pages":"403-408","year":"2014","type":"Conference and Workshop Papers","access":"closed","key":"conf/teem/Alario-HoyosPKM14","doi":"10.1145/2669711.2669931","ee":"https://doi.org/10.1145/2669711.2669931","url":"https://dblp.org/rec/conf/teem/Alario-HoyosPKM14"},
+"url":"URL#5419481"
+},
+{
+"@score":"2",
+"@id":"14306",
+"info":{"authors":{"author":[{"@pid":"389/7016","text":"Yangtao Zhou"},{"@pid":"48/4546","text":"Qingshan Li"},{"@pid":"08/10026","text":"Ruoyu Li"},{"@pid":"75/3592","text":"Hua Chu"},{"@pid":"27/973-3","text":"Jianan Li 0003"},{"@pid":"261/2509","text":"Feifei Zhu"},{"@pid":"10/1788","text":"Xiangming Li"},{"@pid":"357/9373","text":"Chengyu Feng"},{"@pid":"349/1668","text":"Wanqiang Yang"}]},"title":"Knowledge-guided course recommendation in MOOCs with cross-graph and forgetting-aware cross-attention.","venue":"Appl. Soft Comput.","volume":"193","pages":"114768","year":"2026","type":"Journal Articles","access":"closed","key":"journals/asc/ZhouLLCLZLFY26","doi":"10.1016/J.ASOC.2026.114768","ee":"https://doi.org/10.1016/j.asoc.2026.114768","url":"https://dblp.org/rec/journals/asc/ZhouLLCLZLFY26"},
+"url":"URL#14306"
+},
+{
+"@score":"2",
+"@id":"103198",
+"info":{"authors":{"author":[{"@pid":"358/1600","text":"Salwa Mrayhi"},{"@pid":"76/4098","text":"Mohamed Koutheaïr Khribi"},{"@pid":"80/4954","text":"Mohamed Jemni"}]},"title":"RECMOOC4ALL: an AI-driven recommender system for personalized and accessible MOOC recommendations.","venue":"Smart Learn. Environ.","volume":"13","number":"1","pages":"18","year":"2026","type":"Journal Articles","access":"open","key":"journals/sle/MrayhiKJ26","doi":"10.1186/S40561-026-00444-2","ee":"https://doi.org/10.1186/s40561-026-00444-2","url":"https://dblp.org/rec/journals/sle/MrayhiKJ26"},
+"url":"URL#103198"
+},
+{
+"@score":"2",
+"@id":"127294",
+"info":{"authors":{"author":[{"@pid":"22/2544-3","text":"Jia Zhu 0003"},{"@pid":"400/0772","text":"Zhangze Chen"},{"@pid":"94/5332","text":"Pasquale De Meo"},{"@pid":"183/6713","text":"Jueqi Guan"},{"@pid":"234/8127","text":"Zhongmei Han"},{"@pid":"117/3390","text":"Weijie Shi"}]},"title":"KnowPath: An LLM-Supported Knowledge Graph Construction and Path Finding Framework to Explainable MOOC Recommendations.","venue":"ACM Trans. Inf. Syst.","volume":"44","number":"2","pages":"45:1-45:28","year":"2026","type":"Journal Articles","access":"closed","key":"journals/tois/ZhuCMGHS26","doi":"10.1145/3779436","ee":"https://doi.org/10.1145/3779436","url":"https://dblp.org/rec/journals/tois/ZhuCMGHS26"},
+"url":"URL#127294"
+},
+{
+"@score":"2",
+"@id":"202977",
+"info":{"authors":{"author":[{"@pid":"383/6483","text":"SeongYeub Chu"},{"@pid":"43/6523","text":"Jongwoo Kim"},{"@pid":"67/6176","text":"Mun Yong Yi"}]},"title":"Aspect-Aware MOOC Recommendation in a Heterogeneous Network.","venue":"CoRR","volume":"abs/2602.05297","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2602-05297","doi":"10.48550/ARXIV.2602.05297","ee":"https://doi.org/10.48550/arXiv.2602.05297","url":"https://dblp.org/rec/journals/corr/abs-2602-05297"},
+"url":"URL#202977"
+},
+{
+"@score":"2",
+"@id":"293753",
+"info":{"authors":{"author":[{"@pid":"97/550-3","text":"Chunhua Li 0003"},{"@pid":"26/69","text":"Ying Luo"}]},"title":"Integrating Knowledge Graph Reasoning and Reinforcement Learning for Explainable MOOC Recommendations.","venue":"IEEE Access","volume":"13","pages":"183722-183733","year":"2025","type":"Journal Articles","access":"open","key":"journals/access/LiL25f","doi":"10.1109/ACCESS.2025.3625213","ee":"https://doi.org/10.1109/access.2025.3625213","url":"https://dblp.org/rec/journals/access/LiL25f"},
+"url":"URL#293753"
+},
+{
+"@score":"2",
+"@id":"295514",
+"info":{"authors":{"author":[{"@pid":"47/3996-3","text":"Thu Nguyen 0003"},{"@pid":"221/4662","text":"Dat Do"},{"@pid":"420/8479","text":"Huong Vi"},{"@pid":"311/8243","text":"Khoa Tan Vo"},{"@pid":"347/3332","text":"Thu-Thuy Ta"},{"@pid":"99/10437","text":"Phuc Nguyen"},{"@pid":"29/6538-1","text":"Hong-Tri Nguyen 0001"},{"@pid":"44/5914","text":"Tu-Anh Nguyen-Hoang"}]},"title":"HetGNN-KGAT: Enhancing Personalized Course Recommendation in MOOCs With Knowledge Graph Attention Networks.","venue":"IEEE Access","volume":"13","pages":"192045-192068","year":"2025","type":"Journal Articles","access":"open","key":"journals/access/NguyenDVVTNNN25","doi":"10.1109/ACCESS.2025.3630894","ee":"https://doi.org/10.1109/ACCESS.2025.3630894","url":"https://dblp.org/rec/journals/access/NguyenDVVTNNN25"},
+"url":"URL#295514"
+},
+{
+"@score":"2",
+"@id":"300169",
+"info":{"authors":{"author":[{"@pid":"417/3115","text":"Junyan Yin"},{"@pid":"62/7775","text":"Xusheng Zhou"}]},"title":"Deep Learning-Driven Personalized Course Recommendations in MOOC Platforms Using Domain-Specific Strategies.","venue":"IEEE Access","volume":"13","pages":"165342-165359","year":"2025","type":"Journal Articles","access":"open","key":"journals/access/YinZ25","doi":"10.1109/ACCESS.2025.3608055","ee":"https://doi.org/10.1109/ACCESS.2025.3608055","url":"https://dblp.org/rec/journals/access/YinZ25"},
+"url":"URL#300169"
+},
+{
+"@score":"2",
+"@id":"304787",
+"info":{"authors":{"author":[{"@pid":"375/1103","text":"Mehbooba P. Shareef"},{"@pid":"36/4720","text":"Babita Roslind Jose"},{"@pid":"93/1946","text":"Jimson Mathew"},{"@pid":"189/2548","text":"Dayananda Pruthviraja"}]},"title":"Advancing explainable MOOC recommendation systems: a morphological operations-based framework on partially ordered neutrosophic fuzzy hypergraphs.","venue":"Artif. Intell. Rev.","volume":"58","number":"2","pages":"46","year":"2025","type":"Journal Articles","access":"closed","key":"journals/air/ShareefJMP25","doi":"10.1007/S10462-024-11018-4","ee":"https://doi.org/10.1007/s10462-024-11018-4","url":"https://dblp.org/rec/journals/air/ShareefJMP25"},
+"url":"URL#304787"
+},
+{
+"@score":"2",
+"@id":"320635",
+"info":{"authors":{"author":[{"@pid":"231/8636","text":"Yuanfeng Lian"},{"@pid":"431/6986","text":"Zhuang Yongqi"}]},"title":"Cross-domain recommendation in MOOCs: A graph capsule network approach with transfer learning.","venue":"Comput. Educ. Artif. Intell.","volume":"9","pages":"100454","year":"2025","type":"Journal Articles","access":"open","key":"journals/caeai/LianY25","doi":"10.1016/J.CAEAI.2025.100454","ee":"https://doi.org/10.1016/j.caeai.2025.100454","url":"https://dblp.org/rec/journals/caeai/LianY25"},
+"url":"URL#320635"
+},
+{
+"@score":"2",
+"@id":"351879",
+"info":{"authors":{"author":[{"@pid":"175/6428","text":"Abdelmadjid Benmachiche"},{"@pid":"410/1725","text":"Abdelhadi Sahia"},{"@pid":"378/7831","text":"Soundes Oumaima Boufaida"},{"@pid":"334/1147","text":"Khadija Rais"},{"@pid":"62/7581","text":"Makhlouf Derdour"},{"@pid":"125/3291","text":"Faiz Maazouzi"}]},"title":"Enhancing learning recommendations in mooc search engines through named entity recognition.","venue":"Educ. Inf. Technol.","volume":"30","number":"9","pages":"13041-13071","year":"2025","type":"Journal Articles","access":"closed","key":"journals/eait/BenmachicheSBRDM25","doi":"10.1007/S10639-024-13308-4","ee":"https://doi.org/10.1007/s10639-024-13308-4","url":"https://dblp.org/rec/journals/eait/BenmachicheSBRDM25"},
+"url":"URL#351879"
+},
+{
+"@score":"2",
+"@id":"358035",
+"info":{"authors":{"author":[{"@pid":"62/1539-4","text":"Wei Song 0004"},{"@pid":"250/3878","text":"Qihao Zhang"},{"@pid":"50/2205","text":"Simon Fong 0001"},{"@pid":"164/9288","text":"Tengyue Li"}]},"title":"Recommendation of Learning Resources for MOOCs Based on Historical Sequential Behaviours.","venue":"Expert Syst. J. Knowl. Eng.","volume":"42","number":"5","year":"2025","type":"Journal Articles","access":"closed","key":"journals/es/SongZFL25","doi":"10.1111/EXSY.70034","ee":"https://doi.org/10.1111/exsy.70034","url":"https://dblp.org/rec/journals/es/SongZFL25"},
+"url":"URL#358035"
+},
+{
+"@score":"2",
+"@id":"374462",
+"info":{"authors":{"author":[{"@pid":"40/5552","text":"Yingying Zhu"},{"@pid":"419/2142","text":"Jipeng Mao"}]},"title":"Personalised recommendation of English MOOC teaching resources based on multi dimensional user portrait.","venue":"Int. J. Bus. Intell. Data Min.","volume":"27","number":"2/3/4","pages":"89-106","year":"2025","type":"Journal Articles","access":"closed","key":"journals/ijbidm/ZhuM25","doi":"10.1504/IJBIDM.2025.149071","ee":"https://doi.org/10.1504/IJBIDM.2025.149071","url":"https://dblp.org/rec/journals/ijbidm/ZhuM25"},
+"url":"URL#374462"
+},
+{
+"@score":"2",
+"@id":"385584",
+"info":{"authors":{"author":[{"@pid":"47/3749","text":"Qing Yang"},{"@pid":"181/0809","text":"Zhiying Li"},{"@pid":"358/7532","text":"Zezheng Wu"},{"@pid":"326/4954","text":"Yuzhao Huang"},{"@pid":"70/7037","text":"Jingwei Zhang"}]},"title":"Multi-behavior multivariate contrastive learning for MOOC video recommendation.","venue":"Neurocomputing","volume":"655","pages":"131416","year":"2025","type":"Journal Articles","access":"closed","key":"journals/ijon/YangLWHZ25","doi":"10.1016/J.NEUCOM.2025.131416","ee":"https://doi.org/10.1016/j.neucom.2025.131416","url":"https://dblp.org/rec/journals/ijon/YangLWHZ25"},
+"url":"URL#385584"
+},
+{
+"@score":"2",
+"@id":"391166",
+"info":{"authors":{"author":[{"@pid":"72/10244","text":"Chao Duan"},{"@pid":"63/7023","text":"Wenlong Zhang"},{"@pid":"423/9572","text":"Qiaoling Cui"},{"@pid":"76/8304","text":"Yu Pei"},{"@pid":"78/4523-7","text":"Bin He 0007"},{"@pid":"234/8155","text":"Qionghao Huang"}]},"title":"Enhancing MOOC Recommendation Through Preference-Aware Knowledge Graph Diffusion and Temporal Sequence Modeling.","venue":"Inf.","volume":"16","number":"12","pages":"1061","year":"2025","type":"Journal Articles","access":"open","key":"journals/information/DuanZCPHH25","doi":"10.3390/INFO16121061","ee":"https://doi.org/10.3390/info16121061","url":"https://dblp.org/rec/journals/information/DuanZCPHH25"},
+"url":"URL#391166"
+},
+{
+"@score":"2",
+"@id":"506095",
+"info":{"authors":{"author":[{"@pid":"192/1271","text":"Zhu Su"},{"@pid":"84/8135","text":"Yafeng Li"},{"@pid":"181/2689-45","text":"Qing Li 0045"},{"@pid":"149/0726","text":"Zhonghua Yan"},{"@pid":"192/1984","text":"Longfeng Zhao"},{"@pid":"40/6686-11","text":"Zhi Liu 0011"},{"@pid":"20/11086","text":"Jianwen Sun"},{"@pid":"213/1613","text":"Sannyuya Liu"}]},"title":"Hypergraph Convolutional Networks for Course Recommendation in MOOCs.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"37","number":"8","pages":"4691-4703","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tkde/SuLLYZLSL25","doi":"10.1109/TKDE.2025.3568709","ee":"https://doi.org/10.1109/TKDE.2025.3568709","url":"https://dblp.org/rec/journals/tkde/SuLLYZLSL25"},
+"url":"URL#506095"
+},
+{
+"@score":"2",
+"@id":"526789",
+"info":{"authors":{"author":[{"@pid":"147/0497-14","text":"Ye Zhang 0014"},{"@pid":"371/5737","text":"Yanqi Gao"},{"@pid":"144/9006","text":"Dongjie Wang"},{"@pid":"209/8098","text":"Yupeng Zhou"},{"@pid":"204/0042","text":"Jinlong He"},{"@pid":"13/4984","text":"Zhaoyang Sun"},{"@pid":"13/3656","text":"Minghao Yin"}]},"title":"Multi-type MOOCs Recommendation: Leveraging Deep Multi-Relational Representation and Hierarchical Reasoning.","venue":"AAAI","pages":"13313-13321","year":"2025","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/0014GWZHSY25","doi":"10.1609/AAAI.V39I12.33453","ee":"https://doi.org/10.1609/aaai.v39i12.33453","url":"https://dblp.org/rec/conf/aaai/0014GWZHSY25"},
+"url":"URL#526789"
+},
+{
+"@score":"2",
+"@id":"536726",
+"info":{"authors":{"author":[{"@pid":"349/1907","text":"Zhifei Hu"},{"@pid":"c/AlexandraICristea","text":"Alexandra I. Cristea"},{"@pid":"373/9075","text":"Feng Xia"}]},"title":"Integrating GNNs and Knowledge Graph Patches in Recommendations in MOOCs.","venue":"AIED","pages":"162-176","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/aied/HuCX25","doi":"10.1007/978-3-031-98420-4_12","ee":"https://doi.org/10.1007/978-3-031-98420-4_12","url":"https://dblp.org/rec/conf/aied/HuCX25"},
+"url":"URL#536726"
+},
+{
+"@score":"2",
+"@id":"761940",
+"info":{"authors":{"author":[{"@pid":"244/6968","text":"Boxuan Ma"},{"@pid":"340/6316","text":"Md. Akib Zabed Khan"},{"@pid":"262/5032","text":"Tianyuan Yang"},{"@pid":"178/4469","text":"Agoritsa Polyzou"},{"@pid":"k/ShinichiKonomi","text":"Shin&apos;ichi Konomi"}]},"title":"How Good Are Large Language Models for Course Recommendation in MOOCs?","venue":"CoRR","volume":"abs/2504.08208","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2504-08208","doi":"10.48550/ARXIV.2504.08208","ee":"https://doi.org/10.48550/arXiv.2504.08208","url":"https://dblp.org/rec/journals/corr/abs-2504-08208"},
+"url":"URL#761940"
+},
+{
+"@score":"2",
+"@id":"892682",
+"info":{"authors":{"author":[{"@pid":"47/3996-3","text":"Thu Nguyen 0003"},{"@pid":"02/3500","text":"Long Nguyen"},{"@pid":"311/8243","text":"Khoa Tan Vo"},{"@pid":"347/3332","text":"Thu-Thuy Ta"},{"@pid":"381/3816","text":"Mong-Thy Nguyen-Thi"},{"@pid":"44/5914","text":"Tu-Anh Nguyen-Hoang"},{"@pid":"62/11200","text":"Ngoc-Thanh Dinh"},{"@pid":"29/6538-1","text":"Hong-Tri Nguyen 0001"}]},"title":"H-BERT4Rec: Enhancing Sequential Recommendation System on MOOCs Based on Heterogeneous Information Networks.","venue":"IEEE Access","volume":"12","pages":"155789-155803","year":"2024","type":"Journal Articles","access":"open","key":"journals/access/NguyenThiNVTNNDN24","doi":"10.1109/ACCESS.2024.3462830","ee":"https://doi.org/10.1109/ACCESS.2024.3462830","url":"https://dblp.org/rec/journals/access/NguyenThiNVTNNDN24"},
+"url":"URL#892682"
+},
+{
+"@score":"2",
+"@id":"915460",
+"info":{"authors":{"author":[{"@pid":"279/0304","text":"Rawaa Alatrash"},{"@pid":"55/6447","text":"Mohamed Amine Chatti"},{"@pid":"235/0584","text":"Qurat Ul Ain"},{"@pid":"380/8561","text":"Yipeng Fang"},{"@pid":"295/6412","text":"Shoeb Ahmed Joarder"},{"@pid":"344/8385","text":"Clara Siepmann"}]},"title":"ConceptGCN: Knowledge concept recommendation in MOOCs based on knowledge graph convolutional networks and SBERT.","venue":"Comput. Educ. Artif. Intell.","volume":"6","pages":"100193","year":"2024","type":"Journal Articles","access":"open","key":"journals/caeai/AlatrashCAFJS24","doi":"10.1016/J.CAEAI.2023.100193","ee":"https://doi.org/10.1016/j.caeai.2023.100193","url":"https://dblp.org/rec/journals/caeai/AlatrashCAFJS24"},
+"url":"URL#915460"
+},
+{
+"@score":"2",
+"@id":"915461",
+"info":{"authors":{"author":[{"@pid":"279/0304","text":"Rawaa Alatrash"},{"@pid":"55/6447","text":"Mohamed Amine Chatti"},{"@pid":"235/0584","text":"Qurat Ul Ain"},{"@pid":"380/8561","text":"Yipeng Fang"},{"@pid":"295/6412","text":"Shoeb Ahmed Joarder"},{"@pid":"344/8385","text":"Clara Siepmann"}]},"title":"Erratum to &quot;ConceptGCN: Knowledge concept recommendation in MOOCs based on knowledge graph convolutional networks and SBERT&quot; [Computers and Education: Artificial Intelligence 6 (June 2024) 100193].","venue":"Comput. Educ. Artif. Intell.","volume":"6","pages":"100235","year":"2024","type":"Journal Articles","access":"open","key":"journals/caeai/AlatrashCAFJS24a","doi":"10.1016/J.CAEAI.2024.100235","ee":"https://doi.org/10.1016/j.caeai.2024.100235","url":"https://dblp.org/rec/journals/caeai/AlatrashCAFJS24a"},
+"url":"URL#915461"
+},
+{
+"@score":"2",
+"@id":"952884",
+"info":{"authors":{"author":[{"@pid":"257/4013","text":"Runyu Tian"},{"@pid":"202/4815","text":"Juanjuan Cai"},{"@pid":"26/1514","text":"Chuanzhen Li"},{"@pid":"77/7695","text":"Jingling Wang"}]},"title":"Self-Supervised pre-training model based on Multi-view for MOOC Recommendation.","venue":"Expert Syst. Appl.","volume":"252","pages":"124143","year":"2024","type":"Journal Articles","access":"closed","key":"journals/eswa/TianCLW24","doi":"10.1016/J.ESWA.2024.124143","ee":"https://doi.org/10.1016/j.eswa.2024.124143","url":"https://dblp.org/rec/journals/eswa/TianCLW24"},
+"url":"URL#952884"
+},
+{
+"@score":"2",
+"@id":"965727",
+"info":{"authors":{"author":[{"@pid":"387/4062","text":"Yalei Yan"},{"@pid":"83/3569","text":"Liya Chen"},{"@pid":"42/1822","text":"Wenjing Wang"}]},"title":"A personalised recommendation method for English teaching resources on MOOC platform based on data mining.","venue":"Int. J. Bus. Intell. Data Min.","volume":"25","number":"3/4","pages":"292-305","year":"2024","type":"Journal Articles","access":"closed","key":"journals/ijbidm/YanCW24","doi":"10.1504/IJBIDM.2024.140883","ee":"https://doi.org/10.1504/IJBIDM.2024.140883","url":"https://dblp.org/rec/journals/ijbidm/YanCW24"},
+"url":"URL#965727"
+},
+{
+"@score":"2",
+"@id":"984776",
+"info":{"authors":{"author":{"@pid":"356/4936","text":"Yunmei Gao"}},"title":"MOOCs video recommendation using low-rank and sparse matrix factorization with inter-entity relations and intra-entity affinity information.","venue":"Inf. Process. Manag.","volume":"61","number":"6","pages":"103861","year":"2024","type":"Journal Articles","access":"open","key":"journals/ipm/Gao24","doi":"10.1016/J.IPM.2024.103861","ee":"https://doi.org/10.1016/j.ipm.2024.103861","url":"https://dblp.org/rec/journals/ipm/Gao24"},
+"url":"URL#984776"
+},
+{
+"@score":"2",
+"@id":"984831",
+"info":{"authors":{"author":[{"@pid":"66/6852","text":"Shu Li"},{"@pid":"65/2105-8","text":"Yuan Zhao 0008"},{"@pid":"48/6459","text":"Longjiang Guo"},{"@pid":"82/7805","text":"Meirui Ren"},{"@pid":"48/1097-11","text":"Jin Li 0011"},{"@pid":"00/6357-1","text":"Lichen Zhang 0001"},{"@pid":"l/KeqinLi","text":"Keqin Li 0001"}]},"title":"Quantification and prediction of engagement: Applied to personalized course recommendation to reduce dropout in MOOCs.","venue":"Inf. Process. Manag.","volume":"61","number":"1","pages":"103536","year":"2024","type":"Journal Articles","access":"closed","key":"journals/ipm/LiZGRLZL24","doi":"10.1016/J.IPM.2023.103536","ee":"https://doi.org/10.1016/j.ipm.2023.103536","url":"https://dblp.org/rec/journals/ipm/LiZGRLZL24"},
+"url":"URL#984831"
+},
+{
+"@score":"2",
+"@id":"1023982",
+"info":{"authors":{"author":[{"@pid":"293/1207","text":"Yuanguo Lin"},{"@pid":"10/4661-252","text":"Wei Zhang 0252"},{"@pid":"68/2682","text":"Fan Lin"},{"@pid":"48/419","text":"Wenhua Zeng"},{"@pid":"187/4680","text":"Xiuze Zhou"},{"@pid":"77/2927","text":"Pengcheng Wu"}]},"title":"Knowledge-aware reasoning with self-supervised reinforcement learning for explainable recommendation in MOOCs.","venue":"Neural Comput. Appl.","volume":"36","number":"8","pages":"4115-4132","year":"2024","type":"Journal Articles","access":"closed","key":"journals/nca/LinZLZZW24","doi":"10.1007/S00521-023-09257-7","ee":"https://doi.org/10.1007/s00521-023-09257-7","url":"https://dblp.org/rec/journals/nca/LinZLZZW24"},
+"url":"URL#1023982"
+},
+{
+"@score":"2",
+"@id":"1049011",
+"info":{"authors":{"author":[{"@pid":"370/6099","text":"Yuxia Zheng"},{"@pid":"325/4570","text":"Yanlei Ma"}]},"title":"Research on MOOC Curriculum Recommendation Model of Higher Vocational English based on Improved Intensive Learning Network.","venue":"Scalable Comput. Pract. Exp.","volume":"25","number":"1","pages":"205-216","year":"2024","type":"Journal Articles","access":"closed","key":"journals/scpe/ZhengM24","doi":"10.12694/SCPE.V25I1.2236","ee":"https://doi.org/10.12694/scpe.v25i1.2236","url":"https://dblp.org/rec/journals/scpe/ZhengM24"},
+"url":"URL#1049011"
+},
+{
+"@score":"2",
+"@id":"1072585",
+"info":{"authors":{"author":[{"@pid":"181/2821-65","text":"Ming Li 0065"},{"@pid":"l/ZhaoLi-7","text":"Zhao Li 0007"},{"@pid":"03/2933","text":"Changqin Huang"},{"@pid":"32/227","text":"Yunliang Jiang"},{"@pid":"59/4107","text":"Xindong Wu 0001"}]},"title":"EduGraph: Learning Path-Based Hypergraph Neural Networks for MOOC Course Recommendation.","venue":"IEEE Trans. Big Data","volume":"10","number":"6","pages":"706-719","year":"2024","type":"Journal Articles","access":"closed","key":"journals/tbd/LiLHJW24","doi":"10.1109/TBDATA.2024.3453757","ee":"https://doi.org/10.1109/TBDATA.2024.3453757","url":"https://dblp.org/rec/journals/tbd/LiLHJW24"},
+"url":"URL#1072585"
+},
+{
+"@score":"2",
+"@id":"1120019",
+"info":{"authors":{"author":[{"@pid":"122/5100","text":"Jiahui Chen"},{"@pid":"01/2538-1","text":"Dan Meng 0001"},{"@pid":"57/10532","text":"Xiangyun Gao"},{"@pid":"48/6735","text":"Liping Zhang"},{"@pid":"38/8918","text":"Chao Kong"}]},"title":"AGNE: Attentional Graph Convolutional Network Embedding for Knowledge Concept Recommendation in MOOCs.","venue":"WISA","pages":"463-475","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/IEEEwisa/ChenMGZK24","doi":"10.1007/978-981-97-7707-5_38","ee":"https://doi.org/10.1007/978-981-97-7707-5_38","url":"https://dblp.org/rec/conf/IEEEwisa/ChenMGZK24"},
+"url":"URL#1120019"
+},
+{
+"@score":"2",
+"@id":"1122729",
+"info":{"authors":{"author":[{"@pid":"147/0497-14","text":"Ye Zhang 0014"},{"@pid":"371/5737","text":"Yanqi Gao"},{"@pid":"209/8098","text":"Yupeng Zhou"},{"@pid":"49/6053","text":"Jianan Wang"},{"@pid":"13/3656","text":"Minghao Yin"}]},"title":"MRMLREC: A Two-Stage Approach for Addressing Data Sparsity in MOOC Video Recommendation (Student Abstract).","venue":"AAAI","pages":"23709-23711","year":"2024","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/ZhangGZWY24","doi":"10.1609/AAAI.V38I21.30536","ee":"https://doi.org/10.1609/aaai.v38i21.30536","url":"https://dblp.org/rec/conf/aaai/ZhangGZWY24"},
+"url":"URL#1122729"
+},
+{
+"@score":"2",
+"@id":"1131209",
+"info":{"authors":{"author":[{"@pid":"252/8776","text":"Alireza Gharahighehi"},{"@pid":"324/3111","text":"Michela Venturini"},{"@pid":"50/3886","text":"Celine Vens"}]},"title":"Course recommendations in MOOCs using collaborative filtering and survival analysis (Invited Paper).","venue":"ALL@AIED","pages":"49-53","year":"2024","type":"Conference and Workshop Papers","access":"open","key":"conf/all/GharahighehiVV24","ee":"https://ceur-ws.org/Vol-3836/paper5.pdf","url":"https://dblp.org/rec/conf/all/GharahighehiVV24"},
+"url":"URL#1131209"
+},
+{
+"@score":"2",
+"@id":"1178442",
+"info":{"authors":{"author":[{"@pid":"382/7739","text":"Jiarui Rao"},{"@pid":"232/3348","text":"Jionghao Lin"}]},"title":"RAMO: Retrieval-Augmented Generation for Enhancing MOOCs Recommendations.","venue":"HEXED/L3MNGET@EDM","year":"2024","type":"Conference and Workshop Papers","access":"open","key":"conf/edm/RaoL24","ee":"https://ceur-ws.org/Vol-3840/L3MNGET24_paper9.pdf","url":"https://dblp.org/rec/conf/edm/RaoL24"},
+"url":"URL#1178442"
+},
+{
+"@score":"2",
+"@id":"1273276",
+"info":{"authors":{"author":[{"@pid":"213/7412","text":"Jibril Frej"},{"@pid":"150/6365","text":"Neel Shah"},{"@pid":"365/3493","text":"Marta Knezevic"},{"@pid":"232/3039","text":"Tanya Nazaretsky"},{"@pid":"95/11458","text":"Tanja Käser"}]},"title":"Finding Paths for Explainable MOOC Recommendation: A Learner Perspective.","venue":"LAK","pages":"426-437","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/lak/FrejSKNK24","doi":"10.1145/3636555.3636898","ee":"https://doi.org/10.1145/3636555.3636898","url":"https://dblp.org/rec/conf/lak/FrejSKNK24"},
+"url":"URL#1273276"
+},
+{
+"@score":"2",
+"@id":"1274478",
+"info":{"authors":{"author":[{"@pid":"02/3500","text":"Long Nguyen"},{"@pid":"47/3996-3","text":"Thu Nguyen 0003"},{"@pid":"311/8243","text":"Khoa Tan Vo"},{"@pid":"44/5914","text":"Tu-Anh Nguyen-Hoang"},{"@pid":"29/6538-1","text":"Tri Nguyen 0001"},{"@pid":"62/11200","text":"Ngoc-Thanh Dinh"}]},"title":"Enhancing Sequential Recommendation System For MOOCs Based On Heterogeneous Information Networks.","venue":"MAPR","pages":"1-6","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/mapr/NguyenNVHND24","doi":"10.1109/MAPR63514.2024.10660698","ee":"https://doi.org/10.1109/MAPR63514.2024.10660698","url":"https://dblp.org/rec/conf/mapr/NguyenNVHND24"},
+"url":"URL#1274478"
+},
+{
+"@score":"2",
+"@id":"1329719",
+"info":{"authors":{"author":[{"@pid":"368/7702","text":"Hengnian Gu"},{"@pid":"211/6274","text":"Zhiyi Duan"},{"@pid":"78/6247","text":"Pan Xie"},{"@pid":"38/5598","text":"Dongdai Zhou"}]},"title":"Modeling Balanced Explicit and Implicit Relations with Contrastive Learning for Knowledge Concept Recommendation in MOOCs.","venue":"WWW","pages":"3712-3722","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/GuDXZ24","doi":"10.1145/3589334.3645559","ee":"https://doi.org/10.1145/3589334.3645559","url":"https://dblp.org/rec/conf/www/GuDXZ24"},
+"url":"URL#1329719"
+},
+{
+"@score":"2",
+"@id":"1351556",
+"info":{"authors":{"author":[{"@pid":"368/7702","text":"Hengnian Gu"},{"@pid":"211/6274","text":"Zhiyi Duan"},{"@pid":"78/6247","text":"Pan Xie"},{"@pid":"38/5598","text":"Dongdai Zhou"}]},"title":"Modeling Balanced Explicit and Implicit Relations with Contrastive Learning for Knowledge Concept Recommendation in MOOCs.","venue":"CoRR","volume":"abs/2402.08256","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2402-08256","doi":"10.48550/ARXIV.2402.08256","ee":"https://doi.org/10.48550/arXiv.2402.08256","url":"https://dblp.org/rec/journals/corr/abs-2402-08256"},
+"url":"URL#1351556"
+},
+{
+"@score":"2",
+"@id":"1402267",
+"info":{"authors":{"author":[{"@pid":"382/7739","text":"Jiarui Rao"},{"@pid":"232/3348","text":"Jionghao Lin"}]},"title":"RAMO: Retrieval-Augmented Generation for Enhancing MOOCs Recommendations.","venue":"CoRR","volume":"abs/2407.04925","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2407-04925","doi":"10.48550/ARXIV.2407.04925","ee":"https://doi.org/10.48550/arXiv.2407.04925","url":"https://dblp.org/rec/journals/corr/abs-2407-04925"},
+"url":"URL#1402267"
+},
+{
+"@score":"2",
+"@id":"1435884",
+"info":{"authors":{"author":[{"@pid":"227/2325","text":"Zijin Luo"},{"@pid":"181/2815","text":"Xu Wang"},{"@pid":"263/6364","text":"Yiquan Wang"},{"@pid":"83/4184","text":"Haotian Zhang"},{"@pid":"138/8048","text":"Zhuangzhuang Li"}]},"title":"A Personalized MOOC Learning Group and Course Recommendation Method Based on Graph Neural Network and Social Network Analysis.","venue":"CoRR","volume":"abs/2410.10658","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2410-10658","doi":"10.48550/ARXIV.2410.10658","ee":"https://doi.org/10.48550/arXiv.2410.10658","url":"https://dblp.org/rec/journals/corr/abs-2410-10658"},
+"url":"URL#1435884"
+},
+{
+"@score":"2",
+"@id":"1479266",
+"info":{"authors":{"author":[{"@pid":"23/7843","text":"Aleksandra Klasnja-Milicevic"},{"@pid":"348/8977","text":"Dejan Milicevic"}]},"title":"Top-N Knowledge Concept Recommendations in MOOCs Using a Neural Co-Attention Model.","venue":"IEEE Access","volume":"11","pages":"51214-51228","year":"2023","type":"Journal Articles","access":"open","key":"journals/access/KlasnjaMilicevicM23","doi":"10.1109/ACCESS.2023.3278609","ee":"https://doi.org/10.1109/ACCESS.2023.3278609","url":"https://dblp.org/rec/journals/access/KlasnjaMilicevicM23"},
+"url":"URL#1479266"
+},
+{
+"@score":"2",
+"@id":"1480291",
+"info":{"authors":{"author":[{"@pid":"14/3727","text":"Hao Luo"},{"@pid":"120/0398","text":"Nor Azura Husin"},{"@pid":"212/7629","text":"Teh Noranis Mohd Aris"}]},"title":"ROME: A Graph Contrastive Multi-View Framework From Hyperbolic Angular Space for MOOCs Recommendation.","venue":"IEEE Access","volume":"11","pages":"9691-9700","year":"2023","type":"Journal Articles","access":"open","key":"journals/access/LuoHA23","doi":"10.1109/ACCESS.2022.3232552","ee":"https://doi.org/10.1109/ACCESS.2022.3232552","url":"https://dblp.org/rec/journals/access/LuoHA23"},
+"url":"URL#1480291"
+},
+{
+"@score":"2",
+"@id":"1492426",
+"info":{"authors":{"author":[{"@pid":"77/4670-3","text":"Xinhua Wang 0003"},{"@pid":"348/1645","text":"Linzhao Jia"},{"@pid":"64/1967-8","text":"Lei Guo 0008"},{"@pid":"02/2187","text":"Fangai Liu"}]},"title":"Multi-aspect heterogeneous information network for MOOC knowledge concept recommendation.","venue":"Appl. Intell.","volume":"53","number":"10","pages":"11951-11965","year":"2023","type":"Journal Articles","access":"closed","key":"journals/apin/WangJGL23","doi":"10.1007/S10489-022-04025-X","ee":"https://doi.org/10.1007/s10489-022-04025-x","url":"https://dblp.org/rec/journals/apin/WangJGL23"},
+"url":"URL#1492426"
+},
+{
+"@score":"2",
+"@id":"1494374",
+"info":{"authors":{"author":[{"@pid":"293/1207","text":"Yuanguo Lin"},{"@pid":"293/1098","text":"Shibo Feng"},{"@pid":"68/2682","text":"Fan Lin"},{"@pid":"54/10362","text":"Jianbing Xiahou"},{"@pid":"48/419","text":"Wenhua Zeng"}]},"title":"Multi-scale reinforced profile for personalized recommendation with deep neural networks in MOOCs.","venue":"Appl. Soft Comput.","volume":"148","pages":"110905","year":"2023","type":"Journal Articles","access":"closed","key":"journals/asc/LinFLXZ23","doi":"10.1016/J.ASOC.2023.110905","ee":"https://doi.org/10.1016/j.asoc.2023.110905","url":"https://dblp.org/rec/journals/asc/LinFLXZ23"},
+"url":"URL#1494374"
+},
+{
+"@score":"2",
+"@id":"1507384",
+"info":{"authors":{"author":[{"@pid":"71/3747","text":"Bifeng Li"},{"@pid":"344/6497","text":"Gangfeng Li"},{"@pid":"344/7054","text":"Jingxiu Xu"},{"@pid":"277/2779","text":"Xueguang Li"},{"@pid":"55/2775","text":"Xiaoyan Liu"},{"@pid":"65/3367","text":"Mei Wang"},{"@pid":"176/6529","text":"Jianhui Lv"}]},"title":"A personalized recommendation framework based on MOOC system integrating deep learning and big data.","venue":"Comput. Electr. Eng.","volume":"106","pages":"108571","year":"2023","type":"Journal Articles","access":"closed","key":"journals/cee/LiLXLLWL23","doi":"10.1016/J.COMPELECENG.2022.108571","ee":"https://doi.org/10.1016/j.compeleceng.2022.108571","url":"https://dblp.org/rec/journals/cee/LiLXLLWL23"},
+"url":"URL#1507384"
+},
+{
+"@score":"2",
+"@id":"1527962",
+"info":{"authors":{"author":[{"@pid":"339/3411","text":"Zibo Liang"},{"@pid":"18/130","text":"Lan Mu"},{"@pid":"92/6289","text":"Jie Chen"},{"@pid":"98/2931-2","text":"Qing Xie 0002"}]},"title":"Graph path fusion and reinforcement reasoning for recommendation in MOOCs.","venue":"Educ. Inf. Technol.","volume":"28","number":"1","pages":"525-545","year":"2023","type":"Journal Articles","access":"closed","key":"journals/eait/LiangMCX23","doi":"10.1007/S10639-022-11178-2","ee":"https://doi.org/10.1007/s10639-022-11178-2","url":"https://dblp.org/rec/journals/eait/LiangMCX23"},
+"url":"URL#1527962"
+},
+{
+"@score":"2",
+"@id":"1536044",
+"info":{"authors":{"author":[{"@pid":"163/7342-1","text":"Huanyu Zhang 0001"},{"@pid":"216/4412","text":"Xiaoxuan Shen"},{"@pid":"204/7854","text":"Baolin Yi"},{"@pid":"35/7092-451","text":"Wei Wang 0451"},{"@pid":"64/4429","text":"Yong Feng"}]},"title":"KGAN: Knowledge Grouping Aggregation Network for course recommendation in MOOCs.","venue":"Expert Syst. Appl.","volume":"211","pages":"118344","year":"2023","type":"Journal Articles","access":"closed","key":"journals/eswa/ZhangSYWF23","doi":"10.1016/J.ESWA.2022.118344","ee":"https://doi.org/10.1016/j.eswa.2022.118344","url":"https://dblp.org/rec/journals/eswa/ZhangSYWF23"},
+"url":"URL#1536044"
+},
+{
+"@score":"2",
+"@id":"1596240",
+"info":{"authors":{"author":[{"@pid":"08/7950","text":"Pengyi Hao"},{"@pid":"05/1013","text":"Yali Li"},{"@pid":"02/11432","text":"Cong Bai"}]},"title":"Meta-relationship for course recommendation in MOOCs.","venue":"Multim. Syst.","volume":"29","number":"1","pages":"235-246","year":"2023","type":"Journal Articles","access":"closed","key":"journals/mms/HaoLB23","doi":"10.1007/S00530-022-00989-5","ee":"https://doi.org/10.1007/s00530-022-00989-5","url":"https://dblp.org/rec/journals/mms/HaoLB23"},
+"url":"URL#1596240"
+},
+{
+"@score":"2",
+"@id":"1666364",
+"info":{"authors":{"author":[{"@pid":"22/752-7","text":"Lu Jiang 0007"},{"@pid":"80/10061-1","text":"Kunpeng Liu 0001"},{"@pid":"56/8805-7","text":"Yibin Wang 0007"},{"@pid":"144/9006","text":"Dongjie Wang"},{"@pid":"219/1752","text":"Pengyang Wang"},{"@pid":"134/3987","text":"Yanjie Fu"},{"@pid":"13/3656","text":"Minghao Yin"}]},"title":"Reinforced Explainable Knowledge Concept Recommendation in MOOCs.","venue":"ACM Trans. Intell. Syst. Technol.","volume":"14","number":"3","pages":"43:1-43:20","year":"2023","type":"Journal Articles","access":"closed","key":"journals/tist/00070WWWFY23","doi":"10.1145/3579991","ee":"https://doi.org/10.1145/3579991","url":"https://dblp.org/rec/journals/tist/00070WWWFY23"},
+"url":"URL#1666364"
+},
+{
+"@score":"2",
+"@id":"1682533",
+"info":{"authors":{"author":[{"@pid":"76/7727","text":"Jibing Gong"},{"@pid":"167/0275","text":"Yao Wan 0001"},{"@pid":"96/2615-6","text":"Ye Liu 0006"},{"@pid":"304/1700","text":"Xuewen Li 0005"},{"@pid":"51/4138-29","text":"Yi Zhao 0029"},{"@pid":"54/2062-52","text":"Cheng Wang 0052"},{"@pid":"25/1151","text":"Yuting Lin"},{"@pid":"242/1529","text":"Xiaohan Fang"},{"@pid":"203/9459","text":"Wenzheng Feng"},{"@pid":"15/91","text":"Jingyi Zhang"},{"@pid":"t/JieTang","text":"Jie Tang 0001"}]},"title":"Reinforced MOOCs Concept Recommendation in Heterogeneous Information Networks.","venue":"ACM Trans. Web","volume":"17","number":"3","pages":"22:1-22:27","year":"2023","type":"Journal Articles","access":"closed","key":"journals/tweb/GongWLLZWLFFZT23","doi":"10.1145/3580510","ee":"https://doi.org/10.1145/3580510","url":"https://dblp.org/rec/journals/tweb/GongWLLZWLFFZT23"},
+"url":"URL#1682533"
+},
+{
+"@score":"2",
+"@id":"1690292",
+"info":{"authors":{"author":[{"@pid":"278/0549","text":"Dina Fitria Murad"},{"@pid":"371/6428","text":"Mohamad Toha"},{"@pid":"371/7194","text":"Hendra Mayatopani"},{"@pid":"340/2488","text":"Meta Amalya Dewi"},{"@pid":"340/2536","text":"Riyan Leandros"},{"@pid":"340/2497","text":"Silvia Ayunda Murad"},{"@pid":"201/7970","text":"Yaya Heryadi"},{"@pid":"278/0265","text":"Bambang Dwi Wijanarko"}]},"title":"The Impact of Recommendation System Provided Based on Online Learning Readiness in the MOOC Environment.","venue":"ACIT","pages":"1-6","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/acit3/MuradTMDLMHW23","doi":"10.1109/ACIT58888.2023.10453910","ee":"https://doi.org/10.1109/ACIT58888.2023.10453910","url":"https://dblp.org/rec/conf/acit3/MuradTMDLMHW23"},
+"url":"URL#1690292"
+},
+{
+"@score":"2",
+"@id":"1697122",
+"info":{"authors":{"author":[{"@pid":"88/5320-40","text":"Yan Zhao 0040"},{"@pid":"378/0181","text":"Yadian Zheng"}]},"title":"MOOC Recommendation Using Heterogeneous Graph Neural Network and Attention Mechanism.","venue":"AIPR","pages":"1376-1381","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/aipr2/ZhaoZ23","doi":"10.1145/3641584.3641792","ee":"https://doi.org/10.1145/3641584.3641792","url":"https://dblp.org/rec/conf/aipr2/ZhaoZ23"},
+"url":"URL#1697122"
+},
+{
+"@score":"2",
+"@id":"1744376",
+"info":{"authors":{"author":[{"@pid":"00/11088","text":"Max Thomas"},{"@pid":"146/7111","text":"Thomas Staubitz"},{"@pid":"m/CMeinel","text":"Christoph Meinel"}]},"title":"Preparing MOOChub Metadata for the Future of Online Learning: Optimizing for AI Recommendation Services.","venue":"EMOOCs","pages":"329-338","year":"2023","type":"Conference and Workshop Papers","access":"open","key":"conf/emoocs/ThomasSM23","doi":"10.25932/PUBLISHUP-62483","ee":"https://doi.org/10.25932/publishup-62483","url":"https://dblp.org/rec/conf/emoocs/ThomasSM23"},
+"url":"URL#1744376"
+},
+{
+"@score":"2",
+"@id":"1877709",
+"info":{"authors":{"author":[{"@pid":"252/8776","text":"Alireza Gharahighehi"},{"@pid":"324/3111","text":"Michela Venturini"},{"@pid":"349/5079","text":"Achilleas Ghinis"},{"@pid":"75/9759","text":"Frederik Cornillie"},{"@pid":"50/3886","text":"Celine Vens"}]},"title":"Extending Bayesian Personalized Ranking with Survival Analysis for MOOC Recommendation.","venue":"UMAP","pages":"56-59","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/um/GharahighehiVGC23","doi":"10.1145/3563359.3597394","ee":"https://doi.org/10.1145/3563359.3597394","url":"https://dblp.org/rec/conf/um/GharahighehiVGC23"},
+"url":"URL#1877709"
+},
+{
+"@score":"2",
+"@id":"1990537",
+"info":{"authors":{"author":[{"@pid":"213/7412","text":"Jibril Frej"},{"@pid":"150/6365","text":"Neel Shah"},{"@pid":"365/3493","text":"Marta Knezevic"},{"@pid":"232/3039","text":"Tanya Nazaretsky"},{"@pid":"95/11458","text":"Tanja Käser"}]},"title":"Finding Paths for Explainable MOOC Recommendation: A Learner Perspective.","venue":"CoRR","volume":"abs/2312.10082","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2312-10082","doi":"10.48550/ARXIV.2312.10082","ee":"https://doi.org/10.48550/arXiv.2312.10082","url":"https://dblp.org/rec/journals/corr/abs-2312-10082"},
+"url":"URL#1990537"
+},
+{
+"@score":"2",
+"@id":"2061507",
+"info":{"authors":{"author":[{"@pid":"128/5304","text":"Rodrigo Campos"},{"@pid":"57/7989","text":"Rodrigo Pereira dos Santos"},{"@pid":"o/JoniceOliveira","text":"Jonice Oliveira"}]},"title":"Providing recommendations for communities of learners in MOOCs ecosystems.","venue":"Expert Syst. Appl.","volume":"205","pages":"117510","year":"2022","type":"Journal Articles","access":"closed","key":"journals/eswa/CamposSO22","doi":"10.1016/J.ESWA.2022.117510","ee":"https://doi.org/10.1016/j.eswa.2022.117510","url":"https://dblp.org/rec/journals/eswa/CamposSO22"},
+"url":"URL#2061507"
+},
+{
+"@score":"2",
+"@id":"2079670",
+"info":{"authors":{"author":[{"@pid":"275/5374","text":"Khadija Elghomary"},{"@pid":"141/7242","text":"Driss Bouzidi"},{"@pid":"36/8223","text":"Najima Daoudi"}]},"title":"Design of a Smart MOOC Trust Model: Towards a Dynamic Peer Recommendation to Foster Collaboration and Learner&apos;s Engagement.","venue":"Int. J. Emerg. Technol. Learn.","volume":"17","number":"5","pages":"36-56","year":"2022","type":"Journal Articles","access":"open","key":"journals/ijet/ElghomaryBD22","doi":"10.3991/IJET.V17I05.27705","ee":"https://doi.org/10.3991/ijet.v17i05.27705","url":"https://dblp.org/rec/journals/ijet/ElghomaryBD22"},
+"url":"URL#2079670"
+},
+{
+"@score":"2",
+"@id":"2087427",
+"info":{"authors":{"author":[{"@pid":"334/8272","text":"Zhongping Yao"},{"@pid":"94/2820","text":"Xiao Zheng"}]},"title":"Study on recommendation method of high quality MOOC English teaching resources based on fuzzy clustering.","venue":"Int. J. Reason. based Intell. Syst.","volume":"14","number":"4","pages":"208-214","year":"2022","type":"Journal Articles","access":"closed","key":"journals/ijris/YaoZ22","doi":"10.1504/IJRIS.2022.10049844","ee":"https://doi.org/10.1504/IJRIS.2022.10049844","url":"https://dblp.org/rec/journals/ijris/YaoZ22"},
+"url":"URL#2087427"
+},
+{
+"@score":"2",
+"@id":"2092104",
+"info":{"authors":{"author":[{"@pid":"78/4413","text":"Ju Fan"},{"@pid":"26/4715","text":"Yuanchun Jiang"},{"@pid":"78/5911","text":"Yezheng Liu 0001"},{"@pid":"316/1827","text":"Yonghang Zhou"}]},"title":"Interpretable MOOC recommendation: a multi-attention network for personalized learning behavior analysis.","venue":"Internet Res.","volume":"32","number":"2","pages":"588-605","year":"2022","type":"Journal Articles","access":"closed","key":"journals/intr/FanJLZ22","doi":"10.1108/INTR-08-2020-0477","ee":"https://doi.org/10.1108/INTR-08-2020-0477","url":"https://dblp.org/rec/journals/intr/FanJLZ22"},
+"url":"URL#2092104"
+},
+{
+"@score":"2",
+"@id":"2094843",
+"info":{"authors":{"author":[{"@pid":"77/4670-3","text":"Xinhua Wang 0003"},{"@pid":"321/4002","text":"Wenyun Ma"},{"@pid":"64/1967-8","text":"Lei Guo 0008"},{"@pid":"121/4083","text":"Haoran Jiang"},{"@pid":"02/2187","text":"Fangai Liu"},{"@pid":"321/4574","text":"Changdi Xu"}]},"title":"HGNN: Hyperedge-based graph neural network for MOOC Course Recommendation.","venue":"Inf. Process. Manag.","volume":"59","number":"3","pages":"102938","year":"2022","type":"Journal Articles","access":"closed","key":"journals/ipm/WangMGJLX22","doi":"10.1016/J.IPM.2022.102938","ee":"https://doi.org/10.1016/j.ipm.2022.102938","url":"https://dblp.org/rec/journals/ipm/WangMGJLX22"},
+"url":"URL#2094843"
+},
+{
+"@score":"2",
+"@id":"2098431",
+"info":{"authors":{"author":[{"@pid":"128/4764","text":"Yuanmin Li"},{"@pid":"179/9882","text":"Dexin Chen"},{"@pid":"23/8931","text":"Zehui Zhan"}]},"title":"Research on personalized recommendation of MOOC resources based on ontology.","venue":"Interact. Technol. Smart Educ.","volume":"19","number":"4","pages":"422-440","year":"2022","type":"Journal Articles","access":"closed","key":"journals/itse/LiCZ22","doi":"10.1108/ITSE-10-2021-0190","ee":"https://doi.org/10.1108/ITSE-10-2021-0190","url":"https://dblp.org/rec/journals/itse/LiCZ22"},
+"url":"URL#2098431"
+},
+{
+"@score":"2",
+"@id":"2225343",
+"info":{"authors":{"author":[{"@pid":"220/9294","text":"Sara Assami"},{"@pid":"36/8223","text":"Najima Daoudi"},{"@pid":"38/8223","text":"Rachida Ajhoun"}]},"title":"Learner Profile Enrichment and Semantic Modeling of Learning Actors for MOOC Recommendation.","venue":"AISI","pages":"753-767","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/aisi/AssamiDA22","doi":"10.1007/978-3-031-20601-6_62","ee":"https://doi.org/10.1007/978-3-031-20601-6_62","url":"https://dblp.org/rec/conf/aisi/AssamiDA22"},
+"url":"URL#2225343"
+},
+{
+"@score":"2",
+"@id":"2253264",
+"info":{"authors":{"author":[{"@pid":"321/5335","text":"Lingyuan Kong"},{"@pid":"60/887-2","text":"Hua Ma 0002"},{"@pid":"00/2434","text":"Yan Peng"},{"@pid":"48/423","text":"Wensheng Tang"}]},"title":"Hybrid Recommendation of Personalized MOOC Resources: A User Context-aware Approach.","venue":"CSCWD","pages":"537-542","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/cscwd/KongMPT22","doi":"10.1109/CSCWD54268.2022.9776112","ee":"https://doi.org/10.1109/CSCWD54268.2022.9776112","url":"https://dblp.org/rec/conf/cscwd/KongMPT22"},
+"url":"URL#2253264"
+},
+{
+"@score":"2",
+"@id":"2302798",
+"info":{"authors":{"author":[{"@pid":"355/1777","text":"Zhang Tian Le"},{"@pid":"296/3708","text":"Weixin Ren"},{"@pid":"160/6255","text":"Zhang Yue"}]},"title":"Research on Improvement Scheme of MOOC Based on Sequential Recommendation Algorithm and Big Data.","venue":"ICIEI","pages":"13-17","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/iciei/LeWY22","doi":"10.1145/3535735.3535737","ee":"https://doi.org/10.1145/3535735.3535737","url":"https://dblp.org/rec/conf/iciei/LeWY22"},
+"url":"URL#2302798"
+},
+{
+"@score":"2",
+"@id":"2364827",
+"info":{"authors":{"author":[{"@pid":"143/0258-6","text":"Yuchen Li 0006"},{"@pid":"06/2700","text":"Haoyi Xiong"},{"@pid":"23/7909","text":"Linghe Kong"},{"@pid":"60/2536","text":"Rui Zhang"},{"@pid":"26/2854","text":"Dejing Dou"},{"@pid":"51/1742","text":"Guihai Chen"}]},"title":"Meta Hierarchical Reinforced Learning to Rank for Recommendation: A Comprehensive Study in MOOCs.","venue":"ECML/PKDD","pages":"302-317","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/pkdd/LiXKZDC22","doi":"10.1007/978-3-031-26422-1_19","ee":"https://doi.org/10.1007/978-3-031-26422-1_19","url":"https://dblp.org/rec/conf/pkdd/LiXKZDC22"},
+"url":"URL#2364827"
+},
+{
+"@score":"2",
+"@id":"2373125",
+"info":{"authors":{"author":[{"@pid":"299/6682","text":"Shengyu Mao"},{"@pid":"08/7950","text":"Pengyi Hao"},{"@pid":"02/11432","text":"Cong Bai"}]},"title":"Deep Correlation based Concept Recommendation for MOOCs.","venue":"SEKE","pages":"622-627","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/seke/MaoHB22","doi":"10.18293/SEKE2022-107","ee":"https://doi.org/10.18293/SEKE2022-107","url":"https://dblp.org/rec/conf/seke/MaoHB22"},
+"url":"URL#2373125"
+},
+{
+"@score":"2",
+"@id":"2418808",
+"info":{"authors":{"author":[{"@pid":"76/7727","text":"Jibing Gong"},{"@pid":"167/0275","text":"Yao Wan 0001"},{"@pid":"96/2615-6","text":"Ye Liu 0006"},{"@pid":"304/1700","text":"Xuewen Li 0005"},{"@pid":"51/4138-29","text":"Yi Zhao 0029"},{"@pid":"54/2062-52","text":"Cheng Wang 0052"},{"@pid":"181/2689-26","text":"Qing Li 0026"},{"@pid":"203/9459","text":"Wenzheng Feng"},{"@pid":"t/JieTang","text":"Jie Tang 0001"}]},"title":"Reinforced MOOCs Concept Recommendation in Heterogeneous Information Networks.","venue":"CoRR","volume":"abs/2203.11011","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2203-11011","doi":"10.48550/ARXIV.2203.11011","ee":"https://doi.org/10.48550/arXiv.2203.11011","url":"https://dblp.org/rec/journals/corr/abs-2203-11011"},
+"url":"URL#2418808"
+},
+{
+"@score":"2",
+"@id":"2522095",
+"info":{"authors":{"author":[{"@pid":"62/2631","text":"Jingjing Wang"},{"@pid":"83/8908","text":"Haoran Xie 0001"},{"@pid":"62/6271","text":"Fu Lee Wang"},{"@pid":"95/3420","text":"Lap-Kei Lee"},{"@pid":"35/6215","text":"Oliver Tat Sheung Au"}]},"title":"Top-N personalized recommendation with graph neural networks in MOOCs.","venue":"Comput. Educ. Artif. Intell.","volume":"2","pages":"100010","year":"2021","type":"Journal Articles","access":"open","key":"journals/caeai/WangXWLA21","doi":"10.1016/J.CAEAI.2021.100010","ee":"https://doi.org/10.1016/j.caeai.2021.100010","url":"https://dblp.org/rec/journals/caeai/WangXWLA21"},
+"url":"URL#2522095"
+},
+{
+"@score":"2",
+"@id":"2534257",
+"info":{"authors":{"author":{"@pid":"91/1716","text":"Lili Wu"}},"title":"Collaborative Filtering Recommendation Algorithm for MOOC Resources Based on Deep Learning.","venue":"Complex.","volume":"2021","pages":"5555226:1-5555226:11","year":"2021","type":"Journal Articles","access":"open","key":"journals/complexity/Wu21","doi":"10.1155/2021/5555226","ee":"https://doi.org/10.1155/2021/5555226","url":"https://dblp.org/rec/journals/complexity/Wu21"},
+"url":"URL#2534257"
+},
+{
+"@score":"2",
+"@id":"2605262",
+"info":{"authors":{"author":[{"@pid":"293/1207","text":"Yuanguo Lin"},{"@pid":"293/1098","text":"Shibo Feng"},{"@pid":"68/2682","text":"Fan Lin"},{"@pid":"48/419","text":"Wenhua Zeng"},{"@pid":"29/4867-20","text":"Yong Liu 0020"},{"@pid":"77/2927","text":"Pengcheng Wu"}]},"title":"Adaptive course recommendation in MOOCs.","venue":"Knowl. Based Syst.","volume":"224","pages":"107085","year":"2021","type":"Journal Articles","access":"closed","key":"journals/kbs/LinFLZLW21","doi":"10.1016/J.KNOSYS.2021.107085","ee":"https://doi.org/10.1016/j.knosys.2021.107085","url":"https://dblp.org/rec/journals/kbs/LinFLZLW21"},
+"url":"URL#2605262"
+},
+{
+"@score":"2",
+"@id":"2677451",
+"info":{"authors":{"author":[{"@pid":"204/4135","text":"Xuetao Tian"},{"@pid":"77/1318-61","text":"Feng Liu 0061"}]},"title":"Capacity Tracing-Enhanced Course Recommendation in MOOCs.","venue":"IEEE Trans. Learn. Technol.","volume":"14","number":"3","pages":"313-321","year":"2021","type":"Journal Articles","access":"closed","key":"journals/tlt/TianL21","doi":"10.1109/TLT.2021.3083180","ee":"https://doi.org/10.1109/TLT.2021.3083180","url":"https://dblp.org/rec/journals/tlt/TianL21"},
+"url":"URL#2677451"
+},
+{
+"@score":"2",
+"@id":"2701608",
+"info":{"authors":{"author":[{"@pid":"02/2454","text":"Shuyan Wang"},{"@pid":"85/3234","text":"Yaping Li"}]},"title":"Learning Preference Recommendation with Heterogeneous Graph Neural Networks in MOOC.","venue":"AIPR","pages":"629-635","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/aipr2/WangL21b","doi":"10.1145/3488933.3488990","ee":"https://doi.org/10.1145/3488933.3488990","url":"https://dblp.org/rec/conf/aipr2/WangL21b"},
+"url":"URL#2701608"
+},
+{
+"@score":"2",
+"@id":"2821415",
+"info":{"authors":{"author":[{"@pid":"12/417-2","text":"Hui Chen 0002"},{"@pid":"96/7093","text":"Chuantao Yin"},{"@pid":"87/3021","text":"Xin Fan"},{"@pid":"54/3557","text":"Lei Qiao"},{"@pid":"18/5572","text":"Wenge Rong"},{"@pid":"77/6921-1","text":"Zhang Xiong 0001"}]},"title":"Learning Path Recommendation for MOOC Platforms Based on a Knowledge Graph.","venue":"KSEM","pages":"600-611","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/ksem/ChenYFQRX21","doi":"10.1007/978-3-030-82147-0_49","ee":"https://doi.org/10.1007/978-3-030-82147-0_49","url":"https://dblp.org/rec/conf/ksem/ChenYFQRX21"},
+"url":"URL#2821415"
+},
+{
+"@score":"2",
+"@id":"2821534",
+"info":{"authors":{"author":[{"@pid":"299/6797","text":"Binglong Ye"},{"@pid":"299/6682","text":"Shengyu Mao"},{"@pid":"08/7950","text":"Pengyi Hao"},{"@pid":"c/WeiChen1","text":"Wei Chen 0001"},{"@pid":"02/11432","text":"Cong Bai"}]},"title":"Community Enhanced Course Concept Recommendation in MOOCs with Multiple Entities.","venue":"KSEM","pages":"279-293","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/ksem/YeMHCB21","doi":"10.1007/978-3-030-82147-0_23","ee":"https://doi.org/10.1007/978-3-030-82147-0_23","url":"https://dblp.org/rec/conf/ksem/YeMHCB21"},
+"url":"URL#2821534"
+},
+{
+"@score":"2",
+"@id":"2876675",
+"info":{"authors":{"author":[{"@pid":"206/8894","text":"Shalini Pandey"},{"@pid":"127/6503","text":"Andrew S. Lan"},{"@pid":"k/GeorgeKarypis","text":"George Karypis"},{"@pid":"s/JaideepSrivastava","text":"Jaideep Srivastava"}]},"title":"Learning Student Interest Trajectory for MOOCThread Recommendation.","venue":"CoRR","volume":"abs/2101.05625","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2101-05625","ee":"https://arxiv.org/abs/2101.05625","url":"https://dblp.org/rec/journals/corr/abs-2101-05625"},
+"url":"URL#2876675"
+}
+]
+}
+}
+}

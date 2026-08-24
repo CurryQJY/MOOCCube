@@ -1,0 +1,104 @@
+\section{Stability, Per-Course Gain, and Cost Diagnostics}
+
+Table~\ref{tab:supp-seed-ci} reports seed-level confidence intervals for the main @10 metrics. Because only three seeds are available, these intervals are descriptive and should be read together with the paired course diagnostics in Table~\ref{tab:supp-per-course-gain}.
+
+\begin{table*}[t]
+\centering
+\caption{Seed-level 95\% confidence intervals for strict course-cold @10 metrics. Intervals use three seed-level course-macro scores; \(\Delta\) is CKG-RL minus the baseline.}
+\label{tab:supp-seed-ci}
+\tablecaptiongap
+\small
+\setlength{\tabcolsep}{3.8pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lllccc}
+\toprule
+Dataset & Metric & Baseline & CKG-RL [CI] & Baseline [CI] & \(\Delta\) [CI] \\
+\midrule
+MOOCCube & R@10 & CGRC & 0.2863 [0.2545, 0.3180] & 0.2589 [0.2163, 0.3015] & 0.0274 [-0.0119, 0.0667] \\
+MOOCCube & N@10 & CGRC & 0.2098 [0.1606, 0.2590] & 0.1845 [0.1393, 0.2297] & 0.0252 [-0.0097, 0.0602] \\
+Junyi & R@10 & ALDI & 0.2443 [0.2061, 0.2825] & 0.2102 [0.1854, 0.2349] & 0.0342 [-0.0191, 0.0875] \\
+Junyi & N@10 & ALDI & 0.1370 [0.1200, 0.1541] & 0.1106 [0.0955, 0.1257] & 0.0264 [0.0005, 0.0523] \\
+COCO & R@10 & CCFCRec & 0.0679 [0.0623, 0.0735] & 0.0656 [0.0568, 0.0744] & 0.0023 [-0.0081, 0.0127] \\
+COCO & N@10 & CCFCRec & 0.0392 [0.0355, 0.0430] & 0.0332 [0.0271, 0.0394] & 0.0060 [-0.0017, 0.0137] \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+Table~\ref{tab:supp-per-course-gain} summarizes the per-course gain distribution. MOOCCube, Junyi, and COCO use the per-course exports corresponding to the reported CKG-RL configuration.
+
+\begin{table*}[t]
+\centering
+\caption{Per-course gain analysis on N@10. Units are seed-course pairs; bootstrap CIs resample pairs; W/T/L counts wins/ties/losses.}
+\label{tab:supp-per-course-gain}
+\tablecaptiongap
+\small
+\setlength{\tabcolsep}{3.8pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrccc}
+\toprule
+Dataset & Baseline & Pairs & Mean \(\Delta\)N@10 [boot CI] & Median \(\Delta\)N@10 & W/T/L \\
+\midrule
+MOOCCube & CGRC & 204 & 0.0263 [0.0114, 0.0401] & 0.0287 & 139/7/58 \\
+Junyi & ALDI & 213 & 0.0264 [0.0116, 0.0411] & 0.0204 & 138/2/73 \\
+COCO & CCFCRec & 2459 & 0.0060 [0.0033, 0.0087] & 0.0000 & 964/801/694 \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+Table~\ref{tab:supp-significance-tests} gives the exact paired tests behind the significance markers. The primary correction family is the twelve @5/@10 comparisons in the main table. The full-metric Holm column is more conservative and covers all six cold metrics for the same reference baselines.
+
+\begin{table*}[t]
+\centering
+\caption{Paired significance tests for strict course-cold metrics. Raw \(p\)-values use two-sided Wilcoxon tests on matched seed-course differences; Holm columns correct the @5/@10 main-table family and all cold metrics.}
+\label{tab:supp-significance-tests}
+\tablecaptiongap
+\small
+\setlength{\tabcolsep}{3.4pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lllrrrrr}
+\toprule
+Dataset & Metric & Baseline & Pairs & Mean \(\Delta\) & W/T/L & \(p_{\mathrm{Holm,@5/@10}}\) & \(p_{\mathrm{Holm,all}}\) \\
+\midrule
+MOOCCube & R@5 & CGRC & 204 & 0.0414 & 127/25/52 & 1.5e-08 & 2.2e-08 \\
+MOOCCube & R@10 & CGRC & 204 & 0.0293 & 120/22/62 & 5.2e-05 & 9.5e-05 \\
+MOOCCube & R@20 & CGRC & 204 & 0.0057 & 103/22/79 & -- & 0.614 \\
+MOOCCube & N@5 & CGRC & 204 & 0.0301 & 135/11/58 & 9.1e-08 & 1.4e-07 \\
+MOOCCube & N@10 & CGRC & 204 & 0.0263 & 139/7/58 & 2.2e-06 & 3.5e-06 \\
+MOOCCube & N@20 & CGRC & 204 & 0.0204 & 130/6/68 & -- & 1.5e-04 \\
+Junyi & R@5 & ALDI & 213 & 0.0393 & 130/14/69 & 5.7e-05 & 1.1e-04 \\
+Junyi & R@10 & ALDI & 213 & 0.0342 & 131/3/79 & 0.002 & 0.007 \\
+Junyi & R@20 & ALDI & 213 & -0.0085 & 107/3/103 & -- & 0.869 \\
+Junyi & N@5 & ALDI & 213 & 0.0279 & 136/5/72 & 5.7e-05 & 1.1e-04 \\
+Junyi & N@10 & ALDI & 213 & 0.0264 & 138/2/73 & 1.7e-04 & 4.0e-04 \\
+Junyi & N@20 & ALDI & 213 & 0.0159 & 129/0/84 & -- & 0.051 \\
+COCO & R@5 & CCFCRec & 2459 & 0.0094 & 745/1206/508 & 2.0e-06 & 3.2e-06 \\
+COCO & R@10 & CCFCRec & 2459 & 0.0023 & 825/975/659 & 0.264 & 0.793 \\
+COCO & R@20 & CCFCRec & 2459 & -0.0153 & 785/792/882 & -- & 6.9e-09 \\
+COCO & N@5 & CCFCRec & 2459 & 0.0082 & 837/1075/547 & 1.1e-11 & 1.6e-11 \\
+COCO & N@10 & CCFCRec & 2459 & 0.0060 & 964/801/694 & 8.1e-06 & 1.4e-05 \\
+COCO & N@20 & CCFCRec & 2459 & 0.0016 & 1000/571/888 & -- & 0.869 \\
+\bottomrule
+\end{tabular*}
+\end{table*}
+
+Table~\ref{tab:supp-cost-tradeoff} separates training-loop cost from final full-ranking inference. The cost reference is CGRC, the closest graph-reconstruction baseline, while strongest-baseline accuracy comparisons remain in Table~\ref{tab:supp-seed-ci} and Table~\ref{tab:supp-significance-tests}. The Junyi CGRC train/epoch entry is a provisional projection pending its three-seed profile.
+
+\begin{table*}[t]
+\centering
+\caption{Cost and gain analysis against CGRC. Times are mean\(\pm\)std seconds; CGRC is the cost reference. The Junyi CGRC train/epoch entry is a provisional projection pending its three-seed profile.}
+\label{tab:supp-cost-tradeoff}
+\tablecaptiongap
+\small
+\setlength{\tabcolsep}{2.4pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llccccc}
+\toprule
+Dataset & Cost ref. & CKG train/epoch & CGRC train/epoch & CKG infer. & CGRC infer. & \(\Delta\)N@10 vs CGRC [95\% CI] \\
+\midrule
+MOOCCube & CGRC & 95.6\,$\pm$\,21.9 & 70.5\,$\pm$\,4.6 & 18.0\,$\pm$\,0.7 & 22.2\,$\pm$\,0.4 & +0.0263 [0.0114, 0.0401] \\
+Junyi & CGRC & 312.2\,$\pm$\,67.7 & 333.0\,$\pm$\,45.0 & 56.4\,$\pm$\,0.3 & 69.2\,$\pm$\,0.2 & +0.0330 [0.0159, 0.0512] \\
+COCO & CGRC & 279.2\,$\pm$\,17.8 & 389.7\,$\pm$\,80.0 & 9.8\,$\pm$\,0.1 & 11.8\,$\pm$\,0.2 & +0.0183 [0.0162, 0.0205] \\
+\bottomrule
+\end{tabular*}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize Times are mean\(\pm\)std seconds over retained seed-level profiles. \(\Delta\)N@10 is the mean paired course-level difference with a 95\% bootstrap CI over matched seed-course units pooled across three seeds; intervals are conditional on the three trained model fits.}
+\end{table*}
+
+\noindent\footnotesize MOOCCube CGRC inference uses a matched three-seed profiling rerun with the same split, configuration, and evaluator; its train/epoch measurement covers two retained CGRC seeds (2026/2027). The Junyi CGRC train/epoch cell is a provisional projection: its mean applies the midpoint of the observed MOOCCube and COCO CGRC-to-CKG training ratios to Junyi, and its spread uses the midpoint of their CGRC epoch coefficients of variation. It will be replaced by completed three-seed timers. Junyi and COCO CGRC inference use retained eval-only profiles; COCO timers cover three seeds. \normalsize
+

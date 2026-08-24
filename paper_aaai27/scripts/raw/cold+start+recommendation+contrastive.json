@@ -1,0 +1,182 @@
+{
+"result":{
+"query":"cold* start* recommendation* contrastive*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"131.07"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"25",
+"@dc":"25",
+"@oc":"25",
+"@id":"69521710",
+"text":"contrastive"
+}
+},
+"hits":{
+"@total":"25",
+"@computed":"25",
+"@sent":"25",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"80836",
+"info":{"authors":{"author":[{"@pid":"156/7403","text":"Mengmeng Sun"},{"@pid":"117/2762","text":"Yueshen Xu"},{"@pid":"87/10304","text":"Dianlong You"},{"@pid":"11/1266-7","text":"Zhen Chen 0007"}]},"title":"Multi-level dual contrastive learning for cloud API cold-start recommendation.","venue":"Knowl. Based Syst.","volume":"338","pages":"115534","year":"2026","type":"Journal Articles","access":"closed","key":"journals/kbs/SunXYC26","doi":"10.1016/J.KNOSYS.2026.115534","ee":"https://doi.org/10.1016/j.knosys.2026.115534","url":"https://dblp.org/rec/journals/kbs/SunXYC26"},
+"url":"URL#80836"
+},
+{
+"@score":"4",
+"@id":"183811",
+"info":{"authors":{"author":[{"@pid":"195/2196","text":"Yihang Li"},{"@pid":"85/1802","text":"Zhuo Liu"},{"@pid":"24/4105-2","text":"Wei Wei 0002"}]},"title":"EpicCBR: Item-Relation-Enhanced Dual-Scenario Contrastive Learning for Cold-Start Bundle Recommendation.","venue":"WSDM","pages":"377-386","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/LiL026","doi":"10.1145/3773966.3777993","ee":"https://doi.org/10.1145/3773966.3777993","url":"https://dblp.org/rec/conf/wsdm/LiL026"},
+"url":"URL#183811"
+},
+{
+"@score":"4",
+"@id":"206713",
+"info":{"authors":{"author":[{"@pid":"195/2196","text":"Yihang Li"},{"@pid":"85/1802","text":"Zhuo Liu"},{"@pid":"24/4105","text":"Wei Wei"}]},"title":"EpicCBR: Item-Relation-Enhanced Dual-Scenario Contrastive Learning for Cold-Start Bundle Recommendation.","venue":"CoRR","volume":"abs/2602.11680","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2602-11680","doi":"10.48550/ARXIV.2602.11680","ee":"https://doi.org/10.48550/arXiv.2602.11680","url":"https://dblp.org/rec/journals/corr/abs-2602-11680"},
+"url":"URL#206713"
+},
+{
+"@score":"4",
+"@id":"399711",
+"info":{"authors":{"author":[{"@pid":"156/7403","text":"Mengmeng Sun"},{"@pid":"117/2762","text":"Yueshen Xu"},{"@pid":"392/6312","text":"Zeyu Tan"},{"@pid":"87/10304","text":"Dianlong You"},{"@pid":"11/1266-7","text":"Zhen Chen 0007"}]},"title":"Multi-level graph contrastive learning for cold-start recommendation in mashup development.","venue":"Inf. Sci.","volume":"717","pages":"122319","year":"2025","type":"Journal Articles","access":"closed","key":"journals/isci/SunXTYC25","doi":"10.1016/J.INS.2025.122319","ee":"https://doi.org/10.1016/j.ins.2025.122319","url":"https://dblp.org/rec/journals/isci/SunXTYC25"},
+"url":"URL#399711"
+},
+{
+"@score":"4",
+"@id":"513115",
+"info":{"authors":{"author":[{"@pid":"10/137-1","text":"Xiaolong Xu 0001"},{"@pid":"279/9890","text":"Hongsheng Dong"},{"@pid":"194/6883","text":"Haolong Xiang"},{"@pid":"83/7614","text":"Xiyuan Hu"},{"@pid":"46/5404-2","text":"Xiaoyong Li 0002"},{"@pid":"207/5756-1","text":"Xiaoyu Xia 0001"},{"@pid":"54/8558","text":"Xuyun Zhang"},{"@pid":"01/8326","text":"Lianyong Qi"},{"@pid":"57/5595","text":"Wanchun Dou"}]},"title":"C2lRec: Causal Contrastive Learning for User Cold-start Recommendation with Social Variables.","venue":"ACM Trans. Inf. Syst.","volume":"43","number":"6","pages":"143:1-143:28","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tois/XuDXHLXZQD25","doi":"10.1145/3711858","ee":"https://doi.org/10.1145/3711858","url":"https://dblp.org/rec/journals/tois/XuDXHLXZQD25"},
+"url":"URL#513115"
+},
+{
+"@score":"4",
+"@id":"527999",
+"info":{"authors":{"author":[{"@pid":"303/8026","text":"Hourun Li"},{"@pid":"47/6959-14","text":"Yifan Wang 0014"},{"@pid":"176/5397-1","text":"Zhiping Xiao 0001"},{"@pid":"22/667","text":"Jia Yang"},{"@pid":"04/4203","text":"Changling Zhou"},{"@pid":"73/1844-4","text":"Ming Zhang 0004"},{"@pid":"171/4781-1","text":"Wei Ju 0001"}]},"title":"DisCo: Graph-Based Disentangled Contrastive Learning for Cold-Start Cross-Domain Recommendation.","venue":"AAAI","pages":"12049-12057","year":"2025","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/Li00YZZJ25","doi":"10.1609/AAAI.V39I11.33312","ee":"https://doi.org/10.1609/aaai.v39i11.33312","url":"https://dblp.org/rec/conf/aaai/Li00YZZJ25"},
+"url":"URL#527999"
+},
+{
+"@score":"4",
+"@id":"603136",
+"info":{"authors":{"author":[{"@pid":"355/6622","text":"Sisuo Lyu"},{"@pid":"187/4680","text":"Xiuze Zhou"},{"@pid":"262/3664","text":"Xuming Hu"}]},"title":"Multi-view Hypergraph-based Contrastive Learning Model for Cold-Start Micro-video Recommendation.","venue":"ICASSP","pages":"1-5","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/icassp/LyuZH25","doi":"10.1109/ICASSP49660.2025.10887695","ee":"https://doi.org/10.1109/ICASSP49660.2025.10887695","url":"https://dblp.org/rec/conf/icassp/LyuZH25"},
+"url":"URL#603136"
+},
+{
+"@score":"4",
+"@id":"697005",
+"info":{"authors":{"author":[{"@pid":"96/5464","text":"Yukun Cao"},{"@pid":"426/6020","text":"Niu Gu"},{"@pid":"206/8354","text":"Yongcheng He"}]},"title":"DMCM: Dual-space Mapping Contrastive Meta Learning for Cold Start Recommendation*.","venue":"SMC","pages":"3374-3379","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/smc/CaoGH25","doi":"10.1109/SMC58881.2025.11342948","ee":"https://doi.org/10.1109/SMC58881.2025.11342948","url":"https://dblp.org/rec/conf/smc/CaoGH25"},
+"url":"URL#697005"
+},
+{
+"@score":"4",
+"@id":"734957",
+"info":{"authors":{"author":[{"@pid":"221/6008","text":"Jiacheng Hu"},{"@pid":"83/7527","text":"Tai An"},{"@pid":"164/0791","text":"Zidong Yu"},{"@pid":"242/3325","text":"Junliang Du"},{"@pid":"387/8520","text":"Yuanshuai Luo"}]},"title":"Contrastive Learning for Cold Start Recommendation with Adaptive Feature Fusion.","venue":"CoRR","volume":"abs/2502.03664","year":"2025","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2502-03664","doi":"10.48550/ARXIV.2502.03664","ee":"https://doi.org/10.48550/arXiv.2502.03664","url":"https://dblp.org/rec/journals/corr/abs-2502-03664"},
+"url":"URL#734957"
+},
+{
+"@score":"4",
+"@id":"1011235",
+"info":{"authors":{"author":[{"@pid":"261/8164","text":"Yuanzhen Xie"},{"@pid":"131/9590","text":"Chenyun Yu"},{"@pid":"368/1756","text":"Xinzhou Jin"},{"@pid":"48/2700-5","text":"Lei Cheng 0005"},{"@pid":"04/2380-21","text":"Bo Hu 0021"},{"@pid":"06/6214","text":"Zang Li"}]},"title":"Heterogeneous graph contrastive learning for cold start cross-domain recommendation.","venue":"Knowl. Based Syst.","volume":"299","pages":"112054","year":"2024","type":"Journal Articles","access":"closed","key":"journals/kbs/XieYJCHL24","doi":"10.1016/J.KNOSYS.2024.112054","ee":"https://doi.org/10.1016/j.knosys.2024.112054","url":"https://dblp.org/rec/journals/kbs/XieYJCHL24"},
+"url":"URL#1011235"
+},
+{
+"@score":"4",
+"@id":"1122279",
+"info":{"authors":{"author":[{"@pid":"132/5158","text":"Wenbo Wang"},{"@pid":"33/4882","text":"Bingquan Liu"},{"@pid":"120/9007","text":"Lili Shan"},{"@pid":"92/5589","text":"Chengjie Sun"},{"@pid":"94/4500","text":"Ben Chen"},{"@pid":"58/2489","text":"Jian Guan"}]},"title":"Preference Aware Dual Contrastive Learning for Item Cold-Start Recommendation.","venue":"AAAI","pages":"9125-9132","year":"2024","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/WangLSSCG24","doi":"10.1609/AAAI.V38I8.28763","ee":"https://doi.org/10.1609/aaai.v38i8.28763","url":"https://dblp.org/rec/conf/aaai/WangLSSCG24"},
+"url":"URL#1122279"
+},
+{
+"@score":"4",
+"@id":"1158292",
+"info":{"authors":{"author":[{"@pid":"74/3301","text":"Yejin Kim"},{"@pid":"300/9568","text":"Scott Rome"},{"@pid":"02/440","text":"Kevin Foley"},{"@pid":"372/7392","text":"Mayur Nankani"},{"@pid":"360/6550","text":"Rimon Melamed"},{"@pid":"65/3097","text":"Javier Morales"},{"@pid":"372/7079","text":"Abhay Yadav"},{"@pid":"236/4134","text":"Maria Peifer"},{"@pid":"185/6506","text":"Sardar Hamidian"},{"@pid":"39/560","text":"H. Howie Huang"}]},"title":"Improving Content Recommendation: Knowledge Graph-Based Semantic Contrastive Learning for Diversity and Cold-Start Users.","venue":"LREC/COLING","pages":"8743-8755","year":"2024","type":"Conference and Workshop Papers","access":"open","key":"conf/coling/KimRFNMMYPHH24","ee":"https://aclanthology.org/2024.lrec-main.766","url":"https://dblp.org/rec/conf/coling/KimRFNMMYPHH24"},
+"url":"URL#1158292"
+},
+{
+"@score":"4",
+"@id":"1309272",
+"info":{"authors":{"author":[{"@pid":"10/137-1","text":"Xiaolong Xu 0001"},{"@pid":"279/9890","text":"Hongsheng Dong"},{"@pid":"01/8326","text":"Lianyong Qi"},{"@pid":"54/8558","text":"Xuyun Zhang"},{"@pid":"194/6883","text":"Haolong Xiang"},{"@pid":"207/5756-1","text":"Xiaoyu Xia 0001"},{"@pid":"72/7268-3","text":"Yanwei Xu 0003"},{"@pid":"57/5595","text":"Wanchun Dou"}]},"title":"CMCLRec: Cross-modal Contrastive Learning for User Cold-start Sequential Recommendation.","venue":"SIGIR","pages":"1589-1598","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/0001DQZXXXD24","doi":"10.1145/3626772.3657839","ee":"https://doi.org/10.1145/3626772.3657839","url":"https://dblp.org/rec/conf/sigir/0001DQZXXXD24"},
+"url":"URL#1309272"
+},
+{
+"@score":"4",
+"@id":"1367277",
+"info":{"authors":{"author":[{"@pid":"74/3301","text":"Yejin Kim"},{"@pid":"300/9568","text":"Scott Rome"},{"@pid":"02/440","text":"Kevin Foley"},{"@pid":"372/7392","text":"Mayur Nankani"},{"@pid":"360/6550","text":"Rimon Melamed"},{"@pid":"65/3097","text":"Javier Morales"},{"@pid":"372/7079","text":"Abhay Yadav"},{"@pid":"236/4134","text":"Maria Peifer"},{"@pid":"185/6506","text":"Sardar Hamidian"},{"@pid":"39/560","text":"H. Howie Huang"}]},"title":"Improving Content Recommendation: Knowledge Graph-Based Semantic Contrastive Learning for Diversity and Cold-Start Users.","venue":"CoRR","volume":"abs/2403.18667","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2403-18667","doi":"10.48550/ARXIV.2403.18667","ee":"https://doi.org/10.48550/arXiv.2403.18667","url":"https://dblp.org/rec/journals/corr/abs-2403-18667"},
+"url":"URL#1367277"
+},
+{
+"@score":"4",
+"@id":"1424196",
+"info":{"authors":{"author":[{"@pid":"355/6622","text":"Sisuo Lyu"},{"@pid":"187/4680","text":"Xiuze Zhou"},{"@pid":"262/3664","text":"Xuming Hu"}]},"title":"Multi-view Hypergraph-based Contrastive Learning Model for Cold-Start Micro-video Recommendation.","venue":"CoRR","volume":"abs/2409.09638","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2409-09638","doi":"10.48550/ARXIV.2409.09638","ee":"https://doi.org/10.48550/arXiv.2409.09638","url":"https://dblp.org/rec/journals/corr/abs-2409-09638"},
+"url":"URL#1424196"
+},
+{
+"@score":"4",
+"@id":"1460673",
+"info":{"authors":{"author":[{"@pid":"303/8026","text":"Hourun Li"},{"@pid":"47/6959-14","text":"Yifan Wang 0014"},{"@pid":"176/5397-1","text":"Zhiping Xiao 0001"},{"@pid":"22/667","text":"Jia Yang"},{"@pid":"04/4203","text":"Changling Zhou"},{"@pid":"73/1844-4","text":"Ming Zhang 0004"},{"@pid":"171/4781-1","text":"Wei Ju 0001"}]},"title":"DisCo: Graph-Based Disentangled Contrastive Learning for Cold-Start Cross-Domain Recommendation.","venue":"CoRR","volume":"abs/2412.15005","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2412-15005","doi":"10.48550/ARXIV.2412.15005","ee":"https://doi.org/10.48550/arXiv.2412.15005","url":"https://dblp.org/rec/journals/corr/abs-2412-15005"},
+"url":"URL#1460673"
+},
+{
+"@score":"4",
+"@id":"1557705",
+"info":{"authors":{"author":[{"@pid":"17/2976-1","text":"Yang Fang 0001"},{"@pid":"13/10345","text":"Zhen Tan"},{"@pid":"96/4424","text":"Ziyang Chen"},{"@pid":"87/5207-3","text":"Weidong Xiao 0003"},{"@pid":"181/2714","text":"Lingling Zhang"},{"@pid":"78/3204","text":"Feng Tian"}]},"title":"Contrastive Meta-learning on Heterogeneous Information Networks for Cold-start Recommendation.","venue":"Int. J. Softw. Informatics","volume":"13","number":"4","pages":"469-488","year":"2023","type":"Journal Articles","access":"closed","key":"journals/ijsi/FangTCXZT23","doi":"10.21655/IJSI.1673-7288.00309","ee":"https://doi.org/10.21655/ijsi.1673-7288.00309","url":"https://dblp.org/rec/journals/ijsi/FangTCXZT23"},
+"url":"URL#1557705"
+},
+{
+"@score":"4",
+"@id":"1670442",
+"info":{"authors":{"author":[{"@pid":"00/105-5","text":"Weiming Liu 0005"},{"@pid":"09/5763","text":"Xiaolin Zheng"},{"@pid":"293/4976","text":"Jiajie Su"},{"@pid":"230/1980","text":"Longfei Zheng"},{"@pid":"26/1492-1","text":"Chaochao Chen 0001"},{"@pid":"313/9362","text":"Mengling Hu"}]},"title":"Contrastive Proxy Kernel Stein Path Alignment for Cross-Domain Cold-Start Recommendation.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"35","number":"11","pages":"11216-11230","year":"2023","type":"Journal Articles","access":"closed","key":"journals/tkde/LiuZSZCH23","doi":"10.1109/TKDE.2022.3233789","ee":"https://doi.org/10.1109/TKDE.2022.3233789","url":"https://dblp.org/rec/journals/tkde/LiuZSZCH23"},
+"url":"URL#1670442"
+},
+{
+"@score":"4",
+"@id":"1718644",
+"info":{"authors":{"author":[{"@pid":"38/6049-32","text":"Hao Jiang 0032"},{"@pid":"26/1514","text":"Chuanzhen Li"},{"@pid":"202/4815","text":"Juanjuan Cai"},{"@pid":"257/4013","text":"Runyu Tian"},{"@pid":"77/7695","text":"Jingling Wang"}]},"title":"Self-supervised Contrastive Enhancement with Symmetric Few-shot Learning Towers for Cold-start News Recommendation.","venue":"CIKM","pages":"945-954","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/JiangLCTW23","doi":"10.1145/3583780.3615053","ee":"https://doi.org/10.1145/3583780.3615053","url":"https://dblp.org/rec/conf/cikm/JiangLCTW23"},
+"url":"URL#1718644"
+},
+{
+"@score":"4",
+"@id":"1887254",
+"info":{"authors":{"author":[{"@pid":"147/2978","text":"Zhihui Zhou"},{"@pid":"120/6385","text":"Lilin Zhang"},{"@pid":"67/1751-1","text":"Ning Yang 0001"}]},"title":"Contrastive Collaborative Filtering for Cold-Start Item Recommendation.","venue":"WWW","pages":"928-937","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/ZhouZY23","doi":"10.1145/3543507.3583286","ee":"https://doi.org/10.1145/3543507.3583286","url":"https://dblp.org/rec/conf/www/ZhouZY23"},
+"url":"URL#1887254"
+},
+{
+"@score":"4",
+"@id":"1901906",
+"info":{"authors":{"author":[{"@pid":"147/2978","text":"Zhihui Zhou"},{"@pid":"120/6385","text":"Lilin Zhang"},{"@pid":"67/1751-1","text":"Ning Yang 0001"}]},"title":"Contrastive Collaborative Filtering for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2302.02151","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2302-02151","doi":"10.48550/ARXIV.2302.02151","ee":"https://doi.org/10.48550/arXiv.2302.02151","url":"https://dblp.org/rec/journals/corr/abs-2302-02151"},
+"url":"URL#1901906"
+},
+{
+"@score":"4",
+"@id":"2310687",
+"info":{"authors":{"author":[{"@pid":"19/6724","text":"Yanyu Chen"},{"@pid":"07/4410-6","text":"Yao Yao 0006"},{"@pid":"60/4361","text":"Wai Kin Victor Chan"}]},"title":"CLCDR: Contrastive Learning for Cross-Domain Recommendation to Cold-Start Users.","venue":"ICONIP","pages":"331-342","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/iconip/ChenYC22","doi":"10.1007/978-3-031-30108-7_28","ee":"https://doi.org/10.1007/978-3-031-30108-7_28","url":"https://dblp.org/rec/conf/iconip/ChenYC22"},
+"url":"URL#2310687"
+},
+{
+"@score":"4",
+"@id":"2375910",
+"info":{"authors":{"author":[{"@pid":"97/4461-3","text":"Jing Du 0003"},{"@pid":"315/4383","text":"Zesheng Ye"},{"@pid":"56/6651-1","text":"Lina Yao 0001"},{"@pid":"86/2663-1","text":"Bin Guo 0001"},{"@pid":"z/YuZhiwen","text":"Zhiwen Yu 0001"}]},"title":"Socially-aware Dual Contrastive Learning for Cold-Start Recommendation.","venue":"SIGIR","pages":"1927-1932","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/DuY00022","doi":"10.1145/3477495.3531780","ee":"https://doi.org/10.1145/3477495.3531780","url":"https://dblp.org/rec/conf/sigir/DuY00022"},
+"url":"URL#2375910"
+},
+{
+"@score":"4",
+"@id":"2829270",
+"info":{"authors":{"author":[{"@pid":"247/9379","text":"Yinwei Wei"},{"@pid":"31/2864-10","text":"Xiang Wang 0010"},{"@pid":"181/2688","text":"Qi Li"},{"@pid":"92/8277","text":"Liqiang Nie"},{"@pid":"87/660-68","text":"Yan Li 0068"},{"@pid":"151/4489","text":"Xuanping Li"},{"@pid":"24/6606","text":"Tat-Seng Chua"}]},"title":"Contrastive Learning for Cold-Start Recommendation.","venue":"ACM Multimedia","pages":"5382-5390","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/mm/WeiWLNLLC21","doi":"10.1145/3474085.3475665","ee":"https://doi.org/10.1145/3474085.3475665","url":"https://dblp.org/rec/conf/mm/WeiWLNLLC21"},
+"url":"URL#2829270"
+},
+{
+"@score":"4",
+"@id":"2915746",
+"info":{"authors":{"author":[{"@pid":"247/9379","text":"Yinwei Wei"},{"@pid":"31/2864-10","text":"Xiang Wang 0010"},{"@pid":"181/2688","text":"Qi Li"},{"@pid":"92/8277","text":"Liqiang Nie"},{"@pid":"87/660-68","text":"Yan Li 0068"},{"@pid":"151/4489","text":"Xuanping Li"},{"@pid":"24/6606","text":"Tat-Seng Chua"}]},"title":"Contrastive Learning for Cold-Start Recommendation.","venue":"CoRR","volume":"abs/2107.05315","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2107-05315","ee":"https://arxiv.org/abs/2107.05315","url":"https://dblp.org/rec/journals/corr/abs-2107-05315"},
+"url":"URL#2915746"
+}
+]
+}
+}
+}

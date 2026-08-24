@@ -1,0 +1,50 @@
+{
+"result":{
+"query":"cold* start* item* generative*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"16.70"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"3",
+"@dc":"3",
+"@oc":"3",
+"@id":"69808444",
+"text":"generative"
+}
+},
+"hits":{
+"@total":"3",
+"@computed":"3",
+"@sent":"3",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"177784",
+"info":{"authors":{"author":[{"@pid":"61/8502","text":"Chenglei Shen"},{"@pid":"375/1301","text":"Teng Shi"},{"@pid":"150/8498-3","text":"Weijie Yu 0003"},{"@pid":"49/4478-34","text":"Xiao Zhang 0034"},{"@pid":"90/514-1","text":"Jun Xu 0001"}]},"title":"GenRecEdit: Adapting Model Editing for Generative Recommendation with Cold-Start Items.","venue":"SIGIR","pages":"1601-1611","year":"2026","type":"Conference and Workshop Papers","access":"open","key":"conf/sigir/ShenSYZX26","doi":"10.1145/3805712.3809662","ee":"https://doi.org/10.1145/3805712.3809662","url":"https://dblp.org/rec/conf/sigir/ShenSYZX26"},
+"url":"URL#177784"
+},
+{
+"@score":"4",
+"@id":"271974",
+"info":{"authors":{"author":[{"@pid":"266/4362","text":"Kangning Zhang"},{"@pid":"258/6919","text":"Yingjie Qin"},{"@pid":"28/10261-1","text":"Weinan Zhang 0001"},{"@pid":"43/5685-1","text":"Yong Yu 0001"},{"@pid":"188/7862","text":"Jianghao Lin"}]},"title":"DiffCold: A Diffusion-based Generative Model for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2606.12245","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2606-12245","doi":"10.48550/ARXIV.2606.12245","ee":"https://doi.org/10.48550/arXiv.2606.12245","url":"https://dblp.org/rec/journals/corr/abs-2606-12245"},
+"url":"URL#271974"
+},
+{
+"@score":"4",
+"@id":"2375879",
+"info":{"authors":{"author":[{"@pid":"175/3324-62","text":"Hao Chen 0062"},{"@pid":"246/2190","text":"Zefan Wang"},{"@pid":"163/3996","text":"Feiran Huang"},{"@pid":"25/692-1","text":"Xiao Huang 0001"},{"@pid":"29/3925","text":"Yue Xu"},{"@pid":"140/8178","text":"Yishi Lin"},{"@pid":"84/6016","text":"Peng He"},{"@pid":"76/2866-1","text":"Zhoujun Li 0001"}]},"title":"Generative Adversarial Framework for Cold-Start Item Recommendation.","venue":"SIGIR","pages":"2565-2571","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ChenWHHXLH022","doi":"10.1145/3477495.3531897","ee":"https://doi.org/10.1145/3477495.3531897","url":"https://dblp.org/rec/conf/sigir/ChenWHHXLH022"},
+"url":"URL#2375879"
+}
+]
+}
+}
+}

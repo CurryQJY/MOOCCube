@@ -1,0 +1,1 @@
+{"model": "pcgnn", "seed": 2025, "analysis_split": "validation", "sample_index": 0, "user_id": 7, "target_item_id": 3, "target_popularity": 0, "recommended_item_ids": [3, 2, 4], "recommended_scores": [0.9, 0.8, 0.7]}

@@ -4,7 +4,8 @@ param(
     [string]$OutputRoot = "outputs\usim_feedback_fast3_course_ablation",
     [string]$CheckpointRoot = "checkpoints\usim_feedback_fast3_course_ablation",
     [string[]]$IncludeExperiments = @(),
-    [string[]]$SkipExperiments = @()
+    [string[]]$SkipExperiments = @(),
+    [switch]$Resume
 )
 
 $ErrorActionPreference = "Stop"
@@ -399,8 +400,13 @@ try {
         New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
         New-Item -ItemType Directory -Force -Path $ckptDir | Out-Null
 
-        Set-Or-ClearEnv "USIM_FB_FORCE_FRESH" "1"
-        Set-Or-ClearEnv "USIM_FB_AUTO_RESUME" "0"
+        if ($Resume) {
+            Set-Or-ClearEnv "USIM_FB_FORCE_FRESH" "0"
+            Set-Or-ClearEnv "USIM_FB_AUTO_RESUME" "1"
+        } else {
+            Set-Or-ClearEnv "USIM_FB_FORCE_FRESH" "1"
+            Set-Or-ClearEnv "USIM_FB_AUTO_RESUME" "0"
+        }
         Set-Or-ClearEnv "USIM_STATIC" "0"
         Set-Or-ClearEnv "USIM_FB_OUTPUT_TAG" $tag
         Set-Or-ClearEnv "USIM_FB_OUTPUT_DIR" $outputDir
@@ -416,10 +422,13 @@ try {
         Write-Host ("Notes: {0}" -f $exp.notes)
         Write-Host ("Output dir: {0}" -f $outputDir)
         Write-Host ("Checkpoint dir: {0}" -f $ckptDir)
+        Write-Host ("Resume mode: {0}" -f [bool]$Resume)
         Write-Host ("=" * 80)
 
-        if (Test-Path $detailPath) { Remove-Item $detailPath -Force }
-        if (Test-Path $fullrankPath) { Remove-Item $fullrankPath -Force }
+        if (-not $Resume) {
+            if (Test-Path $detailPath) { Remove-Item $detailPath -Force }
+            if (Test-Path $fullrankPath) { Remove-Item $fullrankPath -Force }
+        }
 
         $commandLine = ('"{0}" -u "{1}" 2>&1' -f $PythonRunner, $ScriptPath)
         & cmd.exe /d /c $commandLine | Tee-Object -FilePath $logPath

@@ -1,0 +1,47 @@
+{
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\coco\\single_seed_triage\\ours_full\\strict_item_cold_balanced_thr1_seed_2025",
+  "out_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\_prepared\\coco",
+  "smoke_input": {
+    "n_users": 24036,
+    "n_items": 8196,
+    "train_pairs": 257370,
+    "val_pairs": 18909,
+    "test_pairs": 37848,
+    "kg_triples": 25022
+  },
+  "dependencies": {
+    "torch": "OK",
+    "dgl": "MISSING",
+    "recbole": "OK",
+    "easydict": "OK",
+    "wandb": "OK",
+    "numpy": "OK",
+    "pandas": "OK"
+  },
+  "artifacts": {
+    "pcgnn": {
+      "dataset_name": "coco_strict_full",
+      "dataset_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\dataset\\coco_strict_full",
+      "config_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\recbole_coco_strict_full.yaml",
+      "train_rows": 257370,
+      "validation_rows": 18909,
+      "test_rows": 37848,
+      "item_rows": 8196,
+      "kg_rows": 41414,
+      "protocol_notes": [
+        "Uses benchmark_filename train/valid/test files to preserve the external strict split.",
+        "RecBole still needs a custom item-macro evaluator for paper metrics."
+      ]
+    }
+  },
+  "candidates": [
+    {
+      "priority": 1,
+      "candidate": "PCGNN",
+      "artifact": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\dataset\\coco_strict_full",
+      "loader_status": "atomic files load; stock sequential dataloader needs patch for external strict valid/test histories",
+      "protocol_fit": "medium-high: data split is preservable, official build/evaluator is not protocol-safe yet",
+      "recommendation": "adapt first, but patch loader/build before training"
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">BPR-MF Static and Streaming Architecture</title>
+  <desc id="desc">A paper-style architecture diagram for bpr_static.py and bpr_full.py.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#374151"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#075985"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#047857"/>
+    </marker>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; fill: #111827; }
+      .title { font-size: 29px; font-weight: 700; }
+      .subtitle { font-size: 14px; fill: #4b5563; }
+      .section { font-size: 12px; font-weight: 700; letter-spacing: 1.2px; fill: #6b7280; }
+      .box { fill: #ffffff; stroke: #111827; stroke-width: 1.4; }
+      .data { fill: #f8fafc; stroke: #334155; }
+      .proto { fill: #f0f9ff; stroke: #075985; }
+      .train { fill: #fff7ed; stroke: #c2410c; }
+      .model { fill: #eef2ff; stroke: #4338ca; }
+      .eval { fill: #ecfdf5; stroke: #047857; }
+      .note { fill: #f9fafb; stroke: #9ca3af; stroke-dasharray: 4 4; }
+      .main { font-size: 16px; font-weight: 700; }
+      .small { font-size: 12px; fill: #475569; }
+      .tiny { font-size: 11px; fill: #64748b; }
+      .eq { font-family: Consolas, "Courier New", monospace; font-size: 12px; fill: #334155; }
+      .arrow { fill: none; stroke: #374151; stroke-width: 1.45; marker-end: url(#arrow); }
+      .arrow-blue { fill: none; stroke: #075985; stroke-width: 1.55; marker-end: url(#arrowBlue); }
+      .arrow-green { fill: none; stroke: #047857; stroke-width: 1.55; marker-end: url(#arrowGreen); }
+      .dash { fill: none; stroke: #d1d5db; stroke-width: 1; stroke-dasharray: 5 5; }
+      .caption { font-size: 13px; fill: #374151; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#ffffff"/>
+  <text x="56" y="48" class="title">BPR-MF Static / Streaming Experimental Architecture</text>
+  <text x="56" y="72" class="subtitle">ID-based matrix factorization baseline used by bpr_static.py and bpr_full.py; no graph propagation and no content encoder.</text>
+
+  <text x="80" y="118" class="section">DATA</text>
+  <text x="326" y="118" class="section">PROTOCOL</text>
+  <text x="590" y="118" class="section">SAMPLING</text>
+  <text x="820" y="118" class="section">BPR-MF CORE</text>
+  <text x="1160" y="118" class="section">RANKING</text>
+  <text x="1380" y="118" class="section">METRICS</text>
+  <path class="dash" d="M278 104 V824"/>
+  <path class="dash" d="M548 104 V824"/>
+  <path class="dash" d="M770 104 V824"/>
+  <path class="dash" d="M1126 104 V824"/>
+  <path class="dash" d="M1344 104 V824"/>
+
+  <!-- Data -->
+  <g transform="translate(56 154)">
+    <rect class="box data" width="178" height="150" rx="8"/>
+    <text x="18" y="27" class="main">processed_data_hin</text>
+    <text x="18" y="56" class="small">meta.json</text>
+    <text x="18" y="78" class="small">stream_data.pkl</text>
+    <text x="18" y="100" class="small">content_emb.pt</text>
+    <text x="18" y="128" class="tiny">loaded by load_hin_processed()</text>
+  </g>
+  <g transform="translate(56 372)">
+    <rect class="box note" width="178" height="92" rx="8"/>
+    <text x="18" y="27" class="main">Model scope</text>
+    <text x="18" y="55" class="small">ID embeddings only</text>
+    <text x="18" y="75" class="small">content / graph unused</text>
+  </g>
+
+  <!-- Protocol -->
+  <g transform="translate(324 142)">
+    <rect class="box proto" width="174" height="104" rx="8"/>
+    <text x="18" y="25" class="main">Static split</text>
+    <text x="18" y="51" class="small">8 / 1 / 1 random split</text>
+    <text x="18" y="72" class="small">best epoch by val</text>
+    <text x="18" y="91" class="eq">full_cold_N@10</text>
+  </g>
+  <g transform="translate(324 314)">
+    <rect class="box proto" width="174" height="120" rx="8"/>
+    <text x="18" y="25" class="main">Streaming split</text>
+    <text x="18" y="51" class="small">monthly periods</text>
+    <text x="18" y="72" class="small">warmup_periods = 2</text>
+    <text x="18" y="93" class="small">cumulative training</text>
+    <text x="18" y="112" class="tiny">evaluate before each update</text>
+  </g>
+  <g transform="translate(324 526)">
+    <rect class="box proto" width="174" height="98" rx="8"/>
+    <text x="18" y="25" class="main">Seen-item cache</text>
+    <text x="18" y="52" class="small">user_seen_items</text>
+    <text x="18" y="74" class="small">exclude train/val items</text>
+  </g>
+
+  <!-- Sampling -->
+  <g transform="translate(590 208)">
+    <rect class="box train" width="144" height="118" rx="8"/>
+    <text x="18" y="26" class="main">Train cache</text>
+    <text x="18" y="52" class="small">user rows</text>
+    <text x="18" y="73" class="small">positive items</text>
+    <text x="18" y="94" class="small">negative pools</text>
+  </g>
+  <g transform="translate(590 400)">
+    <rect class="box train" width="144" height="112" rx="8"/>
+    <text x="18" y="26" class="main">Negative sampling</text>
+    <text x="18" y="53" class="eq">(u, i+, i-)</text>
+    <text x="18" y="75" class="small">sample one i-</text>
+    <text x="18" y="94" class="small">per positive event</text>
+  </g>
+
+  <!-- Model core -->
+  <g transform="translate(806 154)">
+    <rect class="box model" width="272" height="302" rx="10"/>
+    <text x="22" y="31" class="main">BPRMFModel</text>
+    <text x="22" y="56" class="small">learnable latent matrices</text>
+
+    <rect x="28" y="84" width="92" height="144" rx="6" fill="#ffffff" stroke="#4338ca" stroke-width="1.2"/>
+    <text x="47" y="108" class="main">P</text>
+    <text x="40" y="129" class="small">user_emb</text>
+    <text x="42" y="151" class="eq">|U| x d</text>
+    <path d="M42 178 H106 M42 198 H106" stroke="#c7d2fe" stroke-width="6"/>
+
+    <rect x="150" y="84" width="92" height="144" rx="6" fill="#ffffff" stroke="#4338ca" stroke-width="1.2"/>
+    <text x="169" y="108" class="main">Q</text>
+    <text x="164" y="129" class="small">item_emb</text>
+    <text x="164" y="151" class="eq">|I| x d</text>
+    <path d="M164 178 H228 M164 198 H228" stroke="#c7d2fe" stroke-width="6"/>
+
+    <text x="22" y="260" class="eq">z_u = P[u]</text>
+    <text x="22" y="280" class="eq">z_i = Q[i]</text>
+  </g>
+
+  <g transform="translate(806 548)">
+    <rect class="box train" width="272" height="154" rx="10"/>
+    <text x="22" y="30" class="main">Pairwise BPR objective</text>
+    <text x="22" y="62" class="eq">s(u,i) = z_u^T z_i</text>
+    <text x="22" y="87" class="eq">L = -log sigmoid(s+ - s-)</text>
+    <text x="22" y="112" class="eq">    + lambda ||Theta||_2</text>
+    <text x="22" y="138" class="small">Adam update + gradient clipping</text>
+  </g>
+
+  <!-- Ranking -->
+  <g transform="translate(1160 184)">
+    <rect class="box eval" width="144" height="112" rx="8"/>
+    <text x="18" y="27" class="main">Embedding export</text>
+    <text x="18" y="56" class="eq">all_u = norm(P)</text>
+    <text x="18" y="78" class="eq">all_i = norm(Q)</text>
+  </g>
+  <g transform="translate(1160 368)">
+    <rect class="box eval" width="144" height="128" rx="8"/>
+    <text x="18" y="27" class="main">Ranker</text>
+    <text x="18" y="55" class="eq">score = all_u all_i^T</text>
+    <text x="18" y="79" class="small">sampled: 1 + 200</text>
+    <text x="18" y="101" class="small">full ranking: all items</text>
+  </g>
+
+  <!-- Metrics -->
+  <g transform="translate(1380 236)">
+    <rect class="box eval" width="164" height="162" rx="8"/>
+    <text x="18" y="27" class="main">Evaluation groups</text>
+    <text x="18" y="58" class="small">cold users</text>
+    <text x="18" y="80" class="eq">history &lt; 5</text>
+    <text x="18" y="110" class="small">hot users</text>
+    <text x="18" y="132" class="eq">history >= 5</text>
+  </g>
+  <g transform="translate(1380 480)">
+    <rect class="box eval" width="164" height="142" rx="8"/>
+    <text x="18" y="27" class="main">Reported metrics</text>
+    <text x="18" y="58" class="eq">Recall@5/10/20</text>
+    <text x="18" y="82" class="eq">NDCG@5/10/20</text>
+    <text x="18" y="112" class="small">weighted average</text>
+    <text x="18" y="132" class="tiny">streaming protocol</text>
+  </g>
+
+  <!-- Connections -->
+  <path class="arrow-blue" d="M234 196 H324"/>
+  <path class="arrow-blue" d="M234 260 C282 260 284 359 324 374"/>
+  <path class="arrow-blue" d="M498 194 C542 194 550 245 590 260"/>
+  <path class="arrow-blue" d="M498 374 C548 374 552 274 590 270"/>
+  <path class="arrow" d="M498 575 H590"/>
+  <path class="arrow" d="M734 462 H806"/>
+  <path class="arrow" d="M734 270 C760 270 774 250 806 244"/>
+  <path class="arrow" d="M942 456 V548"/>
+  <path class="arrow" d="M1078 626 C1120 626 1120 270 1160 248"/>
+  <path class="arrow-green" d="M1304 240 C1344 240 1346 298 1380 314"/>
+  <path class="arrow-green" d="M1304 432 H1380"/>
+  <path class="arrow-green" d="M1462 398 V480"/>
+  <path class="arrow" d="M1304 432 C1338 432 1348 552 1380 552"/>
+
+  <!-- Feedback loop -->
+  <path class="arrow" d="M806 654 C680 764 410 726 410 624"/>
+  <text x="520" y="748" class="tiny">streaming: update model after each period</text>
+
+  <text x="56" y="850" class="caption">Figure. The scripts instantiate a pure ID-based BPR matrix factorization model. Static mode selects the best validation epoch, while streaming mode evaluates each period after warmup and then updates with period or cumulative interactions.</text>
+</svg>

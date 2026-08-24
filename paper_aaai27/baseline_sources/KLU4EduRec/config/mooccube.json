@@ -1,0 +1,12 @@
+{
+    "lr": 5e-3,
+    "wd": 5e-5,
+    "train_batch_size": 8192,
+    "edge_drop": 0.8,
+    "embed_size": 64,
+    "n_layers": 1,
+    "item_loss_reg": 1e-4,
+    "item_temp": 0.1,
+    "user_loss_reg": 5e-5,
+    "user_temp": 0.1
+}

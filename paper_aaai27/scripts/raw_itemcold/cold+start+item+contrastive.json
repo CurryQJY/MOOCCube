@@ -1,0 +1,62 @@
+{
+"result":{
+"query":"cold* start* item* contrastive*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"61.33"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"5",
+"@dc":"5",
+"@oc":"5",
+"@id":"69521710",
+"text":"contrastive"
+}
+},
+"hits":{
+"@total":"5",
+"@computed":"5",
+"@sent":"5",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"183811",
+"info":{"authors":{"author":[{"@pid":"195/2196","text":"Yihang Li"},{"@pid":"85/1802","text":"Zhuo Liu"},{"@pid":"24/4105-2","text":"Wei Wei 0002"}]},"title":"EpicCBR: Item-Relation-Enhanced Dual-Scenario Contrastive Learning for Cold-Start Bundle Recommendation.","venue":"WSDM","pages":"377-386","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/LiL026","doi":"10.1145/3773966.3777993","ee":"https://doi.org/10.1145/3773966.3777993","url":"https://dblp.org/rec/conf/wsdm/LiL026"},
+"url":"URL#183811"
+},
+{
+"@score":"4",
+"@id":"206713",
+"info":{"authors":{"author":[{"@pid":"195/2196","text":"Yihang Li"},{"@pid":"85/1802","text":"Zhuo Liu"},{"@pid":"24/4105","text":"Wei Wei"}]},"title":"EpicCBR: Item-Relation-Enhanced Dual-Scenario Contrastive Learning for Cold-Start Bundle Recommendation.","venue":"CoRR","volume":"abs/2602.11680","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2602-11680","doi":"10.48550/ARXIV.2602.11680","ee":"https://doi.org/10.48550/arXiv.2602.11680","url":"https://dblp.org/rec/journals/corr/abs-2602-11680"},
+"url":"URL#206713"
+},
+{
+"@score":"4",
+"@id":"1122279",
+"info":{"authors":{"author":[{"@pid":"132/5158","text":"Wenbo Wang"},{"@pid":"33/4882","text":"Bingquan Liu"},{"@pid":"120/9007","text":"Lili Shan"},{"@pid":"92/5589","text":"Chengjie Sun"},{"@pid":"94/4500","text":"Ben Chen"},{"@pid":"58/2489","text":"Jian Guan"}]},"title":"Preference Aware Dual Contrastive Learning for Item Cold-Start Recommendation.","venue":"AAAI","pages":"9125-9132","year":"2024","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/WangLSSCG24","doi":"10.1609/AAAI.V38I8.28763","ee":"https://doi.org/10.1609/aaai.v38i8.28763","url":"https://dblp.org/rec/conf/aaai/WangLSSCG24"},
+"url":"URL#1122279"
+},
+{
+"@score":"4",
+"@id":"1887254",
+"info":{"authors":{"author":[{"@pid":"147/2978","text":"Zhihui Zhou"},{"@pid":"120/6385","text":"Lilin Zhang"},{"@pid":"67/1751-1","text":"Ning Yang 0001"}]},"title":"Contrastive Collaborative Filtering for Cold-Start Item Recommendation.","venue":"WWW","pages":"928-937","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/ZhouZY23","doi":"10.1145/3543507.3583286","ee":"https://doi.org/10.1145/3543507.3583286","url":"https://dblp.org/rec/conf/www/ZhouZY23"},
+"url":"URL#1887254"
+},
+{
+"@score":"4",
+"@id":"1901906",
+"info":{"authors":{"author":[{"@pid":"147/2978","text":"Zhihui Zhou"},{"@pid":"120/6385","text":"Lilin Zhang"},{"@pid":"67/1751-1","text":"Ning Yang 0001"}]},"title":"Contrastive Collaborative Filtering for Cold-Start Item Recommendation.","venue":"CoRR","volume":"abs/2302.02151","year":"2023","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2302-02151","doi":"10.48550/ARXIV.2302.02151","ee":"https://doi.org/10.48550/arXiv.2302.02151","url":"https://dblp.org/rec/journals/corr/abs-2302-02151"},
+"url":"URL#1901906"
+}
+]
+}
+}
+}

@@ -372,12 +372,13 @@ def evaluate_sampled_sasrec(model, loader, device, k_list, cold_threshold, n_ite
 
 def main():
     setup_seed(2025)
-    print("Loading Data for SASRec (Self-Attention Sequence) from processed_data_hin...")
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
+    print(f"Loading Data for SASRec (Self-Attention Sequence) from {data_dir}...")
 
-    with open("processed_data_hin/meta.json", "r") as f:
+    with open(f"{data_dir}/meta.json", "r") as f:
         meta = json.load(f)
-    df = pd.read_pickle("processed_data_hin/stream_data.pkl")
-    content_emb = torch.load("processed_data_hin/content_emb.pt")
+    df = pd.read_pickle(f"{data_dir}/stream_data.pkl")
+    content_emb = torch.load(f"{data_dir}/content_emb.pt")
 
     # Shift df items by 1 to make room for padding 0 natively in the seq logic? 
     # Actually, the dataset loader logic simply uses +1 when looking up targets in evaluation.
@@ -498,6 +499,15 @@ def main():
         v_f_h = accum_f['hot'][k]/counts_f['hot'] if counts_f['hot'] > 0 else 0
         print(f"{k:<10} | {v_s_c:<12.4f} | {v_s_h:<12.4f} | {v_f_c:<12.4f} | {v_f_h:<12.4f}")
     print("=" * 90)
+
+    out = {"model": "SASRec", "protocol": "stream"}
+    for k in metrics_keys:
+        out[f"samp_cold_{k}"] = accum_s['cold'][k]/counts_s['cold'] if counts_s['cold'] > 0 else 0
+        out[f"samp_hot_{k}"] = accum_s['hot'][k]/counts_s['hot'] if counts_s['hot'] > 0 else 0
+        out[f"full_cold_{k}"] = accum_f['cold'][k]/counts_f['cold'] if counts_f['cold'] > 0 else 0
+        out[f"full_hot_{k}"] = accum_f['hot'][k]/counts_f['hot'] if counts_f['hot'] > 0 else 0
+    pd.DataFrame([out]).to_json("sasrec_full_result.json", orient="records", force_ascii=False)
+    print("Saved: sasrec_full_result.json")
 
 
 if __name__ == "__main__":

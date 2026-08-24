@@ -10,7 +10,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from pam_model import PAM, Config
-from processed_data_utils import load_processed_bundle
 from train_eval import StreamDataset, collate_fn, split_dataframe_by_periods, evaluate
 
 
@@ -107,12 +106,14 @@ def run_experiment(exp_name, override_cfg, periods, meta, content_emb):
 
 
 def main():
-    try:
-        data_dir, meta, df, content_emb = load_processed_bundle()
-    except FileNotFoundError as exc:
-        print(exc)
+    if not os.path.exists("processed_data/stream_data.pkl"):
+        print("Run data_process.py first.")
         return
-    print(f">> Data Dir: {data_dir}")
+
+    with open("processed_data/meta.json", "r") as f:
+        meta = json.load(f)
+    df = pd.read_pickle("processed_data/stream_data.pkl")
+    content_emb = torch.load("processed_data/content_emb.pt")
     periods = split_dataframe_by_periods(df, period_type='M')
 
     # === 对比实验配置 ===

@@ -1,0 +1,353 @@
+{
+"result":{
+"query":"cross* domain* cold* start* recommendation*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"41.47"
+},
+"completions":{
+"@total":"2",
+"@computed":"2",
+"@sent":"2",
+"c":[
+{
+"@sc":"51",
+"@dc":"50",
+"@oc":"51",
+"@id":"70633652",
+"text":"recommendation"
+},
+{
+"@sc":"2",
+"@dc":"2",
+"@oc":"2",
+"@id":"70633655",
+"text":"recommendations"
+}
+]
+},
+"hits":{
+"@total":"52",
+"@computed":"52",
+"@sent":"52",
+"@first":"0",
+"hit":[{
+"@score":"6",
+"@id":"528813",
+"info":{"authors":{"author":[{"@pid":"402/0507","text":"Nian Rong"},{"@pid":"95/3744","text":"Fei Xiong"},{"@pid":"91/8171","text":"Shirui Pan"},{"@pid":"179/8959","text":"Guixun Luo"},{"@pid":"25/5536-1","text":"Jia Wu 0001"},{"@pid":"56/4499-17","text":"Liang Wang 0017"}]},"title":"Domain-Level Disentanglement Framework Based on Information Enhancement for Cross-Domain Cold-Start Recommendation.","venue":"AAAI","pages":"12488-12496","year":"2025","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/RongXPL0025","doi":"10.1609/AAAI.V39I12.33361","ee":"https://doi.org/10.1609/aaai.v39i12.33361","url":"https://dblp.org/rec/conf/aaai/RongXPL0025"},
+"url":"URL#528813"
+},
+{
+"@score":"6",
+"@id":"3296655",
+"info":{"authors":{"author":[{"@pid":"148/8280","text":"Ye Bi"},{"@pid":"239/1436","text":"Liqiang Song"},{"@pid":"270/6523","text":"Mengqiu Yao"},{"@pid":"87/6581","text":"Zhenyu Wu"},{"@pid":"01/1176","text":"Jianming Wang"},{"@pid":"67/4008-6","text":"Jing Xiao 0006"}]},"title":"DCDIR: A Deep Cross-Domain Recommendation System for Cold Start Users in Insurance Domain.","venue":"SIGIR","pages":"1661-1664","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/BiSYWWX20","doi":"10.1145/3397271.3401193","ee":"https://doi.org/10.1145/3397271.3401193","url":"https://dblp.org/rec/conf/sigir/BiSYWWX20"},
+"url":"URL#3296655"
+},
+{
+"@score":"6",
+"@id":"3361063",
+"info":{"authors":{"author":[{"@pid":"148/8280","text":"Ye Bi"},{"@pid":"239/1436","text":"Liqiang Song"},{"@pid":"270/6523","text":"Mengqiu Yao"},{"@pid":"87/6581","text":"Zhenyu Wu"},{"@pid":"01/1176","text":"Jianming Wang"},{"@pid":"67/4008-6","text":"Jing Xiao 0006"}]},"title":"DCDIR: A Deep Cross-Domain Recommendation System for Cold Start Users in Insurance Domain.","venue":"CoRR","volume":"abs/2007.13316","year":"2020","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2007-13316","ee":"https://arxiv.org/abs/2007.13316","url":"https://dblp.org/rec/journals/corr/abs-2007-13316"},
+"url":"URL#3361063"
+},
+{
+"@score":"6",
+"@id":"5708243",
+"info":{"authors":{"author":[{"@pid":"72/2572","text":"Shaghayegh Sahebi"},{"@pid":"b/PBrusilovsky","text":"Peter Brusilovsky"}]},"title":"Cross-Domain Collaborative Recommendation in a Cold-Start Context: The Impact of User Profile Size on the Quality of Recommendation.","venue":"UMAP","pages":"289-295","year":"2013","type":"Conference and Workshop Papers","access":"closed","key":"conf/um/SahebiB13","doi":"10.1007/978-3-642-38844-6_25","ee":"https://doi.org/10.1007/978-3-642-38844-6_25","url":"https://dblp.org/rec/conf/um/SahebiB13"},
+"url":"URL#5708243"
+},
+{
+"@score":"5",
+"@id":"154166",
+"info":{"authors":{"author":[{"@pid":"436/2940","text":"Huping Yu"},{"@pid":"60/6089-4","text":"Yuhan Wang 0004"},{"@pid":"98/2931-2","text":"Qing Xie 0002"},{"@pid":"185/0683","text":"Mengzi Tang"},{"@pid":"73/2252-1","text":"Lin Li 0001"},{"@pid":"42/8590","text":"Yongjian Liu"}]},"title":"Cluster-Guided Disentangled Representation for Cold-Start Cross-Domain Recommendation.","venue":"DASFAA","pages":"20-36","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/dasfaa/YuWXTLL26","doi":"10.1007/978-981-92-0363-5_2","ee":"https://doi.org/10.1007/978-981-92-0363-5_2","url":"https://dblp.org/rec/conf/dasfaa/YuWXTLL26"},
+"url":"URL#154166"
+},
+{
+"@score":"5",
+"@id":"183800",
+"info":{"authors":{"author":[{"@pid":"73/1188","text":"Kirandeep Kaur"},{"@pid":"03/3019","text":"Amit Goyal"}]},"title":"Cold-Start Audiobook Recommendation via Cross-Domain Sub-Tower Fusion.","venue":"WSDM Companion","pages":"8-14","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/KaurG26","doi":"10.1145/3779211.3793160","ee":"https://doi.org/10.1145/3779211.3793160","url":"https://dblp.org/rec/conf/wsdm/KaurG26"},
+"url":"URL#183800"
+},
+{
+"@score":"5",
+"@id":"184137",
+"info":{"authors":{"author":[{"@pid":"400/5777","text":"Ke Fei"},{"@pid":"65/4699-1","text":"Jingjing Li 0001"},{"@pid":"259/2953","text":"Zhekai Du"},{"@pid":"62/4375","text":"Hongbo Chen"}]},"title":"Sharpness-Consistent Cross-Domain Recommendation for Cold-Start Items.","venue":"WWW","pages":"6621-6629","year":"2026","type":"Conference and Workshop Papers","access":"closed","key":"conf/www/FeiLDC26","doi":"10.1145/3774904.3792576","ee":"https://doi.org/10.1145/3774904.3792576","url":"https://dblp.org/rec/conf/www/FeiLDC26"},
+"url":"URL#184137"
+},
+{
+"@score":"5",
+"@id":"233627",
+"info":{"authors":{"author":[{"@pid":"250/6202","text":"Yingjun Dai"},{"@pid":"135/4659","text":"Ahmed El-Roby"}]},"title":"EviSnap: Faithful Evidence-Cited Explanations for Cold-Start Cross-Domain Recommendation.","venue":"CoRR","volume":"abs/2604.06172","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2604-06172","doi":"10.48550/ARXIV.2604.06172","ee":"https://doi.org/10.48550/arXiv.2604.06172","url":"https://dblp.org/rec/journals/corr/abs-2604-06172"},
+"url":"URL#233627"
+},
+{
+"@score":"5",
+"@id":"244560",
+"info":{"authors":{"author":[{"@pid":"50/3993-12","text":"Xiaodong Li 0012"},{"@pid":"276/7004","text":"Jiawei Sheng"},{"@pid":"261/9841","text":"Jiangxia Cao"},{"@pid":"188/3331-1","text":"Xinghua Zhang 0001"},{"@pid":"174/0648-2","text":"Wenyuan Zhang 0002"},{"@pid":"64/3333","text":"Yong Sun"},{"@pid":"91/8171","text":"Shirui Pan"},{"@pid":"73/5444","text":"Zhihong Tian"},{"@pid":"56/7911","text":"Tingwen Liu"}]},"title":"Personalized Multi-Interest Modeling for Cross-Domain Recommendation to Cold-Start Users.","venue":"CoRR","volume":"abs/2604.25732","year":"2026","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2604-25732","doi":"10.48550/ARXIV.2604.25732","ee":"https://doi.org/10.48550/arXiv.2604.25732","url":"https://dblp.org/rec/journals/corr/abs-2604-25732"},
+"url":"URL#244560"
+},
+{
+"@score":"5",
+"@id":"377869",
+"info":{"authors":{"author":[{"@pid":"304/5482","text":"Sepehr Omidvar"},{"@pid":"18/3916","text":"Thomas Tran"}]},"title":"Tackling cold-start with deep personalized transfer of user preferences for cross-domain recommendation.","venue":"Int. J. Data Sci. Anal.","volume":"20","number":"1","pages":"121-130","year":"2025","type":"Journal Articles","access":"closed","key":"journals/ijdsa/OmidvarT25","doi":"10.1007/S41060-023-00467-9","ee":"https://doi.org/10.1007/s41060-023-00467-9","url":"https://dblp.org/rec/journals/ijdsa/OmidvarT25"},
+"url":"URL#377869"
+},
+{
+"@score":"5",
+"@id":"506143",
+"info":{"authors":{"author":[{"@pid":"152/5077","text":"Zihan Wang"},{"@pid":"42/10465-1","text":"Yonghui Yang 0001"},{"@pid":"121/4234","text":"Le Wu"},{"@pid":"59/1501","text":"Richang Hong"},{"@pid":"93/6765-1","text":"Meng Wang 0001"}]},"title":"Making Non-Overlapping Matters: An Unsupervised Alignment Enhanced Cross-Domain Cold-Start Recommendation.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"37","number":"4","pages":"2001-2014","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tkde/WangYWHW25","doi":"10.1109/TKDE.2024.3511602","ee":"https://doi.org/10.1109/TKDE.2024.3511602","url":"https://dblp.org/rec/journals/tkde/WangYWHW25"},
+"url":"URL#506143"
+},
+{
+"@score":"5",
+"@id":"513021",
+"info":{"authors":{"author":[{"@pid":"28/949-8","text":"Xi He 0008"},{"@pid":"08/275","text":"Yilin Liu"},{"@pid":"262/9982","text":"Weikang He"},{"@pid":"33/7361","text":"Xin Xing"},{"@pid":"126/7818-2","text":"Xingyu Lu 0002"},{"@pid":"84/4048-4","text":"Yanbing Liu 0004"}]},"title":"TCKT: Tree-Based Cross-domain Knowledge Transfer for Next POI Cold-Start Recommendation.","venue":"ACM Trans. Inf. Syst.","volume":"43","number":"5","pages":"119:1-119:31","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tois/HeLHXLL25","doi":"10.1145/3709137","ee":"https://doi.org/10.1145/3709137","url":"https://dblp.org/rec/journals/tois/HeLHXLL25"},
+"url":"URL#513021"
+},
+{
+"@score":"5",
+"@id":"517285",
+"info":{"authors":{"author":[{"@pid":"159/4503","text":"Guohang Zeng"},{"@pid":"04/2024-23","text":"Qian Zhang 0023"},{"@pid":"37/628-1","text":"Guangquan Zhang 0001"},{"@pid":"39/2936-1","text":"Jie Lu 0001"}]},"title":"Sharpness-Aware Cross-Domain Recommendation to Cold-Start Users.","venue":"IEEE Trans. Syst. Man Cybern. Syst.","volume":"55","number":"6","pages":"4244-4257","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tsmc/ZengZZL25","doi":"10.1109/TSMC.2025.3549400","ee":"https://doi.org/10.1109/TSMC.2025.3549400","url":"https://dblp.org/rec/journals/tsmc/ZengZZL25"},
+"url":"URL#517285"
+},
+{
+"@score":"5",
+"@id":"527999",
+"info":{"authors":{"author":[{"@pid":"303/8026","text":"Hourun Li"},{"@pid":"47/6959-14","text":"Yifan Wang 0014"},{"@pid":"176/5397-1","text":"Zhiping Xiao 0001"},{"@pid":"22/667","text":"Jia Yang"},{"@pid":"04/4203","text":"Changling Zhou"},{"@pid":"73/1844-4","text":"Ming Zhang 0004"},{"@pid":"171/4781-1","text":"Wei Ju 0001"}]},"title":"DisCo: Graph-Based Disentangled Contrastive Learning for Cold-Start Cross-Domain Recommendation.","venue":"AAAI","pages":"12049-12057","year":"2025","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/Li00YZZJ25","doi":"10.1609/AAAI.V39I11.33312","ee":"https://doi.org/10.1609/aaai.v39i11.33312","url":"https://dblp.org/rec/conf/aaai/Li00YZZJ25"},
+"url":"URL#527999"
+},
+{
+"@score":"5",
+"@id":"544748",
+"info":{"authors":{"author":[{"@pid":"59/983","text":"Yixin Chen"},{"@pid":"276/5093","text":"Tianzi Zang"},{"@pid":"59/2144-11","text":"Juan Li 0011"}]},"title":"MacCDR: A Memory-Augmented Cluster-Level Preference Mapping Framework for Cross-Domain Cold-Start Recommendation.","venue":"BESC","pages":"193-207","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/besc/ChenZL25","doi":"10.1007/978-981-95-7141-3_12","ee":"https://doi.org/10.1007/978-981-95-7141-3_12","url":"https://dblp.org/rec/conf/besc/ChenZL25"},
+"url":"URL#544748"
+},
+{
+"@score":"5",
+"@id":"576980",
+"info":{"authors":{"author":[{"@pid":"250/6202","text":"Yingjun Dai"},{"@pid":"135/4659","text":"Ahmed El-Roby"},{"@pid":"380/0501","text":"Elmira Adeeb"},{"@pid":"380/0873","text":"Vivek Thaker"}]},"title":"OmniMatch: Overcoming the Cold-Start Problem in Cross-Domain Recommendations using Auxiliary Reviews.","venue":"EDBT","pages":"80-91","year":"2025","type":"Conference and Workshop Papers","access":"open","key":"conf/edbt/DaiEAT25","doi":"10.48786/EDBT.2025.07","ee":"https://doi.org/10.48786/edbt.2025.07","url":"https://dblp.org/rec/conf/edbt/DaiEAT25"},
+"url":"URL#576980"
+},
+{
+"@score":"5",
+"@id":"602791",
+"info":{"authors":{"author":[{"@pid":"216/1573","text":"Fengxin Li"},{"@pid":"28/374-2","text":"Hongyan Liu 0002"},{"@pid":"75/5705-8","text":"Jun He 0008"},{"@pid":"47/3542-1","text":"Xiaoyong Du 0001"}]},"title":"Debiased Estimation for Cross-Domain Cold Start Recommendation.","venue":"ICASSP","pages":"1-5","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/icassp/LiL0025","doi":"10.1109/ICASSP49660.2025.10889985","ee":"https://doi.org/10.1109/ICASSP49660.2025.10889985","url":"https://dblp.org/rec/conf/icassp/LiL0025"},
+"url":"URL#602791"
+},
+{
+"@score":"5",
+"@id":"614105",
+"info":{"authors":{"author":[{"@pid":"50/3993-12","text":"Xiaodong Li 0012"},{"@pid":"276/7004","text":"Jiawei Sheng"},{"@pid":"261/9841","text":"Jiangxia Cao"},{"@pid":"188/3331-1","text":"Xinghua Zhang 0001"},{"@pid":"174/0648-2","text":"Wenyuan Zhang 0002"},{"@pid":"64/3333","text":"Yong Sun"},{"@pid":"91/8171","text":"Shirui Pan"},{"@pid":"73/5444","text":"Zhihong Tian"},{"@pid":"56/7911","text":"Tingwen Liu"}]},"title":"Personalized Multi-Interest Modeling for Cross-Domain Recommendation to Cold-Start Users.","venue":"ICDE","pages":"4092-4105","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/icde/LiSCZZSPTL25","doi":"10.1109/ICDE65448.2025.00305","ee":"https://doi.org/10.1109/ICDE65448.2025.00305","url":"https://dblp.org/rec/conf/icde/LiSCZZSPTL25"},
+"url":"URL#614105"
+},
+{
+"@score":"5",
+"@id":"924058",
+"info":{"authors":{"author":[{"@pid":"98/3794-1","text":"Xiaoyang Liu 0001"},{"@pid":"99/1811","text":"Xiaoyang Fu"},{"@pid":"94/5332","text":"Pasquale De Meo"},{"@pid":"25/1338","text":"Giacomo Fiumara"}]},"title":"Cross-Domain Recommendation To Cold-Start Users Via Categorized Preference Transfer.","venue":"Comput. J.","volume":"67","number":"8","pages":"2610-2621","year":"2024","type":"Journal Articles","access":"closed","key":"journals/cj/LiuFMF24","doi":"10.1093/COMJNL/BXAE029","ee":"https://doi.org/10.1093/comjnl/bxae029","url":"https://dblp.org/rec/journals/cj/LiuFMF24"},
+"url":"URL#924058"
+},
+{
+"@score":"5",
+"@id":"937722",
+"info":{"authors":{"author":[{"@pid":"72/7925","text":"Yufang Liu"},{"@pid":"47/8495","text":"Shaoqing Wang"},{"@pid":"132/5427","text":"Xueting Li"},{"@pid":"127/6092","text":"Fuzhen Sun"}]},"title":"A Meta-adversarial Framework for Cross-Domain Cold-Start Recommendation.","venue":"Data Sci. Eng.","volume":"9","number":"2","pages":"238-249","year":"2024","type":"Journal Articles","access":"open","key":"journals/dase/LiuWLS24","doi":"10.1007/S41019-024-00245-Y","ee":"https://doi.org/10.1007/s41019-024-00245-y","url":"https://dblp.org/rec/journals/dase/LiuWLS24"},
+"url":"URL#937722"
+},
+{
+"@score":"5",
+"@id":"1011235",
+"info":{"authors":{"author":[{"@pid":"261/8164","text":"Yuanzhen Xie"},{"@pid":"131/9590","text":"Chenyun Yu"},{"@pid":"368/1756","text":"Xinzhou Jin"},{"@pid":"48/2700-5","text":"Lei Cheng 0005"},{"@pid":"04/2380-21","text":"Bo Hu 0021"},{"@pid":"06/6214","text":"Zang Li"}]},"title":"Heterogeneous graph contrastive learning for cold start cross-domain recommendation.","venue":"Knowl. Based Syst.","volume":"299","pages":"112054","year":"2024","type":"Journal Articles","access":"closed","key":"journals/kbs/XieYJCHL24","doi":"10.1016/J.KNOSYS.2024.112054","ee":"https://doi.org/10.1016/j.knosys.2024.112054","url":"https://dblp.org/rec/journals/kbs/XieYJCHL24"},
+"url":"URL#1011235"
+},
+{
+"@score":"5",
+"@id":"1233169",
+"info":{"authors":{"author":[{"@pid":"200/5364","text":"Mingda Qian"},{"@pid":"206/9926","text":"Feifei Dai"},{"@pid":"74/8908-1","text":"Xiaoyan Gu 0001"},{"@pid":"301/5738","text":"Haihui Fan"},{"@pid":"98/1737","text":"Dong Liu"},{"@pid":"78/3204","text":"Feng Tian"},{"@pid":"50/3402-63","text":"Bo Li 0063"}]},"title":"Identifying Misaligned Features for Cross-Domain Cold-Start Recommendation.","venue":"ICONIP","pages":"402-414","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/iconip/QianDGFLTL24","doi":"10.1007/978-981-96-6588-4_28","ee":"https://doi.org/10.1007/978-981-96-6588-4_28","url":"https://dblp.org/rec/conf/iconip/QianDGFLTL24"},
+"url":"URL#1233169"
+},
+{
+"@score":"5",
+"@id":"1305359",
+"info":{"authors":{"author":[{"@pid":"379/3294","text":"Ajay Krishna Vajjala"},{"@pid":"379/3270","text":"Dipak Falgun Meher"},{"@pid":"379/3267","text":"Shrunal Pothagoni"},{"@pid":"159/9916","text":"Ziwei Zhu 0001"},{"@pid":"r/DSRosenblum","text":"David S. Rosenblum"}]},"title":"Vietoris-Rips Complex: A New Direction for Cross-Domain Cold-Start Recommendation.","venue":"SDM","pages":"761-769","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/sdm/VajjalaMPZR24","doi":"10.1137/1.9781611978032.87","ee":"https://doi.org/10.1137/1.9781611978032.87","url":"https://dblp.org/rec/conf/sdm/VajjalaMPZR24"},
+"url":"URL#1305359"
+},
+{
+"@score":"5",
+"@id":"1329300",
+"info":{"authors":{"author":[{"@pid":"50/3993-12","text":"Xiaodong Li 0012"},{"@pid":"276/7004","text":"Jiawei Sheng"},{"@pid":"261/9841","text":"Jiangxia Cao"},{"@pid":"174/0648-2","text":"Wenyuan Zhang 0002"},{"@pid":"151/6251","text":"Quangang Li"},{"@pid":"56/7911","text":"Tingwen Liu"}]},"title":"CDRNP: Cross-Domain Recommendation to Cold-Start Users via Neural Process.","venue":"WSDM","pages":"378-386","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/wsdm/LiSCZLL24","doi":"10.1145/3616855.3635794","ee":"https://doi.org/10.1145/3616855.3635794","url":"https://dblp.org/rec/conf/wsdm/LiSCZLL24"},
+"url":"URL#1329300"
+},
+{
+"@score":"5",
+"@id":"1411737",
+"info":{"authors":{"author":[{"@pid":"159/4503","text":"Guohang Zeng"},{"@pid":"04/2024-23","text":"Qian Zhang 0023"},{"@pid":"37/628-1","text":"Guangquan Zhang 0001"},{"@pid":"39/2936-1","text":"Jie Lu 0001"}]},"title":"Sharpness-Aware Cross-Domain Recommendation to Cold-Start Users.","venue":"CoRR","volume":"abs/2408.01931","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2408-01931","doi":"10.48550/ARXIV.2408.01931","ee":"https://doi.org/10.48550/arXiv.2408.01931","url":"https://dblp.org/rec/journals/corr/abs-2408-01931"},
+"url":"URL#1411737"
+},
+{
+"@score":"5",
+"@id":"1460673",
+"info":{"authors":{"author":[{"@pid":"303/8026","text":"Hourun Li"},{"@pid":"47/6959-14","text":"Yifan Wang 0014"},{"@pid":"176/5397-1","text":"Zhiping Xiao 0001"},{"@pid":"22/667","text":"Jia Yang"},{"@pid":"04/4203","text":"Changling Zhou"},{"@pid":"73/1844-4","text":"Ming Zhang 0004"},{"@pid":"171/4781-1","text":"Wei Ju 0001"}]},"title":"DisCo: Graph-Based Disentangled Contrastive Learning for Cold-Start Cross-Domain Recommendation.","venue":"CoRR","volume":"abs/2412.15005","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2412-15005","doi":"10.48550/ARXIV.2412.15005","ee":"https://doi.org/10.48550/arXiv.2412.15005","url":"https://dblp.org/rec/journals/corr/abs-2412-15005"},
+"url":"URL#1460673"
+},
+{
+"@score":"5",
+"@id":"1466820",
+"info":{"title":"CDRNP: Cross-Domain Recommendation to Cold-Start Users via Neural Process.","venue":"CoRR","volume":"abs/2401.12732","year":"2024","type":"Withdrawn Items","access":"withdrawn","key":"journals/corr/abs-2401-12732","doi":"10.48550/ARXIV.2401.12732","ee":"https://doi.org/10.48550/arXiv.2401.12732","url":"https://dblp.org/rec/journals/corr/abs-2401-12732"},
+"url":"URL#1466820"
+},
+{
+"@score":"5",
+"@id":"1544765",
+"info":{"authors":{"author":[{"@pid":"78/437-6","text":"Rui Tang 0006"},{"@pid":"49/1457-9","text":"Cheng Yang 0009"},{"@pid":"94/3940","text":"Yuxuan Wang"}]},"title":"A Cross-Domain Multimodal Supervised Latent Topic Model for Item Tagging and Cold-Start Recommendation.","venue":"IEEE Multim.","volume":"30","number":"3","pages":"48-62","year":"2023","type":"Journal Articles","access":"closed","key":"journals/ieeemm/TangYW23","doi":"10.1109/MMUL.2023.3242455","ee":"https://doi.org/10.1109/MMUL.2023.3242455","url":"https://dblp.org/rec/journals/ieeemm/TangYW23"},
+"url":"URL#1544765"
+},
+{
+"@score":"5",
+"@id":"1670220",
+"info":{"authors":{"author":[{"@pid":"84/8179","text":"Renchu Guan"},{"@pid":"257/6390","text":"Haoyu Pang"},{"@pid":"g/FaustoGiunchiglia","text":"Fausto Giunchiglia"},{"@pid":"77/175-1","text":"Yanchun Liang 0001"},{"@pid":"15/5229","text":"Xiaoyue Feng"}]},"title":"Cross-Domain Meta-Learner for Cold-Start Recommendation.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"35","number":"8","pages":"7829-7843","year":"2023","type":"Journal Articles","access":"open","key":"journals/tkde/GuanPGLF23","doi":"10.1109/TKDE.2022.3208005","ee":"https://doi.org/10.1109/TKDE.2022.3208005","url":"https://dblp.org/rec/journals/tkde/GuanPGLF23"},
+"url":"URL#1670220"
+},
+{
+"@score":"5",
+"@id":"1670442",
+"info":{"authors":{"author":[{"@pid":"00/105-5","text":"Weiming Liu 0005"},{"@pid":"09/5763","text":"Xiaolin Zheng"},{"@pid":"293/4976","text":"Jiajie Su"},{"@pid":"230/1980","text":"Longfei Zheng"},{"@pid":"26/1492-1","text":"Chaochao Chen 0001"},{"@pid":"313/9362","text":"Mengling Hu"}]},"title":"Contrastive Proxy Kernel Stein Path Alignment for Cross-Domain Cold-Start Recommendation.","venue":"IEEE Trans. Knowl. Data Eng.","volume":"35","number":"11","pages":"11216-11230","year":"2023","type":"Journal Articles","access":"closed","key":"journals/tkde/LiuZSZCH23","doi":"10.1109/TKDE.2022.3233789","ee":"https://doi.org/10.1109/TKDE.2022.3233789","url":"https://dblp.org/rec/journals/tkde/LiuZSZCH23"},
+"url":"URL#1670442"
+},
+{
+"@score":"5",
+"@id":"2249546",
+"info":{"authors":{"author":[{"@pid":"307/3590","text":"Dongyi Zheng"},{"@pid":"219/0977","text":"Yeting Guo"},{"@pid":"67/5807-2","text":"Fang Liu 0002"},{"@pid":"42/2525-1","text":"Nong Xiao 0001"},{"@pid":"05/3191","text":"Lu Gao"}]},"title":"MetaEM: Meta Embedding Mapping for Federated Cross-domain Recommendation to Cold-Start Users.","venue":"CollaborateCom","pages":"154-172","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/colcom/ZhengGLXG22","doi":"10.1007/978-3-031-24383-7_9","ee":"https://doi.org/10.1007/978-3-031-24383-7_9","url":"https://dblp.org/rec/conf/colcom/ZhengGLXG22"},
+"url":"URL#2249546"
+},
+{
+"@score":"5",
+"@id":"2299045",
+"info":{"authors":{"author":[{"@pid":"261/9841","text":"Jiangxia Cao"},{"@pid":"276/7004","text":"Jiawei Sheng"},{"@pid":"141/4386","text":"Xin Cong"},{"@pid":"56/7911","text":"Tingwen Liu"},{"@pid":"13/1898-4","text":"Bin Wang 0004"}]},"title":"Cross-Domain Recommendation to Cold-Start Users via Variational Information Bottleneck.","venue":"ICDE","pages":"2209-2223","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/icde/CaoSCLW22","doi":"10.1109/ICDE53745.2022.00211","ee":"https://doi.org/10.1109/ICDE53745.2022.00211","url":"https://dblp.org/rec/conf/icde/CaoSCLW22"},
+"url":"URL#2299045"
+},
+{
+"@score":"5",
+"@id":"2310687",
+"info":{"authors":{"author":[{"@pid":"19/6724","text":"Yanyu Chen"},{"@pid":"07/4410-6","text":"Yao Yao 0006"},{"@pid":"60/4361","text":"Wai Kin Victor Chan"}]},"title":"CLCDR: Contrastive Learning for Cross-Domain Recommendation to Cold-Start Users.","venue":"ICONIP","pages":"331-342","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/iconip/ChenYC22","doi":"10.1007/978-3-031-30108-7_28","ee":"https://doi.org/10.1007/978-3-031-30108-7_28","url":"https://dblp.org/rec/conf/iconip/ChenYC22"},
+"url":"URL#2310687"
+},
+{
+"@score":"5",
+"@id":"2421489",
+"info":{"authors":{"author":[{"@pid":"261/9841","text":"Jiangxia Cao"},{"@pid":"276/7004","text":"Jiawei Sheng"},{"@pid":"141/4386","text":"Xin Cong"},{"@pid":"56/7911","text":"Tingwen Liu"},{"@pid":"13/1898-4","text":"Bin Wang 0004"}]},"title":"Cross-Domain Recommendation to Cold-Start Users via Variational Information Bottleneck.","venue":"CoRR","volume":"abs/2203.16863","year":"2022","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2203-16863","doi":"10.48550/ARXIV.2203.16863","ee":"https://doi.org/10.48550/arXiv.2203.16863","url":"https://dblp.org/rec/journals/corr/abs-2203-16863"},
+"url":"URL#2421489"
+},
+{
+"@score":"5",
+"@id":"2835262",
+"info":{"authors":{"author":[{"@pid":"00/105-5","text":"Weiming Liu 0005"},{"@pid":"293/4976","text":"Jiajie Su"},{"@pid":"26/1492-1","text":"Chaochao Chen 0001"},{"@pid":"09/5763","text":"Xiaolin Zheng"}]},"title":"Leveraging Distribution Alignment via Stein Path for Cross-Domain Cold-Start Recommendation.","venue":"NeurIPS","pages":"19223-19234","year":"2021","type":"Conference and Workshop Papers","access":"open","key":"conf/nips/LiuSCZ21","ee":"https://proceedings.neurips.cc/paper/2021/hash/a0443c8c8c3372d662e9173c18faaa2c-Abstract.html","url":"https://dblp.org/rec/conf/nips/LiuSCZ21"},
+"url":"URL#2835262"
+},
+{
+"@score":"5",
+"@id":"2850563",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"245/3434","text":"Dongbo Xi"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"14/3700-3","text":"Qing He 0003"}]},"title":"Transfer-Meta Framework for Cross-domain Recommendation to Cold-Start Users.","venue":"SIGIR","pages":"1813-1817","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ZhuGZXXZL021","doi":"10.1145/3404835.3463010","ee":"https://doi.org/10.1145/3404835.3463010","url":"https://dblp.org/rec/conf/sigir/ZhuGZXXZL021"},
+"url":"URL#2850563"
+},
+{
+"@score":"5",
+"@id":"2901577",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"245/3434","text":"Dongbo Xi"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"14/3700-3","text":"Qing He 0003"}]},"title":"Transfer-Meta Framework for Cross-domain Recommendation to Cold-Start Users.","venue":"CoRR","volume":"abs/2105.04785","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2105-04785","ee":"https://arxiv.org/abs/2105.04785","url":"https://dblp.org/rec/journals/corr/abs-2105-04785"},
+"url":"URL#2901577"
+},
+{
+"@score":"5",
+"@id":"2946938",
+"info":{"authors":{"author":[{"@pid":"64/10182","text":"Huiling Zhou"},{"@pid":"03/2134","text":"Jie Liu"},{"@pid":"124/7519","text":"Zhikang Li"},{"@pid":"03/5102","text":"Jin Yu"},{"@pid":"69/3036","text":"Hongxia Yang"}]},"title":"Cross-domain User Preference Learning for Cold-start Recommendation.","venue":"CoRR","volume":"abs/2112.03667","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2112-03667","ee":"https://arxiv.org/abs/2112.03667","url":"https://dblp.org/rec/journals/corr/abs-2112-03667"},
+"url":"URL#2946938"
+},
+{
+"@score":"5",
+"@id":"2970073",
+"info":{"authors":{"author":[{"@pid":"262/4794","text":"Yaru Jin"},{"@pid":"00/4333","text":"Shoubin Dong"},{"@pid":"89/1069","text":"Yong Cai"},{"@pid":"49/6732-2","text":"Jinlong Hu 0002"}]},"title":"RACRec: Review Aware Cross-Domain Recommendation for Fully-Cold-Start User.","venue":"IEEE Access","volume":"8","pages":"55032-55041","year":"2020","type":"Journal Articles","access":"open","key":"journals/access/JinDCH20","doi":"10.1109/ACCESS.2020.2982037","ee":"https://doi.org/10.1109/ACCESS.2020.2982037","url":"https://dblp.org/rec/journals/access/JinDCH20"},
+"url":"URL#2970073"
+},
+{
+"@score":"5",
+"@id":"3069464",
+"info":{"authors":{"author":[{"@pid":"09/2773","text":"Xinghua Wang"},{"@pid":"02/692","text":"Zhaohui Peng"},{"@pid":"118/5055","text":"Senzhang Wang"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"},{"@pid":"122/3324","text":"Wenjing Fu"},{"@pid":"205/7638","text":"Xiaokang Xu"},{"@pid":"53/5905","text":"Xiaoguang Hong"}]},"title":"CDLFM: cross-domain recommendation for cold-start users via latent feature mapping.","venue":"Knowl. Inf. Syst.","volume":"62","number":"5","pages":"1723-1750","year":"2020","type":"Journal Articles","access":"closed","key":"journals/kais/WangPWYFXH20","doi":"10.1007/S10115-019-01396-5","ee":"https://doi.org/10.1007/s10115-019-01396-5","url":"https://dblp.org/rec/journals/kais/WangPWYFXH20"},
+"url":"URL#3069464"
+},
+{
+"@score":"5",
+"@id":"3296656",
+"info":{"authors":{"author":[{"@pid":"148/8280","text":"Ye Bi"},{"@pid":"239/1436","text":"Liqiang Song"},{"@pid":"270/6523","text":"Mengqiu Yao"},{"@pid":"87/6581","text":"Zhenyu Wu"},{"@pid":"01/1176","text":"Jianming Wang"},{"@pid":"67/4008-6","text":"Jing Xiao 0006"}]},"title":"A Heterogeneous Information Network based Cross Domain Insurance Recommendation System for Cold Start Users.","venue":"SIGIR","pages":"2211-2220","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/BiSYWWX20a","doi":"10.1145/3397271.3401426","ee":"https://doi.org/10.1145/3397271.3401426","url":"https://dblp.org/rec/conf/sigir/BiSYWWX20a"},
+"url":"URL#3296656"
+},
+{
+"@score":"5",
+"@id":"3296991",
+"info":{"authors":{"author":[{"@pid":"93/3598","text":"Cheng Zhao"},{"@pid":"52/9457-5","text":"Chenliang Li 0005"},{"@pid":"75/5560-5","text":"Rong Xiao 0005"},{"@pid":"09/43","text":"Hongbo Deng"},{"@pid":"78/5155","text":"Aixin Sun"}]},"title":"CATN: Cross-Domain Recommendation for Cold-Start Users via Aspect Transfer Network.","venue":"SIGIR","pages":"229-238","year":"2020","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ZhaoLXDS20","doi":"10.1145/3397271.3401169","ee":"https://doi.org/10.1145/3397271.3401169","url":"https://dblp.org/rec/conf/sigir/ZhaoLXDS20"},
+"url":"URL#3296991"
+},
+{
+"@score":"5",
+"@id":"3347091",
+"info":{"authors":{"author":[{"@pid":"93/3598","text":"Cheng Zhao"},{"@pid":"52/9457-5","text":"Chenliang Li 0005"},{"@pid":"75/5560-5","text":"Rong Xiao 0005"},{"@pid":"09/43","text":"Hongbo Deng"},{"@pid":"78/5155","text":"Aixin Sun"}]},"title":"CATN: Cross-Domain Recommendation for Cold-Start Users via Aspect Transfer Network.","venue":"CoRR","volume":"abs/2005.10549","year":"2020","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2005-10549","ee":"https://arxiv.org/abs/2005.10549","url":"https://dblp.org/rec/journals/corr/abs-2005-10549"},
+"url":"URL#3347091"
+},
+{
+"@score":"5",
+"@id":"3361796",
+"info":{"authors":{"author":[{"@pid":"148/8280","text":"Ye Bi"},{"@pid":"239/1436","text":"Liqiang Song"},{"@pid":"270/6523","text":"Mengqiu Yao"},{"@pid":"87/6581","text":"Zhenyu Wu"},{"@pid":"01/1176","text":"Jianming Wang"},{"@pid":"67/4008-6","text":"Jing Xiao 0006"}]},"title":"A Heterogeneous Information Network based Cross Domain Insurance Recommendation System for Cold Start Users.","venue":"CoRR","volume":"abs/2007.15293","year":"2020","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2007-15293","ee":"https://arxiv.org/abs/2007.15293","url":"https://dblp.org/rec/journals/corr/abs-2007-15293"},
+"url":"URL#3361796"
+},
+{
+"@score":"5",
+"@id":"3566859",
+"info":{"authors":{"author":[{"@pid":"122/3324","text":"Wenjing Fu"},{"@pid":"02/692","text":"Zhaohui Peng"},{"@pid":"118/5055","text":"Senzhang Wang"},{"@pid":"61/3906-25","text":"Yang Xu 0025"},{"@pid":"48/1097","text":"Jin Li"}]},"title":"Deeply Fusing Reviews and Contents for Cold Start Users in Cross-Domain Recommendation Systems.","venue":"AAAI","pages":"94-101","year":"2019","type":"Conference and Workshop Papers","access":"open","key":"conf/aaai/FuPWXL19","doi":"10.1609/AAAI.V33I01.330194","ee":"https://doi.org/10.1609/aaai.v33i01.330194","url":"https://dblp.org/rec/conf/aaai/FuPWXL19"},
+"url":"URL#3566859"
+},
+{
+"@score":"5",
+"@id":"3597583",
+"info":{"authors":{"author":[{"@pid":"251/9613","text":"SeongKu Kang"},{"@pid":"246/3153","text":"Junyoung Hwang"},{"@pid":"12/760-3","text":"Dongha Lee 0003"},{"@pid":"80/6889","text":"Hwanjo Yu"}]},"title":"Semi-Supervised Learning for Cross-Domain Recommendation to Cold-Start Users.","venue":"CIKM","pages":"1563-1572","year":"2019","type":"Conference and Workshop Papers","access":"closed","key":"conf/cikm/KangHLY19","doi":"10.1145/3357384.3357914","ee":"https://doi.org/10.1145/3357384.3357914","url":"https://dblp.org/rec/conf/cikm/KangHLY19"},
+"url":"URL#3597583"
+},
+{
+"@score":"5",
+"@id":"3956348",
+"info":{"authors":{"author":[{"@pid":"90/5961","text":"Cheng-Te Li"},{"@pid":"230/2262","text":"Chia-Tai Hsu"},{"@pid":"63/4011","text":"Man-Kwan Shan"}]},"title":"A Cross-Domain Recommendation Mechanism for Cold-Start Users Based on Partial Least Squares Regression.","venue":"ACM Trans. Intell. Syst. Technol.","volume":"9","number":"6","pages":"67:1-67:26","year":"2018","type":"Journal Articles","access":"closed","key":"journals/tist/LiHS18","doi":"10.1145/3231601","ee":"https://doi.org/10.1145/3231601","url":"https://dblp.org/rec/journals/tist/LiHS18"},
+"url":"URL#3956348"
+},
+{
+"@score":"5",
+"@id":"4007868",
+"info":{"authors":{"author":[{"@pid":"09/2773","text":"Xinghua Wang"},{"@pid":"02/692","text":"Zhaohui Peng"},{"@pid":"118/5055","text":"Senzhang Wang"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"},{"@pid":"122/3324","text":"Wenjing Fu"},{"@pid":"53/5905","text":"Xiaoguang Hong"}]},"title":"Cross-Domain Recommendation for Cold-Start Users via Neighborhood Based Feature Mapping.","venue":"DASFAA","pages":"158-165","year":"2018","type":"Conference and Workshop Papers","access":"closed","key":"conf/dasfaa/WangPWYFH18","doi":"10.1007/978-3-319-91452-7_11","ee":"https://doi.org/10.1007/978-3-319-91452-7_11","url":"https://dblp.org/rec/conf/dasfaa/WangPWYFH18"},
+"url":"URL#4007868"
+},
+{
+"@score":"5",
+"@id":"4159769",
+"info":{"authors":{"author":[{"@pid":"09/2773","text":"Xinghua Wang"},{"@pid":"02/692","text":"Zhaohui Peng"},{"@pid":"118/5055","text":"Senzhang Wang"},{"@pid":"y/PhilipSYu","text":"Philip S. Yu"},{"@pid":"122/3324","text":"Wenjing Fu"},{"@pid":"53/5905","text":"Xiaoguang Hong"}]},"title":"Cross-Domain Recommendation for Cold-Start Users via Neighborhood Based Feature Mapping.","venue":"CoRR","volume":"abs/1803.01617","year":"2018","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-1803-01617","ee":"http://arxiv.org/abs/1803.01617","url":"https://dblp.org/rec/journals/corr/abs-1803-01617"},
+"url":"URL#4159769"
+},
+{
+"@score":"5",
+"@id":"4796629",
+"info":{"authors":{"author":[{"@pid":"50/10009","text":"Ignacio Fernández-Tobías"},{"@pid":"151/6893","text":"Paolo Tomeo"},{"@pid":"29/791","text":"Iván Cantador"},{"@pid":"58/5192","text":"Tommaso Di Noia"},{"@pid":"s/EugenioDiSciascio","text":"Eugenio Di Sciascio"}]},"title":"Accuracy and Diversity in Cross-domain Recommendations for Cold-start Users with Positive-only Feedback.","venue":"RecSys","pages":"119-122","year":"2016","type":"Conference and Workshop Papers","access":"closed","key":"conf/recsys/Fernandez-Tobias16","doi":"10.1145/2959100.2959175","ee":"https://doi.org/10.1145/2959100.2959175","url":"https://dblp.org/rec/conf/recsys/Fernandez-Tobias16"},
+"url":"URL#4796629"
+},
+{
+"@score":"5",
+"@id":"4966052",
+"info":{"authors":{"author":[{"@pid":"14/6552","text":"Nima Mirbakhsh"},{"@pid":"99/4062","text":"Charles X. Ling"}]},"title":"Improving Top-N Recommendation for Cold-Start Users via Cross-Domain Information.","venue":"ACM Trans. Knowl. Discov. Data","volume":"9","number":"4","pages":"33:1-33:19","year":"2015","type":"Journal Articles","access":"closed","key":"journals/tkdd/MirbakhshL15","doi":"10.1145/2724720","ee":"https://doi.org/10.1145/2724720","url":"https://dblp.org/rec/journals/tkdd/MirbakhshL15"},
+"url":"URL#4966052"
+},
+{
+"@score":"5",
+"@id":"5057267",
+"info":{"authors":{"author":[{"@pid":"135/1563","text":"Panpan Liu"},{"@pid":"19/10393","text":"Jingjing Cao"},{"@pid":"116/6847","text":"Xiaolei Liang"},{"@pid":"20/179-1","text":"Wenfeng Li 0001"}]},"title":"A two-stage cross-domain recommendation for cold start problem in cyber-physical systems.","venue":"ICMLC","pages":"876-882","year":"2015","type":"Conference and Workshop Papers","access":"closed","key":"conf/icmlc/LiuCLL15","doi":"10.1109/ICMLC.2015.7340669","ee":"https://doi.org/10.1109/ICMLC.2015.7340669","url":"https://dblp.org/rec/conf/icmlc/LiuCLL15"},
+"url":"URL#5057267"
+}
+]
+}
+}
+}

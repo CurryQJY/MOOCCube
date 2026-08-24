@@ -1,0 +1,21 @@
+\begin{table*}[t]
+\centering
+{
+\small
+\setlength{\tabcolsep}{2.4pt}
+\renewcommand{\arraystretch}{1.02}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llccccc}
+\toprule
+Dataset & Cost ref. & CKG train/epoch & CGRC train/epoch & CKG infer. & CGRC infer. & \(\Delta\)N@10 vs CGRC [95\% CI] \\
+\midrule
+MOOCCube & CGRC & 95.6\,$\pm$\,21.9 & 70.5\,$\pm$\,4.6 & 18.0\,$\pm$\,0.7 & 22.2\,$\pm$\,0.4 & +0.0263 [0.0114, 0.0401] \\
+Junyi & CGRC & 312.2\,$\pm$\,67.7 & 333.0\,$\pm$\,45.0 & 56.4\,$\pm$\,0.3 & 69.2\,$\pm$\,0.2 & +0.0330 [0.0159, 0.0512] \\
+COCO & CGRC & 279.2\,$\pm$\,17.8 & 389.7\,$\pm$\,80.0 & 9.8\,$\pm$\,0.1 & 11.8\,$\pm$\,0.2 & +0.0183 [0.0162, 0.0205] \\
+\bottomrule
+\end{tabular*}
+}
+\caption{Efficiency comparison with CGRC.}
+\label{tab:efficiency-aaai}
+\vspace{2pt}
+\parbox{\textwidth}{\footnotesize Times are mean\(\pm\)std seconds over retained seed-level profiles. \(\Delta\)N@10 is the mean paired course-level difference with a 95\% bootstrap CI over matched seed-course units pooled across three seeds; intervals are conditional on the three trained model fits.}
+\end{table*}

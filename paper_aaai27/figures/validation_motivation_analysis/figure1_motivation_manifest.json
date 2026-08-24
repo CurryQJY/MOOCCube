@@ -1,0 +1,51 @@
+{
+  "analysis": "figure1_motivation_evidence_pack",
+  "dataset": "MOOCCube",
+  "analysis_split": "validation",
+  "protocol": "strict course-cold full-catalog ranking",
+  "seeds": [
+    2025,
+    2026,
+    2027
+  ],
+  "validation_cold_courses_per_seed": 34,
+  "seed_course_units": 102,
+  "baseline_models": [
+    "PCGNN",
+    "CGRC"
+  ],
+  "baseline_unit": "seed-level mean over validation cold target courses",
+  "baseline_bootstrap": "not used in the figure; seed means and range are shown",
+  "availability_unit": "validation cold seed-course unit",
+  "heterogeneity_unit": "validation cold target course; SD across its learner histories",
+  "checkpoint_selection_caveat": "baseline checkpoints were selected on validation and are descriptive",
+  "inputs": {
+    "course_rows": {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\validation_motivation_analysis\\course_macro.csv",
+      "sha256": "af7fd40426c0a65d7a67e74dc72538d9776e50f0eec4d85caf4135fb1e1e47f2"
+    },
+    "stream_data": {
+      "path": "D:\\DeskTop\\MOOCCube\\processed_data_hin_clean_pop5\\stream_data.pkl",
+      "sha256": "0cdaf9cc283da0da251e45a9b1b7d4f2e2c8d98204c279075d6243341a0faf05"
+    },
+    "course_concept": {
+      "path": "D:\\DeskTop\\MOOCCube\\MOOCCube\\relations\\course-concept.json",
+      "sha256": "bfc18b50ffc5c4d7f96e19f7528fd96f27852cb30b513e3648ac792ce7837f90"
+    },
+    "prerequisite_dependency": {
+      "path": "D:\\DeskTop\\MOOCCube\\MOOCCube\\relations\\prerequisite-dependency.json",
+      "sha256": "51f4619ed41bfa2dc1bdfd2e05cf4c08df3a0eb5b0e687c3cb4ddbfd38659f14"
+    },
+    "course_entities": {
+      "path": "D:\\DeskTop\\MOOCCube\\MOOCCube\\entities\\course.json",
+      "sha256": "8fdd3fe7730a8aac568667c59f883054358e89c59ebc3fc1b0b11da4565f52ce"
+    }
+  },
+  "outputs": {
+    "baseline_seed": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\validation_motivation_analysis\\baseline_seed.csv",
+    "signal_availability": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\validation_motivation_analysis\\signal_availability.csv",
+    "signal_availability_summary": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\validation_motivation_analysis\\signal_availability_summary.csv",
+    "learner_heterogeneity": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\validation_motivation_analysis\\learner_heterogeneity.csv",
+    "learner_heterogeneity_summary": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\validation_motivation_analysis\\learner_heterogeneity_summary.csv"
+  }
+}

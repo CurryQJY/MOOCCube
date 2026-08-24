@@ -15,14 +15,7 @@ from torch.utils.data import DataLoader
 
 from hhcor_static_hin import build_history_tensor, _update_histories_from_df
 from usim import _add_user_seen_from_df, _clone_user_seen, build_course_artifacts, compute_ranking_metrics, setup_seed, split_dataframe_by_periods
-from usim_course import (
-    CourseSeqDataset,
-    _build_course_eval_pos_item_vecs,
-    _select_course_eval_item_bank,
-    build_eval_item_vecs_course,
-    collate_course,
-    train_one_epoch,
-)
+from usim_course import CourseSeqDataset, build_all_item_vecs_course, collate_course, train_one_epoch
 from usim_course_feedback_lite import (
     FeedbackLiteCourseConfig,
     FeedbackLiteCourseUSIM,
@@ -121,7 +114,7 @@ class FeedbackQueryCourseUSIM(FeedbackLiteCourseUSIM):
             target_pop=pop,
             item_bank=item_bank,
         )
-        z_i_base, id_e_raw, content_e = self.get_item_vector(i, llm_s, force_cold=is_cold)
+        z_i_base, id_e_raw, content_e = self.get_item_vector(i, llm_s, force_cold=False)
 
         target_emb = z_i_base.detach().clone()
         hot_mask = ~is_cold
@@ -295,10 +288,9 @@ def evaluate_course_feedback_query(
         n_items = model.cfg.n_items
         all_item_idx = torch.arange(n_items, device=device, dtype=torch.long)
         if all_item_vecs is None:
-            all_item_vecs = build_eval_item_vecs_course(model)
-        item_bank = _select_course_eval_item_bank(all_item_vecs, eval_type)
+            all_item_vecs = build_all_item_vecs_course(model)
 
-        for batch, pop, llm in loader:
+        for batch, pop, _ in loader:
             if eval_type == "cold":
                 mask = pop < model.cfg.cold_threshold
             elif eval_type == "hot":
@@ -314,7 +306,6 @@ def evaluate_course_feedback_query(
             i = batch["i"][mask].to(device)
             hist = batch["hist"][mask].to(device)
             pop_sel = pop[mask].to(device)
-            llm_sel = llm[mask].to(device)
             user_ids = [int(x) for x in u.detach().cpu().tolist()]
 
             for uid in user_ids:
@@ -330,7 +321,7 @@ def evaluate_course_feedback_query(
                 else:
                     seen_tensor_cache[uid] = None
 
-            z_u_base, _, _ = model.encode_course_user(u, hist, item_bank)
+            z_u_base, _, _ = model.encode_course_user(u, hist, all_item_vecs)
             hist_seen_mat, hist_seen_cnt = model._hist_to_seen_mat(hist)
             z_u, _, _ = model.adapt_course_query(
                 z_u_base,
@@ -338,22 +329,18 @@ def evaluate_course_feedback_query(
                 hist_seen_mat,
                 hist_seen_cnt,
                 target_pop=pop_sel,
-                item_bank=item_bank,
+                item_bank=all_item_vecs,
             )
-            pos_vec = _build_course_eval_pos_item_vecs(model, i, llm_sel, pop_sel, eval_type, item_bank)
-            pos_scores = (z_u * pos_vec).sum(dim=1)
 
             if full_ranking:
-                scores = torch.mm(z_u, item_bank.t())
-                row_idx = torch.arange(n_sel, device=device)
-                target_scores = pos_scores.clone()
+                scores = torch.mm(z_u, all_item_vecs.t())
                 if user_seen_items:
+                    row_idx = torch.arange(n_sel, device=device)
+                    target_scores = scores[row_idx, i].clone()
                     for row, uid in enumerate(user_ids):
                         seen_idx = seen_tensor_cache.get(uid)
                         if seen_idx is not None and seen_idx.numel() > 0:
                             scores[row, seen_idx] = -1e9
-                    scores[row_idx, i] = target_scores
-                else:
                     scores[row_idx, i] = target_scores
 
                 cand_idx = all_item_idx.view(1, -1).expand(n_sel, -1)
@@ -396,9 +383,7 @@ def evaluate_course_feedback_query(
                 cand_idx = torch.cat([i.unsqueeze(1), neg_items], dim=1)
                 perm = torch.argsort(torch.rand(n_sel, cand_idx.size(1), device=device), dim=1)
                 cand_idx = cand_idx.gather(1, perm)
-                cand_vecs = item_bank[cand_idx].clone()
-                target_rows, target_cols = (cand_idx == i.unsqueeze(1)).nonzero(as_tuple=True)
-                cand_vecs[target_rows, target_cols] = pos_vec[target_rows]
+                cand_vecs = all_item_vecs[cand_idx]
                 scores = torch.bmm(cand_vecs, z_u.unsqueeze(2)).squeeze(2)
                 scores = model.maybe_add_course_score(
                     scores,
@@ -487,7 +472,7 @@ def run_static_experiment_feedback_query(df, cfg, device, model, optimizer, llm_
         avg_loss, avg_dup, avg_cov = train_one_epoch(model, train_loader, optimizer, device, cfg, train_seen)
         epoch_sec = time.time() - epoch_start
 
-        all_item_vecs_val = build_eval_item_vecs_course(model)
+        all_item_vecs_val = build_all_item_vecs_course(model)
         val_cold, _ = evaluate_course_feedback_query(
             model,
             val_loader,
@@ -517,7 +502,7 @@ def run_static_experiment_feedback_query(df, cfg, device, model, optimizer, llm_
         model.load_state_dict(best_state)
         print(f"  [STATIC-FEEDBACK-QUERY] Restore best epoch={best_epoch} | Full Cold N@10={best_val:.4f}")
 
-    all_item_vecs_test = build_eval_item_vecs_course(model)
+    all_item_vecs_test = build_all_item_vecs_course(model)
     met_cold, n_cold_t = evaluate_course_feedback_query(
         model, test_loader, device, k_list, n_neg=cfg.eval_n_neg, eval_type="cold",
         user_seen_items=test_seen, all_item_vecs=all_item_vecs_test
@@ -554,7 +539,7 @@ def run_static_experiment_feedback_query(df, cfg, device, model, optimizer, llm_
 
 
 def main():
-    data_dir = "processed_data_hin"
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     print(f"Loading Data for Course Feedback-Query USIM from {data_dir}...")
     if not os.path.exists(f"{data_dir}/stream_data.pkl"):
         print("Error: please run data_process_hin.py first")
@@ -572,7 +557,7 @@ def main():
     course_artifacts, course_stats = build_course_artifacts(
         df,
         cfg.n_items,
-        relation_dir="MOOCCube/relations",
+        relation_dir=os.environ.get("USIM_RELATION_DIR", "MOOCCube/relations"),
         prereq_min_support=cfg.prereq_min_support,
         prereq_max_per_item=cfg.prereq_max_per_item,
         prereq_min_items=cfg.prereq_min_items,
@@ -642,7 +627,7 @@ def main():
         n_cold_t, n_hot_t = 0, 0
 
         if t >= warmup_periods:
-            all_item_vecs_eval = build_eval_item_vecs_course(model)
+            all_item_vecs_eval = build_all_item_vecs_course(model)
             met_cold, n_cold_t = evaluate_course_feedback_query(
                 model, eval_loader, device, k_list, n_neg=cfg.eval_n_neg, eval_type="cold",
                 user_seen_items=user_seen_items, all_item_vecs=all_item_vecs_eval

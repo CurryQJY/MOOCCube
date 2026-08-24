@@ -1,0 +1,1107 @@
+{
+  "audit_type": "single_seed_formal-throughput",
+  "device": "cuda",
+  "export": {
+    "n_concepts": 1334,
+    "n_items": 698,
+    "n_schools": 151,
+    "n_teachers": 1206,
+    "n_users": 197104,
+    "processed_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_upgpr_strict\\mooccube_seed2025_fulltrain_throughput\\processed_files",
+    "protocol_notes": [
+      "Bypasses UPGPR's random splitter by writing train/validation/test files directly.",
+      "Official path ranking must be converted to full-catalog scoring for paper metrics."
+    ],
+    "test_rows": 136,
+    "train_rows": 464314,
+    "validation_rows": 68
+  },
+  "main_table_eligible": false,
+  "model": "UPGPR (adapted)",
+  "profile": "formal-throughput",
+  "protocol_notes": [
+    "Official UPGPR TransE and policy optimization are executed for one epoch each.",
+    "The strict scorer totally ranks all warm candidates plus the current cold target by policy reachability, official TransE path score, then path probability.",
+    "A pure TransE full-candidate fallback is reported separately as a diagnostic.",
+    "Native policy reachability is reported separately and is not substituted for full-candidate ranking.",
+    "This single-seed audit cannot be inserted into the paper main table."
+  ],
+  "python": "D:\\Anaconda3\\envs\\zw\\python.exe",
+  "reconstruction": {
+    "items": {
+      "0": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 11
+      },
+      "2": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "9": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 11
+      },
+      "12": {
+        "discarded_unanchored_edges": 5,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept"
+        ],
+        "static_edge_count": 8
+      },
+      "13": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept"
+        ],
+        "static_edge_count": 8
+      },
+      "14": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "23": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 11
+      },
+      "27": {
+        "discarded_unanchored_edges": 8,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 3
+      },
+      "40": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "44": {
+        "discarded_unanchored_edges": 6,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 7
+      },
+      "49": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 11
+      },
+      "54": {
+        "discarded_unanchored_edges": 7,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 6
+      },
+      "61": {
+        "discarded_unanchored_edges": 4,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "62": {
+        "discarded_unanchored_edges": 4,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "70": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 13
+      },
+      "86": {
+        "discarded_unanchored_edges": 4,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 7
+      },
+      "93": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "100": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 13
+      },
+      "109": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 13
+      },
+      "127": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "128": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "137": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 12
+      },
+      "147": {
+        "discarded_unanchored_edges": 4,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept"
+        ],
+        "static_edge_count": 8
+      },
+      "155": {
+        "discarded_unanchored_edges": 4,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "164": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "169": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "180": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 13
+      },
+      "182": {
+        "discarded_unanchored_edges": 5,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "207": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "208": {
+        "discarded_unanchored_edges": 4,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "221": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "230": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 11
+      },
+      "231": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 12
+      },
+      "235": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "243": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "245": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "262": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept"
+        ],
+        "static_edge_count": 8
+      },
+      "268": {
+        "discarded_unanchored_edges": 10,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 3
+      },
+      "284": {
+        "discarded_unanchored_edges": 6,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 5
+      },
+      "286": {
+        "discarded_unanchored_edges": 6,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 5
+      },
+      "288": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 8
+      },
+      "296": {
+        "discarded_unanchored_edges": 4,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "297": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "298": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "312": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "313": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "322": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "323": {
+        "discarded_unanchored_edges": 4,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "325": {
+        "discarded_unanchored_edges": 7,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept"
+        ],
+        "static_edge_count": 2
+      },
+      "330": {
+        "discarded_unanchored_edges": 7,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept"
+        ],
+        "static_edge_count": 4
+      },
+      "341": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 11
+      },
+      "345": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 7
+      },
+      "347": {
+        "discarded_unanchored_edges": 5,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 7
+      },
+      "351": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "352": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "362": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "384": {
+        "discarded_unanchored_edges": 6,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 7
+      },
+      "406": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "407": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "414": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "419": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 13
+      },
+      "439": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "440": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 9
+      },
+      "443": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 9
+      },
+      "451": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 13
+      },
+      "453": {
+        "discarded_unanchored_edges": 6,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 7
+      },
+      "456": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "467": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "468": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 8
+      },
+      "471": {
+        "discarded_unanchored_edges": 4,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "476": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "495": {
+        "discarded_unanchored_edges": 5,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "498": {
+        "discarded_unanchored_edges": 8,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 4
+      },
+      "500": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "509": {
+        "discarded_unanchored_edges": 5,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 7
+      },
+      "511": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "515": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "518": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 13
+      },
+      "523": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "524": {
+        "discarded_unanchored_edges": 3,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "525": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "530": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "531": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "541": {
+        "discarded_unanchored_edges": 5,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 7
+      },
+      "548": {
+        "discarded_unanchored_edges": 6,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 4
+      },
+      "557": {
+        "discarded_unanchored_edges": 6,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 7
+      },
+      "562": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "573": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "577": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "594": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 13
+      },
+      "600": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 11
+      },
+      "601": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 10
+      },
+      "610": {
+        "discarded_unanchored_edges": 6,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept"
+        ],
+        "static_edge_count": 4
+      },
+      "611": {
+        "discarded_unanchored_edges": 5,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept"
+        ],
+        "static_edge_count": 7
+      },
+      "619": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 11
+      },
+      "627": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "628": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "631": {
+        "discarded_unanchored_edges": 1,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 9
+      },
+      "639": {
+        "discarded_unanchored_edges": 9,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 4
+      },
+      "654": {
+        "discarded_unanchored_edges": 5,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "663": {
+        "discarded_unanchored_edges": 2,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school"
+        ],
+        "static_edge_count": 8
+      },
+      "687": {
+        "discarded_unanchored_edges": 0,
+        "reconstructed": true,
+        "relations_used": [
+          "item_concept",
+          "item_school",
+          "item_teacher"
+        ],
+        "static_edge_count": 13
+      }
+    },
+    "method": "mean_warm_anchored_tail_minus_relation",
+    "reconstructed_cold_items": 102,
+    "selected_cold_items": 102
+  },
+  "requested_device": "cuda",
+  "seed": 2025,
+  "selection": {
+    "full_train": true,
+    "global_test_cold_items": 68,
+    "global_train_rows": 464314,
+    "global_validation_cold_items": 34,
+    "global_warm_items": 596,
+    "selected_test_cold_items": 68,
+    "selected_test_rows": 136,
+    "selected_train_rows": 464314,
+    "selected_users": 197104,
+    "selected_validation_cold_items": 34,
+    "selected_validation_rows": 68
+  },
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\content_delta_pop5\\static_item_cold_balanced\\strict_item_cold_balanced_thr1_seed_2025",
+  "stages": {
+    "embedding_training": {
+      "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_upgpr_strict\\mooccube_seed2025_fulltrain_throughput\\tmp\\transe_embed.pkl",
+      "reused_existing_embedding": true
+    },
+    "policy_training": {
+      "log": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_upgpr_strict\\mooccube_seed2025_fulltrain_throughput\\train_policy.log",
+      "progress": {
+        "epoch": 1,
+        "max_train_steps": 1000,
+        "step": 1000,
+        "stopped_by_step_budget": true
+      },
+      "seconds": 423.97906494140625
+    }
+  },
+  "strict_gates": {
+    "all_selected_cold_items_reconstructed": true,
+    "candidate_mode": "all_warm_plus_current_cold_target",
+    "cold_items_absent_from_cf_negative_support": true,
+    "cold_items_absent_from_train_positives": true,
+    "enrolments_equals_train": true,
+    "official_embedding_training_completed": true,
+    "official_path_prediction_completed": true,
+    "official_policy_training_completed": true,
+    "test_metrics_nonempty": true,
+    "train_history_masked": true,
+    "validation_metrics_nonempty": true
+  },
+  "test": {
+    "cold_items": 68,
+    "full_cold_item_macro": {
+      "N@10": 0.0,
+      "N@5": 0.0,
+      "R@10": 0.0,
+      "R@5": 0.0,
+      "count": 68
+    },
+    "native_path_proxy_item_macro": {
+      "N@10": 0.0,
+      "N@5": 0.0,
+      "R@10": 0.0,
+      "R@5": 0.0,
+      "count": 68
+    },
+    "rows": 136,
+    "target_path_reachability": 0.0,
+    "transe_full_candidate_fallback_item_macro": {
+      "N@10": 0.008630415826587919,
+      "N@5": 0.006011245333146579,
+      "R@10": 0.022058823529411766,
+      "R@5": 0.014705882352941176,
+      "count": 68
+    }
+  },
+  "training_config": {
+    "embedding_batch_size": 32,
+    "embedding_dim": 100,
+    "embedding_epochs": 1,
+    "max_policy_steps": 1000,
+    "policy_batch_size": 32,
+    "policy_epochs": 1,
+    "policy_hidden": [
+      512,
+      256
+    ],
+    "policy_max_acts": 250
+  },
+  "validation": {
+    "cold_items": 34,
+    "full_cold_item_macro": {
+      "N@10": 0.0,
+      "N@5": 0.0,
+      "R@10": 0.0,
+      "R@5": 0.0,
+      "count": 34
+    },
+    "native_path_proxy_item_macro": {
+      "N@10": 0.0,
+      "N@5": 0.0,
+      "R@10": 0.0,
+      "R@5": 0.0,
+      "count": 34
+    },
+    "rows": 68,
+    "target_path_reachability": 0.0,
+    "transe_full_candidate_fallback_item_macro": {
+      "N@10": 0.011603894504674821,
+      "N@5": 0.007352941176470588,
+      "R@10": 0.029411764705882353,
+      "R@5": 0.014705882352941176,
+      "count": 34
+    }
+  },
+  "verdict": "FEASIBLE_FOR_FORMALIZATION"
+}

@@ -5,10 +5,13 @@ import pandas as pd
 import numpy as np
 import json
 import os, random
+import copy
 
 # ==============================
 # 2. 鍩虹璁剧疆
 # ==============================
+from hin_data_common import static_result_path, static_split_df
+from baseline_checkpoint import checkpoint_config, maybe_resume_checkpoint, save_checkpoint
 from torch.utils.data import Dataset, DataLoader
 
 def setup_seed(seed=2025):
@@ -31,10 +34,28 @@ class Config:
         self.emb_dim = 64
         self.content_dim = content_dim
         self.hidden_dim = 128
-        self.cold_threshold = 5
+        self.cold_threshold = int(os.environ.get("DROPOUT_COLD_THRESHOLD", os.environ.get("USIM_COLD_THRESHOLD", "5")))
+        self.eval_n_neg = int(os.environ.get("DROPOUT_EVAL_N_NEG", os.environ.get("USIM_EVAL_N_NEG", "200")))
+        self.static_seed = int(os.environ.get("DROPOUT_STATIC_SEED", os.environ.get("USIM_STATIC_SEED", "2025")))
+        self.seed = int(os.environ.get("DROPOUT_SEED", str(self.static_seed)))
+        self.train_ratio = float(os.environ.get("DROPOUT_STATIC_TRAIN_RATIO", "0.8"))
+        self.val_ratio = float(os.environ.get("DROPOUT_STATIC_VAL_RATIO", "0.1"))
+        self.batch_size = int(os.environ.get("DROPOUT_BATCH_SIZE", "512"))
+        self.n_epochs = int(os.environ.get("DROPOUT_STATIC_EPOCHS", "40"))
+        self.eval_interval = int(os.environ.get("DROPOUT_EVAL_INTERVAL", "5"))
+        self.early_stop_average_mode = os.environ.get(
+            "DROPOUT_EARLY_STOP_AVG_MODE",
+            os.environ.get("USIM_EARLY_STOP_AVG_MODE", "interaction"),
+        ).strip().lower()
+        if self.early_stop_average_mode not in {"interaction", "item_macro"}:
+            raise ValueError(
+                "DROPOUT_EARLY_STOP_AVG_MODE/USIM_EARLY_STOP_AVG_MODE must be "
+                "'interaction' or 'item_macro'"
+            )
         self.lr = 1e-3
         # DropoutNet 鐗规湁鍙傛暟
         self.dropout_prob = 0.5  # 璁粌鏃?Drop ID 鐨勬鐜?
+        self.ckpt = checkpoint_config("DROPOUT")
 
 
 class StreamDataset(Dataset):
@@ -169,7 +190,18 @@ class DropoutNet(nn.Module):
 # 4. 鍏ㄩ噺鎺掑悕鐩稿叧鍑芥暟
 # ==============================
 
-def precompute_full_pool(model, num_items, batch_size=2048, device='cuda'):
+def _mixed_item_vector(model, i_idx, cold_mask):
+    cold_mask = cold_mask.to(device=i_idx.device).bool().view(-1, 1)
+    if cold_mask.all():
+        return model.get_item_vector(i_idx, force_dropout=True)
+    if (~cold_mask).all():
+        return model.get_item_vector(i_idx, force_dropout=False)
+    cold_vec = model.get_item_vector(i_idx, force_dropout=True)
+    hot_vec = model.get_item_vector(i_idx, force_dropout=False)
+    return torch.where(cold_mask, cold_vec, hot_vec)
+
+
+def precompute_full_pool(model, num_items, batch_size=2048, device='cuda', item_popularity=None):
     """
     棰勮绠楀叏閲忕墿鍝佹睜
     """
@@ -177,12 +209,15 @@ def precompute_full_pool(model, num_items, batch_size=2048, device='cuda'):
     item_loader = DataLoader(SimpleItemDataset(num_items), batch_size=batch_size, shuffle=False)
     all_z_i = []
 
-    print("Pre-computing Full Item Pool (Concat Mode / Force Dropout)...")
+    print("Pre-computing Full Item Pool (Concat Mode / mixed cold-hot bank)...")
     with torch.no_grad():
         for i_batch in item_loader:
             i_batch = i_batch.to(device)
-            # 寮哄埗 Mask ID
-            z_i = model.get_item_vector(i_batch, force_dropout=True)
+            if item_popularity is None:
+                cold_mask = torch.ones_like(i_batch, dtype=torch.bool)
+            else:
+                cold_mask = item_popularity[i_batch.detach().cpu()].to(device) < model.cfg.cold_threshold
+            z_i = _mixed_item_vector(model, i_batch, cold_mask)
             z_i = F.normalize(z_i, dim=1)
             all_z_i.append(z_i.cpu())
 
@@ -216,7 +251,7 @@ def evaluate_full_dropoutnet(model, loader, all_item_z, device, k_list=[5, 10, 2
             z_u = F.normalize(z_u, dim=1)
 
             # 2. Positive Item Vector (Target) - Force Cold
-            z_i_pos = model.get_item_vector(i_target, force_dropout=True)
+            z_i_pos = _mixed_item_vector(model, i_target, mask.to(device))
             z_i_pos = F.normalize(z_i_pos, dim=1)
 
             # 3. 鍏ㄩ噺鍒嗘暟
@@ -252,13 +287,30 @@ def evaluate_full_dropoutnet(model, loader, all_item_z, device, k_list=[5, 10, 2
     if total_samples == 0: return None, 0
     return {k: v / total_samples for k, v in metrics_sum.items()}, total_samples
 
-def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_seen_items=None):
+def evaluate_dual_dropoutnet(
+    model,
+    loader,
+    all_item_z,
+    device,
+    k_list,
+    user_seen_items=None,
+    average_mode="interaction",
+    export_cold_item_metrics_path=None,
+    export_hot_item_metrics_path=None,
+):
     """Compute cold/hot full-ranking metrics with optional seen-item masking."""
+    average_mode = average_mode.strip().lower()
+    if average_mode not in {"interaction", "item_macro"}:
+        raise ValueError("average_mode must be 'interaction' or 'item_macro'")
     model.eval()
     c_sum = {f'{m}@{k}': 0.0 for m in ['R', 'N'] for k in k_list}
     h_sum = {f'{m}@{k}': 0.0 for m in ['R', 'N'] for k in k_list}
     c_total = 0
     h_total = 0
+    c_item_sum = {f'{m}@{k}': {} for m in ['R', 'N'] for k in k_list}
+    h_item_sum = {f'{m}@{k}': {} for m in ['R', 'N'] for k in k_list}
+    c_item_count = {}
+    h_item_count = {}
     seen_tensor_cache = {}
 
     try:
@@ -275,7 +327,7 @@ def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_see
             u = batch['u'].to(device)
             i_tgt = batch['i'].to(device)
             z_u = F.normalize(model.user_emb(u), dim=1)
-            z_i_pos = F.normalize(model.get_item_vector(i_tgt, force_dropout=True), dim=1)
+            z_i_pos = F.normalize(_mixed_item_vector(model, i_tgt, pop_mask.to(device)), dim=1)
 
             if cpu_m:
                 scores = torch.matmul(z_u.cpu(), all_emb.t())
@@ -312,6 +364,7 @@ def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_see
 
             is_c = pop_mask.cpu() if cpu_m else pop_mask
             is_h = ~is_c
+            item_ids = [int(x) for x in i_tgt.detach().cpu().tolist()]
 
             for k in k_list:
                 preds = topk[:, :k]
@@ -321,13 +374,54 @@ def evaluate_dual_dropoutnet(model, loader, all_item_z, device, k_list, user_see
                 if rks[0].numel() > 0:
                     dcgs[rks[0]] = 1.0 / torch.log2(rks[1].float() + 2.0)
 
-                c_sum[f'R@{k}'] += hits[is_c].sum().item()
-                c_sum[f'N@{k}'] += dcgs[is_c].sum().item()
-                h_sum[f'R@{k}'] += hits[is_h].sum().item()
-                h_sum[f'N@{k}'] += dcgs[is_h].sum().item()
+                if average_mode == "item_macro":
+                    hits_cpu = hits.detach().cpu()
+                    dcgs_cpu = dcgs.detach().cpu()
+                    is_c_cpu = is_c.detach().cpu()
+                    for row, item_id in enumerate(item_ids):
+                        if bool(is_c_cpu[row].item()):
+                            c_item_count[item_id] = c_item_count.get(item_id, 0) + (1 if k == k_list[0] else 0)
+                            c_item_sum[f'R@{k}'][item_id] = c_item_sum[f'R@{k}'].get(item_id, 0.0) + float(hits_cpu[row].item())
+                            c_item_sum[f'N@{k}'][item_id] = c_item_sum[f'N@{k}'].get(item_id, 0.0) + float(dcgs_cpu[row].item())
+                        else:
+                            h_item_count[item_id] = h_item_count.get(item_id, 0) + (1 if k == k_list[0] else 0)
+                            h_item_sum[f'R@{k}'][item_id] = h_item_sum[f'R@{k}'].get(item_id, 0.0) + float(hits_cpu[row].item())
+                            h_item_sum[f'N@{k}'][item_id] = h_item_sum[f'N@{k}'].get(item_id, 0.0) + float(dcgs_cpu[row].item())
+                else:
+                    c_sum[f'R@{k}'] += hits[is_c].sum().item()
+                    c_sum[f'N@{k}'] += dcgs[is_c].sum().item()
+                    h_sum[f'R@{k}'] += hits[is_h].sum().item()
+                    h_sum[f'N@{k}'] += dcgs[is_h].sum().item()
 
             c_total += is_c.sum().item()
             h_total += is_h.sum().item()
+
+    if average_mode == "item_macro":
+        def _macro(item_sum, item_count, export_path=None):
+            if not item_count:
+                return None, 0
+            out = {}
+            for key, values in item_sum.items():
+                item_values = [
+                    values.get(item_id, 0.0) / count
+                    for item_id, count in item_count.items()
+                    if count > 0
+                ]
+                out[key] = sum(item_values) / max(1, len(item_values))
+            if export_path:
+                rows = []
+                for item_id in sorted(item_count):
+                    count = max(1, int(item_count[item_id]))
+                    row = {"item_id": int(item_id), "count": int(item_count[item_id])}
+                    for key, values in item_sum.items():
+                        row[key] = float(values.get(item_id, 0.0) / count)
+                    rows.append(row)
+                os.makedirs(os.path.dirname(export_path) or ".", exist_ok=True)
+                pd.DataFrame(rows).to_csv(export_path, index=False)
+            return out, len(item_count)
+        c_res, c_n = _macro(c_item_sum, c_item_count, export_cold_item_metrics_path)
+        h_res, h_n = _macro(h_item_sum, h_item_count, export_hot_item_metrics_path)
+        return c_res, c_n, h_res, h_n
 
     c_res = {k: v / c_total for k, v in c_sum.items()} if c_total > 0 else None
     h_res = {k: v / h_total for k, v in h_sum.items()} if h_total > 0 else None
@@ -365,7 +459,7 @@ def evaluate_sampled_dropoutnet(model, loader, all_item_z, device, k_list, n_neg
             batch_size = u.size(0)
 
             z_u = F.normalize(model.user_emb(u), dim=1)
-            z_i_pos = F.normalize(model.get_item_vector(i_tgt, force_dropout=True), dim=1)
+            z_i_pos = F.normalize(_mixed_item_vector(model, i_tgt, pop_mask.to(device)), dim=1)
 
             if cpu_m:
                 scores_full = torch.matmul(z_u.cpu(), all_emb.t())
@@ -472,32 +566,39 @@ def evaluate_sampled_dropoutnet(model, loader, all_item_z, device, k_list, n_neg
 # ==============================
 
 def main():
-    setup_seed(2025)
-    print("Loading Data for DropoutNet (Concat) STATIC from processed_data_hin...")
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
+    print(f"Loading Data for DropoutNet (Concat) STATIC from {data_dir}...")
 
-    if not os.path.exists("processed_data_hin/stream_data.pkl"):
-        print("Error: processed_data_hin/stream_data.pkl not found")
+    if not os.path.exists(f"{data_dir}/stream_data.pkl"):
+        print(f"Error: {data_dir}/stream_data.pkl not found")
         return
 
-    with open("processed_data_hin/meta.json", "r") as f:
+    with open(f"{data_dir}/meta.json", "r") as f:
         meta = json.load(f)
-    df = pd.read_pickle("processed_data_hin/stream_data.pkl")
-    content_emb = torch.load("processed_data_hin/content_emb.pt")
-
-    # Static random split: 8/1/1
-    df = df.sample(frac=1.0, random_state=2025).reset_index(drop=True)
-    n = len(df)
-    train_df = df.iloc[:int(n * 0.8)]
-    val_df = df.iloc[int(n * 0.8):int(n * 0.9)]
-    test_df = df.iloc[int(n * 0.9):]
-
-    train_loader = DataLoader(StreamDataset(train_df), batch_size=512, shuffle=True, collate_fn=collate_fn)
-    val_loader = DataLoader(StreamDataset(val_df), batch_size=512, shuffle=False, collate_fn=collate_fn)
-    test_loader = DataLoader(StreamDataset(test_df), batch_size=512, shuffle=False, collate_fn=collate_fn)
+    df = pd.read_pickle(f"{data_dir}/stream_data.pkl")
+    content_emb = torch.load(f"{data_dir}/content_emb.pt")
 
     cfg = Config(meta['n_users'], meta['n_items'], content_dim=content_emb.shape[1])
+    setup_seed(cfg.seed)
+    train_df, val_df, test_df = static_split_df(
+        df, seed=cfg.static_seed, train_ratio=cfg.train_ratio, val_ratio=cfg.val_ratio
+    )
+
+    train_loader = DataLoader(StreamDataset(train_df), batch_size=cfg.batch_size, shuffle=True, collate_fn=collate_fn)
+    val_loader = DataLoader(StreamDataset(val_df), batch_size=cfg.batch_size, shuffle=False, collate_fn=collate_fn)
+    test_loader = DataLoader(StreamDataset(test_df), batch_size=cfg.batch_size, shuffle=False, collate_fn=collate_fn)
+
     cfg.dropout_prob = 0.5
-    print(f">> Model: DropoutNet (Concat) | STATIC (8:1:1)")
+    item_popularity = torch.zeros(cfg.n_items, dtype=torch.long)
+    train_counts = train_df["i_idx"].astype(int).value_counts()
+    for item_id, count in train_counts.items():
+        idx = int(item_id)
+        if 0 <= idx < cfg.n_items:
+            item_popularity[idx] = int(count)
+    print(
+        f">> Model: DropoutNet (Concat) | STATIC | eval_n_neg={cfg.eval_n_neg} "
+        f"| best_avg={cfg.early_stop_average_mode}"
+    )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = DropoutNet(cfg, content_emb).to(device)
@@ -506,7 +607,7 @@ def main():
     k_list = [5, 10, 20]
     metrics_keys = [f'{m}@{k}' for m in ['R', 'N'] for k in k_list]
 
-    # Seen cache: validation masks train seen; test masks train+val seen.
+    # Seen cache: validation masks train seen; test uses train-only unless configured otherwise.
     train_seen_items = {}
     for u_idx, i_idx in zip(train_df['u_idx'].values, train_df['i_idx'].values):
         uid = int(u_idx)
@@ -515,14 +616,22 @@ def main():
         train_seen_items[uid].add(int(i_idx))
 
     test_seen_items = {uid: set(items) for uid, items in train_seen_items.items()}
-    for u_idx, i_idx in zip(val_df['u_idx'].values, val_df['i_idx'].values):
-        uid = int(u_idx)
-        if uid not in test_seen_items:
-            test_seen_items[uid] = set()
-        test_seen_items[uid].add(int(i_idx))
+    if os.environ.get("USIM_STATIC_TEST_HISTORY", "train_only").strip().lower() == "train_val":
+        for u_idx, i_idx in zip(val_df['u_idx'].values, val_df['i_idx'].values):
+            uid = int(u_idx)
+            if uid not in test_seen_items:
+                test_seen_items[uid] = set()
+            test_seen_items[uid].add(int(i_idx))
 
-    epochs = int(os.environ.get("DROPOUT_STATIC_EPOCHS", "40"))
-    for epoch in range(1, epochs + 1):
+    epochs = cfg.n_epochs
+    best_val = -1.0
+    best_epoch = -1
+    best_state = None
+    start_epoch, ckpt_state = maybe_resume_checkpoint(cfg.ckpt, model, optimizer, device)
+    best_val = float(ckpt_state.get("best_val", best_val))
+    best_epoch = int(ckpt_state.get("best_epoch", best_epoch))
+    best_state = ckpt_state.get("best_state", best_state)
+    for epoch in range(start_epoch + 1, epochs + 1):
         model.train()
         total_loss = 0.0
         steps = 0
@@ -536,23 +645,68 @@ def main():
             steps += 1
         print(f"Epoch [{epoch}/{epochs}] Train Loss: {total_loss / max(1, steps):.4f}")
 
-        if epoch % 5 == 0 or epoch == epochs:
-            all_z = precompute_full_pool(model, cfg.n_items, device=device)
+        if epoch % cfg.eval_interval == 0 or epoch == epochs:
+            improved = False
+            all_z = precompute_full_pool(model, cfg.n_items, device=device, item_popularity=item_popularity)
             c_m_f, n_c_f, h_m_f, n_h_f = evaluate_dual_dropoutnet(
-                model, val_loader, all_z, device, k_list, user_seen_items=train_seen_items
+                model, val_loader, all_z, device, k_list, user_seen_items=train_seen_items,
+                average_mode=cfg.early_stop_average_mode,
             )
+            val_key = c_m_f.get("N@10", 0.0) if c_m_f else 0.0
+            if val_key > best_val:
+                best_val = val_key
+                best_epoch = epoch
+                best_state = copy.deepcopy(model.state_dict())
+                improved = True
+            if cfg.ckpt.save and improved:
+                save_checkpoint(
+                    cfg.ckpt,
+                    "best.pt",
+                    epoch,
+                    model,
+                    optimizer,
+                    best_state=best_state,
+                    extra={"best_val": best_val, "best_epoch": best_epoch},
+                )
+            c_f_str = " | ".join([f"{k}={c_m_f[k]:.4f}" for k in metrics_keys[:3]]) if c_m_f else "N/A"
             h_f_str = " | ".join([f"{k}={h_m_f[k]:.4f}" for k in metrics_keys[:3]]) if h_m_f else "N/A"
-            print(f"  --> Valid Hot Full: {h_f_str}")
+            print(
+                f"  --> Valid Cold Full ({cfg.early_stop_average_mode}): "
+                f"{c_f_str} | Hot Full: {h_f_str}"
+            )
+        if cfg.ckpt.save:
+            save_checkpoint(
+                cfg.ckpt,
+                "latest.pt",
+                epoch,
+                model,
+                optimizer,
+                best_state=best_state,
+                extra={"best_val": best_val, "best_epoch": best_epoch},
+            )
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        print(
+            f"Restore best epoch={best_epoch}, "
+            f"val_full_cold_N@10({cfg.early_stop_average_mode})={best_val:.4f}"
+        )
 
     print("\n" + "=" * 90)
-    print("         FINAL TEST REPORT: Sampled (1+999) vs Full Ranking (STATIC 8:1:1)")
+    print(f"         FINAL TEST REPORT: Sampled (1+{cfg.eval_n_neg}) vs Full Ranking (STATIC)")
     print("=" * 90)
-    all_z = precompute_full_pool(model, cfg.n_items, device=device)
+    all_z = precompute_full_pool(model, cfg.n_items, device=device, item_popularity=item_popularity)
     c_m_f, n_c_f, h_m_f, n_h_f = evaluate_dual_dropoutnet(
         model, test_loader, all_z, device, k_list, user_seen_items=test_seen_items
     )
+    c_m_f_item_macro, n_c_f_item_macro, h_m_f_item_macro, n_h_f_item_macro = evaluate_dual_dropoutnet(
+        model, test_loader, all_z, device, k_list, user_seen_items=test_seen_items,
+        average_mode="item_macro",
+        export_cold_item_metrics_path=static_result_path("per_item_full_cold_drop_static.csv"),
+        export_hot_item_metrics_path=static_result_path("per_item_full_hot_drop_static.csv"),
+    )
     c_m_s, n_c_s, h_m_s, n_h_s = evaluate_sampled_dropoutnet(
-        model, test_loader, all_z, device, k_list, n_neg=999, user_seen_items=test_seen_items
+        model, test_loader, all_z, device, k_list, n_neg=cfg.eval_n_neg, user_seen_items=test_seen_items
     )
 
     print(f"{'Metric':<10} | {'Samp Cold':<12} | {'Samp Hot':<12} | {'Full Cold':<12} | {'Full Hot':<12}")
@@ -567,6 +721,43 @@ def main():
     print(f"采样 Samples: Cold={n_c_s}, Hot={n_h_s}")
     print(f"全库 Samples: Cold={n_c_f}, Hot={n_h_f}")
     print("=" * 90)
+
+    out = {
+        "model": "DropoutNet",
+        "protocol": "static_item_cold",
+        "sample_cold": c_m_s or {},
+        "sample_hot": h_m_s or {},
+        "full_cold": c_m_f or {},
+        "full_hot": h_m_f or {},
+        "full_cold_item_macro": c_m_f_item_macro or {},
+        "full_hot_item_macro": h_m_f_item_macro or {},
+    }
+    for k in metrics_keys:
+        out[f"samp_cold_{k}"] = c_m_s.get(k, 0.0) if c_m_s else 0.0
+        out[f"samp_hot_{k}"] = h_m_s.get(k, 0.0) if h_m_s else 0.0
+        out[f"full_cold_{k}"] = c_m_f.get(k, 0.0) if c_m_f else 0.0
+        out[f"full_hot_{k}"] = h_m_f.get(k, 0.0) if h_m_f else 0.0
+    out.update({
+        "count_sample_cold": n_c_s,
+        "count_sample_hot": n_h_s,
+        "count_full_cold": n_c_f,
+        "count_full_hot": n_h_f,
+        "count_full_cold_item_macro": n_c_f_item_macro,
+        "count_full_hot_item_macro": n_h_f_item_macro,
+        "best_epoch": best_epoch,
+        "best_val_full_cold_n10": best_val,
+        "best_average_mode": cfg.early_stop_average_mode,
+        "best_metric": f"cold_{cfg.early_stop_average_mode}_N@10",
+        "eval_interval": cfg.eval_interval,
+        "eval_n_neg": cfg.eval_n_neg,
+        "checkpoint_dir": cfg.ckpt.dir or None,
+        "resumed_from_epoch": start_epoch,
+        "per_item_full_cold_path": static_result_path("per_item_full_cold_drop_static.csv"),
+        "per_item_full_hot_path": static_result_path("per_item_full_hot_drop_static.csv"),
+    })
+    result_path = static_result_path("drop_static_result.json")
+    pd.DataFrame([out]).to_json(result_path, orient="records", force_ascii=False)
+    print(f"Saved: {result_path}")
 
 
 if __name__ == "__main__":

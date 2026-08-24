@@ -205,7 +205,6 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
 
         prereq_gate = float(min(1.0, max(0.0, self.cfg.feedback_course_prereq_gate)))
         prereq_safe = torch.ones_like(zero)
-        redundant = zero.clone()
         if self.item_prereq_item_mat is not None and self.item_prereq_item_cnt is not None:
             prereq_seen = torch.matmul(seen_mat, self.item_prereq_item_mat.t())
             prereq_cnt = self.item_prereq_item_cnt.unsqueeze(0)
@@ -228,8 +227,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             redundant = ((concept_match - redundant_thr) / max(1e-6, 1.0 - redundant_thr)).clamp(0.0, 1.0)
             concept_bonus = concept_bonus * prereq_safe * seen_active * (1.0 - redundant)
             terms["concept_bonus"] = concept_bonus * active
-
-        terms["redundant"] = redundant * seen_active * active
+            terms["redundant"] = redundant * seen_active * active
 
         if self.item_difficulty is not None:
             item_difficulty = self.item_difficulty[item_idx].unsqueeze(1)
@@ -385,7 +383,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
 
         return torch.cat(top_scores_list, dim=0), torch.cat(top_idx_list, dim=0)
 
-    def get_candidates(self, item_emb, user_bank_raw=None, user_bank_norm=None):
+    def get_candidates(self, item_emb, user_bank_raw=None, user_bank_norm=None, return_topm=False):
         """优化版: 接受预 normalized bank 避免重复计算。"""
         B = item_emb.size(0)
         N_cand = self.cfg.n_candidates
@@ -394,6 +392,8 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         if strategy != "retrieve_sample":
             rand_idx = torch.randint(0, self.cfg.n_users, (B, N_cand), device=self.device)
             cand_emb = self.user_proj(self.user_emb(rand_idx)).detach()
+            if return_topm:
+                return cand_emb, rand_idx, None, None
             return cand_emb, rand_idx, None
 
         if user_bank_raw is None:
@@ -420,6 +420,41 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         cand_emb = user_bank_raw[cand_idx].detach()
 
         topm_unique = max(1, int(top_idx.unique().numel()))
+        selected_unique = int(cand_idx.unique().numel())
+        selected_total = max(1, int(cand_idx.numel()))
+        dup_rate = 1.0 - (selected_unique / selected_total)
+        topm_cov = selected_unique / topm_unique
+        stats = {"dup_rate": float(dup_rate), "topm_coverage": float(topm_cov)}
+        if return_topm:
+            return cand_emb, cand_idx, stats, top_idx.detach()
+        return cand_emb, cand_idx, stats
+
+    def _get_candidates_from_cache(self, item_emb, cached_top_idx, user_bank_raw):
+        """从缓存的 top-M 用户池中重新打分采样，跳过全量检索。"""
+        B = item_emb.size(0)
+        N_cand = self.cfg.n_candidates
+        top_m = cached_top_idx.size(1)
+        # (B, top_m, dim)
+        cached_emb = user_bank_raw[cached_top_idx]
+        q_norm = F.normalize(item_emb, dim=1).unsqueeze(1)  # (B, 1, dim)
+        cached_norm = F.normalize(cached_emb, dim=2)  # (B, top_m, dim)
+        top_scores = torch.bmm(q_norm, cached_norm.transpose(1, 2)).squeeze(1)  # (B, top_m)
+
+        safe_temp = max(self.cfg.candidate_temp, 1e-6)
+        probs = F.softmax(top_scores / safe_temp, dim=1)
+        bad_rows = (~torch.isfinite(probs)).any(dim=1) | (probs.sum(dim=1) <= 0)
+        if bad_rows.any():
+            probs[bad_rows] = 1.0 / top_m
+        eps = float(min(1.0, max(0.0, self.cfg.candidate_epsilon)))
+        probs = (1.0 - eps) * probs + eps / top_m
+        probs = probs / probs.sum(dim=1, keepdim=True).clamp_min(1e-12)
+
+        replacement = top_m < N_cand
+        sample_pos = torch.multinomial(probs, num_samples=N_cand, replacement=replacement)
+        cand_idx = cached_top_idx.gather(1, sample_pos)
+        cand_emb = user_bank_raw[cand_idx].detach()
+
+        topm_unique = max(1, int(cached_top_idx.unique().numel()))
         selected_unique = int(cand_idx.unique().numel())
         selected_total = max(1, int(cand_idx.numel()))
         dup_rate = 1.0 - (selected_unique / selected_total)
@@ -452,11 +487,18 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
         elif user_bank_raw is not None and user_bank_norm is None:
             user_bank_norm = F.normalize(user_bank_raw, dim=1)
 
+        _cached_top_idx = None  # 缓存 step 0 的 top-M 索引
         for t in range(self.cfg.usim_steps):
             time_step = torch.full((current_h.size(0), 1), t, device=self.device)
-            candidates, cand_user_idx, cand_stats = self.get_candidates(
-                current_h, user_bank_raw=user_bank_raw, user_bank_norm=user_bank_norm
-            )
+            if t == 0 or _cached_top_idx is None:
+                candidates, cand_user_idx, cand_stats, _cached_top_idx = self.get_candidates(
+                    current_h, user_bank_raw=user_bank_raw, user_bank_norm=user_bank_norm,
+                    return_topm=True
+                )
+            else:
+                candidates, cand_user_idx, cand_stats = self._get_candidates_from_cache(
+                    current_h, _cached_top_idx, user_bank_raw
+                )
             candidates, cand_user_idx, fit_score = self._apply_course_sampling_bias(
                 candidates, cand_user_idx,
                 item_idx=item_idx, target_pop=target_pop, user_seen_items=user_seen_items,
@@ -482,16 +524,41 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
             if cand_user_idx is not None:
                 selected_user_ids = cand_user_idx[batch_indices, action_idx]
 
-            # P0-1: 混合梯度方向 = 0.5 * selected_user + 0.5 * target
-            # 让 RL 选出的用户方向和 target 方向共同引导表征更新
+            # P0-1+: 混合梯度 = positive pull + target pull - negative push
+            # positive: 拉近 RL 选出的用户   negative: 推远最不相关的用户
             with torch.enable_grad():
                 h_detached = current_h.detach().requires_grad_(True)
                 user_score = (h_detached * selected_user.detach()).sum(dim=1).mean()
                 if target_emb is not None:
                     target_score = (h_detached * target_emb.detach()).sum(dim=1).mean()
-                    score = 0.5 * user_score + 0.5 * target_score
+                    pos_score = 0.5 * user_score + 0.5 * target_score
                 else:
-                    score = user_score
+                    pos_score = user_score
+
+                # Negative action: 从候选中选出最不相关的用户作为排斥方向
+                neg_score_term = torch.tensor(0.0, device=self.device)
+                if self.training and getattr(self.cfg, 'usim_neg_action', False):
+                    neg_w = float(getattr(self.cfg, 'usim_neg_weight', 0.3))
+                    neg_strategy = getattr(self.cfg, 'usim_neg_strategy', 'lowest_score')
+                    with torch.no_grad():
+                        # 计算当前 item 与所有候选的相似度
+                        cand_scores = (candidates * current_h.unsqueeze(1)).sum(dim=2)  # (B, N_cand)
+                        # 将已选的 positive action 位置排除
+                        cand_scores_for_neg = cand_scores.clone()
+                        cand_scores_for_neg[batch_indices, action_idx] = float('inf')
+                        if neg_strategy == "lowest_score":
+                            neg_idx = cand_scores_for_neg.argmin(dim=1)  # 最不相似的
+                        else:
+                            # random: 从非 selected 的候选中随机选
+                            neg_idx = torch.randint(0, candidates.size(1), (candidates.size(0),), device=self.device)
+                            # 避免选到 positive 的位置
+                            same_mask = (neg_idx == action_idx)
+                            if same_mask.any():
+                                neg_idx[same_mask] = (action_idx[same_mask] + 1) % candidates.size(1)
+                    neg_user = candidates[batch_indices, neg_idx].detach()
+                    neg_score_term = neg_w * (h_detached * neg_user).sum(dim=1).mean()
+
+                score = pos_score - neg_score_term
                 grad = torch.autograd.grad(score, h_detached)[0]
 
             current_h = current_h + self.cfg.usim_lr * grad
@@ -671,7 +738,7 @@ class FastFeedbackUSIM(PAM_RL_Pure_USIM):
 # ===================== main() 训练循环 =====================
 
 def main():
-    data_dir = "processed_data_hin"
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     print(f"Loading Data for Feedback-Aware USIM (FAST) from {data_dir}...")
     if not os.path.exists(f"{data_dir}/stream_data.pkl"):
         print("错误: 请先运行 data_process_hin.py")
@@ -688,7 +755,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     course_artifacts, course_stats = build_course_artifacts(
         df, cfg.n_items,
-        relation_dir="MOOCCube/relations",
+        relation_dir=os.environ.get("USIM_RELATION_DIR", "MOOCCube/relations"),
         prereq_min_support=cfg.prereq_min_support,
         prereq_max_per_item=cfg.prereq_max_per_item,
         prereq_min_items=cfg.prereq_min_items,
@@ -746,6 +813,10 @@ def main():
     print(
         f">> EarlyStop: enabled={cfg.use_epoch_early_stop} | monitor=Full Cold N@{cfg.early_stop_k} | "
         f"patience={cfg.early_stop_patience} | min_delta={cfg.early_stop_min_delta:.1e}"
+    )
+    print(
+        f">> Negative Action: enabled={cfg.usim_neg_action} | "
+        f"weight={cfg.usim_neg_weight:.2f} | strategy={cfg.usim_neg_strategy}"
     )
     print(">> [FAST] Optimizations: vectorized seen_mat, user dedup, pre-normalized bank")
 

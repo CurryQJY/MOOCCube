@@ -1,0 +1,245 @@
+{
+"result":{
+"query":"online* learning* resource* recommendation*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"34.39"
+},
+"completions":{
+"@total":"2",
+"@computed":"2",
+"@sent":"2",
+"c":[
+{
+"@sc":"33",
+"@dc":"33",
+"@oc":"33",
+"@id":"70633652",
+"text":"recommendation"
+},
+{
+"@sc":"1",
+"@dc":"1",
+"@oc":"1",
+"@id":"70633655",
+"text":"recommendations"
+}
+]
+},
+"hits":{
+"@total":"34",
+"@computed":"34",
+"@sent":"34",
+"@first":"0",
+"hit":[{
+"@score":"6",
+"@id":"2821532",
+"info":{"authors":{"author":[{"@pid":"299/6344","text":"Lingyao Yan"},{"@pid":"96/7093","text":"Chuantao Yin"},{"@pid":"12/417-2","text":"Hui Chen 0002"},{"@pid":"18/5572","text":"Wenge Rong"},{"@pid":"77/6921-1","text":"Zhang Xiong 0001"},{"@pid":"27/2531","text":"Bertrand David 0001"}]},"title":"Learning Resource Recommendation in E-Learning Systems Based on Online Learning Style.","venue":"KSEM","pages":"373-385","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/ksem/YanYCRXD21","doi":"10.1007/978-3-030-82153-1_31","ee":"https://doi.org/10.1007/978-3-030-82153-1_31","url":"https://dblp.org/rec/conf/ksem/YanYCRXD21"},
+"url":"URL#2821532"
+},
+{
+"@score":"5",
+"@id":"1207761",
+"info":{"authors":{"author":[{"@pid":"291/8473","text":"Haoxin Xu"},{"@pid":"298/8870","text":"Bihao Hu"},{"@pid":"44/9370","text":"Xiaoqing Gu"},{"@pid":"195/6814","text":"Longwei Zheng"}]},"title":"A Learning Resource Recommendation Algorithm Based on Online Learning Behavior.","venue":"ICASSP","pages":"5870-5874","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/icassp/XuHGZ24","doi":"10.1109/ICASSP48485.2024.10445936","ee":"https://doi.org/10.1109/ICASSP48485.2024.10445936","url":"https://dblp.org/rec/conf/icassp/XuHGZ24"},
+"url":"URL#1207761"
+},
+{
+"@score":"5",
+"@id":"1551176",
+"info":{"authors":{"author":[{"@pid":"29/563","text":"Lei Shi"},{"@pid":"346/4629","text":"Cunjia Fan"}]},"title":"A New Learning Resource Recommendation Method for Improving the Efficiency of Students&apos; Online Independent Learning.","venue":"Int. J. Emerg. Technol. Learn.","volume":"18","number":"5","pages":"128-143","year":"2023","type":"Journal Articles","access":"open","key":"journals/ijet/ShiF23","doi":"10.3991/IJET.V18I05.38503","ee":"https://doi.org/10.3991/ijet.v18i05.38503","url":"https://dblp.org/rec/journals/ijet/ShiF23"},
+"url":"URL#1551176"
+},
+{
+"@score":"5",
+"@id":"2079732",
+"info":{"authors":{"author":[{"@pid":"313/3735","text":"Yufeng Jia"},{"@pid":"05/490","text":"Qi Zhao"}]},"title":"The Learning Behavior Analysis of Online Vocational Education Students and Learning Resource Recommendation Based on Big Data.","venue":"Int. J. Emerg. Technol. Learn.","volume":"17","number":"20","pages":"261-273","year":"2022","type":"Journal Articles","access":"open","key":"journals/ijet/JiaZ22","doi":"10.3991/IJET.V17I20.34521","ee":"https://doi.org/10.3991/ijet.v17i20.34521","url":"https://dblp.org/rec/journals/ijet/JiaZ22"},
+"url":"URL#2079732"
+},
+{
+"@score":"5",
+"@id":"2079950",
+"info":{"authors":{"author":{"@pid":"258/9402","text":"Shuoyan Xu"}},"title":"Recommendation of Online Learning Resources for Personalized Fragmented Learning Based on Mobile Devices.","venue":"Int. J. Emerg. Technol. Learn.","volume":"17","number":"3","pages":"34-49","year":"2022","type":"Journal Articles","access":"open","key":"journals/ijet/Xu22","doi":"10.3991/IJET.V17I03.29427","ee":"https://doi.org/10.3991/ijet.v17i03.29427","url":"https://dblp.org/rec/journals/ijet/Xu22"},
+"url":"URL#2079950"
+},
+{
+"@score":"5",
+"@id":"2301434",
+"info":{"authors":{"author":{"@pid":"38/10143","text":"Jingbo Zhen"}},"title":"A Deep Learning-Driven Approach to Personalized English Online Learning Resource Recommendation.","venue":"ICETC","pages":"449-455","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/icetc/Zhen22","doi":"10.1145/3572549.3572621","ee":"https://doi.org/10.1145/3572549.3572621","url":"https://dblp.org/rec/conf/icetc/Zhen22"},
+"url":"URL#2301434"
+},
+{
+"@score":"5",
+"@id":"2567041",
+"info":{"authors":{"author":{"@pid":"317/9763","text":"Zhenfang Zhou"}},"title":"A Resource Recommendation Algorithm for Online English Learning Systems Based on Learning Ability Evaluation.","venue":"Int. J. Emerg. Technol. Learn.","volume":"16","number":"9","year":"2021","type":"Journal Articles","access":"open","key":"journals/ijet/Zhou21","doi":"10.3991/IJET.V16I09.22745","ee":"https://doi.org/10.3991/ijet.v16i09.22745","url":"https://dblp.org/rec/journals/ijet/Zhou21"},
+"url":"URL#2567041"
+},
+{
+"@score":"5",
+"@id":"3477107",
+"info":{"authors":{"author":[{"@pid":"46/7821","text":"Xuebin Wang"},{"@pid":"197/1602","text":"Zhengzhou Zhu"},{"@pid":"19/6163","text":"Jiaqi Yu"},{"@pid":"220/3532","text":"Ruofei Zhu"},{"@pid":"220/3545","text":"Deqi Li"},{"@pid":"161/7223-5","text":"Qun Guo 0005"}]},"title":"A learning resource recommendation algorithm based on online learning sequential behavior.","venue":"Int. J. Wavelets Multiresolution Inf. Process.","volume":"17","number":"2","pages":"1940001:1-1940001:17","year":"2019","type":"Journal Articles","access":"closed","key":"journals/ijwmip/WangZYZLG19","doi":"10.1142/S0219691319400010","ee":"https://doi.org/10.1142/S0219691319400010","url":"https://dblp.org/rec/journals/ijwmip/WangZYZLG19"},
+"url":"URL#3477107"
+},
+{
+"@score":"4",
+"@id":"6661",
+"info":{"authors":{"author":[{"@pid":"52/3194-126","text":"Fei Wang 0126"},{"@pid":"51/1629","text":"Nan Yang"}]},"title":"Calibrated Recommendation Algorithm for Multi-Source Heterogeneous Online Learning Resources: A Dual Knowledge Graph Approach.","venue":"IEEE Access","volume":"14","pages":"22870-22881","year":"2026","type":"Journal Articles","access":"open","key":"journals/access/WangY26","doi":"10.1109/ACCESS.2026.3663160","ee":"https://doi.org/10.1109/ACCESS.2026.3663160","url":"https://dblp.org/rec/journals/access/WangY26"},
+"url":"URL#6661"
+},
+{
+"@score":"4",
+"@id":"379931",
+"info":{"authors":{"author":[{"@pid":"35/8397","text":"Tianyu Wang"},{"@pid":"74/8339","text":"Dong Ge"}]},"title":"Research on Recommendation System of Online Chinese Learning Resources Based on Multiple Collaborative Filtering Algorithms (RSOCLR).","venue":"Int. J. Hum. Comput. Interact.","volume":"41","number":"3","pages":"1771-1781","year":"2025","type":"Journal Articles","access":"closed","key":"journals/ijhci/WangG25","doi":"10.1080/10447318.2023.2171536","ee":"https://doi.org/10.1080/10447318.2023.2171536","url":"https://dblp.org/rec/journals/ijhci/WangG25"},
+"url":"URL#379931"
+},
+{
+"@score":"4",
+"@id":"380896",
+"info":{"authors":{"author":[{"@pid":"400/7827","text":"Xueyu Sun"},{"@pid":"376/7430","text":"Shuhong Zhou"}]},"title":"Construction of an Online Learning Resource Recommendation Model Based on Artificial Raindrop Algorithm in The Context of Smart Education.","venue":"Int. J. Interact. Mob. Technol.","volume":"19","number":"7","pages":"97-117","year":"2025","type":"Journal Articles","access":"open","key":"journals/ijim/SunZ25a","doi":"10.3991/IJIM.V19I07.53873","ee":"https://doi.org/10.3991/ijim.v19i07.53873","url":"https://dblp.org/rec/journals/ijim/SunZ25a"},
+"url":"URL#380896"
+},
+{
+"@score":"4",
+"@id":"383333",
+"info":{"authors":{"author":[{"@pid":"97/4626","text":"Yi Liu"},{"@pid":"152/6411","text":"Fu Peng"}]},"title":"Personalised learning resource online recommendation method based on multi-dimensional feature extraction.","venue":"Int. J. Netw. Virtual Organisations","volume":"32","number":"1/2/3/4","pages":"86-101","year":"2025","type":"Journal Articles","access":"closed","key":"journals/ijnvo/LiuP25","doi":"10.1504/IJNVO.2025.145371","ee":"https://doi.org/10.1504/IJNVO.2025.145371","url":"https://dblp.org/rec/journals/ijnvo/LiuP25"},
+"url":"URL#383333"
+},
+{
+"@score":"4",
+"@id":"386941",
+"info":{"authors":{"author":{"@pid":"48/450","text":"Yang Yang"}},"title":"Personalised recommendation method of online education learning resources based on collaborative filtering algorithm.","venue":"Int. J. Reason. based Intell. Syst.","volume":"17","number":"4","pages":"217-225","year":"2025","type":"Journal Articles","access":"closed","key":"journals/ijris/Yang25a","doi":"10.1504/IJRIS.2025.148026","ee":"https://doi.org/10.1504/IJRIS.2025.148026","url":"https://dblp.org/rec/journals/ijris/Yang25a"},
+"url":"URL#386941"
+},
+{
+"@score":"4",
+"@id":"965737",
+"info":{"authors":{"author":[{"@pid":"124/1006","text":"Xiuqin Zhang"},{"@pid":"52/454","text":"Jigang Xie"}]},"title":"Study on personalised recommendation method of English online learning resources based on improved collaborative filtering algorithm.","venue":"Int. J. Bus. Intell. Data Min.","volume":"25","number":"3/4","pages":"362-381","year":"2024","type":"Journal Articles","access":"closed","key":"journals/ijbidm/ZhangX24","doi":"10.1504/IJBIDM.2024.140879","ee":"https://doi.org/10.1504/IJBIDM.2024.140879","url":"https://dblp.org/rec/journals/ijbidm/ZhangX24"},
+"url":"URL#965737"
+},
+{
+"@score":"4",
+"@id":"1004681",
+"info":{"authors":{"author":{"@pid":"137/6058","text":"Zhenpeng Zhang"}},"title":"Personalized resource recommendation method of student online learning platform based on LSTM and collaborative filtering.","venue":"J. Intell. Syst.","volume":"33","number":"1","year":"2024","type":"Journal Articles","access":"closed","key":"journals/jois/Zhang24","doi":"10.1515/JISYS-2024-0017","ee":"https://doi.org/10.1515/jisys-2024-0017","url":"https://dblp.org/rec/journals/jois/Zhang24"},
+"url":"URL#1004681"
+},
+{
+"@score":"4",
+"@id":"1048704",
+"info":{"authors":{"author":[{"@pid":"79/2583","text":"Weiguo Li"},{"@pid":"28/27","text":"Ke Feng"},{"@pid":"226/5015","text":"Tianjiao Shi"},{"@pid":"380/9427","text":"Jing Hua 0010"}]},"title":"Teaching Resource Recommendation of Online Sports Collaborative Learning Platform Based on Optimized K-means Algorithm.","venue":"Scalable Comput. Pract. Exp.","volume":"25","number":"4","pages":"2476-2489","year":"2024","type":"Journal Articles","access":"closed","key":"journals/scpe/LiFSH24","doi":"10.12694/SCPE.V25I4.2872","ee":"https://doi.org/10.12694/scpe.v25i4.2872","url":"https://dblp.org/rec/journals/scpe/LiFSH24"},
+"url":"URL#1048704"
+},
+{
+"@score":"4",
+"@id":"1162565",
+"info":{"authors":{"author":[{"@pid":"119/9150","text":"Wenqin Li"},{"@pid":"380/7524","text":"Xinrong Zheng"},{"@pid":"42/4811","text":"Ruihong Huang"},{"@pid":"120/9149","text":"Mingwei Lin"},{"@pid":"48/5700-1","text":"Jun Shen 0001"},{"@pid":"226/3840","text":"Jiayin Lin"}]},"title":"Enhancing Privacy Protection for Online Learning Resource Recommendation with Machine Unlearning.","venue":"CSCWD","pages":"3282-3287","year":"2024","type":"Conference and Workshop Papers","access":"closed","key":"conf/cscwd/LiZHL0L24","doi":"10.1109/CSCWD61410.2024.10580315","ee":"https://doi.org/10.1109/CSCWD61410.2024.10580315","url":"https://dblp.org/rec/conf/cscwd/LiZHL0L24"},
+"url":"URL#1162565"
+},
+{
+"@score":"4",
+"@id":"1514014",
+"info":{"authors":{"author":[{"@pid":"58/6299","text":"Jia Wang"},{"@pid":"81/7710","text":"Shuhao Jiang"},{"@pid":"313/4996","text":"Jincheng Ding"}]},"title":"Online learning resource recommendation method based on multi-similarity metric optimization under the COVID-19 epidemic.","venue":"Comput. Commun.","volume":"206","pages":"152-159","year":"2023","type":"Journal Articles","access":"closed","key":"journals/comcom/WangJD23","doi":"10.1016/J.COMCOM.2023.04.024","ee":"https://doi.org/10.1016/j.comcom.2023.04.024","url":"https://dblp.org/rec/journals/comcom/WangJD23"},
+"url":"URL#1514014"
+},
+{
+"@score":"4",
+"@id":"1551013",
+"info":{"authors":{"author":{"@pid":"335/1506","text":"Ligang Jia"}},"title":"A New Resource Recommendation Method for Experiential Leaching Based on the Completion Degree of Online Learning Tasks.","venue":"Int. J. Emerg. Technol. Learn.","volume":"18","number":"1","pages":"40-54","year":"2023","type":"Journal Articles","access":"open","key":"journals/ijet/Jia23","doi":"10.3991/IJET.V18I01.37129","ee":"https://doi.org/10.3991/ijet.v18i01.37129","url":"https://dblp.org/rec/journals/ijet/Jia23"},
+"url":"URL#1551013"
+},
+{
+"@score":"4",
+"@id":"1551125",
+"info":{"authors":{"author":{"@pid":"346/4169","text":"Shujuan Ouyang"}},"title":"Personalized Combination Recommendation of Short Video Online Learning Resources.","venue":"Int. J. Emerg. Technol. Learn.","volume":"18","number":"6","pages":"162-176","year":"2023","type":"Journal Articles","access":"open","key":"journals/ijet/Ouyang23","doi":"10.3991/IJET.V18I06.38719","ee":"https://doi.org/10.3991/ijet.v18i06.38719","url":"https://dblp.org/rec/journals/ijet/Ouyang23"},
+"url":"URL#1551125"
+},
+{
+"@score":"4",
+"@id":"1554149",
+"info":{"authors":{"author":{"@pid":"64/4371","text":"Ruiping Zhang"}},"title":"A Personalized Course Resource Recommendation Method Based on Deep Learning in an Online Multi-Modal Multimedia Education Cloud Platform.","venue":"Int. J. Inf. Technol. Syst. Approach","volume":"16","number":"2","pages":"1-14","year":"2023","type":"Journal Articles","access":"open","key":"journals/ijitsa/Zhang23a","doi":"10.4018/IJITSA.319344","ee":"https://doi.org/10.4018/ijitsa.319344","url":"https://dblp.org/rec/journals/ijitsa/Zhang23a"},
+"url":"URL#1554149"
+},
+{
+"@score":"4",
+"@id":"1557417",
+"info":{"authors":{"author":[{"@pid":"353/9567","text":"Zhixia Duan"},{"@pid":"35/3393","text":"Na Zhao"}]},"title":"A recommendation method for online learning resources of mathematics courses based on feature graph clustering.","venue":"Int. J. Reason. based Intell. Syst.","volume":"15","number":"3/4","pages":"189-195","year":"2023","type":"Journal Articles","access":"closed","key":"journals/ijris/DuanZ23","doi":"10.1504/IJRIS.2023.136351","ee":"https://doi.org/10.1504/IJRIS.2023.136351","url":"https://dblp.org/rec/journals/ijris/DuanZ23"},
+"url":"URL#1557417"
+},
+{
+"@score":"4",
+"@id":"1694040",
+"info":{"authors":{"author":[{"@pid":"373/5397","text":"Hua Sui"},{"@pid":"150/4295","text":"Yan Liu"}]},"title":"A Personalized Recommendation Method for English Online Teaching Video Resources Based on Machine Learning.","venue":"ADHIP","pages":"153-165","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/adhip/SuiL23","doi":"10.1007/978-3-031-50549-2_11","ee":"https://doi.org/10.1007/978-3-031-50549-2_11","url":"https://dblp.org/rec/conf/adhip/SuiL23"},
+"url":"URL#1694040"
+},
+{
+"@score":"4",
+"@id":"1740494",
+"info":{"authors":{"author":{"@pid":"161/1030","text":"Dongjing Gao"}},"title":"Research on Personalized Recommendation of Online Learning Resources for Innovation and Entrepreneurship Among College Students.","venue":"eLEOT","pages":"271-287","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/eleot/Gao23","doi":"10.1007/978-3-031-51471-5_18","ee":"https://doi.org/10.1007/978-3-031-51471-5_18","url":"https://dblp.org/rec/conf/eleot/Gao23"},
+"url":"URL#1740494"
+},
+{
+"@score":"4",
+"@id":"1740514",
+"info":{"authors":{"author":{"@pid":"47/454","text":"Jiahua Li"}},"title":"Collaborative Filtering Recommendation of Online Learning Resources for E-commerce Logistics Talent Training.","venue":"eLEOT","pages":"351-366","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/eleot/Li23","doi":"10.1007/978-3-031-51471-5_23","ee":"https://doi.org/10.1007/978-3-031-51471-5_23","url":"https://dblp.org/rec/conf/eleot/Li23"},
+"url":"URL#1740514"
+},
+{
+"@score":"4",
+"@id":"1740565",
+"info":{"authors":{"author":[{"@pid":"374/4395","text":"Juanjuan Ye"},{"@pid":"324/7657","text":"Minchen Wang"}]},"title":"Intelligent Recommendation Method of Online Teaching Resources for Business English Collaborative Learning.","venue":"eLEOT","pages":"1-15","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/eleot/YeW23","doi":"10.1007/978-3-031-51503-3_1","ee":"https://doi.org/10.1007/978-3-031-51503-3_1","url":"https://dblp.org/rec/conf/eleot/YeW23"},
+"url":"URL#1740565"
+},
+{
+"@score":"4",
+"@id":"1740566",
+"info":{"authors":{"author":[{"@pid":"374/3948","text":"Songting Zhang"},{"@pid":"374/4077","text":"Jufen Diao"}]},"title":"Personalized Recommendation Method of Online Education Resources for Tourism Majors Based on Machine Learning.","venue":"eLEOT","pages":"222-235","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/eleot/ZhangD23","doi":"10.1007/978-3-031-51468-5_15","ee":"https://doi.org/10.1007/978-3-031-51468-5_15","url":"https://dblp.org/rec/conf/eleot/ZhangD23"},
+"url":"URL#1740566"
+},
+{
+"@score":"4",
+"@id":"1822510",
+"info":{"authors":{"author":[{"@pid":"368/8755","text":"Jiaopeng Nan"},{"@pid":"89/6764","text":"Bin Li"}]},"title":"Design of ADCF-based Online Learning Resource Recommendation System for Preschool Education.","venue":"ISCSIC","pages":"241-245","year":"2023","type":"Conference and Workshop Papers","access":"closed","key":"conf/iscsic/NanL23","doi":"10.1109/ISCSIC60498.2023.00057","ee":"https://doi.org/10.1109/ISCSIC60498.2023.00057","url":"https://dblp.org/rec/conf/iscsic/NanL23"},
+"url":"URL#1822510"
+},
+{
+"@score":"4",
+"@id":"2078144",
+"info":{"authors":{"author":[{"@pid":"64/2881","text":"Lina Yang"},{"@pid":"249/7225","text":"Yawen Yu"},{"@pid":"379/4584","text":"Yonghong Wei"}]},"title":"Data-Driven Artificial Intelligence Recommendation Mechanism in Online Learning Resources.","venue":"Int. J. Crowd Sci.","volume":"6","number":"3","pages":"150-157","year":"2022","type":"Journal Articles","access":"open","key":"journals/ijcrowdsci/YangYW22","doi":"10.26599/IJCS.2022.9100020","ee":"https://doi.org/10.26599/ijcs.2022.9100020","url":"https://dblp.org/rec/journals/ijcrowdsci/YangYW22"},
+"url":"URL#2078144"
+},
+{
+"@score":"4",
+"@id":"2079728",
+"info":{"authors":{"author":{"@pid":"335/1506","text":"Ligang Jia"}},"title":"Online Course Learning Resource Recommendation Based on Difficulty Matching.","venue":"Int. J. Emerg. Technol. Learn.","volume":"17","number":"22","pages":"156-169","year":"2022","type":"Journal Articles","access":"open","key":"journals/ijet/Jia22a","doi":"10.3991/IJET.V17I22.35123","ee":"https://doi.org/10.3991/ijet.v17i22.35123","url":"https://dblp.org/rec/journals/ijet/Jia22a"},
+"url":"URL#2079728"
+},
+{
+"@score":"4",
+"@id":"2079731",
+"info":{"authors":{"author":[{"@pid":"346/6280","text":"Henan Jia"},{"@pid":"310/3671","text":"Lifen Yang"},{"@pid":"58/4730","text":"Bo Cui"}]},"title":"Collaborative Filtering Recommendation of Online Learning Resources Based on Knowledge Association Model.","venue":"Int. J. Emerg. Technol. Learn.","volume":"17","number":"2","pages":"158-172","year":"2022","type":"Journal Articles","access":"open","key":"journals/ijet/JiaYC22","doi":"10.3991/IJET.V17I02.29013","ee":"https://doi.org/10.3991/ijet.v17i02.29013","url":"https://dblp.org/rec/journals/ijet/JiaYC22"},
+"url":"URL#2079731"
+},
+{
+"@score":"4",
+"@id":"2223776",
+"info":{"authors":{"author":[{"@pid":"278/7383","text":"Elad Yacobson"},{"@pid":"141/9439","text":"Armando M. Toda"},{"@pid":"c/AlexandraICristea","text":"Alexandra I. Cristea"},{"@pid":"02/6971","text":"Giora Alexandron"}]},"title":"Assisting Teachers in Finding Online Learning Resources: The Value of Social Recommendations.","venue":"AIED","pages":"391-395","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/aied/YacobsonTCA22","doi":"10.1007/978-3-031-11647-6_77","ee":"https://doi.org/10.1007/978-3-031-11647-6_77","url":"https://dblp.org/rec/conf/aied/YacobsonTCA22"},
+"url":"URL#2223776"
+},
+{
+"@score":"4",
+"@id":"2305015",
+"info":{"authors":{"author":[{"@pid":"15/1697","text":"Hongtao Sun"},{"@pid":"164/7659","text":"Luoying Huang"},{"@pid":"40/9468","text":"Zhongjian Chen"},{"@pid":"244/4364","text":"Qinhua Zheng"}]},"title":"Research on collaborative filtering recommendation method of online learning resources based on learner model.","venue":"ICISCAE","pages":"202-206","year":"2022","type":"Conference and Workshop Papers","access":"closed","key":"conf/iciscae/SunHCZ22","doi":"10.1109/ICISCAE55891.2022.9927652","ee":"https://doi.org/10.1109/ICISCAE55891.2022.9927652","url":"https://dblp.org/rec/conf/iciscae/SunHCZ22"},
+"url":"URL#2305015"
+},
+{
+"@score":"4",
+"@id":"2566511",
+"info":{"authors":{"author":[{"@pid":"59/10036","text":"Yonghui Dai"},{"@pid":"07/1951","text":"Jing Xu"}]},"title":"Study of online learning resource recommendation based on improved BP neural network.","venue":"Int. J. Embed. Syst.","volume":"14","number":"2","pages":"101-107","year":"2021","type":"Journal Articles","access":"closed","key":"journals/ijes/DaiX21","doi":"10.1504/IJES.2021.113834","ee":"https://doi.org/10.1504/IJES.2021.113834","url":"https://dblp.org/rec/journals/ijes/DaiX21"},
+"url":"URL#2566511"
+}
+]
+}
+}
+}

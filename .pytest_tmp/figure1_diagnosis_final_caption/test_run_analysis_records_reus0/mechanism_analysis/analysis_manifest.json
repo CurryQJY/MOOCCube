@@ -1,0 +1,60 @@
+{
+  "analysis": "p1_motivation_mechanisms",
+  "seeds": [
+    2025
+  ],
+  "cutoffs": [
+    10,
+    20
+  ],
+  "top_k": 20,
+  "random_seed": 2027,
+  "n_bootstrap": 20,
+  "n_permutations": 30,
+  "full_model_reused": true,
+  "recomputed_models": [
+    "ckg_rl_wo_course_reward",
+    "ckg_rl_wo_simulator"
+  ],
+  "comparisons": [
+    {
+      "treatment": "ckg_rl",
+      "baseline": "ckg_rl_wo_course_reward",
+      "mechanism": "course_reward"
+    },
+    {
+      "treatment": "ckg_rl",
+      "baseline": "ckg_rl_wo_simulator",
+      "mechanism": "simulator"
+    }
+  ],
+  "artifact_stats": {
+    "n_items": 3
+  },
+  "full_analysis_input_sha256": {
+    "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\full_analysis\\analysis_manifest.json": "13b3b3a5cd65bba27ea72674fc71d541727583832c13b683b5b7285a2c6028fb",
+    "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\full_analysis\\course_macro.csv": "7bdd8cb321578782cec394208d4087739f8f71c3cd624deb804b307a5475f912"
+  },
+  "ablation_export_sha256": {
+    "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\ckg_rl_wo_course_reward.jsonl": "e3566b3a06430868d71e9287dfd6c6c520a3da027aabea01951d407ee131dc2f",
+    "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\ckg_rl_wo_simulator.jsonl": "e3566b3a06430868d71e9287dfd6c6c520a3da027aabea01951d407ee131dc2f"
+  },
+  "row_counts": {
+    "course_macro": 6,
+    "ablation_course_macro": 4,
+    "seed_summary": 6,
+    "model_summary": 6,
+    "paired_statistics": 36,
+    "claim_audit_top10": 18,
+    "seed_export_audit": 2
+  },
+  "outputs": {
+    "course_macro": "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\mechanism_analysis\\course_macro.csv",
+    "ablation_course_macro": "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\mechanism_analysis\\ablation_course_macro.csv",
+    "seed_summary": "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\mechanism_analysis\\seed_summary.csv",
+    "model_summary": "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\mechanism_analysis\\model_summary.csv",
+    "paired_statistics": "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\mechanism_analysis\\paired_statistics.csv",
+    "claim_audit_top10": "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\mechanism_analysis\\claim_audit_top10.csv",
+    "seed_export_audit": "D:\\DeskTop\\MOOCCube\\.pytest_tmp\\figure1_diagnosis_final_caption\\test_run_analysis_records_reus0\\mechanism_analysis\\seed_export_audit.csv"
+  }
+}

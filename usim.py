@@ -53,18 +53,11 @@ class Config:
         self.dropout_prob = 0.35      # ID Dropout
         self.aux_weight = 0.3         # 辅助对比损失权重
         self.train_force_cold = os.environ.get('USIM_TRAIN_FORCE_COLD', '1') == '1'
+        self.disable_llm_score = os.environ.get('USIM_DISABLE_LLM_SCORE', '0') == '1'
         self.llm_safe_mode = os.environ.get('USIM_LLM_SAFE_MODE', '0') == '1'
-        self.llm_weight = float(
-            os.environ.get('USIM_LLM_WEIGHT', '0.20' if self.llm_safe_mode else '1.0')
-        )
-        self.llm_cold_only = os.environ.get(
-            'USIM_LLM_COLD_ONLY',
-            '1' if self.llm_safe_mode else '0'
-        ) == '1'
-        self.llm_bank_mode = os.environ.get(
-            'USIM_LLM_BANK_MODE',
-            'none' if self.llm_safe_mode else 'item'
-        ).strip().lower()
+        self.llm_weight = float(os.environ.get('USIM_LLM_WEIGHT', '1.0'))
+        self.llm_cold_only = os.environ.get('USIM_LLM_COLD_ONLY', '0') == '1'
+        self.llm_bank_mode = os.environ.get('USIM_LLM_BANK_MODE', 'pair').strip().lower()
 
         # RL Hyperparams
         self.ppo_clip = 0.2
@@ -72,15 +65,15 @@ class Config:
         self.ppo_epochs = 5
         self.ppo_coeffs = {'value': 0.5, 'entropy': 0.01}
 
-        self.usim_steps = int(os.environ.get('USIM_STEPS', '5'))           # USIM 步数
-        self.n_candidates = int(os.environ.get('USIM_N_CANDIDATES', '20'))
+        self.usim_steps = 5           # USIM 步数
+        self.n_candidates = 20
         self.usim_lr = 0.3
         self.candidate_strategy = "retrieve_sample"
-        self.retrieve_top_m = int(os.environ.get('USIM_RETRIEVE_TOP_M', '256'))
+        self.retrieve_top_m = 256
         self.candidate_temp = 0.20
         self.candidate_epsilon = 0.10
-        self.retrieval_user_chunk = 16384
-        self.retrieval_query_chunk = 256
+        self.retrieval_user_chunk = int(os.environ.get('USIM_RETR_USER_CHUNK', '16384'))
+        self.retrieval_query_chunk = int(os.environ.get('USIM_RETR_QUERY_CHUNK', '256'))
         self.user_bank_refresh_steps = 200
 
         self.n_epochs = int(os.environ.get('USIM_N_EPOCHS', '3'))
@@ -109,11 +102,6 @@ class Config:
         self.prereq_max_per_item = 5
         self.prereq_min_items = 1
         self.prereq_max_forward = 20
-        self.concept_overlap_mode = os.environ.get('USIM_CONCEPT_OVERLAP_MODE', 'plain').strip().lower()
-        self.prereq_graph_source = os.environ.get('USIM_PREREQ_GRAPH_SOURCE', 'behavior').strip().lower()
-        self.prereq_concept_score_thr = float(os.environ.get('USIM_PREREQ_CONCEPT_SCORE_THR', '0.10'))
-        self.prereq_concept_min_hits = int(os.environ.get('USIM_PREREQ_CONCEPT_MIN_HITS', '1'))
-        self.prereq_concept_file = os.environ.get('USIM_PREREQ_CONCEPT_FILE', 'prerequisite-dependency.json')
 
         # Training-time prerequisite auxiliary loss
         self.use_prereq_aux_loss = True
@@ -124,7 +112,7 @@ class Config:
         self.prereq_aux_only_cold = True
 
         # Epoch-level early stopping (multi-metric)
-        self.use_epoch_early_stop = os.environ.get('USIM_USE_EPOCH_EARLY_STOP', '1') == '1'
+        self.use_epoch_early_stop = True
         self.early_stop_k = 10
         self.early_stop_patience = 1
         self.early_stop_min_delta = 1e-4
@@ -419,25 +407,29 @@ class PAM_RL_Pure_USIM(nn.Module):
             
         content_e = self.content_proj(self.item_con_emb(i_idx))
         
-        # [New] inject LLM signal into content representation
-        llm_weight = float(getattr(self.cfg, 'llm_weight', 0.0))
-        if llm_weight > 0.0:
+        # Optional LLM signal injection. In safe mode, 0.5 is neutral and the
+        # projection bias is cancelled so low scores do not add a random offset.
+        if not self.cfg.disable_llm_score and float(self.cfg.llm_weight) > 0.0:
             mask_llm = (llm_s > -0.5).float().unsqueeze(1)
-            if getattr(self.cfg, 'llm_cold_only', False):
+            if self.cfg.llm_cold_only:
                 if isinstance(force_cold, torch.Tensor):
-                    cold_mask = force_cold.to(device=id_e.device)
-                    if cold_mask.dtype != torch.bool:
-                        cold_mask = cold_mask > 0
-                    cold_mask = cold_mask.float().view(-1, 1)
+                    cold_gate = force_cold.to(device=id_e.device)
+                    if cold_gate.dtype != torch.bool:
+                        cold_gate = cold_gate > 0
+                    cold_gate = cold_gate.float().view(-1, 1)
                 elif force_cold:
-                    cold_mask = torch.ones_like(mask_llm)
+                    cold_gate = torch.ones((batch_size, 1), dtype=torch.float, device=id_e.device)
                 else:
-                    cold_mask = torch.zeros_like(mask_llm)
-                mask_llm = mask_llm * cold_mask
+                    cold_gate = torch.zeros((batch_size, 1), dtype=torch.float, device=id_e.device)
+                mask_llm = mask_llm * cold_gate
 
             val_llm = torch.clamp(llm_s, min=0.0).unsqueeze(1)
-            llm_e = self.llm_proj(val_llm) * mask_llm
-            content_e = content_e + llm_weight * llm_e
+            if self.cfg.llm_safe_mode:
+                neutral_llm = torch.full_like(val_llm, 0.5)
+                llm_e = self.llm_proj(val_llm) - self.llm_proj(neutral_llm)
+            else:
+                llm_e = self.llm_proj(val_llm)
+            content_e = content_e + llm_e * mask_llm * float(self.cfg.llm_weight)
         
         alpha = self.gate_net(torch.cat([id_e, content_e], dim=-1))
         
@@ -761,7 +753,33 @@ def _parse_subject_from_course_id(course_id):
     return 'UNK'
 
 
-def _build_behavior_prereq_candidates(df, prereq_min_support=30, prereq_max_forward=20):
+def build_course_artifacts(
+    df,
+    n_items,
+    relation_dir='MOOCCube/relations',
+    prereq_min_support=30,
+    prereq_max_per_item=5,
+    prereq_min_items=1,
+    prereq_max_forward=20
+):
+    idx_course = df[['i_idx', 'course_id']].drop_duplicates(subset=['i_idx'])
+    idx_to_course = [None] * n_items
+    for row in idx_course.itertuples(index=False):
+        i_idx = int(row.i_idx)
+        if 0 <= i_idx < n_items:
+            idx_to_course[i_idx] = str(row.course_id)
+
+    course_to_idx = {cid: idx for idx, cid in enumerate(idx_to_course) if cid is not None}
+    concept_sets = [set() for _ in range(n_items)]
+
+    course_concept_file = os.path.join(relation_dir, 'course-concept.json')
+    for cid, concept in _read_relation_pairs(course_concept_file):
+        idx = course_to_idx.get(cid)
+        if idx is not None and concept:
+            concept_sets[idx].add(concept)
+
+    item_prereq_item_mat = torch.zeros((n_items, n_items), dtype=torch.float32)
+    item_prereq_item_cnt = torch.zeros(n_items, dtype=torch.float32)
     edge_support = defaultdict(int)
     user_seq_count = 0
 
@@ -797,207 +815,32 @@ def _build_behavior_prereq_candidates(df, prereq_min_support=30, prereq_max_forw
     incoming = defaultdict(list)
     for (a, b), sup in edge_support.items():
         if sup >= int(prereq_min_support):
-            incoming[int(b)].append((int(a), float(sup), int(sup)))
-
-    stats = {
-        'prereq_source': 'behavior',
-        'prereq_edges_raw': int(len(edge_support)),
-        'prereq_users': int(user_seq_count),
-        'prereq_min_support': int(prereq_min_support),
-        'prereq_max_forward': int(prereq_max_forward),
-    }
-    return incoming, stats
-
-
-def _build_concept_prereq_candidates(
-    concept_sets,
-    relation_dir='MOOCCube/relations',
-    prereq_concept_file='prerequisite-dependency.json',
-    prereq_concept_score_thr=0.10,
-    prereq_concept_min_hits=1,
-):
-    prereq_path = os.path.join(relation_dir, prereq_concept_file)
-    prereq_pairs = _read_relation_pairs(prereq_path)
-
-    incoming_concepts = defaultdict(set)
-    for prereq_concept, target_concept in prereq_pairs:
-        if prereq_concept and target_concept and prereq_concept != target_concept:
-            incoming_concepts[target_concept].add(prereq_concept)
-
-    concept_required_sets = []
-    for cset in concept_sets:
-        required = set()
-        for concept in cset:
-            required.update(incoming_concepts.get(concept, ()))
-        # If a course already contains the prerequisite concept, don't force a self-prereq match.
-        required.difference_update(cset)
-        concept_required_sets.append(required)
-
-    incoming = defaultdict(list)
-    raw_edge_count = 0
-    courses_with_required_concepts = 0
-    n_items = len(concept_sets)
-
-    min_hits = max(1, int(prereq_concept_min_hits))
-    score_thr = max(0.0, float(prereq_concept_score_thr))
-
-    for b in range(n_items):
-        required = concept_required_sets[b]
-        if not required:
-            continue
-        courses_with_required_concepts += 1
-        denom = float(len(required))
-        for a in range(n_items):
-            if a == b or not concept_sets[a]:
-                continue
-            hits = len(concept_sets[a] & required)
-            if hits < min_hits:
-                continue
-            score = hits / denom
-            if score >= score_thr:
-                incoming[b].append((a, float(score), int(hits)))
-                raw_edge_count += 1
-
-    stats = {
-        'prereq_source': 'concept',
-        'prereq_edges_raw': int(raw_edge_count),
-        'prereq_users': 0,
-        'prereq_min_support': 0,
-        'prereq_max_forward': 0,
-        'prereq_concept_pairs': int(len(prereq_pairs)),
-        'prereq_concept_score_thr': float(score_thr),
-        'prereq_concept_min_hits': int(min_hits),
-        'courses_with_required_concepts': int(courses_with_required_concepts),
-        'prereq_concept_file': str(prereq_concept_file),
-    }
-    return incoming, stats
-
-
-def _build_item_concept_overlap(concept_sets, mode='plain'):
-    mode = (mode or 'plain').strip().lower()
-    n_items = len(concept_sets)
-    item_concept_overlap = torch.zeros((n_items, n_items), dtype=torch.float32)
-
-    if mode == 'plain':
-        for i in range(n_items):
-            c_i = concept_sets[i]
-            denom = len(c_i)
-            if denom < 1:
-                continue
-            for j in range(n_items):
-                c_j = concept_sets[j]
-                if not c_j:
-                    continue
-                inter = len(c_i & c_j)
-                if inter > 0:
-                    item_concept_overlap[i, j] = inter / float(denom)
-        return item_concept_overlap
-
-    if mode == 'idf':
-        concept_df = defaultdict(int)
-        for cset in concept_sets:
-            for concept in cset:
-                concept_df[concept] += 1
-        n_courses = max(1, n_items)
-        concept_idf = {
-            concept: math.log((n_courses + 1.0) / (df + 1.0)) + 1.0
-            for concept, df in concept_df.items()
-        }
-        for i in range(n_items):
-            c_i = concept_sets[i]
-            if not c_i:
-                continue
-            denom = sum(concept_idf.get(c, 1.0) for c in c_i)
-            if denom <= 0.0:
-                continue
-            for j in range(n_items):
-                c_j = concept_sets[j]
-                if not c_j:
-                    continue
-                inter = c_i & c_j
-                if inter:
-                    numer = sum(concept_idf.get(c, 1.0) for c in inter)
-                    item_concept_overlap[i, j] = numer / denom
-        return item_concept_overlap
-
-    raise ValueError(f"Unsupported concept overlap mode: {mode}")
-
-
-def build_course_artifacts(
-    df,
-    n_items,
-    relation_dir='MOOCCube/relations',
-    prereq_min_support=30,
-    prereq_max_per_item=5,
-    prereq_min_items=1,
-    prereq_max_forward=20,
-    concept_overlap_mode=None,
-    prereq_graph_source=None,
-    prereq_concept_score_thr=None,
-    prereq_concept_min_hits=None,
-    prereq_concept_file=None,
-):
-    idx_course = df[['i_idx', 'course_id']].drop_duplicates(subset=['i_idx'])
-    idx_to_course = [None] * n_items
-    for row in idx_course.itertuples(index=False):
-        i_idx = int(row.i_idx)
-        if 0 <= i_idx < n_items:
-            idx_to_course[i_idx] = str(row.course_id)
-
-    course_to_idx = {cid: idx for idx, cid in enumerate(idx_to_course) if cid is not None}
-    concept_sets = [set() for _ in range(n_items)]
-
-    course_concept_file = os.path.join(relation_dir, 'course-concept.json')
-    for cid, concept in _read_relation_pairs(course_concept_file):
-        idx = course_to_idx.get(cid)
-        if idx is not None and concept:
-            concept_sets[idx].add(concept)
-
-    item_prereq_item_mat = torch.zeros((n_items, n_items), dtype=torch.float32)
-    item_prereq_item_cnt = torch.zeros(n_items, dtype=torch.float32)
-    concept_overlap_mode = (concept_overlap_mode or os.environ.get('USIM_CONCEPT_OVERLAP_MODE', 'plain')).strip().lower()
-    prereq_graph_source = (prereq_graph_source or os.environ.get('USIM_PREREQ_GRAPH_SOURCE', 'behavior')).strip().lower()
-    prereq_concept_score_thr = float(
-        prereq_concept_score_thr
-        if prereq_concept_score_thr is not None
-        else os.environ.get('USIM_PREREQ_CONCEPT_SCORE_THR', '0.10')
-    )
-    prereq_concept_min_hits = int(
-        prereq_concept_min_hits
-        if prereq_concept_min_hits is not None
-        else os.environ.get('USIM_PREREQ_CONCEPT_MIN_HITS', '1')
-    )
-    prereq_concept_file = prereq_concept_file or os.environ.get('USIM_PREREQ_CONCEPT_FILE', 'prerequisite-dependency.json')
-
-    if prereq_graph_source == 'behavior':
-        incoming, prereq_stats = _build_behavior_prereq_candidates(
-            df,
-            prereq_min_support=prereq_min_support,
-            prereq_max_forward=prereq_max_forward,
-        )
-    elif prereq_graph_source == 'concept':
-        incoming, prereq_stats = _build_concept_prereq_candidates(
-            concept_sets,
-            relation_dir=relation_dir,
-            prereq_concept_file=prereq_concept_file,
-            prereq_concept_score_thr=prereq_concept_score_thr,
-            prereq_concept_min_hits=prereq_concept_min_hits,
-        )
-    else:
-        raise ValueError(f"Unsupported prereq_graph_source: {prereq_graph_source}")
+            incoming[int(b)].append((int(a), int(sup)))
 
     kept_edge_count = 0
     for b, src_list in incoming.items():
-        src_list.sort(key=lambda x: (-float(x[1]), -int(x[2]), int(x[0])))
+        src_list.sort(key=lambda x: (-x[1], x[0]))
         kept = src_list[:max(1, int(prereq_max_per_item))]
         if len(kept) < int(prereq_min_items):
             continue
-        idx_list = torch.tensor([src for src, _, _ in kept], dtype=torch.long)
+        idx_list = torch.tensor([src for src, _ in kept], dtype=torch.long)
         item_prereq_item_mat[b, idx_list] = 1.0
         item_prereq_item_cnt[b] = float(len(kept))
         kept_edge_count += len(kept)
 
-    item_concept_overlap = _build_item_concept_overlap(concept_sets, mode=concept_overlap_mode)
+    item_concept_overlap = torch.zeros((n_items, n_items), dtype=torch.float32)
+    for i in range(n_items):
+        c_i = concept_sets[i]
+        denom = len(c_i)
+        if denom < 1:
+            continue
+        for j in range(n_items):
+            c_j = concept_sets[j]
+            if not c_j:
+                continue
+            inter = len(c_i & c_j)
+            if inter > 0:
+                item_concept_overlap[i, j] = inter / float(denom)
 
     subjects = [_parse_subject_from_course_id(cid) if cid is not None else 'UNK' for cid in idx_to_course]
     item_hard_adj = torch.zeros((n_items, n_items), dtype=torch.bool)
@@ -1014,22 +857,14 @@ def build_course_artifacts(
     items_with_prereq = int((item_prereq_item_cnt > 0).sum().item())
     hard_density = float(item_hard_adj.float().mean().item())
     stats = {
-        'prereq_source': prereq_graph_source,
         'items_with_concept': items_with_concept,
         'items_with_prereq': items_with_prereq,
         'hard_density': hard_density,
         'prereq_edges_kept': int(kept_edge_count),
-        'prereq_edges_raw': int(prereq_stats.get('prereq_edges_raw', 0)),
-        'prereq_users': int(prereq_stats.get('prereq_users', 0)),
+        'prereq_edges_raw': int(len(edge_support)),
+        'prereq_users': int(user_seq_count),
         'prereq_min_support': int(prereq_min_support),
-        'prereq_max_per_item': int(prereq_max_per_item),
-        'prereq_max_forward': int(prereq_max_forward),
-        'concept_overlap_mode': concept_overlap_mode,
-        'prereq_concept_pairs': int(prereq_stats.get('prereq_concept_pairs', 0)),
-        'prereq_concept_score_thr': float(prereq_stats.get('prereq_concept_score_thr', prereq_concept_score_thr)),
-        'prereq_concept_min_hits': int(prereq_stats.get('prereq_concept_min_hits', prereq_concept_min_hits)),
-        'courses_with_required_concepts': int(prereq_stats.get('courses_with_required_concepts', 0)),
-        'prereq_concept_file': str(prereq_stats.get('prereq_concept_file', prereq_concept_file)),
+        'prereq_max_per_item': int(prereq_max_per_item)
     }
 
     artifacts = {
@@ -1041,21 +876,114 @@ def build_course_artifacts(
     return artifacts, stats
 
 
-def _lookup_llm_score(llm_scores, item_idx, user_idx=None, allow_pair=True, allow_item=True):
+def _lookup_llm_score(llm_scores, item_idx, user_idx=None):
     if llm_scores is None:
         return -1.0
 
     item_idx = int(item_idx)
-    if allow_pair and user_idx is not None:
+    if user_idx is not None:
         pair_score = llm_scores.get((int(user_idx), item_idx))
         if pair_score is not None:
             return float(pair_score)
 
-    if allow_item:
-        item_score = llm_scores.get(item_idx)
-        if item_score is not None:
-            return float(item_score)
+    item_score = llm_scores.get(item_idx)
+    if item_score is not None:
+        return float(item_score)
     return -1.0
+
+
+def _is_pair_key(key):
+    return isinstance(key, tuple) and len(key) == 2
+
+
+def _is_item_key(key):
+    return isinstance(key, (int, np.integer))
+
+
+def _count_llm_key_types(llm_scores):
+    if not llm_scores:
+        return 0, 0
+    pair_count = 0
+    item_count = 0
+    for key in llm_scores:
+        if _is_pair_key(key):
+            pair_count += 1
+        elif _is_item_key(key):
+            item_count += 1
+    return pair_count, item_count
+
+
+def _item_mean_llm_scores(llm_scores, keep_pair=False):
+    item_scores = {}
+    pair_sums = defaultdict(float)
+    pair_counts = defaultdict(int)
+
+    if not llm_scores:
+        return item_scores
+
+    for key, value in llm_scores.items():
+        try:
+            score = float(value)
+        except (TypeError, ValueError):
+            continue
+
+        if _is_pair_key(key):
+            item_idx = int(key[1])
+            pair_sums[item_idx] += score
+            pair_counts[item_idx] += 1
+            if keep_pair:
+                item_scores[(int(key[0]), item_idx)] = score
+        elif _is_item_key(key):
+            item_scores[int(key)] = score
+
+    for item_idx, total in pair_sums.items():
+        if item_idx not in item_scores and pair_counts[item_idx] > 0:
+            item_scores[item_idx] = total / pair_counts[item_idx]
+    return item_scores
+
+
+def prepare_llm_scores(llm_scores, cfg):
+    raw_pair, raw_item = _count_llm_key_types(llm_scores)
+    raw_total = len(llm_scores) if llm_scores else 0
+    mode = str(getattr(cfg, 'llm_bank_mode', 'pair') or 'pair').strip().lower()
+    if mode in {'off', 'disable', 'disabled'}:
+        mode = 'none'
+    elif mode in {'item', 'item_avg', 'item_mean', 'mean_item'}:
+        mode = 'item_mean'
+    elif mode in {'hybrid', 'pair_item', 'pair_item_mean'}:
+        mode = 'hybrid_mean'
+
+    if getattr(cfg, 'disable_llm_score', False) or mode == 'none' or float(getattr(cfg, 'llm_weight', 1.0)) <= 0.0:
+        effective_scores = {}
+        effective_mode = 'none'
+    elif mode == 'item_mean':
+        effective_scores = _item_mean_llm_scores(llm_scores, keep_pair=False)
+        effective_mode = 'item_mean'
+    elif mode == 'hybrid_mean':
+        effective_scores = _item_mean_llm_scores(llm_scores, keep_pair=True)
+        effective_mode = 'hybrid_mean'
+    elif mode == 'item_only':
+        effective_scores = {
+            int(key): float(value)
+            for key, value in (llm_scores or {}).items()
+            if _is_item_key(key)
+        }
+        effective_mode = 'item_only'
+    else:
+        effective_scores = llm_scores or {}
+        effective_mode = 'pair'
+
+    eff_pair, eff_item = _count_llm_key_types(effective_scores)
+    summary = {
+        'mode': effective_mode,
+        'raw_total': raw_total,
+        'raw_pair': raw_pair,
+        'raw_item': raw_item,
+        'effective_total': len(effective_scores),
+        'effective_pair': eff_pair,
+        'effective_item': eff_item,
+    }
+    return effective_scores, summary
 
 
 def _build_llm_score_tensor(llm_scores, user_ids, item_ids, device=None):
@@ -1069,15 +997,11 @@ def _build_llm_score_tensor(llm_scores, user_ids, item_ids, device=None):
 def build_all_item_vecs(model, device, llm_scores, item_batch=1024, force_cold=True):
     n_items = model.cfg.n_items
     all_item_idx = torch.arange(n_items, device=device)
-    bank_mode = getattr(model.cfg, 'llm_bank_mode', 'none')
-    if bank_mode == 'item':
-        all_llm_s = torch.tensor(
-            [_lookup_llm_score(llm_scores, int(idx), allow_pair=False, allow_item=True) for idx in all_item_idx],
-            dtype=torch.float,
-            device=device
-        )
-    else:
-        all_llm_s = torch.full((n_items,), -1.0, dtype=torch.float, device=device)
+    all_llm_s = torch.tensor(
+        [_lookup_llm_score(llm_scores, int(idx)) for idx in all_item_idx],
+        dtype=torch.float,
+        device=device
+    )
 
     all_item_vecs = []
     with torch.no_grad():
@@ -1515,7 +1439,7 @@ def run_static_experiment(df, cfg, device, model, optimizer, llm_scores):
 # ================= 7. Main Training Loop =================
 
 def main():
-    DATA_DIR = "processed_data_hin"
+    DATA_DIR = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     print(f"Loading Data for Pure RL-USIM + PAM from {DATA_DIR}...")
     if not os.path.exists(f"{DATA_DIR}/stream_data.pkl"):
         print("错误: 请先运行 data_process_hin.py")
@@ -1529,6 +1453,18 @@ def main():
     content_emb = torch.load(f"{DATA_DIR}/content_emb.pt")
 
     cfg = Config(meta['n_users'], meta['n_items'], content_emb.shape[1])
+    llm_scores, llm_summary = prepare_llm_scores(llm_scores, cfg)
+    print(
+        ">> LLMScore: "
+        f"mode={llm_summary['mode']} | "
+        f"weight={cfg.llm_weight:.2f} | "
+        f"safe={cfg.llm_safe_mode} | "
+        f"cold_only={cfg.llm_cold_only} | "
+        f"raw={llm_summary['raw_total']} "
+        f"(pair={llm_summary['raw_pair']}, item={llm_summary['raw_item']}) | "
+        f"effective={llm_summary['effective_total']} "
+        f"(pair={llm_summary['effective_pair']}, item={llm_summary['effective_item']})"
+    )
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     course_artifacts, course_stats = build_course_artifacts(
         df,

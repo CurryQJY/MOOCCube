@@ -1,0 +1,86 @@
+{
+"result":{
+"query":"new* item* cold* start*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"16.04"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"9",
+"@dc":"9",
+"@oc":"9",
+"@id":"70854898",
+"text":"start"
+}
+},
+"hits":{
+"@total":"9",
+"@computed":"9",
+"@sent":"9",
+"@first":"0",
+"hit":[{
+"@score":"4",
+"@id":"489156",
+"info":{"authors":{"author":[{"@pid":"49/4941","text":"Zhipeng Zhang"},{"@pid":"416/8962","text":"Youfu Zhu"},{"@pid":"62/6234","text":"Mianxiong Dong"},{"@pid":"18/4822","text":"Kaoru Ota"},{"@pid":"57/3892-5","text":"Yao Zhang 0005"},{"@pid":"06/3200","text":"Yonggong Ren"}]},"title":"Embedding Guarantor: Knowledge-Enhanced Graph Learning for New Item Cold-Start Recommendation.","venue":"IEEE Trans. Emerg. Top. Comput. Intell.","volume":"9","number":"5","pages":"3311-3324","year":"2025","type":"Journal Articles","access":"closed","key":"journals/tetci/ZhangZDOZR25","doi":"10.1109/TETCI.2024.3516087","ee":"https://doi.org/10.1109/TETCI.2024.3516087","url":"https://dblp.org/rec/journals/tetci/ZhangZDOZR25"},
+"url":"URL#489156"
+},
+{
+"@score":"4",
+"@id":"2055991",
+"info":{"authors":{"author":[{"@pid":"329/0089","text":"Mi-Tsuen Hsieh"},{"@pid":"24/1502","text":"Shie-Jue Lee"},{"@pid":"94/5917","text":"Chih-Hung Wu"},{"@pid":"70/6133","text":"Chun-Liang Hou"},{"@pid":"90/5287","text":"Chen-Sen Ouyang"},{"@pid":"216/5800","text":"Zhan-Pei Lin"}]},"title":"Leveraging attribute latent features for addressing new item cold-start issue.","venue":"Electron. Commer. Res. Appl.","volume":"54","pages":"101177","year":"2022","type":"Journal Articles","access":"closed","key":"journals/ecra/HsiehLWHOL22","doi":"10.1016/J.ELERAP.2022.101177","ee":"https://doi.org/10.1016/j.elerap.2022.101177","url":"https://dblp.org/rec/journals/ecra/HsiehLWHOL22"},
+"url":"URL#2055991"
+},
+{
+"@score":"4",
+"@id":"2850564",
+"info":{"authors":{"author":[{"@pid":"159/9916","text":"Ziwei Zhu 0001"},{"@pid":"88/4588","text":"Jingu Kim"},{"@pid":"98/2634","text":"Trung Nguyen"},{"@pid":"180/5712","text":"Aish Fenton"},{"@pid":"55/3697","text":"James Caverlee"}]},"title":"Fairness among New Items in Cold Start Recommender Systems.","venue":"SIGIR","pages":"767-776","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ZhuKNFC21","doi":"10.1145/3404835.3462948","ee":"https://doi.org/10.1145/3404835.3462948","url":"https://dblp.org/rec/conf/sigir/ZhuKNFC21"},
+"url":"URL#2850564"
+},
+{
+"@score":"4",
+"@id":"3561855",
+"info":{"authors":{"author":[{"@pid":"167/2847","text":"Yashar Deldjoo"},{"@pid":"225/7792","text":"Maurizio Ferrari Dacrema"},{"@pid":"190/1743","text":"Mihai Gabriel Constantin"},{"@pid":"170/1944","text":"Hamid Eghbal-zadeh"},{"@pid":"203/0246","text":"Stefano Cereda"},{"@pid":"77/271","text":"Markus Schedl"},{"@pid":"53/948","text":"Bogdan Ionescu"},{"@pid":"03/3233","text":"Paolo Cremonesi"}]},"title":"Movie genome: alleviating new item cold start in movie recommendation.","venue":"User Model. User Adapt. Interact.","volume":"29","number":"2","pages":"291-343","year":"2019","type":"Journal Articles","access":"open","key":"journals/umuai/DeldjooDCECSIC19","doi":"10.1007/S11257-019-09221-Y","ee":"https://doi.org/10.1007/s11257-019-09221-y","url":"https://dblp.org/rec/journals/umuai/DeldjooDCECSIC19"},
+"url":"URL#3561855"
+},
+{
+"@score":"4",
+"@id":"4090041",
+"info":{"authors":{"author":[{"@pid":"31/3668-2","text":"Geng Sun 0002"},{"@pid":"99/10502","text":"Tingru Cui"},{"@pid":"03/2363","text":"Dongming Xu"},{"@pid":"48/5700-1","text":"Jun Shen 0001"},{"@pid":"65/287","text":"Shiping Chen 0001"}]},"title":"A Heuristic Approach for New-Item Cold Start Problem in Recommendation of Micro Open Education Resources.","venue":"ITS","pages":"212-222","year":"2018","type":"Conference and Workshop Papers","access":"closed","key":"conf/its/SunCX0C18","doi":"10.1007/978-3-319-91464-0_21","ee":"https://doi.org/10.1007/978-3-319-91464-0_21","url":"https://dblp.org/rec/conf/its/SunCX0C18"},
+"url":"URL#4090041"
+},
+{
+"@score":"4",
+"@id":"4272593",
+"info":{"authors":{"author":[{"@pid":"76/9828","text":"Marharyta Aleksandrova"},{"@pid":"42/3947","text":"Armelle Brun"},{"@pid":"19/4358","text":"Anne Boyer"},{"@pid":"91/8450","text":"Oleg Chertov"}]},"title":"Identifying representative users in matrix factorization-based recommender systems: application to solving the content-less new item cold-start problem.","venue":"J. Intell. Inf. Syst.","volume":"48","number":"2","pages":"365-397","year":"2017","type":"Journal Articles","access":"closed","key":"journals/jiis/AleksandrovaBBC17","doi":"10.1007/S10844-016-0418-3","ee":"https://doi.org/10.1007/s10844-016-0418-3","url":"https://dblp.org/rec/journals/jiis/AleksandrovaBBC17"},
+"url":"URL#4272593"
+},
+{
+"@score":"4",
+"@id":"4596403",
+"info":{"authors":{"author":[{"@pid":"183/7693","text":"Masoud Mansoury"},{"@pid":"62/3104","text":"Mehdi Shajari"}]},"title":"Improving recommender systems&apos; performance on cold-start users and controversial items by a new similarity model.","venue":"Int. J. Web Inf. Syst.","volume":"12","number":"2","pages":"126-149","year":"2016","type":"Journal Articles","access":"closed","key":"journals/ijwis/MansouryS16","doi":"10.1108/IJWIS-07-2015-0024","ee":"https://doi.org/10.1108/IJWIS-07-2015-0024","url":"https://dblp.org/rec/journals/ijwis/MansouryS16"},
+"url":"URL#4596403"
+},
+{
+"@score":"4",
+"@id":"5065267",
+"info":{"authors":{"author":[{"@pid":"141/2184","text":"Ferdaous Hdioud"},{"@pid":"66/10502","text":"Bouchra Frikh"},{"@pid":"141/2136","text":"Asmaa Benghabrit"},{"@pid":"89/10502","text":"Brahim Ouhbi"}]},"title":"Collaborative Filtering with Hybrid Clustering Integrated Method to Address New-Item Cold-Start Problem.","venue":"IDC","pages":"285-296","year":"2015","type":"Conference and Workshop Papers","access":"closed","key":"conf/idc/HdioudFBO15","doi":"10.1007/978-3-319-25017-5_27","ee":"https://doi.org/10.1007/978-3-319-25017-5_27","url":"https://dblp.org/rec/conf/idc/HdioudFBO15"},
+"url":"URL#5065267"
+},
+{
+"@score":"4",
+"@id":"6192027",
+"info":{"authors":{"author":[{"@pid":"180/8542","text":"Dongting Sun"},{"@pid":"02/2039","text":"Zhigang Luo"},{"@pid":"20/11422","text":"Fuhai Zhang"}]},"title":"A novel approach for collaborative filtering to alleviate the new item cold-start problem.","venue":"ISCIT","pages":"402-406","year":"2011","type":"Conference and Workshop Papers","access":"closed","key":"conf/iscit/SunLZ11","doi":"10.1109/ISCIT.2011.6089959","ee":"https://doi.org/10.1109/ISCIT.2011.6089959","url":"https://dblp.org/rec/conf/iscit/SunLZ11"},
+"url":"URL#6192027"
+}
+]
+}
+}
+}

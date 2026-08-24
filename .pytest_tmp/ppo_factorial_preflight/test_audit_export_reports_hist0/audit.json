@@ -1,0 +1,52 @@
+{
+  "actor_calls": 0,
+  "episode_calls": 0,
+  "refined_items": 0,
+  "cosine_sum": 0.0,
+  "l2_sum": 0.0,
+  "split_train_rows": 0,
+  "split_validation_rows": 0,
+  "split_test_rows": 0,
+  "course_fit_calls": 0,
+  "course_fit_candidate_pairs": 8,
+  "target_seen_candidate_pairs": 0,
+  "course_fit_target_rows": 4,
+  "target_rows_with_seen_candidate": 0,
+  "history_set_calls": 2,
+  "history_sources": [
+    "train_only",
+    "train_only"
+  ],
+  "refined_item_ids": [
+    2,
+    3,
+    4
+  ],
+  "behavior_target_none_calls": 1,
+  "behavior_target_non_null_calls": 0,
+  "course_match_exclude_target_values": [
+    true
+  ],
+  "mode": "course_fit",
+  "eval_seed": 7001,
+  "evaluation_target": "test",
+  "mean_cosine": 0.0,
+  "mean_l2": 0.0,
+  "history_source_counts": {
+    "train_only": 2
+  },
+  "history_all_train_only": true,
+  "target_seen_candidate_rate": 0.0,
+  "target_rows_with_seen_candidate_rate": 0.0,
+  "refined_item_composition": {
+    "total_unique": 3,
+    "train_present": 0,
+    "validation_only": 1,
+    "test_only": 1,
+    "validation_and_test": 0,
+    "neither_validation_nor_test": 1
+  },
+  "effective_course_match_exclude_target": [
+    true
+  ]
+}

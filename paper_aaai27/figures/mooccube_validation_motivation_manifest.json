@@ -1,0 +1,184 @@
+{
+  "analysis_split": "validation",
+  "dataset": "MOOCCube",
+  "protocol": "strict course-cold full-catalog ranking",
+  "models": [
+    "pcgnn",
+    "cgrc"
+  ],
+  "seeds": [
+    2025,
+    2026,
+    2027
+  ],
+  "top_k": 20,
+  "analysis_cutoff": 10,
+  "cold_course_count_per_seed": 34,
+  "course_units_per_model": 102,
+  "n_bootstrap": 10000,
+  "bootstrap_random_seed": 2027,
+  "bootstrap_unit": "target course resampled within seed; seed means weighted equally",
+  "null_hypothesis_tests": 0,
+  "multiplicity_correction": "not applicable; Figure 1 reports no hypothesis tests",
+  "cold_only_missingness_policy": "preserve missing lists; never zero-fill",
+  "artifact_stats": {
+    "prereq_source": "concept",
+    "items_with_concept": 678,
+    "items_with_prereq": 440,
+    "items_with_video": 698,
+    "redundant_family_groups": 90,
+    "hard_density": 0.7934171557426453,
+    "prereq_edges_kept": 2200,
+    "prereq_edges_raw": 66212,
+    "prereq_users": 0,
+    "prereq_min_support": 30,
+    "prereq_max_per_item": 5,
+    "prereq_max_forward": 20,
+    "concept_overlap_mode": "plain",
+    "prereq_concept_pairs": 1027,
+    "prereq_concept_score_thr": 0.1,
+    "prereq_concept_min_hits": 1,
+    "courses_with_required_concepts": 440,
+    "prereq_concept_file": "prerequisite-dependency.json",
+    "prereq_hybrid_alpha": 0.7,
+    "prereq_hybrid_strong_concept_thr": 0.35,
+    "behavior_prereq_edges_raw": 0,
+    "concept_prereq_edges_raw": 0,
+    "prereq_weighted_edges": false,
+    "course_artifact_cache_status": "hit",
+    "course_artifact_cache_path": "D:\\DeskTop\\MOOCCube\\MOOCCube\\.course_artifact_cache\\19fb56001b012ec1c568cc7ff1e86800560535914d16058c36e67a163287a6b2.pt",
+    "n_items": 698,
+    "complexity_upper_quantile": 0.95,
+    "prerequisite_count_scale": 5.0,
+    "concept_count_scale": 450.7499999999999,
+    "items_with_nonzero_complexity": 678,
+    "data_path": "D:\\DeskTop\\MOOCCube\\processed_data_hin_clean_pop5\\stream_data.pkl",
+    "relation_dir": "D:\\DeskTop\\MOOCCube\\MOOCCube\\relations"
+  },
+  "exports": [
+    {
+      "model": "pcgnn",
+      "seed": 2025,
+      "manifest_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\pcgnn\\strict_item_cold_balanced_thr1_seed_2025\\validation_export_manifest.json",
+      "manifest_sha256": "acbaeae6f0aa3205b72b7a0b282266d6bfe654e61425dcea57cde91497fea328",
+      "export_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\pcgnn\\strict_item_cold_balanced_thr1_seed_2025\\pcgnn_top20_validation.jsonl",
+      "export_sha256": "d5bf98b521f4e466935bef8ea45a3a382eed50f343332ffff63421ca8548e4ee",
+      "checkpoints": [
+        {
+          "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\mooccube_seed2025_full_formal_kg_warm\\checkpoints\\best_model.pt",
+          "size": 2016565,
+          "sha256_before": "eb45b821563eafbee56a19c90c277313bcb6caea0aba9805ea0488dcf6e3310b",
+          "sha256_after": "eb45b821563eafbee56a19c90c277313bcb6caea0aba9805ea0488dcf6e3310b"
+        }
+      ]
+    },
+    {
+      "model": "cgrc",
+      "seed": 2025,
+      "manifest_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\cgrc\\strict_item_cold_balanced_thr1_seed_2025\\export_manifest.json",
+      "manifest_sha256": "54cab0c537a4acb122923321e16b0abc835780da219fa7a041cb87916487759a",
+      "export_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\cgrc\\strict_item_cold_balanced_thr1_seed_2025\\top20_validation.jsonl",
+      "export_sha256": "36ba33b7391b590c9fb218c80f28a44ab4c87e2285f362c7c148f4a49c52a257",
+      "checkpoints": [
+        {
+          "path": "D:\\DeskTop\\MOOCCube\\checkpoints\\content_delta_pop5\\p1_motivation_cgrc_main_table_reproduction\\strict_item_cold_balanced_thr1_seed_2025\\latest.pt",
+          "size": 209198985,
+          "sha256_before": "2e83eccfe6b5d71f8794b69db9c5ab7d29229280aa60fb2847b01f3c9643d77e",
+          "sha256_after": "2e83eccfe6b5d71f8794b69db9c5ab7d29229280aa60fb2847b01f3c9643d77e"
+        },
+        {
+          "path": "D:\\DeskTop\\MOOCCube\\checkpoints\\content_delta_pop5\\p1_motivation_cgrc_main_table_reproduction\\strict_item_cold_balanced_thr1_seed_2025\\best.pt",
+          "size": 209198899,
+          "sha256_before": "7313b6f7574639167a3ade0a65c0c637bcf0e4ccf7bfcd119b59fbe1986585d4",
+          "sha256_after": "7313b6f7574639167a3ade0a65c0c637bcf0e4ccf7bfcd119b59fbe1986585d4"
+        }
+      ]
+    },
+    {
+      "model": "pcgnn",
+      "seed": 2026,
+      "manifest_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\pcgnn\\strict_item_cold_balanced_thr1_seed_2026\\validation_export_manifest.json",
+      "manifest_sha256": "64e5dc0fc541a554271be370530d542e05232c395b049f54b018c05d4b9a80b5",
+      "export_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\pcgnn\\strict_item_cold_balanced_thr1_seed_2026\\pcgnn_top20_validation.jsonl",
+      "export_sha256": "59d52acb05d465f619ea5b0822e3afe0a43460a6a90ac5de6cd51dedc8e5604e",
+      "checkpoints": [
+        {
+          "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\mooccube_seed2026_full_formal_kg_warm\\checkpoints\\best_model.pt",
+          "size": 2016565,
+          "sha256_before": "189e057a1ad4df5e310306fba3bb939fdd5e2d1b40357c02f7b6b87e182e72d4",
+          "sha256_after": "189e057a1ad4df5e310306fba3bb939fdd5e2d1b40357c02f7b6b87e182e72d4"
+        }
+      ]
+    },
+    {
+      "model": "cgrc",
+      "seed": 2026,
+      "manifest_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\cgrc\\strict_item_cold_balanced_thr1_seed_2026\\export_manifest.json",
+      "manifest_sha256": "fba8dff72769534b1dcd17abcd4eaae93fdaf640c600e7be85bee6be6c3e6152",
+      "export_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\cgrc\\strict_item_cold_balanced_thr1_seed_2026\\top20_validation.jsonl",
+      "export_sha256": "8600355520302c764082ab4b2a85f74f8b5f19bf04c561fcec7397094e6894d4",
+      "checkpoints": [
+        {
+          "path": "D:\\DeskTop\\MOOCCube\\checkpoints\\content_delta_pop5\\p1_motivation_cgrc_main_table_reproduction\\strict_item_cold_balanced_thr1_seed_2026\\latest.pt",
+          "size": 209199049,
+          "sha256_before": "c1901c665bab44077feafcabbb5810a1bbc79a83b60ea97e6b2d931345c371ff",
+          "sha256_after": "c1901c665bab44077feafcabbb5810a1bbc79a83b60ea97e6b2d931345c371ff"
+        },
+        {
+          "path": "D:\\DeskTop\\MOOCCube\\checkpoints\\content_delta_pop5\\p1_motivation_cgrc_main_table_reproduction\\strict_item_cold_balanced_thr1_seed_2026\\best.pt",
+          "size": 209198963,
+          "sha256_before": "a35a6a226fdef5954acb90704d6071280cdad67307219e2664cce5a48bad7ef0",
+          "sha256_after": "a35a6a226fdef5954acb90704d6071280cdad67307219e2664cce5a48bad7ef0"
+        }
+      ]
+    },
+    {
+      "model": "pcgnn",
+      "seed": 2027,
+      "manifest_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\pcgnn\\strict_item_cold_balanced_thr1_seed_2027\\validation_export_manifest.json",
+      "manifest_sha256": "61fa1defcf539e95a724ee65b7852d2d89056358ec8808c0d392f3f3c3deeddd",
+      "export_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\pcgnn\\strict_item_cold_balanced_thr1_seed_2027\\pcgnn_top20_validation.jsonl",
+      "export_sha256": "a5296bd797fdc33cec4f12d22b0ce3bb3dc4c828e683ede731986d9bce6cb0a8",
+      "checkpoints": [
+        {
+          "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\mooccube_seed2027_full_formal_kg_warm\\checkpoints\\best_model.pt",
+          "size": 2016565,
+          "sha256_before": "6076bdbf8fd20892353b0d7b0eb91c4242a859a841f2d2cec8b24ff44b1d772c",
+          "sha256_after": "6076bdbf8fd20892353b0d7b0eb91c4242a859a841f2d2cec8b24ff44b1d772c"
+        }
+      ]
+    },
+    {
+      "model": "cgrc",
+      "seed": 2027,
+      "manifest_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\cgrc\\strict_item_cold_balanced_thr1_seed_2027\\export_manifest.json",
+      "manifest_sha256": "b9d0487c7cd2c029a3e52dfcde6418e67f6345051d6909282ec473338b8c903b",
+      "export_path": "D:\\DeskTop\\MOOCCube\\outputs\\validation_motivation\\cgrc\\strict_item_cold_balanced_thr1_seed_2027\\top20_validation.jsonl",
+      "export_sha256": "2a68148ec86785c161a7acaeb40c0a873952eeed8c7d873e759ba42c96d8dfef",
+      "checkpoints": [
+        {
+          "path": "D:\\DeskTop\\MOOCCube\\checkpoints\\content_delta_pop5\\p1_motivation_cgrc_main_table_reproduction\\strict_item_cold_balanced_thr1_seed_2027\\latest.pt",
+          "size": 209198985,
+          "sha256_before": "f14b4b0b4915b0be785d03445647df38cb4832221ee3d87b0b495377932ac786",
+          "sha256_after": "f14b4b0b4915b0be785d03445647df38cb4832221ee3d87b0b495377932ac786"
+        },
+        {
+          "path": "D:\\DeskTop\\MOOCCube\\checkpoints\\content_delta_pop5\\p1_motivation_cgrc_main_table_reproduction\\strict_item_cold_balanced_thr1_seed_2027\\best.pt",
+          "size": 209198899,
+          "sha256_before": "a9e49787558902938bae496430d1f1659b7d4c151f307642b6fffc087339d0e3",
+          "sha256_after": "a9e49787558902938bae496430d1f1659b7d4c151f307642b6fffc087339d0e3"
+        }
+      ]
+    }
+  ],
+  "row_counts": {
+    "course_macro": 204,
+    "summary": 20,
+    "seed_export_audit": 6
+  },
+  "outputs": {
+    "course_macro": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\validation_motivation_analysis\\course_macro.csv",
+    "summary": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\mooccube_validation_motivation_summary.csv",
+    "seed_export_audit": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\validation_motivation_analysis\\seed_export_audit.csv"
+  }
+}

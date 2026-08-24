@@ -1,0 +1,47 @@
+{
+  "split_root": "D:\\DeskTop\\MOOCCube\\outputs\\junyi\\mask_ablation\\mask_tt\\strict_item_cold_balanced_thr1_seed_2025",
+  "out_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\_pcgnn_strict\\_prepared\\junyi",
+  "smoke_input": {
+    "n_users": 155249,
+    "n_items": 722,
+    "train_pairs": 1494947,
+    "val_pairs": 109293,
+    "test_pairs": 218398,
+    "kg_triples": 3089
+  },
+  "dependencies": {
+    "torch": "OK",
+    "dgl": "MISSING",
+    "recbole": "OK",
+    "easydict": "OK",
+    "wandb": "OK",
+    "numpy": "OK",
+    "pandas": "OK"
+  },
+  "artifacts": {
+    "pcgnn": {
+      "dataset_name": "junyi_strict_full",
+      "dataset_dir": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\dataset\\junyi_strict_full",
+      "config_path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\recbole_junyi_strict_full.yaml",
+      "train_rows": 1494947,
+      "validation_rows": 109293,
+      "test_rows": 218398,
+      "item_rows": 722,
+      "kg_rows": 4532,
+      "protocol_notes": [
+        "Uses benchmark_filename train/valid/test files to preserve the external strict split.",
+        "RecBole still needs a custom item-macro evaluator for paper metrics."
+      ]
+    }
+  },
+  "candidates": [
+    {
+      "priority": 1,
+      "candidate": "PCGNN",
+      "artifact": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\baseline_sources\\PCGNN_recbole_drive\\RecBole-master\\dataset\\junyi_strict_full",
+      "loader_status": "atomic files load; stock sequential dataloader needs patch for external strict valid/test histories",
+      "protocol_fit": "medium-high: data split is preservable, official build/evaluator is not protocol-safe yet",
+      "recommendation": "adapt first, but patch loader/build before training"
+    }
+  ]
+}

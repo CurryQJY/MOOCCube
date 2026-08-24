@@ -385,15 +385,16 @@ def evaluate_sampled_lightgcl(loader, all_z_u, all_z_i, device, k_list, cold_thr
 
 def main():
     setup_seed(2025)
-    print("Loading Data for LightGCL (SVD Contrastive) from processed_data_hin...")
-    if not os.path.exists("processed_data_hin/stream_data.pkl"):
-        print("错误: 请先运行 data_process_hin.py")
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
+    print(f"Loading Data for LightGCL (SVD Contrastive) from {data_dir}...")
+    if not os.path.exists(f"{data_dir}/stream_data.pkl"):
+        print(f"错误: {data_dir}/stream_data.pkl 未找到")
         return
 
-    with open("processed_data_hin/meta.json", "r") as f:
+    with open(f"{data_dir}/meta.json", "r") as f:
         meta = json.load(f)
-    df = pd.read_pickle("processed_data_hin/stream_data.pkl")
-    content_emb = torch.load("processed_data_hin/content_emb.pt")
+    df = pd.read_pickle(f"{data_dir}/stream_data.pkl")
+    content_emb = torch.load(f"{data_dir}/content_emb.pt")
 
     # [NEW] Static random split 8:1:1
     df = df.sample(frac=1.0, random_state=2025).reset_index(drop=True)
@@ -431,7 +432,7 @@ def main():
     k_list = [5, 10, 20]
     metrics_keys = [f'{m}@{k}' for m in ['R', 'N'] for k in k_list]
     
-    epochs = 40
+    epochs = int(os.environ.get("LIGHTGCL_STATIC_EPOCHS", "40"))
     
     # [CRITICAL] Build and perform SVD only on TRAIN set bipartite graph to prevent data leakage!
     global_u_idx = train_df['u_idx'].tolist()
@@ -523,6 +524,15 @@ def main():
         v_f_h = h_m_f.get(k, 0.0) if h_m_f else 0.0
         print(f"{k:<10} | {v_s_c:<12.4f} | {v_s_h:<12.4f} | {v_f_c:<12.4f} | {v_f_h:<12.4f}")
     print("=" * 90)
+
+    out = {"model": "LightGCL", "protocol": "static"}
+    for k in metrics_keys:
+        out[f"samp_cold_{k}"] = c_m_s.get(k, 0.0) if c_m_s else 0.0
+        out[f"samp_hot_{k}"] = h_m_s.get(k, 0.0) if h_m_s else 0.0
+        out[f"full_cold_{k}"] = c_m_f.get(k, 0.0) if c_m_f else 0.0
+        out[f"full_hot_{k}"] = h_m_f.get(k, 0.0) if h_m_f else 0.0
+    pd.DataFrame([out]).to_json("lightgcl_static_result.json", orient="records", force_ascii=False)
+    print("Saved: lightgcl_static_result.json")
 
 
 if __name__ == "__main__":

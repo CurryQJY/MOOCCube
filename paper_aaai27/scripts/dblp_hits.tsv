@@ -1,0 +1,86 @@
+2026	AAAI	M²VAE: Multi-Modal Multi-View Variational Autoencoder for Cold-start Item Recommendation	https://doi.org/10.1609/aaai.v40i17.38501	cold-start+item+recommendation
+2026	SIGIR	GenRecEdit: Adapting Model Editing for Generative Recommendation with Cold-Start Items	https://doi.org/10.1145/3805712.3809662	cold-start+item+recommendation
+2026	WSDM	EpicCBR: Item-Relation-Enhanced Dual-Scenario Contrastive Learning for Cold-Start Bundle Recommendation	https://doi.org/10.1145/3773966.3777993	cold-start+item+recommendation
+2026	WWW	Sharpness-Consistent Cross-Domain Recommendation for Cold-Start Items	https://doi.org/10.1145/3774904.3792576	cold-start+item+recommendation
+2026	WWW	LLM Reasoning for Cold-Start Item Recommendation	https://doi.org/10.1145/3774904.3792872	cold-start+item+recommendation
+2025	CIKM	Harnessing Light for Cold-Start Recommendations: Leveraging Epistemic Uncertainty to Enhance Performance in User-Item Interactions	https://doi.org/10.1145/3746252.3760793	cold-start+item+recommendation
+2025	CIKM	MI4Rec: Pretrained Language Model based Cold-Start Recommendation with Meta-Item Embeddings	https://doi.org/10.1145/3746252.3761313	cold-start+item+recommendation
+2025	KDD	Online Item Cold-Start Recommendation with Popularity-Aware Meta-Learning	https://doi.org/10.1145/3690624.3709336	cold-start+item+recommendation
+2025	RecSys	On Inherited Popularity Bias in Cold-Start Item Recommendation	https://doi.org/10.1145/3705328.3748035	cold-start+item+recommendation
+2025	RecSys	Let It Go? Not Quite: Addressing Item Cold Start in Sequential Recommendations with Content-Based Initialization	https://doi.org/10.1145/3705328.3748038	cold-start+item+recommendation
+2026	AAAI	M²VAE: Multi-Modal Multi-View Variational Autoencoder for Cold-start Item Recommendation	https://doi.org/10.1609/aaai.v40i17.38501	cold+start+recommendation
+2026	SIGIR	Pin-SCALE: Semantic Cascading and Alignment Learning for Engagement-Aware IDs in Cold-Start Recommendations	https://doi.org/10.1145/3805712.3808507	cold+start+recommendation
+2026	SIGIR	GenRecEdit: Adapting Model Editing for Generative Recommendation with Cold-Start Items	https://doi.org/10.1145/3805712.3809662	cold+start+recommendation
+2026	WSDM	G-TRAC: Graph-textual Representations Alignment for Cold-start Recommendations	https://doi.org/10.1145/3773966.3779358	cold+start+recommendation
+2026	WSDM	Decoupling User Features for User Cold-Start App Recommendation: Static Attributes versus Behavioral Sequences	https://doi.org/10.1145/3773966.3778016	cold+start+recommendation
+2026	WSDM	Enhanced Cold-Start Sequential Recommendation with Causal Diffusion Preference Modeling	https://doi.org/10.1145/3773966.3778026	cold+start+recommendation
+2026	WSDM Companion	Cold-Start Audiobook Recommendation via Cross-Domain Sub-Tower Fusion	https://doi.org/10.1145/3779211.3793160	cold+start+recommendation
+2026	WSDM	EpicCBR: Item-Relation-Enhanced Dual-Scenario Contrastive Learning for Cold-Start Bundle Recommendation	https://doi.org/10.1145/3773966.3777993	cold+start+recommendation
+2026	WWW	Warmer for Less: A Cost-Efficient Strategy for Cold-Start Recommendations at Pinterest	https://doi.org/10.1145/3774904.3792824	cold+start+recommendation
+2026	WWW	Sharpness-Consistent Cross-Domain Recommendation for Cold-Start Items	https://doi.org/10.1145/3774904.3792576	cold+start+recommendation
+2026	WWW	LLM Reasoning for Cold-Start Item Recommendation	https://doi.org/10.1145/3774904.3792872	cold+start+recommendation
+2025	RecSys	Breaking Knowledge Boundaries: Cognitive Distillation-enhanced Cross-Behavior Course Recommendation Model	https://doi.org/10.1145/3705328.3748083	course+recommendation
+2025	AAAI	Multi-type MOOCs Recommendation: Leveraging Deep Multi-Relational Representation and Hierarchical Reasoning	https://doi.org/10.1609/aaai.v39i12.33453	MOOC+recommendation
+2026	AAAI	GraphRAG-Induced Dual Knowledge Structure Graphs for Personalized Learning Path Recommendation	https://doi.org/10.1609/aaai.v40i17.38479	learning+path+recommendation
+2026	AAAI	UNO! UNified Offline Training Paradigm for Learning Path Recommendation	https://doi.org/10.1609/aaai.v40i18.38591	learning+path+recommendation
+2026	ACL	From Past To Path: Masked History Learning for Next-Item Prediction in Generative Recommendation	https://aclanthology.org/2026.acl-long.475/	learning+path+recommendation
+2026	WSDM Companion	Agentic Orchestration for Adaptive Educational Recommendations: A Multi-Agent LLM Framework for Personalized Learning Pathways	https://doi.org/10.1145/3779211.3795741	learning+path+recommendation
+2025	CIKM	Compensating Information and Capturing Modal Preferences in Multimodal Recommendation: A Dual-Path Representation Learning Framework	https://doi.org/10.1145/3746252.3761184	learning+path+recommendation
+2025	NeurIPS	Path-Enhanced Contrastive Learning for Recommendation	http://papers.nips.cc/paper_files/paper/2025/hash/7cb33a355bbe68305e02a080ad4eb86a-Abstract-Conference.html	learning+path+recommendation
+2025	SIGIR	LIGHT: Enhancing Learning Path Recommendation via Knowledge Topology-Aware Sequence Optimization	https://doi.org/10.1145/3726302.3730022	learning+path+recommendation
+2026	EACL	Beyond Names: How Grammatical Gender Markers Bias LLM-based Educational Recommendations	https://doi.org/10.18653/v1/2026.eacl-long.264	educational+recommendation
+2026	WSDM Companion	Agentic Orchestration for Adaptive Educational Recommendations: A Multi-Agent LLM Framework for Personalized Learning Pathways	https://doi.org/10.1145/3779211.3795741	educational+recommendation
+2026	SIGIR	Verifiable User Simulation for Search and Recommendation Systems	https://doi.org/10.1145/3805712.3808645	user+simulation+recommendation
+2026	SIGIR	Task-Aware Automated User Profile Generation for Recommendation Simulation Using Large Language Models	https://doi.org/10.1145/3805712.3809707	user+simulation+recommendation
+2025	SIGIR	Agentic Feedback Loop Modeling Improves Recommendation and User Simulation	https://doi.org/10.1145/3726302.3729893	user+simulation+recommendation
+2026	ACL	Mirroring Users: Towards Building Preference-aligned User Simulator with User Feedback in Recommendation	https://aclanthology.org/2026.acl-long.273/	user+simulator+recommendation
+2026	AAAI	Diagnostic-Guided Dynamic Profile Optimization for LLM-based User Simulators in Sequential Recommendation	https://doi.org/10.1609/aaai.v40i18.38556	user+simulator+recommendation
+2025	RecSys	Lasso: Large Language Model-based User Simulator for Cross-Domain Recommendation	https://doi.org/10.1145/3705328.3748048	user+simulator+recommendation
+2026	AAAI	VRAgent-R1: Boosting Video Recommendation with MLLM-based Agents via Reinforcement Learning	https://doi.org/10.1609/aaai.v40i3.37152	reinforcement+learning+recommendation
+2026	SIGIR	Advantage-Conditioned Flow Policy for Offline Reinforcement Learning in Recommendation	https://doi.org/10.1145/3805712.3809626	reinforcement+learning+recommendation
+2026	WWW	Reinforcement Learning-Constrained Segmented User Modeling with Large Language Models for Recommendation	https://doi.org/10.1145/3774904.3792130	reinforcement+learning+recommendation
+2026	WWW	FeedGuard: Online Critic-Guided Reinforcement Learning with Privacy-Preserving Feedback for Recommendation	https://doi.org/10.1145/3774904.3792155	reinforcement+learning+recommendation
+2025	CIKM	Energy-Guided Diffusion Sampling for Long-Term User Behavior Prediction in Reinforcement Learning-based Recommendation	https://doi.org/10.1145/3746252.3761076	reinforcement+learning+recommendation
+2026	SIGIR	Advantage-Conditioned Flow Policy for Offline Reinforcement Learning in Recommendation	https://doi.org/10.1145/3805712.3809626	offline+reinforcement+learning+recommendation
+2025	ECML/PKDD	Aggressive Exploration in Offline Reinforcement Learning for Better Recommendations	https://doi.org/10.1007/978-3-032-06096-9_29	offline+reinforcement+learning+recommendation
+2025	WWW	Policy-Guided Causal State Representation for Offline Reinforcement Learning Recommendation	https://doi.org/10.1145/3696410.3714562	offline+reinforcement+learning+recommendation
+2025	RecSys	Let It Go? Not Quite: Addressing Item Cold Start in Sequential Recommendations with Content-Based Initialization	https://doi.org/10.1145/3705328.3748038	content+based+cold+start
+2026	WSDM	Adaptive Continual Learning with User-Incremental Forward Compatibility for Meta-Augmented Cold-Start Recommenders	https://doi.org/10.1145/3773966.3777949	meta+learning+cold+start
+2025	AAAI	Counterfactual Task-augmented Meta-learning for Cold-start Sequential Recommendation	https://doi.org/10.1609/aaai.v39i12.33396	meta+learning+cold+start
+2025	CIKM	Meta-Adaptive Network for Effective Cold-Start Recommendation via Warm-Aware Representation Learning	https://doi.org/10.1145/3746252.3761508	meta+learning+cold+start
+2025	KDD	Online Item Cold-Start Recommendation with Popularity-Aware Meta-Learning	https://doi.org/10.1145/3690624.3709336	meta+learning+cold+start
+2026	WWW	Joint Similar User Exploration and Informative Behavior Guidance for Multi-Modal New Item Recommendation	https://doi.org/10.1145/3774904.3792302	new+item+recommendation
+2025	RecSys	On Inherited Popularity Bias in Cold-Start Item Recommendation	https://doi.org/10.1145/3705328.3748035	popularity+bias+cold+start
+2026	WSDM	Enhanced Cold-Start Sequential Recommendation with Causal Diffusion Preference Modeling	https://doi.org/10.1145/3773966.3778026	sequential+recommendation+cold+start
+2025	AAAI	Counterfactual Task-augmented Meta-learning for Cold-start Sequential Recommendation	https://doi.org/10.1609/aaai.v39i12.33396	sequential+recommendation+cold+start
+2025	RecSys	Let It Go? Not Quite: Addressing Item Cold Start in Sequential Recommendations with Content-Based Initialization	https://doi.org/10.1145/3705328.3748038	sequential+recommendation+cold+start
+2026	WWW	LLM Reasoning for Cold-Start Item Recommendation	https://doi.org/10.1145/3774904.3792872	LLM+cold+start+recommendation
+2026	AAAI	RAGAR: Retrieval Augmented Personalized Image Generation Guided by Recommendation	https://doi.org/10.1609/aaai.v40i18.38553	retrieval+augmented+recommendation
+2026	AAAI	Enhanced Recommendation Systems with Retrieval-Augmented Large Language Model (Abstract Reprint)	https://doi.org/10.1609/aaai.v40i47.41419	retrieval+augmented+recommendation
+2026	SIGIR	ItemRAG: Item-Based Retrieval-Augmented Generation for LLM-Based Recommendation	https://doi.org/10.1145/3805712.3809942	retrieval+augmented+recommendation
+2025	ACL	Knowledge Graph Retrieval-Augmented Generation for LLM-based Recommendation	https://doi.org/10.18653/v1/2025.acl-long.1317	retrieval+augmented+recommendation
+2025	ACLING	RAG-Rec: Retrieval Augmented Generation for Robust Personalized Recommendation Systems	https://doi.org/10.1016/j.procs.2026.01.002	retrieval+augmented+recommendation
+2025	CIKM	SarRec: Statistically-guaranteed Augmented Retrieval for Recommendation	https://doi.org/10.1145/3746252.3761054	retrieval+augmented+recommendation
+2025	NeurIPS	Semantic Retrieval Augmented Contrastive Learning for Sequential Recommendation	http://papers.nips.cc/paper_files/paper/2025/hash/ee2841db84cd09a5f6e3e313ce3d79d9-Abstract-Conference.html	retrieval+augmented+recommendation
+2025	PAKDD	Graph Retrieval-Augmented LLM for Conversational Recommendation Systems	https://doi.org/10.1007/978-981-96-8180-8_27	retrieval+augmented+recommendation
+2025	WWW	Keyword-driven Retrieval-Augmented Large Language Models for Cold-start User Recommendations	https://doi.org/10.1145/3701716.3717855	retrieval+augmented+recommendation
+2025	WWW	G-Refer: Graph Retrieval-Augmented Large Language Model for Explainable Recommendation	https://doi.org/10.1145/3696410.3714727	retrieval+augmented+recommendation
+2025	WWW	RALLRec: Improving Retrieval Augmented Large Language Model Recommendation with Representation Learning	https://doi.org/10.1145/3701716.3715508	retrieval+augmented+recommendation
+2025	AAAI	Feature-Structure Adaptive Completion Graph Neural Network for Cold-start Recommendation	https://doi.org/10.1609/aaai.v39i11.33309	graph+neural+network+cold+start
+2026	ACL	Curriculum-RLAIF: Curriculum Alignment with Reinforcement Learning from AI Feedback	https://aclanthology.org/2026.findings-acl.1685/	curriculum+reinforcement+learning
+2026	AAAI	AdaCuRL: Adaptive Curriculum Reinforcement Learning with Invalid Sample Mitigation and Historical Revisiting	https://doi.org/10.1609/aaai.v40i27.39479	curriculum+reinforcement+learning
+2026	AAAI	MRACL: Multi-Reward Space Guided Adaptive Curriculum Reinforcement Learning for LLMs	https://doi.org/10.1609/aaai.v40i44.41101	curriculum+reinforcement+learning
+2026	AAAI	CRISP: Curriculum-Inducing Primitive Informed Subgoal Prediction for Boosting Hierarchical Reinforcement Learning	https://doi.org/10.1609/aaai.v40i30.39743	curriculum+reinforcement+learning
+2026	AAAI	Realistic Curriculum Reinforcement Learning for Autonomous and Sustainable Marine Vessel Navigation	https://doi.org/10.1609/aaai.v40i46.41313	curriculum+reinforcement+learning
+2026	ACL	Temp-R1: A Unified Autonomous Agent for Complex Temporal KGQA via Reverse Curriculum Reinforcement Learning	https://aclanthology.org/2026.acl-long.1184/	curriculum+reinforcement+learning
+2026	ACL	VideoCuRL: Video Curriculum Reinforcement Learning with Orthogonal Difficulty Decomposition	https://aclanthology.org/2026.acl-long.953/	curriculum+reinforcement+learning
+2026	ACL	DUET: Joint Exploration of User-Item Profiles in Recommendation System	https://aclanthology.org/2026.findings-acl.1076/	exploration+recommendation
+2026	SIGIR	LLM-Informed Bayesian Content Exploration in Ultra-Recency Recommendation	https://doi.org/10.1145/3805712.3808498	exploration+recommendation
+2026	WWW	Joint Similar User Exploration and Informative Behavior Guidance for Multi-Modal New Item Recommendation	https://doi.org/10.1145/3774904.3792302	exploration+recommendation
+2025	AAAI	Enhancing Diffusion Model with Auxiliary Information Mining-Exploration and Efficient Sampling Mechanism for Sequential Recommendation	https://doi.org/10.1609/aaai.v39i12.33370	exploration+recommendation
+2025	ACL	User Feedback Alignment for LLM-powered Exploration in Large-scale Recommendation Systems	https://doi.org/10.18653/v1/2025.acl-industry.70	exploration+recommendation
+2025	CIKM	ExplorAct: Context-Aware Next Action Recommendations for Interactive Data Exploration	https://doi.org/10.1145/3746252.3761257	exploration+recommendation
+2025	ECML/PKDD	Aggressive Exploration in Offline Reinforcement Learning for Better Recommendations	https://doi.org/10.1007/978-3-032-06096-9_29	exploration+recommendation
+2025	SIGIR	Joint Item Embedding Dual-view Exploration and Adaptive Local-Global Fusion for Federated Recommendation	https://doi.org/10.1145/3726302.3730016	exploration+recommendation
+2025	WSDM	Exploration and Exploitation of Hard Negative Samples for Cross-Domain Sequential Recommendation	https://doi.org/10.1145/3701551.3703535	exploration+recommendation
+2025	WWW	Joint Similarity Item Exploration and Overlapped User Guidance for Multi-Modal Cross-Domain Recommendation	https://doi.org/10.1145/3696410.3714860	exploration+recommendation

@@ -1,0 +1,68 @@
+{
+"result":{
+"query":"cold* start* item* meta* learning*",
+"status":{
+"@code":"200",
+"text":"OK"
+},
+"time":{
+"@unit":"msecs",
+"text":"12.88"
+},
+"completions":{
+"@total":"1",
+"@computed":"1",
+"@sent":"1",
+"c":{
+"@sc":"6",
+"@dc":"6",
+"@oc":"6",
+"@id":"70164624",
+"text":"learning"
+}
+},
+"hits":{
+"@total":"6",
+"@computed":"6",
+"@sent":"6",
+"@first":"0",
+"hit":[{
+"@score":"6",
+"@id":"2850568",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"10/5415-6","text":"Ying Sun 0006"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"75/2820-1","text":"Juan Cao 0001"}]},"title":"Learning to Warm Up Cold Item Embeddings for Cold-start Recommendation with Meta Scaling and Shifting Networks.","venue":"SIGIR","pages":"1167-1176","year":"2021","type":"Conference and Workshop Papers","access":"closed","key":"conf/sigir/ZhuXZGSZLC21","doi":"10.1145/3404835.3462843","ee":"https://doi.org/10.1145/3404835.3462843","url":"https://dblp.org/rec/conf/sigir/ZhuXZGSZLC21"},
+"url":"URL#2850568"
+},
+{
+"@score":"6",
+"@id":"2901578",
+"info":{"authors":{"author":[{"@pid":"56/11341","text":"Yongchun Zhu"},{"@pid":"178/8590","text":"Ruobing Xie"},{"@pid":"48/5638","text":"Fuzhen Zhuang"},{"@pid":"242/9219","text":"Kaikai Ge"},{"@pid":"10/5415-6","text":"Ying Sun 0006"},{"@pid":"98/5660-28","text":"Xu Zhang 0028"},{"@pid":"218/7323","text":"Leyu Lin"},{"@pid":"75/2820-1","text":"Juan Cao 0001"}]},"title":"Learning to Warm Up Cold Item Embeddings for Cold-start Recommendation with Meta Scaling and Shifting Networks.","venue":"CoRR","volume":"abs/2105.04790","year":"2021","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2105-04790","ee":"https://arxiv.org/abs/2105.04790","url":"https://dblp.org/rec/journals/corr/abs-2105-04790"},
+"url":"URL#2901578"
+},
+{
+"@score":"6",
+"@id":"3749794",
+"info":{"authors":{"author":[{"@pid":"17/5471","text":"Fahad Anwar"},{"@pid":"88/7084","text":"Naima Iltaf"},{"@pid":"16/2582","text":"Hammad Afzal"},{"@pid":"04/7436","text":"Haider Abbas"}]},"title":"A Deep Learning Framework to Predict Rating for Cold Start Item Using Item Metadata.","venue":"WETICE","pages":"313-319","year":"2019","type":"Conference and Workshop Papers","access":"closed","key":"conf/wetice/AnwarIAA19","doi":"10.1109/WETICE.2019.00071","ee":"https://doi.org/10.1109/WETICE.2019.00071","url":"https://dblp.org/rec/conf/wetice/AnwarIAA19"},
+"url":"URL#3749794"
+},
+{
+"@score":"5",
+"@id":"660494",
+"info":{"authors":{"author":[{"@pid":"389/9720","text":"Yunze Luo"},{"@pid":"298/0856","text":"Yuezihan Jiang"},{"@pid":"314/2114","text":"Yinjie Jiang"},{"@pid":"294/6457","text":"Gaode Chen"},{"@pid":"387/2333","text":"Jingchi Wang"},{"@pid":"87/2334","text":"Kaigui Bian"},{"@pid":"136/5221-8","text":"Peiyi Li 0008"},{"@pid":"52/323-10","text":"Qi Zhang 0010"}]},"title":"Online Item Cold-Start Recommendation with Popularity-Aware Meta-Learning.","venue":"KDD","pages":"927-937","year":"2025","type":"Conference and Workshop Papers","access":"closed","key":"conf/kdd/LuoJJCWB0025","doi":"10.1145/3690624.3709336","ee":"https://doi.org/10.1145/3690624.3709336","url":"https://dblp.org/rec/conf/kdd/LuoJJCWB0025"},
+"url":"URL#660494"
+},
+{
+"@score":"5",
+"@id":"1448843",
+"info":{"authors":{"author":[{"@pid":"389/9720","text":"Yunze Luo"},{"@pid":"298/0856","text":"Yuezihan Jiang"},{"@pid":"314/2114","text":"Yinjie Jiang"},{"@pid":"294/6457","text":"Gaode Chen"},{"@pid":"387/2333","text":"Jingchi Wang"},{"@pid":"87/2334","text":"Kaigui Bian"},{"@pid":"136/5221-8","text":"Peiyi Li 0008"},{"@pid":"52/323-10","text":"Qi Zhang 0010"}]},"title":"Online Item Cold-Start Recommendation with Popularity-Aware Meta-Learning.","venue":"CoRR","volume":"abs/2411.11225","year":"2024","type":"Informal and Other Publications","access":"open","key":"journals/corr/abs-2411-11225","doi":"10.48550/ARXIV.2411.11225","ee":"https://doi.org/10.48550/arXiv.2411.11225","url":"https://dblp.org/rec/journals/corr/abs-2411-11225"},
+"url":"URL#1448843"
+},
+{
+"@score":"5",
+"@id":"4464429",
+"info":{"authors":{"author":[{"@pid":"25/7592","text":"Manasi Vartak"},{"@pid":"47/1858","text":"Arvind Thiagarajan"},{"@pid":"149/4092","text":"Conrado Miranda"},{"@pid":"118/4026","text":"Jeshua Bratman"},{"@pid":"86/3862","text":"Hugo Larochelle"}]},"title":"A Meta-Learning Perspective on Cold-Start Recommendations for Items.","venue":"NIPS","pages":"6904-6914","year":"2017","type":"Conference and Workshop Papers","access":"open","key":"conf/nips/VartakTMBL17","ee":"https://proceedings.neurips.cc/paper/2017/hash/51e6d6e679953c6311757004d8cbbba9-Abstract.html","url":"https://dblp.org/rec/conf/nips/VartakTMBL17"},
+"url":"URL#4464429"
+}
+]
+}
+}
+}

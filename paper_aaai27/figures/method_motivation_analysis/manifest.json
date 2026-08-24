@@ -1,0 +1,19 @@
+{
+  "analysis": "cgrc_baseline_method_motivation",
+  "input": {
+    "path": "D:\\DeskTop\\MOOCCube\\paper_aaai27\\figures\\p1_topk_motivation_analysis\\recommendation_level.csv.gz",
+    "sha256": "47044b8b977877b1dcfd563aa25a27dd7d664b4ef362f6fa77a9590b1a6ab29d",
+    "rows_read": 7785360,
+    "model_rows": 3892680
+  },
+  "model": "cgrc",
+  "cutoff": 10,
+  "top_k": 20,
+  "random_seed": 2027,
+  "n_bootstrap": 10000,
+  "n_permutations": 100000,
+  "rank_course_rows": 4080,
+  "bucket_course_rows": 408,
+  "paired_units": 204,
+  "top10_cold_course_share": 0.245742294048703
+}

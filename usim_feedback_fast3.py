@@ -18,7 +18,6 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from processed_data_utils import load_llm_scores_for_stream
 
 from usim import (
     StreamDataset,
@@ -27,6 +26,7 @@ from usim import (
     build_course_artifacts,
     collate_fn,
     evaluate_usim,
+    prepare_llm_scores,
     setup_seed,
     split_dataframe_by_periods,
 )
@@ -399,7 +399,7 @@ class Fast3FeedbackUSIM(FastFeedbackUSIM):
 
 
 def main():
-    data_dir = "processed_data_hin"
+    data_dir = os.environ.get("USIM_DATA_DIR", "processed_data_hin")
     print(f"Loading Data for Feedback-Aware USIM (FAST3) from {data_dir}...")
     if not os.path.exists(f"{data_dir}/stream_data.pkl"):
         print("Error: please run data_process_hin.py first")
@@ -408,25 +408,29 @@ def main():
     with open(f"{data_dir}/meta.json", "r") as f:
         meta = json.load(f)
     df = pd.read_pickle(f"{data_dir}/stream_data.pkl")
-    llm_scores, llm_score_path, _ = load_llm_scores_for_stream(
-        data_dir,
-        df,
-        cold_threshold=5,
-        n_users=meta.get("n_users"),
-        n_items=meta.get("n_items"),
-        fallback_data_dirs=["processed_data"],
-    )
+    with open(f"{data_dir}/llm_scores.pkl", "rb") as f:
+        llm_scores = pd.read_pickle(f)
     content_emb = torch.load(f"{data_dir}/content_emb.pt")
-    if llm_score_path:
-        print(f"   LLM scores loaded from {llm_score_path}")
 
     cfg = Fast3Config(meta["n_users"], meta["n_items"], content_emb.shape[1])
+    llm_scores, llm_summary = prepare_llm_scores(llm_scores, cfg)
+    print(
+        ">> LLMScore: "
+        f"mode={llm_summary['mode']} | "
+        f"weight={cfg.llm_weight:.2f} | "
+        f"safe={cfg.llm_safe_mode} | "
+        f"cold_only={cfg.llm_cold_only} | "
+        f"raw={llm_summary['raw_total']} "
+        f"(pair={llm_summary['raw_pair']}, item={llm_summary['raw_item']}) | "
+        f"effective={llm_summary['effective_total']} "
+        f"(pair={llm_summary['effective_pair']}, item={llm_summary['effective_item']})"
+    )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if cfg.feedback_load_course_artifacts:
         course_artifacts, course_stats = build_course_artifacts(
             df,
             cfg.n_items,
-            relation_dir="MOOCCube/relations",
+            relation_dir=os.environ.get("USIM_RELATION_DIR", "MOOCCube/relations"),
             prereq_min_support=cfg.prereq_min_support,
             prereq_max_per_item=cfg.prereq_max_per_item,
             prereq_min_items=cfg.prereq_min_items,
@@ -465,10 +469,6 @@ def main():
         f"BankRefresh={cfg.user_bank_refresh_steps}"
     )
     print(
-        f">> LLM Injection: safe_mode={cfg.llm_safe_mode} | weight={cfg.llm_weight:.2f} | "
-        f"cold_only={cfg.llm_cold_only} | bank_mode={cfg.llm_bank_mode}"
-    )
-    print(
         f">> Course Soft Rerank: enabled={cfg.feedback_course_sample_soft} | "
         f"beta={cfg.feedback_course_sample_beta:.2f} | topL={cfg.feedback_course_sample_top_l}"
     )
@@ -479,12 +479,9 @@ def main():
         f"struct_hard_neg={cfg.use_structured_hard_neg}"
     )
     print(
-        f">> Course Priors: source={course_stats.get('prereq_source', 'behavior')} | "
-        f"concept={course_stats['items_with_concept']}/{cfg.n_items}, "
+        f">> Course Priors: concept={course_stats['items_with_concept']}/{cfg.n_items}, "
         f"prereq={course_stats['items_with_prereq']}/{cfg.n_items}, "
-        f"hard_density={course_stats['hard_density']:.3f} | "
-        f"prereq_raw={course_stats.get('prereq_edges_raw', 0)} | "
-        f"prereq_kept={course_stats.get('prereq_edges_kept', 0)}"
+        f"hard_density={course_stats['hard_density']:.3f}"
     )
     print(
         f">> EarlyStop: enabled={cfg.use_epoch_early_stop} | monitor=Full Cold N@{cfg.early_stop_k} | "
