@@ -67,7 +67,8 @@ class CleanStageViews:
 class CleanTeacher(nn.Module):
     """Behavior-only IV embedding teacher used as the frozen offline oracle."""
 
-    def __init__(self, *, n_users: int, n_items: int, emb_dim: int, temperature: float = 0.07):
+    def __init__(self, *, n_users: int, n_items: int, emb_dim: int, temperature: float = 0.07,
+                 full_softmax: bool = False):
         super().__init__()
         if int(n_users) < 1 or int(n_items) < 1 or int(emb_dim) < 1:
             raise ValueError("n_users, n_items, and emb_dim must be positive")
@@ -76,6 +77,7 @@ class CleanTeacher(nn.Module):
         self.user_emb = nn.Embedding(int(n_users), int(emb_dim))
         self.item_emb = nn.Embedding(int(n_items), int(emb_dim))
         self.temperature = float(temperature)
+        self.full_softmax = bool(full_softmax)
         nn.init.xavier_normal_(self.user_emb.weight)
         nn.init.xavier_normal_(self.item_emb.weight)
 
@@ -93,6 +95,28 @@ class CleanTeacher(nn.Module):
         if user_ids.numel() != item_ids.numel() or user_ids.numel() < 1:
             raise ValueError("user_ids and item_ids must have equal nonzero length")
         users = self.user_vectors(user_ids)
+        if self.full_softmax:
+            # Exact softmax over the whole catalogue.
+            #
+            # The in-batch branch below is a LARGE-corpus approximation, and this
+            # corpus has 698 items -- fewer than the 1024-row batch -- so the
+            # sampling buys nothing and costs two popularity-graded biases:
+            #   1. no logQ correction: an item serves as an in-batch negative in
+            #      proportion to its own training frequency. Measured here,
+            #      -log q spans 2.86 (head) to 13.05 (rarest), median 8.05, so the
+            #      head item carries a ~5.2-logit handicap on a +-14.3 scale
+            #      (1/temperature with cosine scores).
+            #   2. no accidental-hit masking: with 698 items in a 1024 batch,
+            #      76.6% of slots are duplicates -- 16.3 false negatives per row
+            #      on average and ~58 for the head item, each one pushing that
+            #      item away from a user it is genuinely positive for.
+            # Both penalties grow with popularity, matching the measured deficit
+            # against the graph line: Spearman(log train_pop, dN@10) = -0.75
+            # (p=3e-71, 387 hot items carrying 98.6% of hot test traffic), with
+            # pop>1k hot N@10 0.1031 vs 0.2155 while pop<100 is 0.1490 vs 0.0995.
+            # Full softmax removes both by construction, with no approximation.
+            logits = torch.matmul(users, self.item_vectors().t()) / self.temperature
+            return F.cross_entropy(logits, item_ids)
         items = self.item_vectors(item_ids)
         labels = torch.arange(users.size(0), dtype=torch.long, device=users.device)
         logits = torch.matmul(users, items.t()) / self.temperature
@@ -116,18 +140,70 @@ class ContentGenerator(nn.Module):
         return self.net(content.float())
 
 
+_REWARD_GEOMETRIES = ("euclidean", "cosine")
+
+
+def resolve_reward_geometry(value: str | None) -> str:
+    """Default to the historical Euclidean geometry so old runs reproduce."""
+    if value is None:
+        return "euclidean"
+    geometry = str(value).strip().lower()
+    if geometry not in _REWARD_GEOMETRIES:
+        raise ValueError(
+            f"reward geometry must be one of {_REWARD_GEOMETRIES}, got {value!r}"
+        )
+    return geometry
+
+
+def embedding_gain(
+    before_state: torch.Tensor,
+    after_state: torch.Tensor,
+    target_emb: torch.Tensor,
+    *,
+    geometry: str | None = None,
+) -> torch.Tensor:
+    """Per-row progress toward the target, in the requested geometry.
+
+    ``euclidean`` is the historical form. It pays for matching the target's norm,
+    which the scorer discards because the item bank is L2-normalised before
+    scoring -- measured consequence: only 11.8%-61.2% of a PPO arm's raw
+    displacement survived normalisation, against .116-.142 for arms that step
+    toward unit-norm user vectors. ``cosine`` measures the same progress in the
+    geometry the scorer actually uses, so radial motion earns nothing.
+    """
+    geometry = resolve_reward_geometry(geometry)
+    if geometry == "cosine":
+        before = F.cosine_similarity(before_state, target_emb, dim=1).unsqueeze(1)
+        after = F.cosine_similarity(after_state, target_emb, dim=1).unsqueeze(1)
+        return after - before
+    return (before_state - target_emb).norm(dim=1, keepdim=True) - (
+        after_state - target_emb
+    ).norm(dim=1, keepdim=True)
+
+
 def full_positive_score_gain(
     before_state: torch.Tensor,
     after_state: torch.Tensor,
     teacher_item: torch.Tensor,
     positive_user_ids: Sequence[torch.Tensor],
     teacher_user_bank: torch.Tensor,
+    *,
+    geometry: str | None = None,
 ) -> torch.Tensor:
-    """Mean score-error reduction over every observed positive user per item."""
+    """Mean score-error reduction over every observed positive user per item.
+
+    Under ``cosine`` the states and the teacher item are L2-normalised first, so
+    a pure rescale of the state cannot move the reward.
+    """
+    geometry = resolve_reward_geometry(geometry)
     if before_state.shape != after_state.shape or before_state.shape != teacher_item.shape:
         raise ValueError("before_state, after_state, and teacher_item must share shape")
     if len(positive_user_ids) != before_state.size(0):
         raise ValueError("positive_user_ids must contain one user set per batch row")
+    if geometry == "cosine":
+        before_state = F.normalize(before_state, dim=1)
+        after_state = F.normalize(after_state, dim=1)
+        teacher_item = F.normalize(teacher_item, dim=1)
     gains = []
     for row, user_ids in enumerate(positive_user_ids):
         ids = torch.as_tensor(user_ids, dtype=torch.long, device=teacher_user_bank.device).view(-1)
@@ -179,11 +255,24 @@ def project_displacement(
     return initial_state + delta * scale
 
 
+# Stands in for -inf when the END column is masked out. Kept finite because
+# Categorical.entropy multiplies logits by probs; a true -inf would rely on
+# torch's internal clamp to avoid 0 * -inf = nan.
+MASKED_LOGIT = -1.0e9
+
+
 class LegalUSIMPolicy(nn.Module):
     """Actor/critic over inference-legal users and a separate END action."""
 
-    def __init__(self, *, emb_dim: int, hidden_dim: int):
+    def __init__(self, *, emb_dim: int, hidden_dim: int, allow_end: bool = True):
         super().__init__()
+        # When False the END column is masked to MASKED_LOGIT so the episode
+        # always runs the full step budget. This exists because 8 of 20 arm-seed
+        # cells in the 2026-08-24 ablation learned end_rate > 0.88 -- with an
+        # unconditional per-step penalty and a bounded cosine gain, ENDing at
+        # step 0 locks in reward 0 while moving risks negative reward, so the
+        # no-op is an optimal solution rather than a degenerate one.
+        self.allow_end = bool(allow_end)
         self.common = nn.Sequential(
             nn.Linear(int(emb_dim) + 1, int(hidden_dim)),
             nn.LayerNorm(int(hidden_dim)),
@@ -227,7 +316,10 @@ class LegalUSIMPolicy(nn.Module):
             if bias.shape != user_logits.shape:
                 raise ValueError("candidate_logit_bias must be [batch, candidate_count]")
             user_logits = user_logits + bias
-        logits = torch.cat([user_logits, self.end_head(features)], dim=1)
+        end_logit = self.end_head(features)
+        if not self.allow_end:
+            end_logit = torch.full_like(end_logit, MASKED_LOGIT)
+        logits = torch.cat([user_logits, end_logit], dim=1)
         distribution = Categorical(logits=logits)
         if action is None:
             action = torch.argmax(logits, dim=1) if deterministic else distribution.sample()
@@ -246,6 +338,9 @@ class CleanRolloutResult:
 
 CourseBiasFn = Callable[[torch.Tensor, torch.Tensor, list[set[int]]], torch.Tensor]
 CourseRewardFn = Callable[[torch.Tensor, torch.Tensor, list[set[int]]], torch.Tensor]
+CourseRewardBaselineFn = Callable[
+    [torch.Tensor, torch.Tensor, list[set[int]]], torch.Tensor
+]
 
 
 class CleanUSIMEngine:
@@ -264,20 +359,39 @@ class CleanUSIMEngine:
         retrieval_chunk: int = 8192,
         course_bias_fn: CourseBiasFn | None = None,
         course_reward_fn: CourseRewardFn | None = None,
+        course_reward_baseline_fn: CourseRewardBaselineFn | None = None,
+        reward_geometry: str | None = None,
+        embedding_reward_weight: float = 1.0,
+        recommendation_reward_weight: float = 1.0,
+        allow_end_action: bool = True,
     ):
         if int(max_steps) < 1 or int(candidate_count) < 1 or int(retrieval_chunk) < 1:
             raise ValueError("max_steps, candidate_count, and retrieval_chunk must be positive")
         if float(step_size) <= 0.0 or float(step_penalty) < 0.0 or float(max_delta) < 0.0:
             raise ValueError("step_size must be positive; penalties and max_delta non-negative")
-        self.policy = LegalUSIMPolicy(emb_dim=int(emb_dim), hidden_dim=int(hidden_dim))
+        if float(embedding_reward_weight) < 0.0 or float(recommendation_reward_weight) < 0.0:
+            raise ValueError("reward term weights must be non-negative")
+        self.policy = LegalUSIMPolicy(
+            emb_dim=int(emb_dim),
+            hidden_dim=int(hidden_dim),
+            allow_end=bool(allow_end_action),
+        )
         self.max_steps = int(max_steps)
         self.candidate_count = int(candidate_count)
         self.step_size = float(step_size)
         self.step_penalty = float(step_penalty)
         self.max_delta = float(max_delta)
+        self.reward_geometry = resolve_reward_geometry(reward_geometry)
+        # Ablation switches for the two unweighted reward terms. Default 1.0
+        # reproduces every earlier run bit-for-bit; 0.0 removes the term from the
+        # shaped reward and from the reported diagnostic, so a zeroed row is
+        # visible in the rollout stats rather than silent.
+        self.embedding_reward_weight = float(embedding_reward_weight)
+        self.recommendation_reward_weight = float(recommendation_reward_weight)
         self.retrieval_chunk = int(retrieval_chunk)
         self.course_bias_fn = course_bias_fn
         self.course_reward_fn = course_reward_fn
+        self.course_reward_baseline_fn = course_reward_baseline_fn
 
     @staticmethod
     def _candidate_vectors(user_bank: torch.Tensor, candidate_ids: torch.Tensor) -> torch.Tensor:
@@ -336,6 +450,8 @@ class CleanUSIMEngine:
         selected_user_ids: torch.Tensor,
         item_ids: torch.Tensor | None,
         user_history: Mapping[int, set[int]] | None,
+        *,
+        candidate_ids: torch.Tensor | None = None,
     ) -> torch.Tensor:
         zero = torch.zeros((selected_user_ids.size(0), 1), device=selected_user_ids.device)
         if self.course_reward_fn is None or item_ids is None or user_history is None:
@@ -349,6 +465,26 @@ class CleanUSIMEngine:
         reward = torch.as_tensor(reward, dtype=zero.dtype, device=zero.device).view(-1, 1)
         if reward.shape != zero.shape:
             raise ValueError("course_reward_fn must return [batch, 1]")
+        if self.course_reward_baseline_fn is not None:
+            if candidate_ids is None or candidate_ids.ndim != 2:
+                raise ValueError("candidate_ids are required for centered course reward")
+            flat_item_ids = item_ids.view(-1, 1).expand_as(candidate_ids).reshape(-1)
+            candidate_histories = target_excluded_history(
+                user_history,
+                target_item_ids=flat_item_ids,
+                selected_user_ids=candidate_ids.reshape(-1),
+            )
+            baseline = self.course_reward_baseline_fn(
+                candidate_ids, item_ids, candidate_histories
+            )
+            baseline = torch.as_tensor(
+                baseline, dtype=zero.dtype, device=zero.device
+            ).view(-1, 1)
+            if baseline.shape != zero.shape:
+                raise ValueError(
+                    "course_reward_baseline_fn must return [batch, 1]"
+                )
+            reward = reward - baseline
         return torch.nan_to_num(reward, nan=0.0, posinf=0.0, neginf=0.0)
 
     def _training_reward(
@@ -362,21 +498,29 @@ class CleanUSIMEngine:
         selected_user_ids: torch.Tensor,
         item_ids: torch.Tensor | None,
         user_history: Mapping[int, set[int]] | None,
+        candidate_ids: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        embedding_gain = (before_state - target_emb).norm(dim=1, keepdim=True) - (
-            after_state - target_emb
-        ).norm(dim=1, keepdim=True)
+        geometry = getattr(self, "reward_geometry", "euclidean")
+        embed_gain = embedding_gain(
+            before_state, after_state, target_emb, geometry=geometry
+        ) * float(getattr(self, "embedding_reward_weight", 1.0))
         recommendation_gain = full_positive_score_gain(
             before_state,
             after_state,
             target_emb,
             positive_user_ids,
             user_bank,
+            geometry=geometry,
+        ) * float(getattr(self, "recommendation_reward_weight", 1.0))
+        course_reward = self._course_reward(
+            selected_user_ids,
+            item_ids,
+            user_history,
+            candidate_ids=candidate_ids,
         )
-        course_reward = self._course_reward(selected_user_ids, item_ids, user_history)
         active = active_user.float().view(-1, 1)
-        reward = (embedding_gain + recommendation_gain - self.step_penalty + course_reward) * active
-        return reward, embedding_gain * active, recommendation_gain * active, course_reward * active
+        reward = (embed_gain + recommendation_gain - self.step_penalty + course_reward) * active
+        return reward, embed_gain * active, recommendation_gain * active, course_reward * active
 
     def rollout(
         self,
@@ -449,7 +593,7 @@ class CleanUSIMEngine:
             )
             done_after = done | action.eq(end_action)
             if training:
-                reward, emb_reward, rec_reward, ckg_reward = self._training_reward(
+                reward_args = (
                     state,
                     next_state,
                     target_emb,
@@ -460,6 +604,15 @@ class CleanUSIMEngine:
                     item_ids,
                     user_history,
                 )
+                if self.course_reward_baseline_fn is None:
+                    reward, emb_reward, rec_reward, ckg_reward = self._training_reward(
+                        *reward_args
+                    )
+                else:
+                    reward, emb_reward, rec_reward, ckg_reward = self._training_reward(
+                        *reward_args,
+                        candidate_ids,
+                    )
                 embedding_reward += float(emb_reward.mean().detach().item())
                 recommendation_reward += float(rec_reward.mean().detach().item())
                 course_reward += float(ckg_reward.mean().detach().item())
@@ -622,6 +775,21 @@ class CleanCourseSignal:
     ) -> torch.Tensor:
         del selected_user_ids
         return self._compatibility(item_ids, histories, device=item_ids.device).view(-1, 1)
+
+    def candidate_reward_baseline(
+        self,
+        candidate_ids: torch.Tensor,
+        item_ids: torch.Tensor,
+        histories: list[set[int]],
+    ) -> torch.Tensor:
+        """Return the mean raw compatibility across each candidate set."""
+        if candidate_ids.ndim != 2:
+            raise ValueError("candidate_ids must be [batch, candidate_count]")
+        flat_item_ids = item_ids.view(-1, 1).expand_as(candidate_ids).reshape(-1)
+        raw = self._compatibility(
+            flat_item_ids, histories, device=candidate_ids.device
+        ).view_as(candidate_ids)
+        return raw.mean(dim=1, keepdim=True)
 
 
 class CleanReplayBuffer:
@@ -890,6 +1058,7 @@ class CleanRunConfig:
     emb_dim: int = 128
     hidden_dim: int = 256
     teacher_lr: float = 5e-4
+    teacher_full_softmax: bool = False
     generator_lr: float = 1e-3
     policy_lr: float = 3e-4
     pseudo_ratio: float = 0.30
@@ -902,6 +1071,8 @@ class CleanRunConfig:
     step_size: float = 0.05
     step_penalty: float = 0.01
     max_delta: float = 0.25
+    # False masks the END action so every episode runs the full step budget.
+    allow_end_action: bool = True
     replay_capacity: int = 8192
     replay_batch_size: int = 512
     ppo_gamma: float = 0.99
@@ -1121,6 +1292,7 @@ def create_clean_engine(
         retrieval_chunk=config.retrieval_chunk,
         course_bias_fn=None if course_signal is None else course_signal.candidate_bias,
         course_reward_fn=None if course_signal is None else course_signal.reward,
+        allow_end_action=config.allow_end_action,
     )
 
 
@@ -1300,7 +1472,11 @@ def train_clean_teacher(
 ) -> tuple[CleanTeacher, dict[str, Any]]:
     """Fit behavioral IV embeddings using H_train and select only on H_val."""
     device = _resolve_device(config.device)
-    teacher = CleanTeacher(n_users=n_users, n_items=n_items, emb_dim=config.emb_dim).to(device)
+    teacher = CleanTeacher(n_users=n_users, n_items=n_items, emb_dim=config.emb_dim,
+                           full_softmax=bool(getattr(config, "teacher_full_softmax", False))).to(device)
+    if bool(getattr(config, "teacher_full_softmax", False)):
+        print(f"[teacher] FULL SOFTMAX over all {n_items} items "
+              f"(exact; replaces in-batch sampled softmax)", flush=True)
     optimizer = torch.optim.Adam(teacher.parameters(), lr=float(config.teacher_lr))
     train_loader = DataLoader(
         InteractionDataset(views.teacher_train),
@@ -1978,6 +2154,10 @@ def _parse_clean_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--checkpoint-dir")
     parser.add_argument("--course-relation-dir")
     parser.add_argument("--teacher-epochs", type=int)
+    parser.add_argument("--teacher-full-softmax", action="store_true",
+                        help="train the teacher with an exact softmax over all items "
+                             "instead of in-batch sampled softmax (no logQ correction, "
+                             "no accidental-hit masking). Off = bit-identical to before.")
     parser.add_argument("--generator-epochs", type=int)
     parser.add_argument("--policy-epochs", type=int)
     parser.add_argument("--batch-size", type=int)
@@ -2023,6 +2203,8 @@ def _config_from_args(args: argparse.Namespace) -> CleanRunConfig:
             replacements[field] = value
     if args.use_course_signal:
         replacements["use_course_signal"] = True
+    if getattr(args, "teacher_full_softmax", False):
+        replacements["teacher_full_softmax"] = True
     config = replace(config, **replacements)
     if args.smoke:
         config = replace(
